@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Microsoft translate" Identifier="MicrosoftTranslate" HelpUrl="https://www.microsoft.com/translator/api.aspx">
+
+  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
+
+  <Settings>
+    <Text Id="ClientId" Title="Client id" Required="true" HelpUrl="http://seotoolsforexcel.com/microsoft-translate-connector/"/>
+    <Text Id="ClientSecret" Title="Client secret" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Languages">
+      <Item Id="ar" Title="Arabic"/>
+      <Item Id="cs" Title="Czech"/>
+      <Item Id="da" Title="Danish"/>
+      <Item Id="de" Title="German"/>
+      <Item Id="en" Title="English"/>
+      <Item Id="et" Title="Estonian"/>
+      <Item Id="fi" Title="Finnish"/>
+      <Item Id="fr" Title="French"/>
+      <Item Id="nl" Title="Dutch"/>
+      <Item Id="el" Title="Greek"/>
+      <Item Id="he" Title="Hebrew"/>
+      <Item Id="ht" Title="Haitian Creole"/>
+      <Item Id="hu" Title="Hungarian"/>
+      <Item Id="id" Title="Indonesian"/>
+      <Item Id="it" Title="Italian"/>
+      <Item Id="ja" Title="Japanese"/>
+      <Item Id="ko" Title="Korean"/>
+      <Item Id="lt" Title="Lithuanian"/>
+      <Item Id="lv" Title="Latvian"/>
+      <Item Id="no" Title="Norwegian"/>
+      <Item Id="pl" Title="Polish"/>
+      <Item Id="pt" Title="Portuguese"/>
+      <Item Id="ro" Title="Romanian"/>
+      <Item Id="es" Title="Spanish"/>
+      <Item Id="ru" Title="Russian"/>
+      <Item Id="sk" Title="Slovak"/>
+      <Item Id="sl" Title="Slovene"/>
+      <Item Id="sv" Title="Swedish"/>
+      <Item Id="th" Title="Thai"/>
+      <Item Id="tr" Title="Turkish"/>
+      <Item Id="uk" Title="Ukrainian"/>
+      <Item Id="vi" Title="Vietnamese"/>
+      <Item Id="zh-CHS" Title="Simplified Chinese"/>
+      <Item Id="zh-CHT" Title="Traditional Chinese"/>
+    </Resource>
+  </Resources>  
+  
+  <!-- HIDDEN: -->
+  
+  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="https://www.microsoft.com/translator/api.aspx" Hidden="true">
+    <Fetch Url="https://datamarket.accesscontrol.windows.net/v2/OAuth2-13">
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestMethod>POST</RequestMethod>
+        <RequestForm>
+          <Param Name='grant_type'>client_credentials</Param>
+          <Param Name='client_id'>@(Model.ClientId)</Param>
+          <Param Name='client_secret'>@(Model.ClientSecret)</Param>
+          <Param Name='scope'>http://api.microsofttranslator.com</Param>
+        </RequestForm>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.access_token" Id="Authorization"/>
+    </Parse>
+  </RestConnector>
+
+  <!-- //HIDDEN -->
+
+  <RestConnector Id="Translate" Title="Translate" HelpUrl="https://www.microsoft.com/translator/api.aspx">
+    <Parameters>
+      <Text Id="Text" Title="Text" DefaultValue="" Required="true"/>
+      <Select Id="From" Title="From" Required="true" DefaultValue="">
+        <DataSource>
+          <Item Id="" Title="[Auto]"/>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+      <Select Id="To" Title="To" Required="true" DefaultValue="sv">
+        <DataSource>
+          <Resource Id="Languages"/> 
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch Url="http://api.microsofttranslator.com/v2/Http.svc/Translate?text=@(Utils.UrlEncode(Model.Text))&amp;from=@(Model.From)&amp;to=@(Model.To)">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authorization)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Fail>
+      <XPath Expr="/html"/>
+    </Fail>
+    <Parse>
+      <XPath Expr="/string"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Detect" Title="Detect" HelpUrl="https://www.microsoft.com/translator/api.aspx">
+    <Parameters>
+      <Text Id="Text" Title="Text" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch Url="http://api.microsofttranslator.com/v2/Http.svc/Detect?text=@(Utils.UrlEncode(Model.Text))">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authorization)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Fail>
+      <XPath Expr="/html"/>
+    </Fail>
+    <Parse>
+      <XPath Expr="/string"/>
+    </Parse>
+  </RestConnector>
+  
+</Suite>

@@ -1,1 +1,1 @@
-# SeoTools-for-Excel-Connectors
+# SeoTools for Excel Connectors

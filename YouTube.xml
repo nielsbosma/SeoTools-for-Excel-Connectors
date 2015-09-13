@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="YouTube" Identifier="YouTube">
+
+  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/youtube-connector/">
+    <Text Id="ApiKey" Title="API key from Google developer console" Required="true"/>
+  </Settings>
+  
+  <RestConnector Id="Statistics" Title="Statistics">
+    <Parameters>
+      <Text Id="VideoId" Title="Video id" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/youtube/v3/videos?id=@Model.VideoId&amp;key=@Model.ApiKey&amp;part=statistics"/>
+    <Parse>
+      <JsonPath Title="Views" Identifier="views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Likes" Identifier="likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Dislikes" Identifier="dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Favorites" Identifier="favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Comments" Identifier="comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue="0"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Search" Title="Search">
+    <Parameters>
+      <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
+    </Parameters>
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="">
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/search?
+        key=@Model.ApiKey
+        &part=snippet
+        &type=video
+        &q=@Utils.UrlEncode(Model.Query)
+        &maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@Model.NextPageToken
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items.*">
+        <JsonPath Title="Id" Identifier="id" Expr="id.videoId" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Title" Identifier="title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Description" Identifier="description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Published" Identifier="published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
+        <JsonPath Title="Channel" Identifier="channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Thumbnail" Identifier="thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+ 
+</Suite>

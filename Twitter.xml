@@ -1,0 +1,258 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Twitter" Id="Twitter">
+
+  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
+
+  <Settings>
+    <Text Id="OAuthToken" Title="OAuth token" Required="true" HelpUrl="http://seotoolsforexcel.com/twitter-connector/"/>
+    <Text Id="OAuthTokenSecret" Title="OAuth token secret" Required="true"/>
+    <Text Id="OAuthConsumerKey" Title="OAuth consumer key" Required="true"/>
+    <Text Id="OAuthConsumerSecret" Title="OAuth consumer secret" Required="true"/>
+  </Settings>
+
+  <!--
+  <RestConnector Id="TweetSearch" Title="Search for Tweets" HelpUrl="https://dev.twitter.com/rest/reference/get/search/tweets">
+    <RazorFunctions>
+    <![CDATA[
+    Dictionary<string,string> GetQuery() {
+      return new Dictionary<string,string> {
+        {"q", Model.Query},
+        {"count", Model.PageCursor.NextTake.ToString()},   
+        {"max_id", Model.PageCursor.Page > 0 ? Model.MaxId : ""}
+      };
+    }
+    ]]>
+    </RazorFunctions>
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+    </Parameters>
+    <Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="MaxId" Expr="$.statuses[-1:].id_str"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="https://api.twitter.com/1.1/search/tweets.json?@RenderQuery(GetQuery())">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[            
+            @OAuth("https://api.twitter.com/1.1/statuses/search/tweets.json", GetQuery()) 
+            ]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.statuses.*">
+        <JsonPath Expr="text" Id="text" Title="Text"/>
+        <JsonPath Expr="favorite_count" Id="favorite_count" Title="Favorited" Converter="Int"/>
+        <JsonPath Expr="retweet_count" Id="retweet_count" Title="Retweeted" Converter="Int"/>
+        <JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+  -->
+
+  <RestConnector Id="Tweets" Title="Tweets" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/user_timeline">
+    <RazorFunctions>
+    <![CDATA[
+    Dictionary<string,string> GetQuery() {
+      return new Dictionary<string,string> {
+        {"screen_name", Model.ScreenName},
+        
+        {"count", Model.PageCursor.NextTake.ToString()},   
+        {"include_rts", Model.IncludeRts.ToString()},       
+        {"max_id", Model.PageCursor.Page > 0 ? Model.MaxId : ""}
+      };
+    }
+    ]]>
+    </RazorFunctions>
+    <Parameters>
+      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+      <Checkbox Id="IncludeRts" Title="Include retweets" DefaultValue="true"/>
+    </Parameters>
+    <Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="MaxId" Expr="$[-1:].id_str"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="https://api.twitter.com/1.1/statuses/user_timeline.json?@RenderQuery(GetQuery())">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[            
+            @OAuth("https://api.twitter.com/1.1/statuses/user_timeline.json", GetQuery()) 
+            ]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="text" Id="text" Title="Text"/>
+        <JsonPath Expr="favorite_count" Id="favorite_count" Title="Favorited" Converter="Int"/>
+        <JsonPath Expr="retweet_count" Id="retweet_count" Title="Retweeted" Converter="Int"/>
+        <JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Followers" Title="Followers" HelpUrl="https://dev.twitter.com/rest/reference/get/followers/list">
+    <RazorFunctions>
+    <![CDATA[
+    Dictionary<string,string> GetQuery() {
+      return new Dictionary<string,string> {
+        {"screen_name", Model.ScreenName},
+        {"skip_status", "true"},
+        {"count", Model.PageCursor.NextTake.ToString()},
+        {"cursor", Model.PageCursor.Page > 0 ? Model.NextCursor : "-1"}
+      };
+    }
+    ]]>
+    </RazorFunctions>
+    <Parameters>
+      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="NextCursor" Expr="next_cursor_str"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="https://api.twitter.com/1.1/followers/list.json?@RenderQuery(GetQuery())">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[            
+            @OAuth("https://api.twitter.com/1.1/followers/list.json", GetQuery()) 
+            ]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>  
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.users.*">
+        <JsonPath Expr="screen_name" Id="screen_name" Title="Screen name"/>
+        <JsonPath Expr="name" Id="name" Title="Name"/>
+        <JsonPath Expr="favourites_count" Id="favourites_count" Title="Favourites" Converter="Int"/>
+        <JsonPath Expr="followers_count" Id="followers_count" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="friends_count" Id="friends_count" Title="Following" Converter="Int"/>
+        <JsonPath Expr="statuses_count" Id="statuses_count" Title="Tweets" Converter="Int"/>
+        <JsonPath Expr="listed_count" Id="listed_count" Title="Listed" Converter="Int"/>
+        <JsonPath Expr="description" Id="description" Title="Description"/>
+        <JsonPath Expr="location" Id="location" Title="Location"/>
+        <JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="url" Id="url" Title="Url"/>
+        <JsonPath Expr="verified" Id="verified" Title="Verified" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Following" Title="Following" HelpUrl="https://dev.twitter.com/rest/reference/get/friends/list">
+    <RazorFunctions>
+      <![CDATA[
+    Dictionary<string,string> GetQuery() {
+      return new Dictionary<string,string> {
+        {"screen_name", Model.ScreenName},
+        {"skip_status", "true"},
+        {"count", Model.PageCursor.NextTake.ToString()},
+        {"cursor", Model.PageCursor.Page > 0 ? Model.NextCursor : "-1"}
+      };
+    }
+    ]]>
+    </RazorFunctions>
+    <Parameters>
+      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="NextCursor" Expr="next_cursor_str"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="https://api.twitter.com/1.1/friends/list.json?@RenderQuery(GetQuery())">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[            
+            @OAuth("https://api.twitter.com/1.1/friends/list.json", GetQuery()) 
+            ]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.users.*">
+        <JsonPath Expr="screen_name" Id="screen_name" Title="Screen name"/>
+        <JsonPath Expr="name" Id="name" Title="Name"/>
+        <JsonPath Expr="favourites_count" Id="favourites_count" Title="Favourites" Converter="Int"/>
+        <JsonPath Expr="followers_count" Id="followers_count" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="friends_count" Id="friends_count" Title="Following" Converter="Int"/>
+        <JsonPath Expr="statuses_count" Id="statuses_count" Title="Tweets" Converter="Int"/>
+        <JsonPath Expr="listed_count" Id="listed_count" Title="Listed" Converter="Int"/>
+        <JsonPath Expr="description" Id="description" Title="Description"/>
+        <JsonPath Expr="location" Id="location" Title="Location"/>
+        <JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="url" Id="url" Title="Url"/>
+        <JsonPath Expr="verified" Id="verified" Title="Verified" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+  <![CDATA[
+  
+  string OAuth(string resourceUrl, Dictionary<string,string> query) {
+             	
+	  var oauth_version = "1.0";
+	  var oauth_signature_method = "HMAC-SHA1";
+	
+	  var oauth_nonce = Convert.ToBase64String(new ASCIIEncoding().GetBytes(DateTime.Now.Ticks.ToString()));
+	  var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+	  var oauth_timestamp = Convert.ToInt64(timeSpan.TotalSeconds).ToString();
+
+	  query["oauth_consumer_key"] = Model.OAuthConsumerKey;
+	  query["oauth_nonce"] = oauth_nonce;
+	  query["oauth_signature_method"] = oauth_signature_method;
+	  query["oauth_timestamp"] = oauth_timestamp;
+	  query["oauth_token"] = Model.OAuthToken;
+	  query["oauth_version"] = oauth_version;
+
+	  string baseString = "GET&" + Uri.EscapeDataString(resourceUrl) + "&" + Uri.EscapeDataString(RenderQuery(query));
+	
+	  var compositeKey = Uri.EscapeDataString(Model.OAuthConsumerSecret) + "&" + Uri.EscapeDataString(Model.OAuthTokenSecret);
+	
+	  string oauth_signature = Utils.HmacSha1(baseString, compositeKey);
+	
+	  var headerFormat = @"OAuth oauth_nonce=""{0}"", oauth_signature_method=""{1}"", oauth_timestamp=""{2}"", oauth_consumer_key=""{3}"", oauth_token=""{4}"", oauth_signature=""{5}"", oauth_version=""{6}""";
+	
+	  return string.Format(headerFormat,
+		  Uri.EscapeDataString(oauth_nonce),
+		  Uri.EscapeDataString(oauth_signature_method),
+		  Uri.EscapeDataString(oauth_timestamp),
+		  Uri.EscapeDataString(Model.OAuthConsumerKey),
+		  Uri.EscapeDataString(Model.OAuthToken),
+		  Uri.EscapeDataString(oauth_signature),
+		  Uri.EscapeDataString(oauth_version)     
+	  );
+         
+  }
+  
+  string RenderQuery(Dictionary<string,string> query) {
+	  return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
+  }
+  
+  ]]>
+  </RazorFunctions>
+  
+</Suite>
