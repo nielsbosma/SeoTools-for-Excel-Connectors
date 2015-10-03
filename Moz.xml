@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Moz by SeoTools" Id="Moz" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Moz.xml">
+<Suite Title="Moz" Id="Moz" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Moz.xml">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
@@ -87,6 +87,11 @@
         .Select(e => long.Parse(e.Tag))
         .Aggregate(0L, (x, y) => x | y);
     }
+    
+    int IntervalBetweenRequests() {
+      return Model.AccountType=="free" ? 10000 : 5;
+    }
+    
    ]]>
   </RazorFunctions>
   
@@ -109,13 +114,11 @@
       ]]>  
       </Fetch.Url>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="5" RandomTo="5" IfSame="Host"/>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="*">
-        <Resource Id="Cols"/>
-      </JsonPath>
+      <Resource Id="Cols"/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
@@ -124,7 +127,7 @@
 
   <RestConnector Id="TopPages" Title="Top pages" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/top-pages">
     <Parameters>
-      <Text Id="Subdomain" Title="Subdomain" DefaultValue="http://seotoolsforexcel.com" Required="true"/>
+      <Text Id="Subdomain" Title="Subdomain" DefaultValue="" Required="true"/>
       <Select Id="Sort" Title="Sort" DefaultValue="page_authority">
         <DataSource>
           <Item Id="page_authority" Title="Page authority"/>
@@ -165,6 +168,9 @@
         &Signature=@(signature)
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="*">
@@ -178,7 +184,7 @@
 
   <RestConnector Id="Links" Title="Backlinks" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/link-metrics">
     <Parameters>
-      <Text Id="Url" Title="Url" DefaultValue="moz.com/blog" Required="true"/>
+      <Text Id="Url" Title="Url" DefaultValue="" Required="true"/>
       <Text Id="SourceDomain" Title="Source domain" DefaultValue="" Required="false"/>
       <Select Id="Scope" Title="Scope" DefaultValue="page_to_page">
         <DataSource>
@@ -234,6 +240,9 @@
         
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="*">
@@ -375,9 +384,33 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="AnchorTexts" Title="AnchorTexts" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/anchor-text-metrics">
+  <RestConnector Id="AnchorTexts" Title="Anchor texts" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/anchor-text-metrics">
+    <RazorFunctions>
+    <![CDATA[
+      string Prefix() {
+        return Model.Scope=="page_to_page" ? "apu" :
+               Model.Scope=="phrase_to_subdomain" ? "apf" :
+               Model.Scope=="phrase_to_domain" ? "app" :
+               Model.Scope=="term_to_page" ? "atu" :
+               Model.Scope=="term_to_subdomain" ? "atf" : 
+               /*term_to_domain*/ "atp"; 
+      } 
+   ]]>
+    </RazorFunctions>
     <Parameters>
-      <Text Id="Url" Title="Url" DefaultValue="http://seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="Url" DefaultValue="moz.com/blog" Required="true"/>
+      <Select Id="Scope" Title="Scope" DefaultValue="term_to_page">
+        <DataSource>
+          <!--
+          <Item Id="page_to_page" Title="Page to page" HelpText="Returns phrases found in links to the target URL"/>
+          <Item Id="page_to_subdomain" Title="Page to subdomain" HelpText="Returns phrases found in links to the subdomain of the target URL"/>
+          <Item Id="page_to_domain" Title="Page to domain" HelpText="Returns phrases found in links to the root domain of the target URL"/>
+          -->
+          <Item Id="term_to_page" Title="Term to page" HelpText="Returns terms found in links to the target URL"/>
+          <Item Id="term_to_subdomain" Title="Term to subdomain" HelpText="Returns terms found in links to the subdomain of the target URL"/>
+          <Item Id="term_to_domain" Title="Term to domain" HelpText="Returns terms found in links to the root domain of the target URL"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Paging PageSize="50"/>
     <Fetch>
@@ -388,7 +421,9 @@
           string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
         }
         http://lsapi.seomoz.com/linkscape/anchor-text/@(Utils.UrlEncode(Model.Url))?
-        Cols=@BitFlagsByGroup()
+        Cols=@BitFlagsByGroup("Cols")
+        
+        &Scope=@(Model.Scope)
         
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
@@ -398,16 +433,28 @@
         &Signature=@(signature)
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="*">
-        
+        <!-- COLS: -->
+        <JsonPath Expr="@Prefix()t" Title="Term or Phrase" Id="t" Tag="Cols:2" Checked="True" Converter="String" HelpText="The anchor text term or phrase"/>
+        <JsonPath Expr="@Prefix()iu" Title="Internal pages linking" Id="iu" Tag="Cols:8" Checked="True" Converter="Int" HelpText="The number of internal pages on a root domain linking to the target URL with this term or phrase"/>
+        <JsonPath Expr="@Prefix()if" Title="Internal subdomains linking" Id="if" Tag="Cols:16" Checked="True" Converter="Int" HelpText="The number of subdomains on the same root domain with at least one link to the target URL containing this term or phrase"/>
+        <JsonPath Expr="@Prefix()eu" Title="External pages linking" Id="eu" Tag="Cols:32" Checked="True" Converter="Int" HelpText="The number of external pages linking to the target URL containing this term or phrase"/>
+        <JsonPath Expr="@Prefix()ef" Title="External subdomains linking" Id="ef" Tag="Cols:64" Checked="True" Converter="Int" HelpText="The number of external subdomains with at least one link to the target URL containing this term or phrase"/>
+        <JsonPath Expr="@Prefix()ep" Title="External root domains linking" Id="ep" Tag="Cols:128" Checked="True" Converter="Int" HelpText="The number of external root domains with at least one link to the target URL containing this term or phrase"/>
+        <JsonPath Expr="@Prefix()imp" Title="Internal MozRank passed" Id="imp" Tag="Cols:256" Checked="True" Converter="Double" HelpText="The amount of MozRank passed over all internal links with this term or phrase (on a normalized 10-point scale)"/>
+        <JsonPath Expr="@Prefix()emp" Title="External MozRank passed" Id="emp" Tag="Cols:512" Checked="True" Converter="Double" HelpText="The amount of MozRank passed over all external links with this term or phrase (on a normalized 10-point scale)"/>
+        <JsonPath Expr="@Prefix()f" Title="Image link" Id="f" Tag="Cols:1024" Checked="True" Converter="Bool" HelpText="A boolean value indicating whether the term or phrase is found in an image link. A value of 0 indicates a text anchor; a value of 1 indicates an image link."/>
+        <!-- //COLS -->
       </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-  
   
 </Suite>
