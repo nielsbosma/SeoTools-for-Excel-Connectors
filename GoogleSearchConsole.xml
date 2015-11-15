@@ -1,7 +1,59 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite RequireVersion="5.1" Title="Google Search Console" Id="GoogleSearchConsole" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSearchConsole.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
 
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/webmasters.readonly" StayAuthenticated="true"/>
+
+  <RazorFunctions>
+    <![CDATA[
+    
+    string[] _SelectedDimensions() { 
+      string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+      return ((ResultField[])Model.Headers)
+        .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
+        .Select(e => e.Identifier)
+        .ToArray();
+    }
+    
+    string SelectedDimensions() {
+      return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
+    }
+    
+    string DimensionIndex(string dimension) { 
+      return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
+    }
+    
+    string _RenderOperator(string op)
+    {
+	    return op == "==" ? "equals" : 
+		    op == "!=" ? "notEquals" : 
+		    op == "=~" ? "contains" :
+		    "notContains";
+    }
+
+    string RenderFilter()
+    {
+	    var lines = ((string)Model.Filter).Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+
+	    var filters = lines
+		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+		    .Where(e => e.Success)
+		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}", 
+			    e.Groups[1].Value.Trim(), 
+			    _RenderOperator(e.Groups[2].Value.Trim()), 
+			    e.Groups[3].Value.Trim()));
+
+	    if(filters.Any())
+	    {
+		    return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
+	    }
+
+	    return "";
+    }
+    
+   ]]>
+  </RazorFunctions>
 
   <RestConnector Id="Sites" Title="Sites" Hidden="true">
     <Parameters>
@@ -21,11 +73,23 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Analytics" Title="Analytics">
+  <!-- https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics -->
+  
+  <RestConnector Id="SearchAnalytics" Title="Search analytics">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="seotoolsforexcel.com" Required="true" Select.Connector="Sites"/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+      <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
+      <Radio Id="SearchType" Title="Type" DefaultValue="web">
+        <DataSource>
+          <Item Id="web" Title="Web"/>
+          <Item Id="video" Title="Video"/>
+          <Item Id="image" Title="Image"/>
+        </DataSource>
+      </Radio>
+      <Number Id="RowLimit" Title="Row limit" DefaultValue="1000" Minimum="0" Maximum="5000"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@Utils.UrlEncode(Model.Site)/searchAnalytics/query?fields=responseAggregationType%2Crows">
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Utils.UrlProperty(Model.Site).Host))/searchAnalytics/query?fields=responseAggregationType%2Crows&amp;prettyPrint=false">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -34,22 +98,34 @@
         <RequestContentType>application/json</RequestContentType>
         <RequestBody>
           {
-            "startDate": "2015-01-01",
-            "endDate": "2015-10-01",
-            "dimensions": [
-              "country",
-              "device"
-            ]
+            "startDate": "@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))",
+            "endDate": "@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))",
+            "dimensions": [ @SelectedDimensions() ],
+            "rowLimit": @(Model.RowLimit),
+            "searchType": "@(Model.SearchType)"
+            @RenderFilter()
           }
         </RequestBody>
+        
+        <!--
+        
+        https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics
+        
+        -->
+      
       </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.rows.*">
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int"/>
-        <JsonPath Expr="ctr" Id="Ctr" Title="Ctr" Converter="Double"/>
-        <JsonPath Expr="position" Id="Position" Converter="Double"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;date&quot;))]" Id="date" Title="Date" Tag="Dimensions"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;query&quot;))]" Id="query" Title="Query" Tag="Dimensions"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;country&quot;))]" Id="country" Title="Country" Tag="Dimensions" Checked="false"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;device&quot;))]" Id="device" Title="Device" Tag="Dimensions" Checked="false"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;page&quot;))]" Id="page" Title="Page" Tag="Dimensions" Checked="false"/>
+        <JsonPath Expr="clicks" Id="clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="impressions" Id="impressions" Title="Impressions" Converter="Int"/>
+        <JsonPath Expr="ctr" Id="ctr" Title="Ctr" Converter="Double"/>
+        <JsonPath Expr="position" Id="position" Converter="Double"/>
       </JsonPath>
     </Parse>
   </RestConnector>
