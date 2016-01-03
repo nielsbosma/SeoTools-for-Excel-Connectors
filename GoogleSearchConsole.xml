@@ -34,7 +34,7 @@
 
     string RenderFilter()
     {
-	    var lines = ((string)Model.Filter).Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+	    var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
 
 	    var filters = lines
 		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
@@ -72,12 +72,10 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-
-  <!-- https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics -->
   
-  <RestConnector Id="SearchAnalytics" Title="Search analytics">
+  <RestConnector Id="SearchAnalytics" Title="Search analytics" HelpUrl="https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="seotoolsforexcel.com" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
       <Radio Id="SearchType" Title="Type" DefaultValue="web">
@@ -89,7 +87,7 @@
       </Radio>
       <Number Id="RowLimit" Title="Row limit" DefaultValue="1000" Minimum="0" Maximum="5000"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Utils.UrlProperty(Model.Site).Host))/searchAnalytics/query?fields=responseAggregationType%2Crows&amp;prettyPrint=false">
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/searchAnalytics/query?fields=responseAggregationType%2Crows&amp;prettyPrint=false">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -105,14 +103,7 @@
             "searchType": "@(Model.SearchType)"
             @RenderFilter()
           }
-        </RequestBody>
-        
-        <!--
-        
-        https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics
-        
-        -->
-      
+        </RequestBody>      
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -128,13 +119,16 @@
         <JsonPath Expr="position" Id="position" Converter="Double"/>
       </JsonPath>
     </Parse>
+    <Fail>
+      <Regex Expr="^Not Found$" Group="0"/>
+    </Fail>
   </RestConnector>
   
   <RestConnector Id="Sitemaps" Title="Sitemaps">
     <Parameters>
       <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlProperty(Model.Site).Domain)/sitemaps?fields=sitemap">
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps?fields=sitemap">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -150,6 +144,89 @@
         <JsonPath Expr="lastDownloaded" Id="lastDownloaded" Title="Last downloaded" Converter="DateTime"/>
         <JsonPath Expr="warnings" Id="Warnings" Title="Warnings" Converter="Int"/>
         <JsonPath Expr="errors" Id="Errors" Title="Errors" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SitemapContents" Title="Sitemap contents">
+    <Parameters>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <!--
+      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="LastSubmitted" Select.Model="Site"/>
+      -->
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps/@(Utils.UrlEncode(Model.Sitemap))?fields=contents">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.contents.*">
+        <JsonPath Expr="type" Id="type" Title="Type"/>
+        <JsonPath Expr="submitted" Id="submitted" Title="Submitted" Converter="Int"/>
+        <JsonPath Expr="indexed" Id="indexed" Title="Indexed" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UrlCrawlErrorCounts" Title="URL crawl error counts">
+    <Parameters>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/urlCrawlErrorsCounts/query?fields=countPerTypes&amp;latestCountsOnly=true">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.countPerTypes.*">
+        <JsonPath Expr="platform" Id="platform" Title="Platform"/>
+        <JsonPath Expr="category" Id="category" Title="Category"/>
+        <JsonPath Expr="entries[0].count" Id="count" Title="Count" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UrlCrawlErrorSamples" Title="URL crawl error samples">
+    <Parameters>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Select Id="Category" Title="Category" DefaultValue="notFound">
+        <DataSource>
+          <Item Id="authPermissions" Title="authPermissions"/>
+          <Item Id="manyToOneRedirect" Title="manyToOneRedirect"/>
+          <Item Id="notFollowed" Title="notFollowed"/>
+          <Item Id="notFound" Title="notFound"/>
+          <Item Id="other" Title="other"/>
+          <Item Id="roboted" Title="roboted"/>
+          <Item Id="serverError" Title="serverError"/>
+          <Item Id="soft404" Title="soft404"/>
+        </DataSource>
+      </Select>
+      <Select Id="Platform" Title="Platform" DefaultValue="web">
+        <DataSource>
+          <Item Id="mobile" Title="mobile"/>
+          <Item Id="smartphoneOnly" Title="smartphoneOnly"/>
+          <Item Id="web" Title="web"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/urlCrawlErrorsSamples?category=@(Model.Category)&amp;platform=@(Model.Platform)&amp;fields=urlCrawlErrorSample">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.urlCrawlErrorSample.*">
+        <JsonPath Expr="pageUrl" Id="pageUrl" Title="Page url"/>
+        <JsonPath Expr="last_crawled" Id="lastCrawled" Title="Last crawled" Converter="DateTime"/>
+        <JsonPath Expr="first_detected" Id="firstDetected" Title="First detected" Converter="DateTime"/>
+        <JsonPath Expr="responseCode" Id="responseCode" Title="Response code" Converter="Int"/>
       </JsonPath>
     </Parse>
   </RestConnector>
