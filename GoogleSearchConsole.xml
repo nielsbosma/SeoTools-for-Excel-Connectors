@@ -5,6 +5,15 @@
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/webmasters.readonly" StayAuthenticated="true"/>
 
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+  
   <RazorFunctions>
     <![CDATA[
     
@@ -68,14 +77,14 @@
     <Parse>
       <JsonPath Expr="$.siteEntry.*">
         <JsonPath Expr="siteUrl" Id="Id" Title="Id"/>
-        <JsonPath Expr="siteUrl" Id="Title" Title="Title"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
   
   <RestConnector Id="SearchAnalytics" Title="Search analytics" HelpUrl="https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
       <Radio Id="SearchType" Title="Type" DefaultValue="web">
@@ -119,14 +128,12 @@
         <JsonPath Expr="position" Id="position" Converter="Double"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <Regex Expr="^Not Found$" Group="0"/>
-    </Fail>
+    <Resource Id="Fail"/> 
   </RestConnector>
   
   <RestConnector Id="Sitemaps" Title="Sitemaps">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps?fields=sitemap">
       <HttpSettings>
@@ -146,14 +153,13 @@
         <JsonPath Expr="errors" Id="Errors" Title="Errors" Converter="Int"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SitemapContents" Title="Sitemap contents">
+  <RestConnector Id="SitemapContents" Title="Sitemap status">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
-      <!--
-      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="LastSubmitted" Select.Model="Site"/>
-      -->
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="Path"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps/@(Utils.UrlEncode(Model.Sitemap))?fields=contents">
       <HttpSettings>
@@ -169,11 +175,12 @@
         <JsonPath Expr="indexed" Id="indexed" Title="Indexed" Converter="Int"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="UrlCrawlErrorCounts" Title="URL crawl error counts">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/urlCrawlErrorsCounts/query?fields=countPerTypes&amp;latestCountsOnly=true">
       <HttpSettings>
@@ -189,11 +196,12 @@
         <JsonPath Expr="entries[0].count" Id="count" Title="Count" Converter="Int"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="UrlCrawlErrorSamples" Title="URL crawl error samples">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
       <Select Id="Category" Title="Category" DefaultValue="notFound">
         <DataSource>
           <Item Id="authPermissions" Title="authPermissions"/>
@@ -229,6 +237,7 @@
         <JsonPath Expr="responseCode" Id="responseCode" Title="Response code" Converter="Int"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>
