@@ -1,98 +1,202 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Suite Title="Sistrix" Id="Sistrix" SourceUrl="#" HelpUrl="#" HelpText="Documentation">
-
-  <Author Name="William Dahlström" Url=""/>
-
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sistrix/">
-    <Text Id="ApiKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/sistrix/"/>
-  </Settings>
-
-  <Resources>
-    <Resource Id="SelectCountry">
-      <Select Id="Country" Title="Country" Required="true" DefaultValue="de">
-        <DataSource>
-          <Item Id="de" Title="Germany"/>
-          <Item Id="at" Title="Austria"/>
-          <Item Id="ch" Title="Switzerland"/>
-          <Item Id="it" Title="Italy"/>
-          <Item Id="es" Title="Spain"/>
-          <Item Id="fr" Title="France"/>
-          <Item Id="pl" Title="Poland"/>
-          <Item Id="nl" Title="Netherlands"/>
-          <Item Id="uk" Title="UK"/>
-          <Item Id="us" Title="USA"/>
-          <Item Id="se" Title="Sweden"/>
-        </DataSource>
-      </Select>
-    </Resource>
-  </Resources>
-  
-  <RestConnector Id="DomainOverview" Title="Domain overview" HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
-    <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="majestic.com" Required="true"/>
-      <Radio Id="Mode" Title="Mode" DefaultValue="domain">
-        <DataSource>
-          <Item Id="domain" Title="Domain"/>
-          <Item Id="host" Title="Host"/>
-          <Item Id="path" Title="Path"/>
-          <Item Id="url" Title="Url"/>
-        </DataSource>
-      </Radio>
-      <Resource Id="SelectCountry"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        http://api.sistrix.net/domain.overview?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)
-      ]]>  
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='User-Agent'>SeoToolsForExcel</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <XPath Expr="/response/answer/pagerank" Attribute="value" Id="pagerank" Title="pagerank" Converter="Int"/>
-      <XPath Expr="/response/answer/sichtbarkeitsindex" Attribute="value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double"/>
-      <XPath Expr="/response/answer/kwcount.seo" Attribute="value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int"/>
-      <XPath Expr="/response/answer/kwcount.sem" Attribute="value" Id="kwcount.sem" Title="kwcount.sem" Converter="Int"/>
-      <XPath Expr="/response/answer/age" Attribute="value" Id="Age" Title="age" Converter="DateTime"/>
-      <XPath Expr="/response/answer/pages" Attribute="value" Id="pages" Title="pages" Converter="Int"/>
-    </Parse>
-    <Fail>
-      <XPath Expr="/response/error" Attribute="error_message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="DomainCompetitorsSem" Title="Domain competitors SEM" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
-    <Parameters>
-      <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true"/>
-      <Resource Id="SelectCountry"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='User-Agent'>SeoToolsForExcel</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      
-      <JsonPath Expr="answer[0].pagerank[0].value" Id="pagerank" Title="pagerank" Converter="Int"/>
-      <JsonPath Expr="answer[0].sichtbarkeitsindex[0].value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double"/>
-      <JsonPath Expr="answer[0].['kwcount.seo'][0].value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int"/>
-
-    </Parse>
-    <Fail>
-    </Fail>
-  </RestConnector>
- 
+   <Author Name="William Dahlström" Url="" />
+   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sistrix/">
+      <Text Id="ApiKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/sistrix/" />
+   </Settings>
+   <Resources>
+      <Resource Id="SelectCountry">
+         <Select Id="Country" Title="Country" Required="true" DefaultValue="de">
+            <DataSource>
+               <Item Id="de" Title="Germany" />
+               <Item Id="at" Title="Austria" />
+               <Item Id="ch" Title="Switzerland" />
+               <Item Id="it" Title="Italy" />
+               <Item Id="es" Title="Spain" />
+               <Item Id="fr" Title="France" />
+               <Item Id="pl" Title="Poland" />
+               <Item Id="nl" Title="Netherlands" />
+               <Item Id="uk" Title="UK" />
+               <Item Id="us" Title="USA" />
+               <Item Id="se" Title="Sweden" />
+            </DataSource>
+         </Select>
+      </Resource>
+      <Resource Id="History">
+         <Select Id="History" Title="History" Required="true" DefaultValue="false">
+            <DataSource>
+               <Item Id="true" Title="True" />
+               <Item Id="false" Title="False" />
+            </DataSource>
+         </Select>
+      </Resource>
+   </Resources>
+   <RestConnector Id="DomainOverview" Title="Domain overview" HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
+      <Parameters>
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="majestic.com" Required="true" />
+         <Radio Id="Mode" Title="Mode" DefaultValue="domain">
+            <DataSource>
+               <Item Id="domain" Title="Domain" />
+               <Item Id="host" Title="Host" />
+               <Item Id="path" Title="Path" />
+               <Item Id="url" Title="Url" />
+            </DataSource>
+         </Radio>
+         <Resource Id="SelectCountry" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.overview?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         <XPath Expr="/response/answer/pagerank" Attribute="value" Id="pagerank" Title="pagerank" Converter="Int" />
+         <XPath Expr="/response/answer/sichtbarkeitsindex" Attribute="value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double" />
+         <XPath Expr="/response/answer/kwcount.seo" Attribute="value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int" />
+         <XPath Expr="/response/answer/kwcount.sem" Attribute="value" Id="kwcount.sem" Title="kwcount.sem" Converter="Int" />
+         <XPath Expr="/response/answer/age" Attribute="value" Id="Age" Title="age" Converter="DateTime" />
+         <XPath Expr="/response/answer/pages" Attribute="value" Id="pages" Title="pages" Converter="Int" />
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
+   <RestConnector Id="DomainCompetitorsSem" Title="Domain competitors SEM" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorssem">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>#TODO</Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
+   <RestConnector Id="DomainCompetitorsSeo" Title="Domain competitors SEO" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.seo?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         #TODO
+         <JsonPath Expr="answer[0].pagerank[0].value" Id="pagerank" Title="pagerank" Converter="Int" />
+         <JsonPath Expr="answer[0].sichtbarkeitsindex[0].value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double" />
+         <JsonPath Expr="answer[0].['kwcount.seo'][0].value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int" />
+      </Parse>
+      <Fail />
+   </RestConnector>
+   <RestConnector Id="PageRank" Title="Domain PageRank" HelpUrl="https://www.sistrix.com/api/domain/#domainpage">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+         <Resource Id="History" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.pagerank?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         <XPath Expr="/response/answer/pagerank" Attribute="value" Id="pagerank" Title="pagerank" Converter="Int" />
+         #TODO deal with historic pageranks
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
+   <RestConnector Id="DomainAge" Title="Domain age" HelpUrl="https://www.sistrix.com/api/domain/#domainage">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.age?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         <XPath Expr="/response/answer/age" Attribute="domain" Id="domain" Title="domain" Converter="String" />
+         <XPath Expr="/response/answer/age" Attribute="value" Id="age" Title="age" Converter="DateTime" />
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
+   <RestConnector Id="DomainSocialOverview" Title="Domain social overview" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialoverview">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.overview?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         #TODO correctly parse this response
+         <XPath Expr="/response/answer/votes" Attribute="twitter" Id="twitter" Title="twitter" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook" Id="facebook" Title="facebook" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="googleplus" Id="googleplus" Title="googleplus" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_like" Id="facebook_like" Title="facebook_like" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_share" Id="facebook_share" Title="facebook_share" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_comment" Id="facebook_comment" Title="facebook_comment" Converter="String" />
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
+   <RestConnector Id="DomainSocialUrl" Title="Domain social URL" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialurl">
+      <Parameters>
+         <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true" />
+         <Resource Id="SelectCountry" />
+         <Resource Id="History" />
+      </Parameters>
+      <Fetch>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.url?api_key=@(Model.ApiKey)&format=json&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         #TODO correctly parse this response
+         <XPath Expr="/response/answer/votes" Attribute="twitter" Id="twitter" Title="twitter" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook" Id="facebook" Title="facebook" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="googleplus" Id="googleplus" Title="googleplus" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_like" Id="facebook_like" Title="facebook_like" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_share" Id="facebook_share" Title="facebook_share" Converter="String" />
+         <XPath Expr="/response/answer/votes" Attribute="facebook_comment" Id="facebook_comment" Title="facebook_comment" Converter="String" />
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>
 </Suite>
-
-
