@@ -1,84 +1,98 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="Sistrix" Id="Sistrix" SourceUrl="#" HelpUrl="#" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url=""/>
+  <Author Name="William Dahlström" Url=""/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sistrix/">
-    <Text Id="ReadApiKey" Title="Read API key" Required="true" HelpUrl="http://seotoolsforexcel.com/sistrix-connector/"/>
+    <Text Id="ApiKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/sistrix/"/>
   </Settings>
+
+  <Resources>
+    <Resource Id="SelectCountry">
+      <Select Id="Country" Title="Country" Required="true" DefaultValue="de">
+        <DataSource>
+          <Item Id="de" Title="Germany"/>
+          <Item Id="at" Title="Austria"/>
+          <Item Id="ch" Title="Switzerland"/>
+          <Item Id="it" Title="Italy"/>
+          <Item Id="es" Title="Spain"/>
+          <Item Id="fr" Title="France"/>
+          <Item Id="pl" Title="Poland"/>
+          <Item Id="nl" Title="Netherlands"/>
+          <Item Id="uk" Title="UK"/>
+          <Item Id="us" Title="USA"/>
+          <Item Id="se" Title="Sweden"/>
+        </DataSource>
+      </Select>
+    </Resource>
+  </Resources>
   
-    <RestConnector Id="DomainOverview" Title="Domain Overview" HelpUrl="" AvailableInSpider="true">
+  <RestConnector Id="DomainOverview" Title="Domain overview" HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
     <Parameters>
-      <Text Id="Url" Title="Url" DefaultValue="" Required="true"/>
+      <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="majestic.com" Required="true"/>
+      <Radio Id="Mode" Title="Mode" DefaultValue="domain">
+        <DataSource>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="host" Title="Host"/>
+          <Item Id="path" Title="Path"/>
+          <Item Id="url" Title="Url"/>
+        </DataSource>
+      </Radio>
+      <Resource Id="SelectCountry"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        @{
-          long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
-          string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
-        }
-        http://sistrix.com/url/domain-overview/@(Utils.UrlEncode(Model.Url))?
-        Cols=@BitFlags()
-        &AccessID=@(Model.AccessId)
-        &Expires=@(expires)
-        &Signature=@(signature)
+        http://api.sistrix.net/domain.overview?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)
       ]]>  
       </Fetch.Url>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
         <RequestHeaders>
           <Header Name='User-Agent'>SeoToolsForExcel</Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <Resource Id="Cols"/>
+      <XPath Expr="/response/answer/pagerank" Attribute="value" Id="pagerank" Title="pagerank" Converter="Int"/>
+      <XPath Expr="/response/answer/sichtbarkeitsindex" Attribute="value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double"/>
+      <XPath Expr="/response/answer/kwcount.seo" Attribute="value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int"/>
+      <XPath Expr="/response/answer/kwcount.sem" Attribute="value" Id="kwcount.sem" Title="kwcount.sem" Converter="Int"/>
+      <XPath Expr="/response/answer/age" Attribute="value" Id="Age" Title="age" Converter="DateTime"/>
+      <XPath Expr="/response/answer/pages" Attribute="value" Id="pages" Title="pages" Converter="Int"/>
     </Parse>
     <Fail>
-      <Regex Expr="twitter\.com\/([^&quot;]+)" Group="1"/>
-    </Fail>
-  </RestConnector>
-  
-  <RestConnector Id="Classifiers" Title="Classifiers" Hidden="true">
-    <Fetch Url="https://uclassify.com/browse"/>
-    <Parse>
-      <XPath Expr="//ul[contains(@@class, 'list-group')]/li/h4">
-        <XPath Expr="a" Attribute="href" Id="Id" Title="Id"/>
-        <XPath Expr="a" Id="Title" Title="Title"/>
-      </XPath>
-    </Parse>
-  </RestConnector>
-
-    <Parse>
-      <Compute Id="Classification">
-        <Compute.Expr>
-          <![CDATA[
-          @{
-            string body = Model.FetchedResult.Body;
-            string result = JObject.Parse(body)["cls1"].Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Name).Take(1).FirstOrDefault();
-          }
-          @result
-        ]]>
-        </Compute.Expr>
-      </Compute>
-      <Compute Id="Probability" Converter="Double" Converter.ResultFormat="0.00%">
-        <Compute.Expr>
-        <![CDATA[
-        @{
-          string body = Model.FetchedResult.Body;
-          string result = JObject.Parse(body)["cls1"].Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Value.ToString()).Take(1).FirstOrDefault();
-        }
-        @result
-        ]]>
-        </Compute.Expr>
-      </Compute>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.errorMessage"/>
+      <XPath Expr="/response/error" Attribute="error_message"/>
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="DomainCompetitorsSem" Title="Domain competitors SEM" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" DefaultValue="majestic.com" Required="true"/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='User-Agent'>SeoToolsForExcel</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      
+      <JsonPath Expr="answer[0].pagerank[0].value" Id="pagerank" Title="pagerank" Converter="Int"/>
+      <JsonPath Expr="answer[0].sichtbarkeitsindex[0].value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double"/>
+      <JsonPath Expr="answer[0].['kwcount.seo'][0].value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int"/>
+
+    </Parse>
+    <Fail>
+    </Fail>
+  </RestConnector>
+ 
 </Suite>
 
 
