@@ -6,16 +6,22 @@
   <RestConnector Id="Search" Title="Search">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true"/>
+      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
     </Parameters>
-    <Fetch Url="http://www.amazon.co.uk/s?field-keywords=@(Utils.UrlEncode(Model.Query))"/>
+    <!--
+    <Paging PageSize="1" MaxTake="100"/>
+    &amp;page=@(Model.PageCursor.NextSkip+1)
+    -->
+    <Fetch Url="http://www.@(Model.Domain)/s?field-keywords=@(Utils.UrlEncode(Model.Query))"/>
     <Parse>
-      <XPath Expr="//ul[contains(@@class,'s-result-list')]/li">
+      <XPath Expr="//ul[contains(@@class,'s-result-list')]/li[descendant::span[contains(@@class,'s-price')]]">
         <XPath Id="asin" Title="ASIN" Expr="." Attribute="data-asin"/>
         <XPath Id="title" Title="Title" Expr=".//h2"/>
+        <XPath Id="price" Title="Price" Expr=".//span[contains(@@class,'s-price')]"/>
       </XPath>
     </Parse>
   </RestConnector>
-
+  
   <!--
   <AggregateConnector Id="Rank" Title="Rank">
     <Parameters>
