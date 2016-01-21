@@ -33,8 +33,7 @@
    </Resources>
    <RestConnector Id="DomainOverview" Title="Domain overview" HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
       <Parameters>
-         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="domain.com" Required="true" />
-         <Radio Id="Mode" Title="Mode" DefaultValue="domain">
+        <Radio Id="Mode" Title="Mode" DefaultValue="">
             <DataSource>
                <Item Id="domain" Title="Domain" />
                <Item Id="host" Title="Host" />
@@ -42,6 +41,7 @@
                <Item Id="url" Title="Url" />
             </DataSource>
          </Radio>
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -57,7 +57,7 @@
          <XPath Expr="/response/answer/sichtbarkeitsindex" Attribute="value" Id="sichtbarkeitsindex" Title="sichtbarkeitsindex" Converter="Double" />
          <XPath Expr="/response/answer/kwcount.seo" Attribute="value" Id="kwcount.seo" Title="kwcount.seo" Converter="Int" />
          <XPath Expr="/response/answer/kwcount.sem" Attribute="value" Id="kwcount.sem" Title="kwcount.sem" Converter="Int" />
-         <XPath Expr="/response/answer/age" Attribute="value" Id="Age" Title="age" Converter="DateTime" />
+         <XPath Expr="/response/answer/age" Attribute="value" Id="age" Title="age" Converter="DateTime" />
          <XPath Expr="/response/answer/pages" Attribute="value" Id="pages" Title="pages" Converter="Int" />
       </Parse>
       <Fail>
@@ -66,41 +66,67 @@
    </RestConnector>
    <RestConnector Id="DomainCompetitorsSem" Title="Domain competitors SEM" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorssem">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
+         <Radio Id="Mode" Title="Mode" DefaultValue="">
+            <DataSource>
+               <Item Id="domain" Title="Domain" />
+               <Item Id="host" Title="Host" />
+               <Item Id="path" Title="Path" />
+               <Item Id="url" Title="Url" />
+            </DataSource>
+         </Radio>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
             </RequestHeaders>
          </HttpSettings>
       </Fetch>
-      <Parse>#TODO: how to handle variable response?</Parse>
+      <Parse>
+        <XPath Expr="/response/answer/result">
+        <XPath Expr="." Attribute="domain" Title="domain" Id="domain" Converter="String"/>
+        <XPath Expr="." Attribute="match" Title="match" Id="match" Converter="Int"/>
+      </XPath>
+      </Parse>
       <Fail>
          <XPath Expr="/response/error" Attribute="error_message" />
       </Fail>
    </RestConnector>
    <RestConnector Id="DomainCompetitorsSeo" Title="Domain competitors SEO" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
+         <Radio Id="Mode" Title="Mode" DefaultValue="">
+            <DataSource>
+               <Item Id="domain" Title="Domain" />
+               <Item Id="host" Title="Host" />
+               <Item Id="path" Title="Path" />
+               <Item Id="url" Title="Url" />
+            </DataSource>
+         </Radio>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.seo?api_key=@(Model.ApiKey)&format=json&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.seo?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
             </RequestHeaders>
          </HttpSettings>
       </Fetch>
-      <Parse>#TODO: how to handle variable response?</Parse>
+      <Parse>
+      <XPath Expr="/response/answer/result">
+        <XPath Expr="." Attribute="domain" Title="domain" Id="domain" Converter="String"/>
+        <XPath Expr="." Attribute="match" Title="match" Id="match" Converter="Int"/>
+      </XPath>
+      </Parse>
       <Fail />
    </RestConnector>
    <RestConnector Id="PageRank" Title="Domain PageRank" HelpUrl="https://www.sistrix.com/api/domain/#domainpage">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Resource Id="SelectCountry" />
          <Resource Id="History" />
       </Parameters>
@@ -121,7 +147,7 @@
    </RestConnector>
    <RestConnector Id="DomainAge" Title="Domain age" HelpUrl="https://www.sistrix.com/api/domain/#domainage">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -142,11 +168,19 @@
    </RestConnector>
    <RestConnector Id="DomainSocialOverview" Title="Domain social overview" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialoverview">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
+         <Radio Id="Mode" Title="Mode" DefaultValue="">
+            <DataSource>
+               <Item Id="domain" Title="Domain" />
+               <Item Id="host" Title="Host" />
+               <Item Id="path" Title="Path" />
+               <Item Id="url" Title="Url" />
+            </DataSource>
+         </Radio>         
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.overview?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.overview?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
@@ -165,12 +199,20 @@
    </RestConnector>
    <RestConnector Id="DomainSocialUrl" Title="Domain social URL" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialurl">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
+         <Radio Id="Mode" Title="Mode" DefaultValue="">
+            <DataSource>
+               <Item Id="domain" Title="Domain" />
+               <Item Id="host" Title="Host" />
+               <Item Id="path" Title="Path" />
+               <Item Id="url" Title="Url" />
+            </DataSource>
+         </Radio>   
          <Resource Id="SelectCountry" />
          <Resource Id="History" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.url?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History)]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.url?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History)]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
@@ -192,7 +234,7 @@
    </RestConnector>
    <RestConnector Id="KeywordSeo" Title="Keyword SEO" HelpUrl="https://www.sistrix.com/api/keyword/#keyword">
       <Parameters>
-         <Text Id="Keyword" Title="Keyword" DefaultValue="Keyword" Required="true" />
+         <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
          <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
          <Resource Id="SelectCountry" />
       </Parameters>
@@ -216,7 +258,7 @@
    </RestConnector>
    <RestConnector Id="KeywordSem" Title="Keyword SEM" HelpUrl="https://www.sistrix.com/api/keyword/#keywordsem">
       <Parameters>
-         <Text Id="Keyword" Title="Keyword" DefaultValue="Keyword" Required="true" />
+         <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
          <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
          <Resource Id="SelectCountry" />
       </Parameters>
@@ -242,7 +284,7 @@
    </RestConnector>
    <RestConnector Id="KeywordUs" Title="Keyword US" HelpUrl="https://www.sistrix.com/api/keyword/#keywordsem">
       <Parameters>
-         <Text Id="Keyword" Title="Keyword" DefaultValue="Keyword" Required="true" />
+         <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -267,7 +309,7 @@
    </RestConnector>
    <RestConnector Id="LinksOverview" Title="Links overview" HelpUrl="https://www.sistrix.com/api/keyword/#linksoverview">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -289,9 +331,9 @@
          <XPath Expr="/response/error" Attribute="error_message" />
       </Fail>
    </RestConnector>
-   <RestConnector Id="Links list" Title="Links list" HelpUrl="https://www.sistrix.com/api/keyword/#linkslist">
+   <RestConnector Id="LinksList" Title="Links list" HelpUrl="https://www.sistrix.com/api/keyword/#linkslist">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Text Id="Offset" Title="Offset" DefaultValue="0" Required="false" />
          <Resource Id="SelectCountry" />
       </Parameters>
@@ -316,7 +358,7 @@
    </RestConnector>
    <RestConnector Id="LinksLinkTargets" Title="Links link targets" HelpUrl="https://www.sistrix.com/api/keyword/#linkstargets">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
          <Resource Id="SelectCountry" />
       </Parameters>
@@ -330,12 +372,12 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/target">
-            <Xpath Expr="." Attribute="url" Id="url" title="URL" />
-            <Xpath Expr="." Attribute="links" Id="links" title="Links" />
-            <Xpath Expr="." Attribute="domains" Id="domains" title="Domains" />
-            <Xpath Expr="." Attribute="nets" Id="nets" title="Nets" />
-            <Xpath Expr="." Attribute="ips" Id="ips" title="IPs" />
-            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" title="Total links" />
+            <Xpath Expr="." Attribute="url" Id="url" Title="URL" />
+            <Xpath Expr="." Attribute="links" Id="links" Title="Links" />
+            <Xpath Expr="." Attribute="domains" Id="domains" Title="Domains" />
+            <Xpath Expr="." Attribute="nets" Id="nets" Title="Nets" />
+            <Xpath Expr="." Attribute="ips" Id="ips" Title="IPs" />
+            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="Total links" />
          </XPath>
       </Parse>
       <Fail>
@@ -344,7 +386,7 @@
    </RestConnector>
    <RestConnector Id="LinksLinkTexts" Title="Links link texts" HelpUrl="https://www.sistrix.com/api/keyword/#linkstexts">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="domain.com" Required="true" />
+         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
          <Resource Id="SelectCountry" />
       </Parameters>
@@ -358,12 +400,12 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/linktext">
-            <Xpath Expr="." Attribute="text" Id="text" title="text" />
-            <Xpath Expr="." Attribute="links" Id="links" title="links" />
-            <Xpath Expr="." Attribute="domains" Id="domains" title="domains" />
-            <Xpath Expr="." Attribute="nets" Id="nets" title="nets" />
-            <Xpath Expr="." Attribute="ips" Id="ips" title="IPs" />
-            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" title="Total links" />
+            <Xpath Expr="." Attribute="text" Id="text" Title="text" />
+            <Xpath Expr="." Attribute="links" Id="links" Title="links" />
+            <Xpath Expr="." Attribute="domains" Id="domains" Title="domains" />
+            <Xpath Expr="." Attribute="nets" Id="nets" Title="nets" />
+            <Xpath Expr="." Attribute="ips" Id="ips" Title="IPs" />
+            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="Total links" />
          </XPath>
       </Parse>
       <Fail>
