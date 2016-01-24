@@ -22,25 +22,22 @@
             </DataSource>
          </Select>
       </Resource>
-      <Resource Id="Smartphone">
-        <Checkbox Id="Smartphone" Title="Smartphone data" DefaultValue="False"/>
-      </Resource>
-      <Resource Id="History">
-        <Checkbox Id="History" Title="History" DefaultValue="False"/>
+      <Resource Id="SelectMode">
+        <Radio Id="Mode" Title="Mode" DefaultValue="domain">
+          <DataSource>
+            <Item Id="domain" Title="Domain" />
+            <Item Id="host" Title="Host" />
+            <Item Id="path" Title="Path" />
+            <Item Id="url" Title="Url" />
+          </DataSource>
+        </Radio> 
       </Resource>
    </Resources>
    <RestConnector Id="DomainOverview" Title="Domain overview" HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
       <Parameters>
-        <Radio Id="Mode" Title="Mode" DefaultValue="">
-            <DataSource>
-               <Item Id="domain" Title="Domain" />
-               <Item Id="host" Title="Host" />
-               <Item Id="path" Title="Path" />
-               <Item Id="url" Title="Url" />
-            </DataSource>
-         </Radio>
          <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
-         <Resource Id="Smartphone" />
+         <Resource Id="SelectMode" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -65,20 +62,13 @@
    </RestConnector>
    <RestConnector Id="DomainCompetitorsSem" Title="Domain competitors SEM" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorssem">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Radio Id="Mode" Title="Mode" DefaultValue="">
-            <DataSource>
-               <Item Id="domain" Title="Domain" />
-               <Item Id="host" Title="Host" />
-               <Item Id="path" Title="Path" />
-               <Item Id="url" Title="Url" />
-            </DataSource>
-         </Radio>
-         <Resource Id="Smartphone" />
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
+         <Resource Id="SelectMode" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&mobile=@(Model.Smartphone ? "true" : "false")]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.competitors.sem?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&mobile=@(Model.Smartphone ? "true" : "false")]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
@@ -97,16 +87,9 @@
    </RestConnector>
    <RestConnector Id="DomainCompetitorsSeo" Title="Domain competitors SEO" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Radio Id="Mode" Title="Mode" DefaultValue="">
-            <DataSource>
-               <Item Id="domain" Title="Domain" />
-               <Item Id="host" Title="Host" />
-               <Item Id="path" Title="Path" />
-               <Item Id="url" Title="Url" />
-            </DataSource>
-         </Radio>
-         <Resource Id="Smartphone" />
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
+         <Resource Id="SelectMode" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -125,14 +108,13 @@
       </Parse>
       <Fail />
    </RestConnector>
-   <RestConnector Id="PageRank" Title="Domain PageRank" HelpUrl="https://www.sistrix.com/api/domain/#domainpage">
+   <RestConnector Id="DomainPageRank" Title="Domain PageRank" HelpUrl="https://www.sistrix.com/api/domain/#domainpage">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Resource Id="SelectCountry" />
-         <Resource Id="History" />
+         <Checkbox Id="History" Title="History" DefaultValue="False" HelpText="If checked, you will receive all past results along with the current results."/>
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.pagerank?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History ? "true" : "false")]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.pagerank?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&history=@(Model.History ? "true" : "false")]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
@@ -141,9 +123,8 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/pagerank" >
-            <XPath Expr="." Attribute="domain" Title="domain" Id="domain" />
-            <XPath Expr="." Attribute="date" Title="date" Id="date" />
-            <XPath Expr="." Attribute="value" Title="PR" Id="PR" />
+            <XPath Expr="." Attribute="value" Title="pr" Id="pr" Converter="Int"/>
+            <XPath Expr="." Attribute="date" Title="date" Id="date" Converter="DateTime"/>
          </XPath>
       </Parse>
       <Fail>
@@ -153,11 +134,9 @@
    <RestConnector Id="DomainAge" Title="Domain age" HelpUrl="https://www.sistrix.com/api/domain/#domainage">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Resource Id="Smartphone" />
-         <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
-         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.age?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&mobile=@(Model.Smartphone ? "true" : "false")]]></Fetch.Url>
+         <Fetch.Url><![CDATA[http://api.sistrix.net/domain.age?api_key=@(Model.ApiKey)&domain=@(Utils.UrlEncode(Model.Domain))]]></Fetch.Url>
          <HttpSettings>
             <RequestHeaders>
                <Header Name="User-Agent">SeoToolsForExcel</Header>
@@ -165,7 +144,6 @@
          </HttpSettings>
       </Fetch>
       <Parse>
-         <XPath Expr="/response/answer/age" Attribute="domain" Id="domain" Title="domain" Converter="String" />
          <XPath Expr="/response/answer/age" Attribute="value" Id="age" Title="age" Converter="DateTime" />
       </Parse>
       <Fail>
@@ -174,15 +152,8 @@
    </RestConnector>
    <RestConnector Id="DomainSocialOverview" Title="Domain social overview" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialoverview">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Radio Id="Mode" Title="Mode" DefaultValue="">
-            <DataSource>
-               <Item Id="domain" Title="Domain" />
-               <Item Id="host" Title="Host" />
-               <Item Id="path" Title="Path" />
-               <Item Id="url" Title="Url" />
-            </DataSource>
-         </Radio>         
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
+         <Resource Id="SelectMode" />        
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -195,8 +166,8 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/votes">
-            <Xpath Expr="." Attribute="network" Id="network" title="network" />
-            <Xpath Expr="." Attribute="value" Id="value" title="value" />
+            <Xpath Expr="." Attribute="network" Id="network" Title="network" />
+            <Xpath Expr="." Attribute="value" Id="value" Title="value" Converter="Int" />
          </XPath>
       </Parse>
       <Fail>
@@ -205,17 +176,10 @@
    </RestConnector>
    <RestConnector Id="DomainSocialUrl" Title="Domain social URL" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialurl">
       <Parameters>
-         <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Radio Id="Mode" Title="Mode" DefaultValue="">
-            <DataSource>
-               <Item Id="domain" Title="Domain" />
-               <Item Id="host" Title="Host" />
-               <Item Id="path" Title="Path" />
-               <Item Id="url" Title="Url" />
-            </DataSource>
-         </Radio>   
+         <Text Id="Domain" Title="Domain/Host/Path/Url" DefaultValue="" Required="true" />
+         <Resource Id="SelectMode" /> 
          <Resource Id="SelectCountry" />
-         <Resource Id="History" />
+         <Checkbox Id="History" Title="History" DefaultValue="False" HelpText="If checked, you will receive all past results along with the current results."/>
       </Parameters>
       <Fetch>
          <Fetch.Url><![CDATA[http://api.sistrix.net/domain.social.url?api_key=@(Model.ApiKey)&@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))&country=@(Model.Country)&history=@(Model.History)]]></Fetch.Url>
@@ -227,11 +191,11 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/current">
-            <Xpath Expr="." Attribute="url" Id="url" title="url" />
-            <Xpath Expr="." Attribute="total" Id="total" title="total" />
-            <Xpath Expr="." Attribute="facebook" Id="facebook" title="facebook" />
-            <Xpath Expr="." Attribute="twitter" Id="twitter" title="twitter" />
-            <Xpath Expr="." Attribute="googleplus" Id="googleplus" title="googleplus" />
+            <Xpath Expr="." Attribute="url" Id="url" Title="url" />
+            <Xpath Expr="." Attribute="total" Id="total" Title="total" Converter="Int" />
+            <Xpath Expr="." Attribute="facebook" Id="facebook" Title="facebook" Converter="Int" />
+            <Xpath Expr="." Attribute="twitter" Id="twitter" Title="twitter" Converter="Int" />
+            <Xpath Expr="." Attribute="googleplus" Id="googleplus" Title="googleplus" Converter="Int" />
          </XPath>
       </Parse>
       <Fail>
@@ -241,8 +205,8 @@
    <RestConnector Id="KeywordSeo" Title="Keyword SEO" HelpUrl="https://www.sistrix.com/api/keyword/#keyword">
       <Parameters>
          <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
-         <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
-         <Resource Id="Smartphone" />
+         <Text Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -255,8 +219,8 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/result">
-            <Xpath Expr="." Attribute="position" Id="position" title="position" />
-            <Xpath Expr="." Attribute="domain" Id="domain" title="domain" />
+            <Xpath Expr="." Attribute="position" Id="position" Title="position" Converter="Int" />
+            <Xpath Expr="." Attribute="domain" Id="domain" Title="domain" />
          </XPath>
       </Parse>
       <Fail>
@@ -266,8 +230,8 @@
    <RestConnector Id="KeywordSem" Title="Keyword SEM" HelpUrl="https://www.sistrix.com/api/keyword/#keywordsem">
       <Parameters>
          <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
-         <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
-         <Resource Id="Smartphone" />
+         <Text Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -280,20 +244,20 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/result">
-            <Xpath Expr="." Attribute="position" Id="position" title="position" />
-            <Xpath Expr="." Attribute="title" Id="title" title="title" />
-            <Xpath Expr="." Attribute="text" Id="text" title="text" />
-            <Xpath Expr="." Attribute="displayurl" Id="displayurl" title="displayurl" />
+            <Xpath Expr="." Attribute="position" Id="position" Title="position" Converter="Int" />
+            <Xpath Expr="." Attribute="title" Id="title" Title="title" />
+            <Xpath Expr="." Attribute="text" Id="text" Title="text" />
+            <Xpath Expr="." Attribute="displayurl" Id="displayurl" Title="displayurl" />
          </XPath>
       </Parse>
       <Fail>
          <XPath Expr="/response/error" Attribute="error_message" />
       </Fail>
    </RestConnector>
-   <RestConnector Id="KeywordUs" Title="Keyword US" HelpUrl="https://www.sistrix.com/api/keyword/#keywordsem">
+   <RestConnector Id="KeywordUs" Title="Keyword universal search" HelpUrl="https://www.sistrix.com/api/keyword/#keywordus">
       <Parameters>
          <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
-         <Resource Id="Smartphone" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -306,10 +270,10 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/result">
-            <Xpath Expr="." Attribute="type" Id="type" title="type" />
-            <Xpath Expr="." Attribute="position" Id="position" title="position" />
-            <Xpath Expr="." Attribute="position.intern" Id="position.intern" title="position.intern" />
-            <Xpath Expr="." Attribute="url" Id="url" title="url" />
+            <Xpath Expr="." Attribute="type" Id="type" Title="type" Converter="Int"/>
+            <Xpath Expr="." Attribute="position" Id="position" Title="position" Converter="Int" />
+            <Xpath Expr="." Attribute="position.intern" Id="position.intern" Title="position.intern" Converter="Int" />
+            <Xpath Expr="." Attribute="url" Id="url" Title="url" />
          </XPath>
       </Parse>
       <Fail>
@@ -319,7 +283,7 @@
    <RestConnector Id="LinksOverview" Title="Links overview" HelpUrl="https://www.sistrix.com/api/keyword/#linksoverview">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Resource Id="Smartphone" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -345,7 +309,7 @@
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
          <Text Id="Offset" Title="Offset" DefaultValue="0" Required="false" />
-         <Resource Id="Smartphone" />
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -358,9 +322,9 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/link">
-            <Xpath Expr="." Attribute="url.from" Id="url.from" title="URL from" />
-            <Xpath Expr="." Attribute="text" Id="text" title="text" />
-            <Xpath Expr="." Attribute="url.to" Id="url.to" title="URL to" />
+            <Xpath Expr="." Attribute="url.from" Id="url.from" Title="url.from" />
+            <Xpath Expr="." Attribute="text" Id="text" Title="text" />
+            <Xpath Expr="." Attribute="url.to" Id="url.to" Title="url.to" />
          </XPath>
       </Parse>
       <Fail>
@@ -370,8 +334,8 @@
    <RestConnector Id="LinksLinkTargets" Title="Links link targets" HelpUrl="https://www.sistrix.com/api/keyword/#linkstargets">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
-         <Resource Id="Smartphone" />
+         <Text Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -384,12 +348,12 @@
       </Fetch>
       <Parse>
          <XPath Expr="/response/answer/target">
-            <Xpath Expr="." Attribute="url" Id="url" Title="URL" />
-            <Xpath Expr="." Attribute="links" Id="links" Title="Links" />
-            <Xpath Expr="." Attribute="domains" Id="domains" Title="Domains" />
-            <Xpath Expr="." Attribute="nets" Id="nets" Title="Nets" />
-            <Xpath Expr="." Attribute="ips" Id="ips" Title="IPs" />
-            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="Total links" />
+            <Xpath Expr="." Attribute="url" Id="url" Title="url" />
+            <Xpath Expr="." Attribute="links" Id="links" Title="links" Converter="Int" />
+            <Xpath Expr="." Attribute="domains" Id="domains" Title="domains" Converter="Int" />
+            <Xpath Expr="." Attribute="nets" Id="nets" Title="nets" Converter="Int" />
+            <Xpath Expr="." Attribute="ips" Id="ips" Title="ips" Converter="Int" />
+            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="totalLinks" Converter="Int" />
          </XPath>
       </Parse>
       <Fail>
@@ -399,8 +363,8 @@
    <RestConnector Id="LinksLinkTexts" Title="Links link texts" HelpUrl="https://www.sistrix.com/api/keyword/#linkstexts">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" />
-         <Text Id="Num" Title="Num" DefaultValue="5" Required="false" />
-         <Resource Id="Smartphone" />
+         <Text Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+         <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
          <Resource Id="SelectCountry" />
       </Parameters>
       <Fetch>
@@ -414,11 +378,11 @@
       <Parse>
          <XPath Expr="/response/answer/linktext">
             <Xpath Expr="." Attribute="text" Id="text" Title="text" />
-            <Xpath Expr="." Attribute="links" Id="links" Title="links" />
-            <Xpath Expr="." Attribute="domains" Id="domains" Title="domains" />
-            <Xpath Expr="." Attribute="nets" Id="nets" Title="nets" />
-            <Xpath Expr="." Attribute="ips" Id="ips" Title="IPs" />
-            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="Total links" />
+            <Xpath Expr="." Attribute="links" Id="links" Title="links" Converter="Int" />
+            <Xpath Expr="." Attribute="domains" Id="domains" Title="domains" Converter="Int" />
+            <Xpath Expr="." Attribute="nets" Id="nets" Title="nets" Converter="Int" />
+            <Xpath Expr="." Attribute="ips" Id="ips" Title="ips" Converter="Int" />
+            <Xpath Expr="." Attribute="totalLinks" Id="totalLinks" Title="totalLinks" Converter="Int" />
          </XPath>
       </Parse>
       <Fail>
