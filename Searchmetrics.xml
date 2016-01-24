@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Suite Title="Sistrix" Id="Sistrix" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
    <Author Name="William Dahlström" Url="http://heyimwill.com/" />
-   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/searchmetrics/">
-      <Text Id="ApiKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" />
-      <Text Id="ApiSecret" Title="API Secret" Required="true" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" />
-   </Settings>
-   
+    <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/searchmetrics/">
+        <Text Id="APIkey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/"/>
+        <Text Id="APISecret" Title="API secret" Required="true"/>
+    </Settings>
+ 
     <RestConnector Id="" Title="" HelpUrl="">
         <Parameters>
         </Parameters>
@@ -24,5 +24,51 @@
             <XPath Expr="/response/error" Attribute="error_message" />
         </Fail>
     </RestConnector>
+    
+    <RazorFunctions>
+    <![CDATA[
+
+    string OAuth(string resourceUrl, Dictionary<string,string> query) {
+                
+        var oauth_version = "1.0";
+        var oauth_signature_method = "HMAC-SHA1";
+
+        var oauth_nonce = Convert.ToBase64String(new ASCIIEncoding().GetBytes(DateTime.Now.Ticks.ToString()));
+        var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        var oauth_timestamp = Convert.ToInt64(timeSpan.TotalSeconds).ToString();
+
+        query["oauth_consumer_key"] = Model.APIkey;
+        query["oauth_nonce"] = oauth_nonce;
+        query["oauth_signature_method"] = oauth_signature_method;
+        query["oauth_timestamp"] = oauth_timestamp;
+        query["oauth_secret"] = Model.APISecret;
+        query["oauth_version"] = oauth_version;
+
+        string baseString = "GET&" + Uri.EscapeDataString(resourceUrl) + "&" + Uri.EscapeDataString(RenderQuery(query));
+
+        var compositeKey = Uri.EscapeDataString(Model.OAuthConsumerSecret) + "&" + Uri.EscapeDataString(Model.OAuthTokenSecret);
+
+        string oauth_signature = Utils.HmacSha1(baseString, compositeKey);
+
+        var headerFormat = @"OAuth oauth_nonce=""{0}"", oauth_signature_method=""{1}"", oauth_timestamp=""{2}"", oauth_consumer_key=""{3}"", oauth_token=""{4}"", oauth_signature=""{5}"", oauth_version=""{6}""";
+
+        return string.Format(headerFormat,
+            Uri.EscapeDataString(oauth_nonce),
+            Uri.EscapeDataString(oauth_signature_method),
+            Uri.EscapeDataString(oauth_timestamp),
+            Uri.EscapeDataString(Model.OAuthConsumerKey),
+            Uri.EscapeDataString(Model.OAuthToken),
+            Uri.EscapeDataString(oauth_signature),
+            Uri.EscapeDataString(oauth_version)     
+        );
+            
+    }
+
+    string RenderQuery(Dictionary<string,string> query) {
+        return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
+    }
+
+    ]]>
+</RazorFunctions>
 
 </Suite>
