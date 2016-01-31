@@ -1,74 +1,165 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Title="Sistrix" Id="Sistrix" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
-   <Author Name="William Dahlström" Url="http://heyimwill.com/" />
-    <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/searchmetrics/">
-        <Text Id="APIkey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/"/>
-        <Text Id="APISecret" Title="API secret" Required="true"/>
-    </Settings>
- 
-    <RestConnector Id="" Title="" HelpUrl="">
-        <Parameters>
-        </Parameters>
-        <Fetch>
-            <Fetch.Url></Fetch.Url>
-            <HttpSettings>
-            <RequestHeaders>
-                <Header Name="User-Agent">SeoToolsForExcel</Header>
-            </RequestHeaders>
-            </HttpSettings>
-        </Fetch>
-        <Parse>
+<Suite Title="Searchmetrics" Id="Searchmetrics" RequireVersion="5.1.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
+  
+  <Author Name="William Dahlström" Url="http://heyimwill.com/" />
 
-        </Parse>
-        <Fail>
-            <XPath Expr="/response/error" Attribute="error_message" />
-        </Fail>
-    </RestConnector>
-    
-    <RazorFunctions>
-    <![CDATA[
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/searchmetrics/">
+    <Text Id="OAuthConsumerKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/searchmetrics/"/>
+    <Text Id="OAuthConsumerSecret" Title="API secret" Required="true"/>
+  </Settings>
 
-    string OAuth(string resourceUrl, Dictionary<string,string> query) {
-                
-        var oauth_version = "1.0";
-        var oauth_signature_method = "HMAC-SHA1";
+  <!--
+  
+  Todo:
+  
+  Organic:
+  - GetCountDomainKeyword
+  - GetCountDomainKeyword
+  - GetListCompetitors
+  - GetListRankingsDomain
+  - GetListRankingsKeyword
+  - GetValueSeoRank
+  - GetValueSeoVisibility DONE
+  - GetValueTrafficValue
+  
+  Keywords:
+  - GetListKeywordinfo
+  - GetListSimilarKeywords
+  
+  Paid:
+  - GetCountDomainKeyword
+  - GetListCompetitors
+  - GetListKeywords
+  - GetValuePaidKpis
+  - GetValuePaidRank
+  - GetValuePaidVisibility
+  
+  Links:
+  - GetCountBacklinks DONE
+  - GetCountReferringDomains
+  - GetCountReferringIps
+  - GetListBacklinks
+  - GetListLinkedPages
+  - GetListLinktext
+  
+  Universal:
+  - GetListVisibility
+  - GetListRankingsDomain
+  
+  Social:
+  - GetListFacebook
+  - GetListTopUrls
+  - GetValueSocialRank
+  - GetValueSocialSpread
+  - GetValueVisibility
+  
+  (Project/Organic:)
+  - GetListRankings (project_id:from AdminStatusGetListProjects, se_id: from AdminStatusGetListProjectSearchEngines)
+  
+  -->
+  
+  <Resources>
+    <Resource Id="SelectCountry">
+      <Select Id="Country" Title="Country" Required="true" DefaultValue="DE">
+        <DataSource>
+          <Item Id="AR" Title="Argentina" />
+          <Item Id="AU" Title="Australia" />
+          <Item Id="AT" Title="Austria" />
+          <Item Id="BR" Title="Brazil" />
+          <Item Id="CA" Title="Canada" />
+          <Item Id="DK" Title="Denmark" />
+          <Item Id="FI" Title="Finland" />
+          <Item Id="FR" Title="France" />
+          <Item Id="DE" Title="Germany" />
+          <Item Id="HK" Title="Hong Kong" />
+          <Item Id="IN" Title="India" />
+          <Item Id="IT" Title="Italy" />
+          <Item Id="JP" Title="Japan" />
+          <Item Id="MX" Title="Mexico" />
+          <Item Id="NL" Title="Netherlands" />
+          <Item Id="NO" Title="Norway" />
+          <Item Id="PL" Title="Poland" />
+          <Item Id="RU" Title="Russian Federation" />
+          <Item Id="SG" Title="Singapore" />
+          <Item Id="ZA" Title="South Africa	" />
+          <Item Id="ES" Title="Spain" />
+          <Item Id="SE" Title="Sweden" />
+          <Item Id="CH" Title="Switzerland" />
+          <Item Id="TR" Title="Turkey" />
+          <Item Id="US" Title="USA" />
+          <Item Id="GB" Title="United Kingdom" />
+        </DataSource>
+      </Select>
+    </Resource>
+  </Resources>
+  
+  <RestConnector Id="OrganicSeoVisibility" Title="Organic SEO visibility" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetValueSeoVisibility" HelpText="The SEO Visibility is composed of search volume and the position of ranking keywords. Each position is individually measured by a calculated factor by Searchmetrics. Also, the SEO Visibility factors in whether the ranking keywords are navigational or informational.">
+    <Parameters>
+      <Text Id="Url" Title="Url" Debug.DefaultValue="http://searchmetrics.de" Required="true" HelpText="URL for which the SEO Visibility is determined. The Visibility can be queried for a domain, a subdomain or a directory. For a domain, subdomain or directory all belonging sub-pages are included in the calculation."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch Url="http://api.searchmetrics.com/v1/ResearchOrganicGetValueSeoVisibility.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Model.Url)">
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="visibility" Id="visibility" Title="Visibility" Converter="Int"/>
+      <JsonPath Expr="trend.trend" Id="trend" Title="Trend" Converter="Int" Checked="false"/>
+      <JsonPath Expr="trend.abs" Id="abs" Title="Absolute change" Converter="Int" Checked="false" HelpText="The absolute change in the visibility in comparison to the previous week."/>
+      <JsonPath Expr="trend.per" Id="per" Title="Relative change" Converter="Double" Checked="false" HelpText="The relative/percentual change in the visibility in comparison to the previous week."/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
 
-        var oauth_nonce = Convert.ToBase64String(new ASCIIEncoding().GetBytes(DateTime.Now.Ticks.ToString()));
-        var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        var oauth_timestamp = Convert.ToInt64(timeSpan.TotalSeconds).ToString();
-
-        query["oauth_consumer_key"] = Model.APIkey;
-        query["oauth_nonce"] = oauth_nonce;
-        query["oauth_signature_method"] = oauth_signature_method;
-        query["oauth_timestamp"] = oauth_timestamp;
-        query["oauth_secret"] = Model.APISecret;
-        query["oauth_version"] = oauth_version;
-
-        string baseString = "GET&" + Uri.EscapeDataString(resourceUrl) + "&" + Uri.EscapeDataString(RenderQuery(query));
-
-        var compositeKey = Uri.EscapeDataString(Model.OAuthConsumerSecret) + "&" + Uri.EscapeDataString(Model.OAuthTokenSecret);
-
-        string oauth_signature = Utils.HmacSha1(baseString, compositeKey);
-
-        var headerFormat = @"OAuth oauth_nonce=""{0}"", oauth_signature_method=""{1}"", oauth_timestamp=""{2}"", oauth_consumer_key=""{3}"", oauth_token=""{4}"", oauth_signature=""{5}"", oauth_version=""{6}""";
-
-        return string.Format(headerFormat,
-            Uri.EscapeDataString(oauth_nonce),
-            Uri.EscapeDataString(oauth_signature_method),
-            Uri.EscapeDataString(oauth_timestamp),
-            Uri.EscapeDataString(Model.OAuthConsumerKey),
-            Uri.EscapeDataString(Model.OAuthToken),
-            Uri.EscapeDataString(oauth_signature),
-            Uri.EscapeDataString(oauth_version)     
-        );
-            
-    }
-
-    string RenderQuery(Dictionary<string,string> query) {
-        return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
-    }
-
-    ]]>
-</RazorFunctions>
+  <RestConnector Id="Backlinks" Title="Backlinks" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchLinksGetListBacklinks" HelpText="">
+    <Parameters>
+      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchLinksGetListBacklinks.json?
+        url=@Utils.UrlEncode(Model.Url)
+        &limit=@(Model.PageCursor.PageSize)
+        &offset=@(Model.PageCursor.NextSkip)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="backlinkpage" Id="backlinkpage" Title="Backlink page" Converter="String" HelpText="URL on which the backlink was found."/>
+        <JsonPath Expr="title" Id="title" Title="Title" Converter="String" HelpText="	Page title of the page on which the backlink was found."/>
+        <JsonPath Expr="linktext" Id="linktext" Title="Link text" Converter="String" HelpText="	Anchor text."/>
+        <JsonPath Expr="extL" Id="extL" Title="External links" Converter="Int" HelpText="Number of links on the backlink page that go to external pages."/>
+        <JsonPath Expr="intL" Id="intL" Title="Internal links" Converter="Int" HelpText="	Number of links on the backlink page that go to internal pages."/>
+        <JsonPath Expr="sumL" Id="sumL" Title="Total links" Converter="Int" HelpText="Number of links on the backlink page."/>
+        <JsonPath Expr="sr" Id="sr" Title="Searchmetrics page strength" Converter="Int" HelpText="Searchmetrics calculates for each page the page strength from the weighted backlinks that point to this page. A page with many links is given a high Searchmetrics Page Strength (SPS); a page with no or only a few links a low SPS."/>
+        <JsonPath Expr="pos" Id="pos" Title="Link position" Converter="Int" HelpText="All links on the backlink page are numbered in order of appearance. This number therefore reflects the position of the link on the backlink page. &quot;1&quot; is the first position. The higher the number is the lower is the position of the link."/>
+        <JsonPath Expr="linktarget" Id="linktarget" Title="Link target" Converter="String" HelpText="Target URL of the link."/>
+        <JsonPath Expr="tag" Id="tag" Title="Tag" Converter="String" HelpText="	Link type (text/image/javascript/iframe etc.)"/>
+        <JsonPath Expr="nofollow" Id="nofollow" Title="Nofollow" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ip" Id="ip" Title="Ip" Converter="String" HelpText=""/>
+        <JsonPath Expr="ccode" Id="ccode" Title="Country code" Converter="String" HelpText="Country code of the server location of the backlink page."/>
+        <JsonPath Expr="country" Id="country" Title="Country" Converter="String" HelpText="	Country name of the server location of the backlink page."/>
+        <JsonPath Expr="city" Id="city" Title="City" Converter="String" HelpText="City of the server location of the backlink page."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
 
 </Suite>

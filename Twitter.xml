@@ -33,13 +33,12 @@
     </Paging>
     <Fetch Url="https://api.twitter.com/1.1/search/tweets.json?@RenderQuery(GetQuery())">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>
-            <![CDATA[            
-            @OAuth("https://api.twitter.com/1.1/statuses/search/tweets.json", GetQuery()) 
-            ]]>
-          </Header>
-        </RequestHeaders>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>  
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -62,7 +61,6 @@
     Dictionary<string,string> GetQuery() {
       return new Dictionary<string,string> {
         {"screen_name", Model.ScreenName},
-        
         {"count", Model.PageCursor.NextTake.ToString()},   
         {"include_rts", Model.IncludeRts.ToString()},       
         {"max_id", Model.PageCursor.Page > 0 ? Model.MaxId : ""}
@@ -71,7 +69,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
       <Checkbox Id="IncludeRts" Title="Include retweets" DefaultValue="true"/>
     </Parameters>
     <Paging PageSize="200">
@@ -81,13 +79,12 @@
     </Paging>
     <Fetch Url="https://api.twitter.com/1.1/statuses/user_timeline.json?@RenderQuery(GetQuery())">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>
-            <![CDATA[            
-            @OAuth("https://api.twitter.com/1.1/statuses/user_timeline.json", GetQuery()) 
-            ]]>
-          </Header>
-        </RequestHeaders>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -117,7 +114,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -126,13 +123,12 @@
     </Paging>
     <Fetch Url="https://api.twitter.com/1.1/followers/list.json?@RenderQuery(GetQuery())">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>
-            <![CDATA[            
-            @OAuth("https://api.twitter.com/1.1/followers/list.json", GetQuery()) 
-            ]]>
-          </Header>
-        </RequestHeaders>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
       </HttpSettings>  
     </Fetch>
     <Parse>
@@ -170,7 +166,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" DefaultValue="" Required="true"/>
+      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -179,13 +175,12 @@
     </Paging>
     <Fetch Url="https://api.twitter.com/1.1/friends/list.json?@RenderQuery(GetQuery())">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>
-            <![CDATA[            
-            @OAuth("https://api.twitter.com/1.1/friends/list.json", GetQuery()) 
-            ]]>
-          </Header>
-        </RequestHeaders>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -211,42 +206,6 @@
 
   <RazorFunctions>
   <![CDATA[
-  
-  string OAuth(string resourceUrl, Dictionary<string,string> query) {
-             	
-	  var oauth_version = "1.0";
-	  var oauth_signature_method = "HMAC-SHA1";
-	
-	  var oauth_nonce = Convert.ToBase64String(new ASCIIEncoding().GetBytes(DateTime.Now.Ticks.ToString()));
-	  var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-	  var oauth_timestamp = Convert.ToInt64(timeSpan.TotalSeconds).ToString();
-
-	  query["oauth_consumer_key"] = Model.OAuthConsumerKey;
-	  query["oauth_nonce"] = oauth_nonce;
-	  query["oauth_signature_method"] = oauth_signature_method;
-	  query["oauth_timestamp"] = oauth_timestamp;
-	  query["oauth_token"] = Model.OAuthToken;
-	  query["oauth_version"] = oauth_version;
-
-	  string baseString = "GET&" + Uri.EscapeDataString(resourceUrl) + "&" + Uri.EscapeDataString(RenderQuery(query));
-	
-	  var compositeKey = Uri.EscapeDataString(Model.OAuthConsumerSecret) + "&" + Uri.EscapeDataString(Model.OAuthTokenSecret);
-	
-	  string oauth_signature = Utils.HmacSha1(baseString, compositeKey);
-	
-	  var headerFormat = @"OAuth oauth_nonce=""{0}"", oauth_signature_method=""{1}"", oauth_timestamp=""{2}"", oauth_consumer_key=""{3}"", oauth_token=""{4}"", oauth_signature=""{5}"", oauth_version=""{6}""";
-	
-	  return string.Format(headerFormat,
-		  Uri.EscapeDataString(oauth_nonce),
-		  Uri.EscapeDataString(oauth_signature_method),
-		  Uri.EscapeDataString(oauth_timestamp),
-		  Uri.EscapeDataString(Model.OAuthConsumerKey),
-		  Uri.EscapeDataString(Model.OAuthToken),
-		  Uri.EscapeDataString(oauth_signature),
-		  Uri.EscapeDataString(oauth_version)     
-	  );
-         
-  }
   
   string RenderQuery(Dictionary<string,string> query) {
 	  return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
