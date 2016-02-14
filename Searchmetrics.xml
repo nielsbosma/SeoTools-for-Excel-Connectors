@@ -13,22 +13,21 @@
   Todo:
   
   Organic:
-  - GetCountDomainKeyword
-  - GetCountDomainKeyword
-  - GetListCompetitors
-  - GetListRankingsDomain
-  - GetListRankingsKeyword
-  - GetValueSeoRank
+  - GetCountDomainKeyword DONE
+  - GetListCompetitors DONE
+  - GetListRankingsDomain DONE
+  - GetListRankingsKeyword DONE
+  - GetValueSeoRank DONE
   - GetValueSeoVisibility DONE
-  - GetValueTrafficValue
+  - GetValueTrafficValue (Unable to parse through JsonPath)
   
   Keywords:
-  - GetListKeywordinfo
-  - GetListSimilarKeywords
+  - GetListKeywordinfo DONE (search_volume_avg not included)
+  - GetListSimilarKeywords DONE (search_volume_avg not included)
   
   Paid:
-  - GetCountDomainKeyword
-  - GetListCompetitors
+  - GetCountDomainKeyword DONE
+  - GetListCompetitors DONE
   - GetListKeywords
   - GetValuePaidKpis
   - GetValuePaidRank
@@ -60,7 +59,7 @@
   
   <Resources>
     <Resource Id="SelectCountry">
-      <Select Id="Country" Title="Country" Required="true" DefaultValue="DE">
+      <Select Id="Country" Title="Country" Required="true" DefaultValue="US">
         <DataSource>
           <Item Id="AR" Title="Argentina" />
           <Item Id="AU" Title="Australia" />
@@ -95,7 +94,7 @@
 
   <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Organic domain keyword count" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetCountDomainKeyword" HelpText="Number of organic keywords for a given domain.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Fetch Url="http://api.searchmetrics.com/v1/ResearchOrganicGetCountDomainKeyword.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)">
@@ -116,7 +115,7 @@
 
   <RestConnector Id="ResearchOrganicGetListCompetitors" Title="Organic competitors" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetListCompetitors" HelpText="Competitor domains in the organic search.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
@@ -155,7 +154,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListRankingsDomain" Title="Organic domain rankings" HelpUrl="hhttp://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetListRankingsDomain" HelpText="Keyword rankings for a given domain in organic search results.">
+  <RestConnector Id="ResearchOrganicGetListRankingsDomain" Title="Organic domain rankings" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetListRankingsDomain" HelpText="Keyword rankings for a given domain in organic search results.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain"/>
       <Resource Id="SelectCountry"/>
@@ -200,6 +199,44 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="ResearchOrganicGetListRankingsKeyword" Title="Organic keyword rankings" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetListRankingsKeyword" HelpText="Rankings for a given keyword in organic search results.">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="dogs" Required="true" HelpText=""/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchOrganicGetListRankingsKeyword.json?
+        keyword=@(Utils.UrlEncode(Model.Keyword))
+        &countrycode=@Model.Country
+        &limit=@(Model.PageCursor.PageSize)
+        &offset=@(Model.PageCursor.NextSkip)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="url" Id="url" Title="url" Converter="String" HelpText="URL of the search engine entry."/>
+        <JsonPath Expr="title" Id="title" Title="title" Converter="String" HelpText="Title of the search engine entry."/>
+        <JsonPath Expr="position" Id="position" Title="position" Converter="Int" HelpText="SERP = search engine ranking position."/>
+        <JsonPath Expr="page" Id="page" Title="page" Converter="Int" HelpText="Number of Google result page."/>
+        <JsonPath Expr="trend.trend" Id="trend" Title="Trend" Converter="Int"/>
+        <JsonPath Expr="trend.abs" Id="abs" Title="Trend absolute change" Converter="Int" HelpText="The absolute change in the visibility in comparison to the previous week."/>
+        <JsonPath Expr="trend.per" Id="per" Title="Trend relative change" Converter="Double" HelpText="The relative/percentual change in the visibility in comparison to the previous week."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
 
   <RestConnector Id="ResearchOrganicGetValueSeoVisibility" Title="Organic SEO visibility" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetValueSeoVisibility" HelpText="The SEO Visibility is composed of search volume and the position of ranking keywords. Each position is individually measured by a calculated factor by Searchmetrics. Also, the SEO Visibility factors in whether the ranking keywords are navigational or informational.">
     <Parameters>
@@ -217,8 +254,8 @@
     <Parse>
       <JsonPath Expr="visibility" Id="visibility" Title="Visibility" Converter="Int"/>
       <JsonPath Expr="trend.trend" Id="trend" Title="Trend" Converter="Int" Checked="false"/>
-      <JsonPath Expr="trend.abs" Id="abs" Title="Absolute change" Converter="Int" Checked="false" HelpText="The absolute change in the visibility in comparison to the previous week."/>
-      <JsonPath Expr="trend.per" Id="per" Title="Relative change" Converter="Double" Checked="false" HelpText="The relative/percentual change in the visibility in comparison to the previous week."/>
+      <JsonPath Expr="trend.abs" Id="abs" Title="Trend absolute change" Converter="Int" Checked="false" HelpText="The absolute change in the visibility in comparison to the previous week."/>
+      <JsonPath Expr="trend.per" Id="per" Title="Trend relative change" Converter="Double" Checked="false" HelpText="The relative/percentual change in the visibility in comparison to the previous week."/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
@@ -270,4 +307,206 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="ResearchOrganicGetValueSeoRank" Title="Organic SEO rank" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetValueSeoRank" HelpText="SEO visibility rank of the domain (SEORank).">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchOrganicGetValueSeoRank.json?
+        url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
+        &countrycode=@Model.Country
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="domain" Id="domain" Title="Domain" Converter="String" HelpText=""/>
+        <JsonPath Expr="visibility" Id="visibility" Title="Visibility" Converter="Int" HelpText=""/>
+        <JsonPath Expr="id" Id="id" Title="SEORank" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <!--
+  <RestConnector Id="ResearchOrganicGetValueTrafficValue" Title="Organic traffic value" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetValueTrafficValue" HelpText="Returns the estimated cost of organic traffic if it was gained through Google AdWords advertising.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchOrganicGetValueTrafficValue.json?
+        url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
+        &countrycode=@Model.Country
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="traffic_value" Id="traffic_value" Title="Traffic value" Converter="Double" HelpText="Estimated paid value of organic search traffic."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+  -->
+
+  <RestConnector Id="ResearchKeywordsGetListKeywordinfo" Title="Keywords info" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchKeywordsGetListKeywordinfo" HelpText="This call returns search-related information for a given keyword for a given country for the current month.">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="boat" Required="true" HelpText=""/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchKeywordsGetListKeywordinfo.json?
+        keyword=@(Utils.UrlEncode(Model.Keyword))
+        &countrycode=@Model.Country
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="cpc" Id="cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the specific keyword."/>
+        <JsonPath Expr="competition" Id="competition" Title="Competition" Converter="Int" HelpText="This is an indicator for the competion for the given keyword in the Paid Index. The higher it is the more domains that have placed AdWords ads for the keyword."/>
+        <JsonPath Expr="search_volume" Id="search_volume" Title="Search volume" Converter="Int" HelpText="Current monthly search volume in Google."/>
+        <JsonPath Expr="trend" Id="trend" Title="Trend" Converter="String" HelpText="The relative distribution of the search volume per month over the year for the respective keyword."/>
+        <JsonPath Expr="ad_budget" Id="ad_budget" Title="Ad budget" Converter="Double" HelpText="Monthly Google AdWords ad budget that is spent on the keyword."/>
+        <JsonPath Expr="integration" Id="integration" Title="Integration" Converter="String" HelpText="The types of universal search integrations that can be found for this keyword."/>
+        <JsonPath Expr="advertiser_count" Id="advertiser_count" Title="Advertiser count" Converter="Int" HelpText="Number of advertisers bidding on the keyword."/>
+        <JsonPath Expr="keyword" Id="keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is returned."/>
+        <JsonPath Expr="year_month" Id="year_month" Title="Year month" Converter="String" HelpText="Year and month for which the data is returned."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ResearchKeywordsGetListSimilarKeywords" Title="Keywords similar" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchKeywordsGetListSimilarKeywords" HelpText="List of keywords that contain a selected keyword.">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="boat" Required="true" HelpText=""/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchKeywordsGetListSimilarKeywords.json?
+        keyword=@Utils.UrlEncode(Model.Keyword)
+        &countrycode=@Model.Country
+        &limit=@(Model.PageCursor.PageSize)
+        &offset=@(Model.PageCursor.NextSkip)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="keyword" Id="keyword" Title="Keyword" Converter="String" HelpText=""/>
+        <JsonPath Expr="search_volume" Id="search_volume" Title="Search volume" Converter="Int" HelpText="Current monthly search volume in Google."/>
+        <JsonPath Expr="trend" Id="trend" Title="Trend" Converter="String" HelpText="Trend for the search volume of the keyword in the previous year."/>
+        <JsonPath Expr="cpc" Id="cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the specific keyword."/>
+        <JsonPath Expr="advertiser_count" Id="advertiser_count" Title="Advertiser count" Converter="Int" HelpText="Number of advertisers bidding on the keyword."/>
+        <JsonPath Expr="integration" Id="integration" Title="Integration" Converter="String" HelpText="Universal search items that can be found in the search results for this keyword (e.g. news,video,images etc.)."/>
+        <JsonPath Expr="adbudget" Id="adbudget" Title="Ad budget" Converter="Double" HelpText="Monthly Google AdWords ad budget that is spent on the keyword."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ResearchPaidGetCountDomainKeyword" Title="Paid domain keyword count" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchPaidGetCountDomainKeyword" HelpText="Number of paid keywords for a domain in a given country.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Fetch Url="http://api.searchmetrics.com/v1/ResearchPaidGetCountDomainKeyword.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)">
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[0]" Converter="Int"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ResearchPaidGetListKeywords" Title="Paid keywords" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchPaidGetListKeywords" HelpText="Paid keywords with advertisements for a given domain.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v1/ResearchPaidGetListKeywords.json?
+        url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
+        &countrycode=@Model.Country
+        &limit=@(Model.PageCursor.PageSize)
+        &offset=@(Model.PageCursor.NextSkip)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="keyword" Id="keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is returned."/>
+        <JsonPath Expr="position" Id="position" Title="Position" Converter="Int" HelpText="Keyword position in Google's paid search."/>
+        <JsonPath Expr="page" Id="page" Title="Page" Converter="Int" HelpText="Result page in Google's paid search."/>
+        <JsonPath Expr="traffic_monthly" Id="traffic_monthly" Title="Traffic monthly" Converter="Int" HelpText="Estimation of monthly traffic based on search volume and position."/>
+        <JsonPath Expr="cpc" Id="cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the specific keyword."/>
+        <JsonPath Expr="competition" Id="competition" Title="Competition" Converter="Int" HelpText="An indicator for the advertising competition on the keyword. The higher it is the stronger is the competition. Minimum is 0, maximum is 100."/>
+        <JsonPath Expr="search_volume_monthly" Id="search_volume_monthly" Title="Search volume monthly" Converter="Int" HelpText="Current monthly search volume in Google."/>
+        <JsonPath Expr="adbudget_monthly" Id="adbudget_monthly" Title="Adbudget monthly" Converter="Double" HelpText="Monthly Google AdWords ad budget that is spent on the keyword."/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+  
 </Suite>
