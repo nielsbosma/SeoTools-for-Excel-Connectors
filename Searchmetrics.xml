@@ -711,4 +711,29 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="ResearchOrganicGetListSeoVisibilityHistoric" Title="Organic visibility historic" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetListSeoVisibilityHistoric" HelpText="Searchmetrics SEO Visibility for a given URL in a given country in a given timeframe.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+    </Parameters>
+    <Fetch Url="http://api.searchmetrics.com/v1/ResearchOrganicGetListSeoVisibilityHistoric.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)&amp;date_from=@(Model.DateInterval.StartDate.ToString(&quot;yyyyMMdd&quot;))&amp;date_to=@(Model.DateInterval.EndDate.ToString(&quot;yyyyMMdd&quot;))">
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;\d{8}&quot;:\d*" Group="0">
+        <Regex Expr="&quot;(\d{8})&quot;:" Id="date" Title="Date" Converter="String" Group="1"/>
+        <Regex Expr=":(\d*)" Id="visibility" Title="Visibility" Converter="Int" Group="1"/>
+      </Regex>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
 </Suite>
