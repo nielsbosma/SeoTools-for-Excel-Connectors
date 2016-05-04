@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite RequireVersion="5.1.1" Title="PhantomJs Cloud" Id="PhantomJsCloud" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/PhantomJsCloud.xml" >
+
+  <Author Name="Niels Bosma" Url="https://www.linkedin.com/in/bosmaniels" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/">
+    <Text Id="ApiKey" Title="API key" Required="true" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/" />
+  </Settings>
+
+  <RestConnector Id="Locations" Title="Locations" Hidden="true">
+    <Fetch Url="http://api.phantomjscloud.com/single/geo/v1/@(Model.ApiKey)/"/>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="name" Id="Id" Title="Id"/>
+        <JsonPath Expr="instances" Id="Title" Title="Title"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="XPath" Title="XPath">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+      <Text Id="XPath" Title="XPath" Required="true"/>
+      <Text Id="Attribute" Title="Attribute" Required="false"/>
+      <Checkbox Id="Cache" Title="Cache" DefaultValue="true"/>
+      <Text Id="Location" Title="Location" DefaultValue="us" Required="true" Select.Connector="Locations"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.phantomjscloud.com/single/browser/v1/@(Model.ApiKey)/
+          ?requestType=text
+          &targetUrl=@(Utils.UrlEncode(Model.Url))
+          &loadImages=false
+          &outputAsJson=false
+          &timeout=30000
+          &geolocationstring=@Model.Location
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <Cache>@Model.Cache</Cache>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="@Model.XPath">
+        <XPath Expr="." Attribute="@Model.Attribute"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Regex" Title="Regex">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+      <Text Id="Regex" Title="Regex" Required="true" HelpUrl="https://regex101.com/"/>
+      <Number Id="Group" Title="Group" Required="false" DefaultValue="0"/>
+      <Checkbox Id="Cache" Title="Cache" DefaultValue="true"/>
+      <Text Id="Location" Title="Location" DefaultValue="us" Required="true" Select.Connector="Locations"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.phantomjscloud.com/single/browser/v1/@(Model.ApiKey)/
+          ?requestType=text
+          &targetUrl=@(Utils.UrlEncode(Model.Url))
+          &loadImages=false
+          &outputAsJson=false
+          &timeout=30000
+          &geolocationstring=@Model.Location
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <Cache>@Model.Cache</Cache>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="@Model.Regex" Group="@Model.Group">
+        <Regex Expr=".*" Group="0"/>
+      </Regex>
+    </Parse>
+  </RestConnector>
+  
+</Suite>

@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Social" Id="Social" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_Social.xml" HelpUrl="http://seotoolsforexcel.com/connectors-social/" HelpText="Documentation">
+
+  <RestConnector Id="TwitterMetrics" Title="TwitterMetrics">
+    <Parameters>
+      <Text Id="TwitterHandle" Title="Twitter username (no @)" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://twitter.com/@Model.TwitterHandle">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Title="Tweets" Id="tweets" Expr="//a[@@data-nav='tweets']" Attribute="title" Converter="Int"/>
+      <XPath Title="Following" Id="following" Expr="//a[@@data-nav='following']" Attribute="title" Converter="Int"/>
+      <XPath Title="Followers" Id="followers" Expr="//a[@@data-nav='followers']" Attribute="title" Converter="Int"/>
+      <XPath Title="Favorites" Id="favorites" Expr="//a[@@data-nav='favorites']" Attribute="title" Converter="Int"/>
+      <XPath Title="Lists" Id="lists" Expr="//a[@@data-nav='all_lists']" Attribute="title" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="TwitterAccount" Title="TwitterAccount" AvailableInSpider="true" HelpText="Find twitter.com/accounts on a webpage.">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="@Model.Url"/>
+    <Parse>
+      <Regex Expr="twitter\.com\/([^&quot;]+)" Group="1"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="FacebookLikes" Title="FacebookLikes" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://api.facebook.com/method/fql.query?query=select%20click_count,comment_count,share_count,total_count,like_count%20from%20link_stat%20where%20url='@(Utils.UrlEncode(Model.Url))'&amp;format=atom">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Title="Total" Id="total_count" Expr="//total_count" Converter="Int" HelpText="The total number of times the URL has been shared, liked, or commented on."/>
+      <XPath Title="Shares" Id="share_count" Expr="//share_count" Converter="Int" HelpText="The number of times users have shared the page on Facebook."/>
+      <XPath Title="Likes" Id="like_count" Expr="//like_count" Converter="Int" HelpText="The number of times Facebook users have liked the page, or liked any comments or re-shares of this page."/>
+      <XPath Title="Comments" Id="comment_count" Expr="//comment_count" Converter="Int" HelpText="The number of comments users have made on the shared story."/>
+      <XPath Title="Clicks" Id="click_count" Expr="//click_count" Converter="Int" HelpText="The number of times Facebook users have clicked a link to the page from a share or like."/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Klout" Title="Klout">
+    <Parameters>
+      <Text Id="TwitterHandle" Title="Twitter username (no @)" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://klout.com/@Model.TwitterHandle">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Title="Score" Id="score" Expr="//span[@@class='score']" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="DeliciousShares" Title="DeliciousShares" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://feeds.delicious.com/v2/json/url/@Utils.Md5(Utils.UrlProperty(Model.Url).Absolute)">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[*].length" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="StumbleUponStumbles" Title="StumbleUponStumbles" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.stumbleupon.com/services/1.01/badge.getinfo?url=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.views" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="StumbleUponLikes" Title="StumbleUponLikes" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.stumbleupon.com/content/@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)}">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Title="Likes" Id="likes" Expr="//nav[@@class='nav-tertiary']/ul/li[1]/a/mark[1]" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="GooglePlusOne" Title="GooglePlusOne" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://plusone.google.com/u/0/_/+1/fastbutton?count=true&amp;url=@(Utils.UrlEncode(Model.Url))">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Title="PlusOne" Id="PlusOne" Expr="&lt;div id=&quot;aggregateCount&quot;[^&gt;]+&gt;([^&gt;]+)&lt;/div&gt;" Group="1" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="LinkedInShares" Title="LinkedInShares" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.linkedin.com/countserv/count/share?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Title="Shares" Id="Shares" Expr="&quot;count&quot;:(\d+)," Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PinterestPinned" Title="PinterestPinned" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="Url" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://api.pinterest.com/v1/urls/count.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Title="Pinned" Id="Pinned" Expr="&quot;count&quot;:(\d+)" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="Instagram" Title="Instagram">
+    <Parameters>
+      <Text Id="Account" Title="Account" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://instagram.com/@Model.Account">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Title="Followers" Id="Followers" Expr="&quot;followed_by&quot;:\{&quot;count&quot;:(\d+)\}" Converter="Int"/>
+      <Regex Title="Follows" Id="Posts" Expr="&quot;follows&quot;:\{&quot;count&quot;:(\d+)\}" Converter="Int"/>
+      <Regex Title="Posts" Id="Posts" Expr="&quot;media&quot;:\{&quot;count&quot;:(\d+)," Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+</Suite>

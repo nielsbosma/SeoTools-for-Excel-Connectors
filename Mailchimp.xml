@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="MailChimp" Id="MailChimp" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Mailchimp.xml" >
+
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <!-- https://connect.mailchimp.com/?_ga=1.228577242.612066129.1388574496 -->
+
+  <Settings HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="What's this?">
+    <Text Id="ApiKey" Title="API key" Required="true"/>
+  </Settings>
+ 
+  <RestConnector Id="Campaigns" Title="Campaigns">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[@Endpoint()campaigns?count=100]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.campaigns.*">
+        <JsonPath Title="Id" Id="id" Expr="id"/>
+        <JsonPath Title="Title" Id="title" Expr="settings.title"/>
+        <JsonPath Title="Emails sent" Id="emails_sent" Expr="emails_sent" Converter="Int"/>
+        <JsonPath Title="Archive url" Id="archive_url" Expr="archive_url"/>
+        <JsonPath Title="Type" Id="type" Expr="type"/>
+        <JsonPath Title="Status" Id="status" Expr="status"/>
+        <JsonPath Title="Created" Id="created" Expr="create_time" Converter="DateTime"/>
+        <JsonPath Title="Send" Id="send" Expr="send_time" Converter="DateTime"/>
+        <JsonPath Title="Subject" Id="subject" Expr="settings.subject_line"/>
+        <JsonPath Title="Opens" Id="opens" Expr="report_summary.opens" Converter="Int"/>
+        <JsonPath Title="Unique opens" Id="unique_opens" Expr="report_summary.unique_opens" Converter="Int"/>
+        <JsonPath Title="Open rate" Id="open_rate" Expr="report_summary.open_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Clicks" Id="clicks" Expr="report_summary.clicks" Converter="Int"/>
+        <JsonPath Title="Subscriber clicks" Id="subscriber_clicks" Expr="report_summary.subscriber_clicks" Converter="Int"/>
+        <JsonPath Title="Click rate" Id="click_rate" Expr="report_summary.click_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Lists" Title="Lists">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[@Endpoint()lists?count=100]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.lists.*">
+        <JsonPath Title="Id" Id="id" Expr="id"/>
+        <JsonPath Title="Title" Id="title" Expr="name"/>
+        <JsonPath Title="Members" Id="members" Expr="stats.member_count" Converter="Int"/>
+        <JsonPath Title="Unsubscribes" Id="unsubscribes" Expr="stats.unsubscribe_count" Converter="Int"/>
+        <JsonPath Title="Open rate" Id="open_rate" Expr="stats.open_rate" Converter="Double"/>
+        <JsonPath Title="Click rate" Id="click_rate" Expr="stats.click_rate" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Members" Title="Members">
+    <Parameters>
+      <Text Id="ListId" Title="List" Required="true" Select.Connector="Lists"/>
+      <Radio Id="Status" Title="Status" DefaultValue="subscribed" Required="true">
+        <DataSource>
+          <Item Id="subscribed" Title="Subscribed"/>
+          <Item Id="unsubscribed" Title="Unsubscribed"/>
+          <Item Id="cleaned" Title="Cleaned"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="total_items"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          lists/@(Model.ListId)/members?
+          status=@(Model.Status)
+          &count=@(Model.PageCursor.NextTake)
+          &offset=@(Model.PageCursor.NextSkip)
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.members.*">
+        <JsonPath Title="Id" Id="id" Expr="id"/>
+        <JsonPath Title="Email" Id="email" Expr="email_address"/>
+        <JsonPath Title="Open rate" Id="open_rate" Expr="stats.avg_open_rate" Converter="Double"/>
+        <JsonPath Title="Click rate" Id="click_rate" Expr="stats.avg_click_rate" Converter="Double"/>
+        <JsonPath Title="Rating" Id="rating" Expr="member_rating" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+  <![CDATA[
+  
+  string Endpoint() {
+    return "https://" + Model.ApiKey.Substring(Model.ApiKey.IndexOf("-")+1) + ".api.mailchimp.com/3.0/";
+  }
+  
+  ]]>
+  </RazorFunctions>
+  
+</Suite>

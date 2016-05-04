@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Offpage" Id="Offpage" Category="Offpage" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_Offpage.xml" HelpUrl="http://seotoolsforexcel.com/connectors-offpage/" HelpText="Documentation">
+ 
+  <RestConnector Id="GoogleResults" Title="GoogleResults" AvailableInSpider="false" HelpText="Scrape number of search results on Google.">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true"/>
+      <Text Id="Site" Title="Googe site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=@(Utils.UrlEncode(Model.Query))&amp;btnG=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&lt;div[^&gt;]*id=&quot;resultStats&quot;[^&gt;]*&gt;[^\d]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+ 
+  <RestConnector Id="GoogleIndex" Title="GoogleIndex" AvailableInSpider="false" HelpText="Scrape number of indexed pages with url on Google through query &quot;site:&lt;url&gt;&quot;.">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+      <Text Id="Site" Title="Google site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=site%3A@(Utils.UrlEncode(Model.Url))&amp;btnG=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&lt;div[^&gt;]*id=&quot;resultStats&quot;[^&gt;]*&gt;[^\d]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="GoogleLinks" Title="GoogleLinks" AvailableInSpider="false" HelpText="Scrape number of links with url on Google through query &quot;link:&lt;url&gt;&quot;.">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+      <Text Id="Site" Title="Google site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=link%3A@(Utils.UrlEncode(Model.Url))&amp;btnG=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&lt;div[^&gt;]*id=&quot;resultStats&quot;[^&gt;]*&gt;[^\d]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="YahooIndex" Title="YahooIndex" AvailableInSpider="false" HelpText="Scrape number of indexed pages with url on Yahoo.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://search.yahoo.com/search?p=.&amp;vs=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Try>
+        <Regex Expr="&lt;span&gt;([0-9,\\. ]+) result(s)?&lt;/span&gt;" IgnoreCase="true" Converter="Int"/>
+        <XPath Expr="count(//div[@@id = 'web']/ol/li)" Converter="Int"/>
+      </Try>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="YahooResults" Title="YahooResults" AvailableInSpider="false" HelpText="Scrape number of search results on Yahoo.">
+    <Parameters>
+      <Text Id="Search" Title="Search" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://dir.search.yahoo.com/search?h=c&amp;p=@(Utils.UrlEncode(Model.Search))">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Try>
+        <Regex Expr="&lt;span&gt;([0-9,\\. ]+) result(s)?&lt;/span&gt;" IgnoreCase="true" Converter="Int"/>
+        <XPath Expr="count(//div[@@id = 'web']/ol/li)" Converter="Int"/>
+      </Try>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="DmozEntries" Title="DmozEntries" AvailableInSpider="false" HelpText="Scrape number of entries on Dmoz with domain.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://search.dmoz.org/cgi-bin/search?search=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))&amp;all=yes&amp;cat=Adult&amp;t=s">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="DMOZ Sites[^\(]+\(.+of (\d+)\)&lt;" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="BingIndex" Title="BingIndex" AvailableInSpider="false" HelpText="Scrape number of indexed pages with url on Bing through query &quot;site:&lt;url&gt;&quot;.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.bing.com/search?q=site%3A@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))&amp;FORM=QBRE">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;sb_count&quot;&gt;[^0-9&lt;]*([0-9,\. &amp;#;]+)[^&lt;]*&lt;/span&gt;" IgnoreCase="true" DefaultValue="0" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="WikipediaLinks" Title="WikipediaLinks" AvailableInSpider="false" HelpText="Scrape number of links from Wikipedia to domain.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Required="true"/>
+      <Select Id="Language" Title="Language" Required="true" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch Url="http://@(Model.Language).wikipedia.org/w/index.php?title=Special%3ASearch&amp;search=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))&amp;fulltext=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@class='results-info']/strong[2]" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Alexa" Title="Alexa">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://data.alexa.com/data?cli=10&amp;dat=snbamz&amp;url=@(Utils.UrlEncode(Model.Url))">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Title="Reach" Id="reach" Expr="//reach" Attribute="rank" DefaultValue="0" Converter="Int"/>
+      <XPath Title="Popularity" Id="popularity" Expr="//popularity" Attribute="text" DefaultValue="0" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+  
+</Suite>
