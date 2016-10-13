@@ -7,7 +7,7 @@
     <Text Id="ApiKey" Title="API key Youtube Data API" Required="true"/>
   </Settings>
 
-  <RestConnector Id="VideoStatistics" Title="Video Statistics">
+  <RestConnector Id="VideoStatistics" Title="Video statistics">
     <Parameters>
       <Text Id="VideoId" Title="Video id" Required="true"/>
     </Parameters>
@@ -20,54 +20,52 @@
       <JsonPath Title="Comments" Identifier="comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
+
+  <RestConnector Id="ChannelStatistics" Title="Channel statistics">
     <Parameters>
       <Text Id="ChannelId" Title="Channel id" Required="true"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/youtube/v3/channels?id=@Model.ChannelId&amp;key=@Model.ApiKey&amp;part=statistics"/>
     <Parse>
       <JsonPath Title="Subscribers" Identifier="subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
-	  <JsonPath Title="Videos" Identifier="videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
-	  <JsonPath Title="TotalViews" Identifier="views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Videos" Identifier="videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="TotalViews" Identifier="views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
-
   
-  
-  <RestConnector Id="SearchVideos" Title="Search for Videos">
+  <RestConnector Id="SearchVideos" Title="Search for videos">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
-	  <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
-		<DataSource>
-		  <Item Id="date" Title="Date"/>
-		  <Item Id="title" Title="Title"/>
-		  <Item Id="relevance" Title="Relevance"/>
-		  <Item Id="viewCount" Title="ViewCount"/>
-		  <Item Id="rating" Title="Rating"/>	 	  	  
-		</DataSource>
-	  </Radio>
-	  <Radio Id="Duration" Title="Duration" DefaultValue="any" Required="true">
-		<DataSource>
-		  <Item Id="any" Title="Any"/>
-		  <Item Id="long" Title="20 min+"/>
-		  <Item Id="medium" Title="4-20 min"/>
-		  <Item Id="short" Title="4 min-"/>
-		</DataSource>
-	  </Radio>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="date" Title="Date"/>
+          <Item Id="title" Title="Title"/>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="viewCount" Title="ViewCount"/>
+          <Item Id="rating" Title="Rating"/>
+        </DataSource>
+      </Radio>
+      <Radio Id="Duration" Title="Duration" DefaultValue="any" Required="true">
+        <DataSource>
+          <Item Id="any" Title="Any"/>
+          <Item Id="long" Title="20 min+"/>
+          <Item Id="medium" Title="4-20 min"/>
+          <Item Id="short" Title="4 min-"/>
+        </DataSource>
+      </Radio>
       <Checkbox Id="videoDefinition" Title="HD Quality" DefaultValue="False"/>
-	</Parameters>
+    </Parameters>
     <Paging PageSize="50"/>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
         key=@Model.ApiKey
         &part=snippet
         &type=video
-		&order=@(Model.Sorting)
-		&videoDuration=@(Model.Duration)
-		&videoDefinition=@(Model.videoDefinition ? "high" : "any")		
+		    &order=@(Model.Sorting)
+		    &videoDuration=@(Model.Duration)
+		    &videoDefinition=@(Model.videoDefinition ? "high" : "any")		
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -78,11 +76,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-    <JsonPath Expr="$.items.*">
-	  <Compute Id="Url" Title="Url">
-        <Compute.Expr>
-		  http://www.youtube.com/watch/@(Model.Id)
-		</Compute.Expr>
+      <JsonPath Expr="$.items.*">
+        <Compute Id="Url" Title="Url">
+          <Compute.Expr>
+            http://www.youtube.com/watch/@(Model.Id)
+          </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
         </Compute>
         <JsonPath Title="Id" Identifier="id" Expr="id.videoId" Converter="String" DefaultValue="#NULL!"/>
@@ -94,25 +92,25 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="SearchChannels" Title="Search for Channels">
+
+  <RestConnector Id="SearchChannels" Title="Search for channels">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
-	  <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
-		<DataSource>
-		  <Item Id="date" Title="Date"/>
-		  <Item Id="title" Title="Title"/>
-		  <Item Id="relevance" Title="Relevance"/>
-		  <Item Id="viewCount" Title="ViewCount"/>
-		  <Item Id="rating" Title="Rating"/>
-		</DataSource>
-	  </Radio>	  		  
-	  <Radio Id="ChannelType" Title="Channel Type" DefaultValue="any" Required="true">
-		<DataSource>
-		  <Item Id="any" Title="Any"/>
-		  <Item Id="show" Title="Show"/>
-		</DataSource>
-	  </Radio>	  		  
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="date" Title="Date"/>
+          <Item Id="title" Title="Title"/>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="viewCount" Title="ViewCount"/>
+          <Item Id="rating" Title="Rating"/>
+        </DataSource>
+      </Radio>
+      <Radio Id="ChannelType" Title="Channel Type" DefaultValue="any" Required="true">
+        <DataSource>
+          <Item Id="any" Title="Any"/>
+          <Item Id="show" Title="Show"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -122,13 +120,13 @@
     </Paging>
     <Fetch Url="">
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
         key=@Model.ApiKey
         &part=snippet
         &type=channel
-		&order=@(Model.Sorting)		
-		&channelType=@(Model.ChannelType)
+		    &order=@(Model.Sorting)		
+		    &channelType=@(Model.ChannelType)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -140,10 +138,10 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
-		<Compute Id="Url" Title="Url">
+        <Compute Id="Url" Title="Url">
           <Compute.Expr>
             http://www.youtube.com/channel/@(Model.Id)
-		  </Compute.Expr>
+          </Compute.Expr>
           <JsonPath Expr="id.channelId" Id="Id" Converter="String"/>
         </Compute>
         <JsonPath Title="Id" Identifier="id" Expr="id.channelId" Converter="String" DefaultValue="#NULL!"/>
@@ -155,19 +153,19 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="SearchPlaylists" Title="Search for Playlists">
+
+  <RestConnector Id="SearchPlaylists" Title="Search for playlists">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
-	  <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
-		<DataSource>
-		  <Item Id="date" Title="Date"/>
-		  <Item Id="title" Title="Title"/>
-		  <Item Id="relevance" Title="Relevance"/>
-		  <Item Id="viewCount" Title="ViewCount"/>
-		  <Item Id="rating" Title="Rating"/>	 	  	  
-		</DataSource>
-	  </Radio>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="date" Title="Date"/>
+          <Item Id="title" Title="Title"/>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="viewCount" Title="ViewCount"/>
+          <Item Id="rating" Title="Rating"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -177,12 +175,12 @@
     </Paging>
     <Fetch Url="">
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
         key=@Model.ApiKey
         &part=snippet
         &type=playlist
-		&order=@(Model.Sorting)
+		    &order=@(Model.Sorting)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -194,10 +192,10 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
-		<Compute Id="Url" Title="Url">
+        <Compute Id="Url" Title="Url">
           <Compute.Expr>
             http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)
-		  </Compute.Expr>
+          </Compute.Expr>
           <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
         </Compute>
         <JsonPath Title="Id" Identifier="id" Expr="id.playlistId" Converter="String" DefaultValue="#NULL!"/>
@@ -208,9 +206,9 @@
         <JsonPath Title="Thumbnail" Identifier="thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-  </RestConnector>  
-  
-  <RestConnector Id="VideosFromChannel" Title="Videos from Channel">
+  </RestConnector>
+
+  <RestConnector Id="VideosFromChannel" Title="Videos from channel">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
     </Parameters>
@@ -222,9 +220,9 @@
     </Paging>
     <Fetch Url="">
       <Fetch.Url>
-	  <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
-		order=date
+		    order=date
         &key=@Model.ApiKey
         &part=snippet
         &channelId=@Utils.UrlEncode(Model.Query)
@@ -238,11 +236,11 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
-	    <Compute Id="Url" Title="Url">
+        <Compute Id="Url" Title="Url">
           <Compute.Expr>
             http://www.youtube.com/watch/@(Model.Id)
-		  </Compute.Expr>
-        <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
+          </Compute.Expr>
+          <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
         </Compute>
         <JsonPath Title="PlaylistId" Identifier="id" Expr="id.videoId" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Title" Identifier="title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
@@ -252,8 +250,8 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="VideosFromPlayList" Title="Videos from Playlist">
+
+  <RestConnector Id="VideosFromPlayList" Title="Videos from playlist">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L"/>
     </Parameters>
@@ -265,7 +263,7 @@
     </Paging>
     <Fetch Url="">
       <Fetch.Url>
-	  <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/youtube/v3/playlistItems?
         &key=@Model.ApiKey
         &part=snippet
@@ -280,19 +278,19 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
-	    <Compute Id="Url" Title="Url">
+        <Compute Id="Url" Title="Url">
           <Compute.Expr>
             http://www.youtube.com/watch/@(Model.Id)
-		  </Compute.Expr>
-        <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
+          </Compute.Expr>
+          <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
         </Compute>
-	    <JsonPath Title="VideoId" Identifier="id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="VideoId" Identifier="id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Title" Identifier="title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Description" Identifier="description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Published" Identifier="published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
         <JsonPath Title="Thumbnail" Identifier="thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-  </RestConnector>  
- 
- </Suite>
+  </RestConnector>
+
+</Suite>

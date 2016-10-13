@@ -1,56 +1,55 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="5.2.6" Title="FlickR" Id="FlickR" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
+<Suite RequireVersion="5.2.6" Title="Flickr" Id="Flickr" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Flickr.xml" HelpUrl="http://seotoolsforexcel.com/flickr/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/twitter/">
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/flickr/">
     <Text Id="Key" Title="API Key" Required="true"/>
   </Settings>
- 
-  <RestConnector Id="PhotoSearch" Title="PhotoSearch">
+
+  <RestConnector Id="PhotoSearch" Title="Photo search">
     <Parameters>
       <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
-	  <Radio Id="Sorting" Title="Sorting" DefaultValue="date-posted-asc" Required="true">
-		<DataSource>
-		  <Item Id="relevance" Title="Relevance"/>
-		  <Item Id="interestingness-desc" Title="Interestingness"/>
-		  <Item Id="date-posted-desc" Title="Date Posted"/>
-		  <Item Id="date-taken-desc" Title="Date Taken"/>
-		</DataSource>
-	  </Radio>
-	  <Radio Id="MediaType" Title="MediaType" DefaultValue="photos" Required="true">
-		<DataSource>
-		  <Item Id="photos" Title="Photos"/>
-		  <Item Id="videos" Title="Videos"/>
-		</DataSource>
-	  </Radio>  
-	  
+      <Select Id="Sorting" Title="Sorting" DefaultValue="date-posted-desc" Required="true">
+        <DataSource>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="interestingness-desc" Title="Interestingness"/>
+          <Item Id="date-posted-desc" Title="Date posted"/>
+          <Item Id="date-taken-desc" Title="Date taken"/>
+        </DataSource>
+      </Select>
+      <Radio Id="MediaType" Title="Media type" DefaultValue="photos" Required="true">
+        <DataSource>
+          <Item Id="photos" Title="Photos"/>
+          <Item Id="videos" Title="Videos"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
         <JsonPath Id="PageNumber" Expr="photos.page"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://api.flickr.com/services/rest/?method=flickr.photos.search
-		&api_key=@Model.Key
-		&sort=@Utils.UrlEncode(Model.Sorting)
-		&media=@(Model.MediaType)
-		&text=@Model.Query
-		&order=@(Model.Sorting)
-		&format=json
-		&nojsoncallback=2
-		&extras=description,date_upload,date_taken,owner_name,views
-		&per_page=@(Model.PageCursor.NextTake)
+		    &api_key=@Model.Key
+		    &sort=@Utils.UrlEncode(Model.Sorting)
+		    &media=@(Model.MediaType)
+		    &text=@Utils.UrlEncode(Model.Query)
+		    &order=@(Model.Sorting)
+		    &format=json
+		    &nojsoncallback=2
+		    &extras=description,date_upload,date_taken,owner_name,views
+		    &per_page=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
           @: &page=(Model.PageNumber)
         }
       ]]>
       </Fetch.Url>
-    </Fetch>	
-
+    </Fetch>
     <Parse>
       <JsonPath Expr="photos.photo[*]">
         <Compute Id="Url" Title="Url">
@@ -60,8 +59,6 @@
           <JsonPath Expr="id" Id="Id" Converter="String"/>
           <JsonPath Expr="owner" Id="OwnerId" Converter="String"/>
         </Compute>
-      </JsonPath>
-      <JsonPath Expr="photos.photo[*]">
         <JsonPath Expr="id" Id="PhotoId" Converter="String"/>
         <JsonPath Expr="title" Id="Title" Converter="String"/>
         <JsonPath Expr="description._content" Id="Description" Converter="String"/>
@@ -69,19 +66,19 @@
         <JsonPath Expr="views" Id="Views" Converter="Int"/>
         <JsonPath Expr="ownername" Id="Owner" Converter="String"/>
         <JsonPath Expr="owner" Id="OwnerId" Converter="String"/>
-	  </JsonPath>
-	  <JsonPath Expr="photos.photo[*]">
-		  <Compute Id="OwnerURL" Title="OwnerURL">
-            <Compute.Expr>
-              http://www.flickr.com/people/@(Model.OwnerId)
-            </Compute.Expr>
-            <JsonPath Expr="owner" Id="OwnerId" Converter="String"/>
-          </Compute>
+      </JsonPath>
+      <JsonPath Expr="photos.photo[*]">
+        <Compute Id="OwnerURL" Title="OwnerURL">
+          <Compute.Expr>
+            http://www.flickr.com/people/@(Model.OwnerId)
+          </Compute.Expr>
+          <JsonPath Expr="owner" Id="OwnerId" Converter="String"/>
+        </Compute>
       </JsonPath>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="TimelineSearch" Title="TimelineSearch">
+
+  <RestConnector Id="TimelineSearch" Title="Timeline search">
     <Parameters>
       <Text Id="Query" Title="UserId" Debug.DefaultValue="12037949754@N01" Required="true"/>
     </Parameters>
@@ -90,24 +87,23 @@
         <JsonPath Id="PageNumber" Expr="photos.page"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://api.flickr.com/services/rest/?method=flickr.photos.search
-		&api_key=@Model.Key
-		&user_id=@Model.Query
-		&format=json
-		&nojsoncallback=2
-		&extras=description,date_upload,date_taken,owner_name,views
-		&per_page=@(Model.PageCursor.NextTake)
+		    &api_key=@Model.Key
+		    &user_id=@Utils.UrlEncode(Model.Query)
+		    &format=json
+		    &nojsoncallback=2
+		    &extras=description,date_upload,date_taken,owner_name,views
+		    &per_page=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
           @: &page=(Model.PageNumber)
         }
       ]]>
       </Fetch.Url>
-    </Fetch>	
-
+    </Fetch>
     <Parse>
       <JsonPath Expr="photos.photo[*]">
         <Compute Id="Url" Title="Url">
@@ -117,18 +113,16 @@
           <JsonPath Expr="id" Id="Id" Converter="String"/>
           <JsonPath Expr="owner" Id="OwnerId" Converter="String"/>
         </Compute>
-      </JsonPath>
-      <JsonPath Expr="photos.photo[*]">
         <JsonPath Expr="id" Id="PhotoId" Converter="String"/>
         <JsonPath Expr="title" Id="Title" Converter="String"/>
         <JsonPath Expr="description._content" Id="Description" Converter="String"/>
         <JsonPath Expr="datetaken" Id="DateTaken" Converter="DateTime"/>
         <JsonPath Expr="views" Id="Views" Converter="Int"/>
-	  </JsonPath>
+      </JsonPath>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="GroupSearch" Title="GroupSearch">
+  <RestConnector Id="GroupSearch" Title="Group search">
     <Parameters>
       <Text Id="Query" Title="UserId" Debug.DefaultValue="panda" Required="true"/>
     </Parameters>
@@ -139,21 +133,20 @@
     </Paging>
     <Fetch Url="">
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://api.flickr.com/services/rest/?method=flickr.groups.search
-		&api_key=@Model.Key
-		&text=@Model.Query
-		&format=json
-		&nojsoncallback=2
-		&per_page=@(Model.PageCursor.NextTake)
+		    &api_key=@Model.Key
+		    &text=@Utils.UrlEncode(Model.Query)
+		    &format=json
+		    &nojsoncallback=2
+		    &per_page=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
           @: &page=(Model.PageNumber)
         }
       ]]>
       </Fetch.Url>
-    </Fetch>	
-
+    </Fetch>
     <Parse>
       <JsonPath Expr="groups.group[*]">
         <Compute Id="Url" Title="Url">
@@ -162,15 +155,13 @@
           </Compute.Expr>
           <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         </Compute>
-      </JsonPath>
-      <JsonPath Expr="groups.group[*]">
         <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Converter="String"/>
         <JsonPath Expr="members" Id="Members" Converter="Int"/>
         <JsonPath Expr="pool_count" Id="PoolCount" Converter="int"/>
         <JsonPath Expr="topic_count" Id="TopicCount" Converter="Int"/>
-	  </JsonPath>
+      </JsonPath>
     </Parse>
-  </RestConnector> 
- 
+  </RestConnector>
+
 </Suite>
