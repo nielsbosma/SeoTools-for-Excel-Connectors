@@ -9,30 +9,58 @@
     <Text Id="OAuthConsumerKey" Title="OAuth consumer key" Required="true"/>
     <Text Id="OAuthConsumerSecret" Title="OAuth consumer secret" Required="true"/>
   </Settings>
+  
+  <Resources>
+    <Resource Id="Languages">
+      <Item Id="ar" Title="Arabic"/>
+      <Item Id="cs" Title="Czech"/>
+      <Item Id="da" Title="Danish"/>
+      <Item Id="de" Title="German"/>
+      <Item Id="en" Title="English"/>
+      <Item Id="et" Title="Estonian"/>
+      <Item Id="fi" Title="Finnish"/>
+      <Item Id="fr" Title="French"/>
+      <Item Id="nl" Title="Dutch"/>
+      <Item Id="he" Title="Hebrew"/>
+      <Item Id="hu" Title="Hungarian"/>
+      <Item Id="id" Title="Indonesian"/>
+      <Item Id="it" Title="Italian"/>
+      <Item Id="lt" Title="Lithuanian"/>
+      <Item Id="lv" Title="Latvian"/>
+      <Item Id="no" Title="Norwegian"/>
+      <Item Id="pl" Title="Polish"/>
+      <Item Id="pt" Title="Portuguese"/>
+      <Item Id="ro" Title="Romanian"/>
+      <Item Id="es" Title="Spanish"/>
+      <Item Id="ru" Title="Russian"/>
+      <Item Id="sv" Title="Swedish"/>
+    </Resource>
+  </Resources> 
 
-  <!--
-  <RestConnector Id="TweetSearch" Title="Search for Tweets" HelpUrl="https://dev.twitter.com/rest/reference/get/search/tweets">
-    <RazorFunctions>
-    <![CDATA[
-    Dictionary<string,string> GetQuery() {
-      return new Dictionary<string,string> {
-        {"q", Model.Query},
-        {"count", Model.PageCursor.NextTake.ToString()},   
-        {"max_id", Model.PageCursor.Page > 0 ? Model.MaxId : ""}
-      };
-    }
-    ]]>
-    </RazorFunctions>
+  <RestConnector Id="TweetSearch" Title="TweetSearch" HelpUrl="https://dev.twitter.com/rest/reference/get/search/tweets">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+	    <Select Id="language" Title="Language" Required="true" DefaultValue="">
+        <DataSource>
+          <Item Id="" Title="All"/>
+          <Resource Id="Languages"/>
+        </DataSource>
+		  </Select>
+	    <Radio Id="Sorting" Title="Sorting" DefaultValue="Recent" Required="true">
+        <DataSource>
+          <Item Id="recent" Title="Recent"/>
+          <Item Id="popular" Title="Popular"/>
+          <Item Id="mixed" Title="Mixed"/>		  
+        </DataSource>
+    </Radio>
     </Parameters>
-    <Paging PageSize="200">
+    <Paging PageSize="100">
       <Parse>
-        <JsonPath Id="MaxId" Expr="$.statuses[-1:].id_str"/>
+        <JsonPath Id="NextResults" Expr="search_metadata.next_results"/>
       </Parse>
     </Paging>
-    <Fetch Url="https://api.twitter.com/1.1/search/tweets.json?@RenderQuery(GetQuery())">
-      <HttpSettings>
+    <Fetch Url="">
+	  <HttpSettings>
         <OAuth>
           <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
           <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
@@ -40,22 +68,112 @@
           <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
         </OAuth>  
       </HttpSettings>
-    </Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://api.twitter.com/1.1/search/tweets.json?
+        &lang=@Model.language
+        &sort=@Model.Sorting
+        &count=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page == 0)
+        {
+          @: &q=@Utils.UrlEncode(Model.Query)
+        }
+        else
+        {
+          @: &@(Model.NextResults.Substring(1))
+        }
+      ]]>
+      </Fetch.Url>
+     </Fetch>
     <Parse>
       <JsonPath Expr="$.statuses.*">
-        <JsonPath Expr="text" Id="text" Title="Text"/>
-        <JsonPath Expr="favorite_count" Id="favorite_count" Title="Favorited" Converter="Int"/>
-        <JsonPath Expr="retweet_count" Id="retweet_count" Title="Retweeted" Converter="Int"/>
-        <JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
-      </JsonPath>
+	    <Compute Id="Url" Title="Url">
+          <Compute.Expr>
+			https://twitter.com/@(Model.screen_name)/status/@(Model.id_str)
+          </Compute.Expr>
+          <JsonPath Expr="id_str" Id="id_str" Converter="String"/>
+          <JsonPath Expr="user.screen_name" Id="screen_name" Converter="String"/>
+		</Compute>
+	  </JsonPath>
+	  <JsonPath Expr="$.statuses.*">
+		<JsonPath Expr="created_at" Id="created_at" Title="Created at" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="text" Id="text" Title="Tweet"/>
+        <JsonPath Expr="retweet_count" Id="retweet_count" Title="Retweets" Converter="Int"/>
+		<JsonPath Expr="user.screen_name" Id="screen_name" Title="Screen Name" Converter="String"/>
+	  </JsonPath>
+	  <JsonPath Expr="$.statuses.*">
+		<Compute Id="UserURL" Title="User URL">
+          <Compute.Expr>
+			https://twitter.com/@(Model.screen_name)
+          </Compute.Expr>
+          <JsonPath Expr="user.screen_name" Id="screen_name" Converter="String"/>
+	     </Compute>
+	  </JsonPath>
+	  <JsonPath Expr="$.statuses.*">
+		<JsonPath Expr="user.name" Id="user.name" Title="Full Name" Converter="String"/>	
+		<JsonPath Expr="user.location" Id="user.location" Title="Location" Converter="String"/>
+		<JsonPath Expr="user.description" Id="user.description" Title="Biography" Converter="String"/>	
+		<JsonPath Expr="user.followers_count" Id="user.followers_count" Title="Followers" Converter="Int"/>		
+	  </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="errors[0].message"/>
     </Fail>
   </RestConnector>
-  -->
-
-  <RestConnector Id="Tweets" Title="Tweets" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/user_timeline">
+  
+  <RestConnector Id="UserSearch" Title="UserSearch" HelpUrl="https://dev.twitter.com/rest/reference/get/users/search">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+    </Parameters>
+   <Paging PageSize="20"/>
+    <Fetch Url="">
+	  <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>  
+      </HttpSettings>
+      <Fetch.Url>
+      <![CDATA[
+        https://api.twitter.com/1.1/users/search.json?
+		&q=@Utils.UrlEncode(Model.Query)
+        &count=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page+1)
+      ]]>
+      </Fetch.Url>
+     </Fetch>
+    <Parse>
+      <JsonPath Expr="*.">
+        <Compute Id="Url" Title="UserURL">
+          <Compute.Expr>
+            https://www.twitter.com/@(Model.ScreenName)
+          </Compute.Expr>
+          <JsonPath Expr="screen_name" Id="ScreenName" Converter="String"/>
+        </Compute>
+      </JsonPath>	
+      <JsonPath Expr="*.">	
+		<JsonPath Expr="id_str" Id="id_str" Title="Id" Converter="String"/>
+		<JsonPath Expr="screen_name" Id="screenname" Title="ScreenName" Converter="String"/>
+		<JsonPath Expr="followers_count" Id="followers_count" Title="Followers" Converter="Int"/>
+		<JsonPath Expr="friends_count" Id="friends_count" Title="Follows" Converter="Int"/>
+		<JsonPath Expr="statuses_count" Id="statuses_count" Title="Tweets" Converter="Int"/>
+		<JsonPath Expr="favourites_count" Id="favourites_count" Title="Favourites" Converter="Int"/>
+		<JsonPath Expr="name" Id="name" Title="Name" Converter="String"/>
+		<JsonPath Expr="location" Id="location" Title="Location" Converter="String"/>
+		<JsonPath Expr="description" Id="description" Title="Description" Converter="String"/>
+		<JsonPath Expr="url" Id="attachedurl" Title="AttachedURL" Converter="String"/>
+		<JsonPath Expr="created_at" Id="created_at" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>		
+		
+	  </JsonPath>		
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>  
+ 
+  <RestConnector Id="TimelineSearch" Title="TimelineSearch" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/user_timeline">
     <RazorFunctions>
     <![CDATA[
     Dictionary<string,string> GetQuery() {
@@ -69,7 +187,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="ScreenName" Title="ScreenName" Debug.DefaultValue="nielsbosma" Required="true"/>
       <Checkbox Id="IncludeRts" Title="Include retweets" DefaultValue="true"/>
     </Parameters>
     <Paging PageSize="200">
@@ -114,7 +232,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="ScreenName" Title="ScreenName" Debug.DefaultValue="nielsbosma" Required="true"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -154,7 +272,7 @@
 
   <RestConnector Id="Following" Title="Following" HelpUrl="https://dev.twitter.com/rest/reference/get/friends/list">
     <RazorFunctions>
-    <![CDATA[
+      <![CDATA[
     Dictionary<string,string> GetQuery() {
       return new Dictionary<string,string> {
         {"screen_name", Model.ScreenName},
@@ -166,7 +284,7 @@
     ]]>
     </RazorFunctions>
     <Parameters>
-      <Text Id="ScreenName" Title="Screen name" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="ScreenName" Title="ScreenName" Debug.DefaultValue="nielsbosma" Required="true"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -203,7 +321,7 @@
       <JsonPath Expr="errors[0].message"/>
     </Fail>
   </RestConnector>
-
+  
   <RazorFunctions>
   <![CDATA[
   
