@@ -409,7 +409,7 @@
       </Fail>
    </RestConnector>
    
-   <RestConnector Id="KeywordDomainSeo" Title="Keyword domain SEO" HelpUrl="https://www.sistrix.com/api/keyword/#keyworddomainseo">
+   <RestConnector Id="KeyWord Domain SEO" Title="Keyword Domain SEO" HelpUrl="https://www.sistrix.com/api/keyword/#keyworddomainseo">
       <Parameters>
          <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" HelpText="The Keywords found within the organic Google ranking for a domain." Debug.DefaultValue="aftonbladet.se"/>
          <Text Id="Host" Title="Host" DefaultValue="" Required="false" HelpText="Limits the keyword search to a specific host name of the domain." Debug.DefaultValue="www.aftonbladet.se"/>	
@@ -439,5 +439,63 @@
          <XPath Expr="/response/error" Attribute="error_message" />
       </Fail>
    </RestConnector>
+
+   <RestConnector Id="Get Project Id" Title="Get Project Id" HelpUrl="https://www.sistrix.com/api/optimizer/#optimizerranking">
+      <Fetch>
+         <Fetch.Url><![CDATA[https://api.sistrix.com/optimizer.projects?api_key=@(Model.ApiKey)]]></Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         <XPath Expr="/response/answer/optimizer.project">
+            <Xpath Expr="." Attribute="hash" Id="hash" Title="ID" Converter="String" />
+            <Xpath Expr="." Attribute="name" Id="name" Title="Name" Converter="String" />
+         </XPath>
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>   
+   
+   <RestConnector Id="Project Keywords Ranking" Title="Project Keywords Ranking" HelpUrl="https://www.sistrix.com/api/optimizer/#optimizerranking" HelpText="The Id of projects can be retrieved with the 'Get Project Id' Connector">
+      <Parameters>
+         <Text Id="Project" Title="Project Id" DefaultValue="" Required="true" Debug.DefaultValue="r9f3Y53pG7qgbNFq"  HelpText="The Project Id/Hash"/>
+      </Parameters>
+	  <Paging PageSize="50" MinTake="50" IncrementTake="50"/>
+      <Fetch>
+         <Fetch.Url>
+		 <![CDATA[
+		 https://api.sistrix.com/optimizer.ranking?
+		 api_key=@(Model.ApiKey)
+		 &project=@(Model.Project)
+		 &limit=@(Model.PageCursor.PageSize)
+         &offset=@(Model.PageCursor.NextSkip)
+		 ]]>
+		 </Fetch.Url>
+         <HttpSettings>
+            <RequestHeaders>
+               <Header Name="User-Agent">SeoToolsForExcel</Header>
+            </RequestHeaders>
+         </HttpSettings>
+      </Fetch>
+      <Parse>
+         <XPath Expr="/response/answer/optimizer.rankings">
+            <Xpath Expr="//*/optimizer.ranking" Attribute="keyword" Id="keyword" Title="Keyword" Converter="String" />
+            <Xpath Expr="//*/optimizer.ranking" Attribute="position" Id="position" Title="Position" Converter="Int" />
+            <Xpath Expr="//*/optimizer.ranking" Attribute="url" Id="url" Title="URL" Converter="String"/>
+            <Xpath Expr="//*/optimizer.ranking" Attribute="tags" Id="tags" Title="Tags" Converter="String"/>
+            <Xpath Expr="//*/optimizer.ranking" Attribute="url" Id="url" Title="URL" Converter="String"/>			
+            <Xpath Expr="//*/optimizer.ranking" Attribute="device" Id="device" Title="Device" Converter="String"/>
+            <Xpath Expr="//*/optimizer.ranking" Attribute="country" Id="country" Title="Country" Converter="String"/>			
+            <Xpath Expr="//*/optimizer.ranking" Attribute="searchengine" Id="searchengine" Title="Searchengine" Converter="String"/>				
+         </XPath>
+      </Parse>
+      <Fail>
+         <XPath Expr="/response/error" Attribute="error_message" />
+      </Fail>
+   </RestConnector>   
    
 </Suite>
