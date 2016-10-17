@@ -1,40 +1,129 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="AccuRanker" Id="AccuRanker" RequireVersion="5.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AccuRanker.xml" HelpUrl="http://seotoolsforexcel.com/accuranker/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com" />
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/accuranker/">
     <Text Id="ApiToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/accuranker/"/>
   </Settings>
 
-  <!--
-  
-  https://app.accuranker.com/api/
-  
-  Authorization: Token <ApiToken>
-  
-  -->
-
-  <!--
-  <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Organic domain keyword count" HelpUrl="http://api.searchmetrics.com/api-calls/service/v1/ResearchOrganicGetCountDomainKeyword" HelpText="Number of organic keywords for a given domain.">
-    <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain"/>
-      <Resource Id="SelectCountry"/>
-    </Parameters>
-    <Fetch Url="http://api.searchmetrics.com/v1/ResearchOrganicGetCountDomainKeyword.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)">
+  <RestConnector Id="ListOrganizations" Title="List Organizations" HelpUrl="https://app.accuranker.com/api/v3/organizations/">
+    <Fetch Url="">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
         </RequestHeaders>
       </HttpSettings>
-    </Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/organizations/?format=json
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+	
     <Parse>
-      <JsonPath Expr="$[0]" Converter="Int"/>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_at" Id="createdat" Title="Created" Converter="DateTime" HelpText=""/>
+	  </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-  -->
 
+  <RestConnector Id="ListDomains" Title="List Domains" HelpUrl="https://app.accuranker.com/api/v3/domains/">
+    <Fetch Url="">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Token @Model.ApiToken</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/domains/?format=json
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="domain" Title="Domain" Converter="String" HelpText=""/>
+        <JsonPath Expr="group" Id="group" Title="Group" Converter="Int" HelpText=""/>
+        <JsonPath Expr="created_at" Id="createdat" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="ranks_updated_at" Id="ranksupdatedat" Title="Rank Updated" Converter="DateTime" HelpText=""/>
+	  </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector> 
+ 
+  <RestConnector Id="ListDomainsFilter" Title="ListDomainsFilter" HelpUrl="https://app.accuranker.com/api/v3/domains/" Hidden="True">
+    <Fetch Url="">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Token @Model.ApiToken</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/domains/?format=json
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="id" Title="Domain" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="domain" Title="Domain" Converter="String" HelpText=""/>		
+	  </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+  
+  <RestConnector Id="ListKeywords" Title="List Keywords" HelpUrl="List or create keywords for a specific domain">
+    <Parameters>
+	  <Text Id="Domain" Title="Domain" DefaultValue="" Required="false" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
+	</Parameters>	
+	<Fetch Url="">	
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Token @Model.ApiToken</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/
+		@if(Model.Domain == "")
+        {
+          @: keywords/?format=json
+        }
+        else
+        {
+          @: domains/@(Model.Domain)/keywords/?format=json
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="domain" Id="domain" Title="Domain" Converter="Int" HelpText=""/>
+        <JsonPath Expr="keyword" Id="keyword" Title="Keyword" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_at" Id="createdat" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="search_volume" Id="searchvolume" Title="Search Volume" Converter="Int" HelpText=""/>
+	  </JsonPath>
+      <JsonPath Expr="$.*.rank">
+        <JsonPath Expr="rank" Id="rank" Title="Rank" Converter="Int" HelpText=""/>
+        <JsonPath Expr="url" Id="url" Title="Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="est_traffic" Id="esttraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>	
+	  </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>		
 </Suite>
