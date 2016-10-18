@@ -451,7 +451,7 @@
     </Fetch>
     <Parse>
       <XPath Expr="/response/answer/optimizer.project">
-        <Xpath Expr="." Attribute="hash" Id="id" Title="Id" Converter="String" />
+        <Xpath Expr="." Attribute="hash" Id="Id" Title="Id" Converter="String" />
         <Xpath Expr="." Attribute="name" Id="title" Title="Title" Converter="String" />
       </XPath>
     </Parse>
@@ -459,10 +459,40 @@
       <XPath Expr="/response/error" Attribute="error_message" />
     </Fail>
   </RestConnector>
+  
+  <RestConnector Id="GetTags" HelpUrl="https://www.sistrix.com/api/optimizer/#optimizerranking" Hidden="false">
+    <Parameters>
+      <Text Id="Project" Title="Project Id" DefaultValue="" Required="true" Debug.DefaultValue=""  HelpText="The project Id/Hash" Select.Connector="GetProjectId"/>
+	</Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://api.sistrix.com/optimizer.project?
+        api_key=@(Model.ApiKey)
+        &project=@(Model.Project)
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="User-Agent">SeoToolsForExcel</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//*/optimizer.project.tag">
+        <Xpath Expr="." Attribute="hash" Id="TagId" Title="TagId" Converter="String"/>
+        <Xpath Expr="." Attribute="name" Id="TagTitle" Title="TagTitle" Converter="String"/>
+      </XPath>
+    </Parse>
+    <Fail>
+      <XPath Expr="/response/error" Attribute="error_message" />
+    </Fail>
+  </RestConnector>  
 
   <RestConnector Id="ProjectKeywordsRanking" Title="Project keywords ranking" HelpUrl="https://www.sistrix.com/api/optimizer/#optimizerranking" HelpText="">
     <Parameters>
-      <Text Id="Project" Title="Project Id" DefaultValue="" Required="true" Debug.DefaultValue="r9f3Y53pG7qgbNFq"  HelpText="The project Id/Hash" Select.Connector="GetProjectId"/>
+      <Text Id="Project" Title="Project Id" DefaultValue="" Required="true" HelpText="The project Id/Hash" Select.Connector="GetProjectId"/>
+      <Text Id="Tag" Title="Tag" DefaultValue="" Required="false" HelpText="Filter by a specific tag" Select.Connector="GetTags" Select.IdField="TagTitle" Select.TitleField="TagTitle"/>
 	  <Text Id="Limit" Title="Limit" DefaultValue="250" Required="false" HelpText="The number of keywords to return"/>
 	</Parameters>
     <Fetch>
@@ -472,6 +502,7 @@
         api_key=@(Model.ApiKey)
         &project=@(Model.Project)
         &limit=@(Model.Limit)
+		&tag=@(Model.Tag)
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -495,5 +526,6 @@
       <XPath Expr="/response/error" Attribute="error_message" />
     </Fail>
   </RestConnector>
+
 
 </Suite>
