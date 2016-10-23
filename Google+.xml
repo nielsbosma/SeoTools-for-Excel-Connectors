@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite RequireVersion="5.2.6" Title="Google+" Id="GooglePlus" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/google+.xml" HelpUrl="http://seotoolsforexcel.com/google+/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/google0/">
+    <Text Id="Key" Title="API Key" Required="true"/>
+  </Settings>
+  
+  <RestConnector Id="SearchActivity" Title="Search Activity">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="recent" Required="true">
+        <DataSource>
+          <Item Id="recent" Title="Reent"/>
+          <Item Id="best" Title="Best"/>
+        </DataSource>
+      </Radio>	  
+	  
+    </Parameters>
+    <Paging PageSize="20">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/plus/v1/activities?
+		query=@Utils.UrlEncode(Model.Query)
+		&key=@Model.Key
+		&order=@(Model.Sorting)		
+		&maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="id" Id="Id" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Converter="String"/>
+        <JsonPath Expr="title" Id="Title" Converter="String"/>
+        <JsonPath Expr="published" Id="Published" Converter="Datetime"/>
+        <JsonPath Expr="updated" Id="Updated" Converter="Datetime"/>
+        <JsonPath Expr="object.objectType" Id="Type" Converter="String"/>
+        <JsonPath Expr="object.replies.totalItems" Id="Replies" Converter="Int"/>
+        <JsonPath Expr="object.plusoners.totalItems" Id="PlusOners" Converter="Int"/>
+        <JsonPath Expr="object.resharers.totalItems" Id="Reshares" Converter="Int"/>
+        <JsonPath Expr="actor.id" Id="UserId" Converter="String"/>
+        <JsonPath Expr="actor.displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
+        <JsonPath Expr="actor.url" Id="UserUrl" Title="User Url" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="SearchUsers" Title="User search">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+    </Parameters>
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/plus/v1/people?
+		query=@Utils.UrlEncode(Model.Query)
+		&key=@Model.Key
+		&maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="id" Id="Id" Title="User Id" Converter="String"/>
+        <JsonPath Expr="url" Id="UserUrl" Title="User Url" Converter="String"/>
+        <JsonPath Expr="displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
+        <JsonPath Expr="objectType" Id="ObjectType" Title="Type" Converter="String"/>
+        <JsonPath Expr="image.url" Id="Thumbnail" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="ActivityStatistics" Title="Activity Statistics">
+    <Parameters>
+      <Text Id="Id" Title="Activity Id" Debug.DefaultValue="z13ejvrw5kjzsxf5m04cjnxhzsn0dvtie0w" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/plus/v1/activities/
+		@Utils.UrlEncode(Model.Id)
+		?key=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="Id" Converter="String"/>
+      <JsonPath Expr="url" Id="Url" Converter="String"/>
+      <JsonPath Expr="title" Id="Title" Converter="String"/>
+      <JsonPath Expr="published" Id="Published" Converter="Datetime"/>
+      <JsonPath Expr="updated" Id="Updated" Converter="Datetime"/>
+      <JsonPath Expr="object.objectType" Id="Type" Converter="String"/>
+      <JsonPath Expr="object.replies.totalItems" Id="Replies" Converter="Int"/>
+      <JsonPath Expr="object.plusoners.totalItems" Id="PlusOners" Converter="Int"/>
+      <JsonPath Expr="object.resharers.totalItems" Id="Reshares" Converter="Int"/>
+      <JsonPath Expr="actor.id" Id="UserId" Converter="String"/>
+      <JsonPath Expr="actor.displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
+      <JsonPath Expr="actor.url" Id="UserUrl" Title="User Url" Converter="String"/>
+    </Parse>
+  </RestConnector> 
+
+  <RestConnector Id="UserLookup" Title="User Lookup">
+    <Parameters>
+      <Text Id="Id" Title="User Id" Debug.DefaultValue="101547009692517311652" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/plus/v1/people/
+		@Utils.UrlEncode(Model.Id)
+		?key=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="Id" Converter="String"/>
+      <JsonPath Expr="url" Id="UserUrl" Title="User Url" Converter="String"/>
+	  <JsonPath Expr="displayName" Id="displayName" Title="Display Name" Converter="String"/>
+	  <JsonPath Expr="name.familyName" Id="familyName" Title="Family Name" Converter="String"/>
+	  <JsonPath Expr="name.givenName" Id="givenName" Title="Given Name" Converter="String"/>
+	  <JsonPath Expr="gender" Id="gender" Title="Gender" Converter="String"/>
+	  <JsonPath Expr="circledByCount" Id="circledByCount" Title="Followers" Converter="Int"/>
+      <JsonPath Expr="objectType" Id="ObjectType" Title="Type" Converter="String"/>
+      <JsonPath Expr="image.url" Id="Thumbnail" Converter="String"/>
+    </Parse>
+  </RestConnector>   
+  
+  <RestConnector Id="TimelineSearch" Title="Timeline Search">
+    <Parameters>
+      <Text Id="Id" Title="User Id" Debug.DefaultValue="101547009692517311652" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/plus/v1/people/
+		@Utils.UrlEncode(Model.Id)
+		/activities/public?
+		key=@Model.Key
+		&maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="url" Id="Url" Converter="String"/>
+        <JsonPath Expr="title" Id="Title" Converter="String"/>
+        <JsonPath Expr="published" Id="Published" Converter="Datetime"/>
+        <JsonPath Expr="updated" Id="Updated" Converter="Datetime"/>
+        <JsonPath Expr="object.objectType" Id="Type" Converter="String"/>
+        <JsonPath Expr="object.replies.totalItems" Id="Replies" Converter="Int"/>
+        <JsonPath Expr="object.plusoners.totalItems" Id="PlusOners" Converter="Int"/>
+        <JsonPath Expr="object.resharers.totalItems" Id="Reshares" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>  
+
+</Suite>
