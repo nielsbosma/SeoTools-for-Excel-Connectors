@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite RequireVersion="5.2.6" Title="FullContact" Id="FullContact" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FullContact.xml" HelpUrl="http://seotoolsforexcel.com/fullcontact" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/fullcontact">
+    <Text Id="Key" Title="API Key" Required="true"/>
+  </Settings>
+
+  <RestConnector Id="ContactLookupByEmail" Title="Email Lookup">
+    <Parameters>
+      <Text Id="Email" Title="Email" Debug.DefaultValue="viktoria.isaksson@missioncouncil.se" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+      https://api.fullcontact.com/v2/person.json?
+      email=@Utils.UrlEncode(Model.Email)
+      &apiKey=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="contactInfo.websites[*]">
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="contactInfo.fullName" Id="FullName" Title="Full Name" Converter="String"/>
+      <JsonPath Expr="organizations[*]">
+        <JsonPath Expr="name" Id="OrgName" Title="Org. Name" Converter="String"/>
+        <JsonPath Expr="startDate" Id="OrgStartDate" Title="Org. Start Date" Converter="DateTime"/>
+        <JsonPath Expr="title" Id="OrgTitle" Title="OrgTitle" Converter="String"/>
+        <JsonPath Expr="current" Id="CurrentStatus" Title="Current Status" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='linkedin')].url" Id="LinkedInUrl" Title="LinkedIn URL" Converter="String" />
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='twitter')].url" Id="TwitterUrl" Title="Twitter URL" Converter="String" />
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='facebook')].url" Id="FacebookUrl" Title="Facebook URL" Converter="String" />
+      <JsonPath Expr="digitalFootprint.scores[?(@@.provider=='klout')].value" Id="KloutScore" Title="Klout Score" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="NameNormalizer" Title="Name Normalizer" HelpText="Takes quasi-structured name data provided as a string and outputs the data in a structured manner.">
+    <Parameters>
+      <Text Id="Input" Title="Input" Debug.DefaultValue="mr john (johnny) michael smith jr mba" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+      https://api.fullcontact.com/v2/name/normalizer.json?
+      q=@Utils.UrlEncode(Model.Input)
+      &apiKey=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="nameDetails.fullName" Id="FullName" Title="Full Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.givenName" Id="GivenName" Title="Given Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.familyName" Id="FamilyName" Title="Family Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.middleNames[*]">
+        <JsonPath Expr="$" Id="MiddleNames" Title="Middle Names" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="nameDetails.prefixes[*]">
+        <JsonPath Expr="$" Id="Prefixes" Title="Prefixes" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="nameDetails.suffixes[*]">
+        <JsonPath Expr="$" Id="Suffixes" Title="Suffixes" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="nameDetails.nicknames[*]">
+        <JsonPath Expr="$" Id="Nicknames" Title="Nicknames" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="EmailDeducer" Title="Email Deducer" HelpText="takes an email address provided as a string and attempts to deduce a structured name.">
+    <Parameters>
+      <Text Id="Input" Title="Input" Debug.DefaultValue="johndsmith79@business.com" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+      https://api.fullcontact.com/v2/name/deducer.json?
+      email=@Utils.UrlEncode(Model.Input)
+      &apiKey=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="nameDetails.fullName" Id="FullName" Title="Full Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.givenName" Id="GivenName" Title="Given Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.familyName" Id="GamilyName" Title="Family Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.middleNames[*]">
+        <JsonPath Expr="$" Id="MiddleNames" Title="Middle Names" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UsernameDeducer" Title="Username Deducer" HelpText="takes a username provided as a string and attempts to deduce a structured name.">
+    <Parameters>
+      <Text Id="NameString" Title="Name String" Debug.DefaultValue="johndsmith79" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+      https://api.fullcontact.com/v2/name/deducer.json?
+      username=@Utils.UrlEncode(Model.NameString)
+      &apiKey=@Model.Key
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="nameDetails.fullName" Id="FullName" Title="Full Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.givenName" Id="GivenName" Title="Given Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.familyName" Id="FamilyName" Title="Family Name" Converter="String"/>
+      <JsonPath Expr="nameDetails.middleNames[*]">
+        <JsonPath Expr="$" Id="MiddleNames" Title="Middle Names" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DomainLookup" Title="Domain Lookup">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="aftonbladet.se" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+      https://api.fullcontact.com/v2/company/lookup.json?
+      domain=@Utils.UrlEncode(Model.Domain)
+      &apiKey=@Model.Key
+      &keyPeople=true
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="organization.name" Id="OrgName" Title="Org. Name" Converter="String"/>
+      <JsonPath Expr="traffic.ranking[?(@@.locale=='global')].rank" Id="GlobalRanking" Title="Global Ranking" Converter="Int"/>
+      <JsonPath Expr="organization.contactInfo.emailAddresses[*]">
+        <JsonPath Expr="value" Id="ContactEmail" Title="Contact Email" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="organization.contactInfo.phoneNumbers[*]">
+        <JsonPath Expr="number" Id="ContactPhone" Title="Contact Phone" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="organization.keywords[*]">
+        <JsonPath Expr="$" Id="Keywords" Title="Keywords" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='twitter')].url" Id="TwitterUrl" Title="Twitter URL" Converter="String"/>
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='facebook')].url" Id="FacebookUrl" Title="Facebook URL" Converter="String"/>
+      <JsonPath Expr="organization.keyPeople[*]">
+        <JsonPath Expr="name" Id="KeyPeopleName" Title="Key People Name" Converter="String"/>
+        <JsonPath Expr="title" Id="KeyPeopleTitle" Title="Key People Title" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
