@@ -109,7 +109,7 @@
 
   <RestConnector Id="Feed" Title="Page Feed">
     <Parameters>
-      <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/DJURGARDEN/?fref=ts"/>
+      <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/filippak/" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
     </Parameters>
     <Paging PageSize="25">
       <Parse>
@@ -138,7 +138,12 @@
 		<JsonPath Title="Message" Id="Message" Expr="message" Converter="String" HelpText=""/>		
 		<JsonPath Title="Title" Id="Title" Expr="name" Converter="String" HelpText=""/>
 		<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" HelpText=""/>
-		<JsonPath Title="Shares" Id="Shares" Expr="shares.count" Converter="Int" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[*].from">		  
+		<JsonPath Title="Author Id" Id="FromId" Expr="id" Converter="String" HelpText=""/>
+		<JsonPath Title="Author" Id="Author" Expr="name" Converter="String" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data.*">			
 		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
 		<JsonPath Title="Updated" Id="Updated" Expr="updated_time" Converter="DateTime" HelpText=""/>
       </JsonPath>
@@ -146,7 +151,119 @@
     <Fail>
       <JsonPath Expr="$.error.message"/>
     </Fail>
-  </RestConnector>   
+  </RestConnector>
+
+  <RestConnector Id="Videos" Title="Page Videos">
+    <Parameters>
+      <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/filippak/" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="25">
+      <Parse>
+		<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/videos?
+		id=@(Model.Id)
+		&access_token=@(Model.AccessToken)
+	    &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="data.*">	
+		<JsonPath Title="Video Id" Id="VideoId" Expr="id" Converter="String" HelpText=""/>
+		<JsonPath Title="URL" Id="Url" Expr="source" Converter="String" HelpText=""/>
+		<JsonPath Title="Title" Id="Title" Expr="name" Converter="String" HelpText=""/>
+		<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" HelpText=""/>
+		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
+		<JsonPath Title="Updated" Id="Updated" Expr="updated_time" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>
+  
+  <RestConnector Id="PostLikes" Title="Post Likes">
+    <Parameters>
+      <Text Id="Id" Title="Id" DefaultValue="" Required="true" Debug.DefaultValue="10157421651870099" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="25">
+      <Parse>
+		<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/
+		@(Model.Id)
+		/likes?
+		&access_token=@(Model.AccessToken)
+	    &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="data.*">	
+		<JsonPath Title="Liker Id" Id="LikerId" Expr="id" Converter="String" HelpText=""/>
+		<JsonPath Title="Liker" Id="Liker" Expr="name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="PostComments" Title="Post Comments">
+    <Parameters>
+      <Text Id="Id" Title="Id" DefaultValue="" Required="true" Debug.DefaultValue="10154179658181749" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="25">
+      <Parse>
+		<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/
+		@(Model.Id)
+		/comments?
+		&access_token=@(Model.AccessToken)
+	    &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="data.*">	
+		<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" HelpText=""/>
+		<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" HelpText=""/>
+		<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" HelpText=""/>
+		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
+		<JsonPath Title="Commentator Id" Id="CommentatorId" Expr="from.id" Converter="String" HelpText=""/>
+		<JsonPath Title="Commentator" Id="Commentator" Expr="from.name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>    
  
   
 </Suite>
