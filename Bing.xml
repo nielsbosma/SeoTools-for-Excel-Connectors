@@ -5,7 +5,7 @@
 
   <RestConnector Id="BingScraper" Title="Bing Scraper">
 	<Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="zlatan"/>
     </Parameters>
     <Paging PageSize="10"/>
     <Fetch>
@@ -27,8 +27,41 @@
     </Fetch>
     <Parse>
       <XPath Expr="//li[@@class='b_algo']//h2">	
-        <XPath Expr="." Title="Title" Id="Title" Converter="String"/>
 		<XPath Expr="a" Attribute="href" Title="URL" Id="Url" Converter="String"/>
+        <XPath Expr="." Title="Title" Id="Title" Converter="String"/>		
+	  </XPath>
+	  <XPath Expr="//li[@@class='b_algo']//div/p">
+        <XPath Expr="." Title="Description" Id="Description" Converter="String"/>
+	  </XPath>	  
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="OtherDomainsOnIp" Title="Other Domains On Ip">
+	<Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="83.168.203.192" Required="true"/>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://www.bing.com/search?
+		q=ip:@Utils.UrlEncode(Model.Query)
+		@if(Model.PageCursor.Page == 0)
+        {
+          @: &first=@(Model.PageCursor.Page+1)
+        }
+        else
+        {
+          @: &first=@((Model.PageCursor.Page+1)*10)
+        }
+		
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//li[@@class='b_algo']//h2">
+		<XPath Expr="a" Attribute="href" Title="URL" Id="Url" Converter="String"/>	  
+        <XPath Expr="." Title="Title" Id="Title" Converter="String"/>
 	  </XPath>
 	  <XPath Expr="//li[@@class='b_algo']//div/p">
         <XPath Expr="." Title="Description" Id="Description" Converter="String"/>
