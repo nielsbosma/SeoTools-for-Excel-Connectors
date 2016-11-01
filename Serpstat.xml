@@ -32,7 +32,7 @@
   
   <RestConnector Id="DomainSummary" Title="Domain Summary">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="apple.com" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="apple.com" Required="true" HelpUrl="https://serpstat.com/api/241-domain-summary-report-domaininfo/"/>
       <Resource Id="SelectEngine"/> 
     </Parameters>
     <Fetch>
@@ -67,7 +67,7 @@
 
   <RestConnector Id="DomainHistory" Title="Domain History">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="apple.com" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="apple.com" Required="true" HelpUrl="https://serpstat.com/api/243-domain-summary-report-domainhistory/"/>
       <Resource Id="SelectEngine"/>
     </Parameters>
     <Paging PageSize="100"/>	
@@ -109,8 +109,6 @@
       <Text Id="ExcludeKeywords" Title="Exclude Keywords (comma-separated)" Debug.DefaultValue="movies" Required="false"/>
       <Text Id="QueriesMinimum" Title="Minimum Queries Count" Debug.DefaultValue="" Required="false"/>
       <Text Id="QueriesMaximum" Title="Maximum Queries Count" Debug.DefaultValue="" Required="false"/>
-	  
-	  
       <Resource Id="SelectEngine"/> 
     </Parameters>
     <Paging PageSize="100"/>	
@@ -167,8 +165,9 @@
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="nintendo.com" Required="true"/>
       <Text Id="Domain2" Title="Second Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
       <Text Id="Domain3" Title="Third Domain (optional)" Debug.DefaultValue="youtube.com" Required="false"/>	  
-      <Resource Id="SelectEngine"/> 
+      <Resource Id="SelectEngine"/>  
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -181,6 +180,8 @@
         }		
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -188,7 +189,7 @@
       <JsonPath Expr="result.hits.*">	
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
         <JsonPath Expr="found_results" Id="FoundResults" Title="Results Found" Converter="String"/>
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="Int"/>
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="Int"/>
         <JsonPath Expr="keyword_crc" Id="KeywordCrc" Title="Keyword CRC" Converter="String"/>
         <JsonPath Expr="url_crc" Id="UrlCrc" Title="URL CRC" Converter="String"/>
         <JsonPath Expr="concurrency" Id="Concurrency" Title="Concurrency" Converter="Int"/>		
@@ -214,6 +215,7 @@
       <Text Id="DomainExclude" Title="Exclude Common KW:s With Domain" Debug.DefaultValue="youtube.com" Required="true" HelpText="domain which keywords should be removed from the results."/>	  
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -222,6 +224,8 @@
 		&minus_domain=@Utils.UrlEncode(Model.DomainExclude)	
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -229,7 +233,7 @@
       <JsonPath Expr="result.hits.*">	
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
         <JsonPath Expr="found_results" Id="FoundResults" Title="Results Found" Converter="String"/>
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="Int"/>
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="Int"/>
         <JsonPath Expr="keyword_crc" Id="KeywordCrc" Title="Keyword CRC" Converter="String"/>
         <JsonPath Expr="url_crc" Id="UrlCrc" Title="URL CRC" Converter="String"/>
         <JsonPath Expr="concurrency" Id="Concurrency" Title="Concurrency" Converter="Int"/>		
@@ -241,11 +245,12 @@
     </Parse>
   </RestConnector>   
   
-  <RestConnector Id="DomainUrls" Title="Domain URL:s Within" HelpUrl="https://serpstat.com/api/532-list-of-domains-urls-domainurls/">
+  <RestConnector Id="UrlsWithinDomain" Title="URL:s Within Domain" HelpUrl="https://serpstat.com/api/532-list-of-domains-urls-domainurls/">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="nintendo.com" Required="true"/>
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -253,6 +258,8 @@
 		query=@Utils.UrlEncode(Model.Domain)
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -335,20 +342,28 @@
   <RestConnector Id="KeywordsFromPhrase" Title="Keywords From Phrase" HelpUrl="https://serpstat.com/api/255-phrase-match-keywords-keywords/">
     <Parameters>
       <Text Id="Phrase" Title="Phrase (At least one space is requred" Debug.DefaultValue="seo tools" Required="true" HelpText="This method uses a full text search to find all keywords that match the queried term."/>
+      <Text Id="QueriesMinimum" Title="Minimum Queries Count" Debug.DefaultValue="" Required="false"/>
+      <Text Id="QueriesMaximum" Title="Maximum Queries Count" Debug.DefaultValue="" Required="false"/>
       <Resource Id="SelectEngine"/>	  
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         http://api.serpstat.com/v3/keywords?
-		query=@Utils.UrlEncode(Model.Phrase)
-        @if(Model.Sorting != "default")
-        {
-          @: &sort=@Model.Sorting
-        }
-		&sort=@Model.Sorting		
+		query=@Utils.UrlEncode(Model.Phrase)		
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)
+        @if(Model.QueriesMinimum != "")
+        {
+          @: &queries_from=@Utils.UrlEncode(Model.QueriesMinimum)
+        }
+        @if(Model.QueriesMaximum != "")
+        {
+          @: &queries_to=@Utils.UrlEncode(Model.QueriesMaximum)
+        }		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -357,8 +372,8 @@
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
         <JsonPath Expr="cost" Id="Cost" Title="Cost" Converter="Double"/>
         <JsonPath Expr="found_results" Id="FoundResults" Title="Found Results" Converter="String"/>
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="String"/>
-        <JsonPath Expr="region_queries_count_last" Id="RegionQueriesLastCount" Title="Region Queries Last Count" Converter="String"/>		
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="String"/>
+        <JsonPath Expr="region_queries_count_last" Id="RegionQueriesLastCount" Title="Queries Last Count" Converter="String"/>		
         <JsonPath Expr="keyword_id" Id="KeywordId" Title="Keyword Id" Converter="Int"/>
       </JsonPath>		
     </Parse>
@@ -389,8 +404,8 @@
         <JsonPath Expr="types" Id="Types" Title="Types" Converter="String"/>
         <JsonPath Expr="social_domains" Id="SocialDomains" Title="Social Domains" Converter="String"/>
         <JsonPath Expr="found_results" Id="FoundResults" Title="Found Results" Converter="String"/>
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="Int"/>
-        <JsonPath Expr="region_queries_count_last" Id="RegionQueriesCountLast" Title="Region Queries Count Last" Converter="Int"/>
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="Int"/>
+        <JsonPath Expr="region_queries_count_last" Id="RegionQueriesCountLast" Title="Queries Count Last" Converter="Int"/>
         <JsonPath Expr="id" Id="KeywordId" Title="Keyword Id" Converter="Int"/>
       </JsonPath>		
     </Parse>
@@ -424,6 +439,7 @@
       <Text Id="ConnectionStrength" Title="Connection Strength (1-20)" Debug.DefaultValue="10" Required="false" HelpText="Criteria for the degree of keywords similarity. Serpstat finds related keywords according to the similarity of their top-20 search results."/>	  
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -435,6 +451,8 @@
         }
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -477,8 +495,11 @@
   <RestConnector Id="KeywordAdvertisingReport" Title="Keyword Advertising Report" HelpUrl="https://serpstat.com/api/267-advertising-report-adkeywords/">
     <Parameters>
       <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="seo tools" Required="true"/>
+      <Text Id="QueriesMinimum" Title="Minimum Queries Count" Debug.DefaultValue="" Required="false"/>
+      <Text Id="QueriesMaximum" Title="Maximum Queries Count" Debug.DefaultValue="" Required="false"/>	  
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -486,6 +507,16 @@
 		query=@Utils.UrlEncode(Model.Keyword)
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)
+        @if(Model.QueriesMinimum != "")
+        {
+          @: &queries_from=@Utils.UrlEncode(Model.QueriesMinimum)
+        }
+        @if(Model.QueriesMaximum != "")
+        {
+          @: &queries_to=@Utils.UrlEncode(Model.QueriesMaximum)
+        }		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -499,7 +530,7 @@
         <JsonPath Expr="url_crc" Id="UrlCrc" Title="URL CRC" Converter="String"/>
         <JsonPath Expr="crc" Id="Crc" Title="CRC" Converter="String"/>
         <JsonPath Expr="found_results" Id="FoundResults" Title="Found Results" Converter="String"/>		
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="Int"/>
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="Int"/>
       </JsonPath>		
     </Parse>
   </RestConnector>
@@ -509,6 +540,7 @@
       <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.imdb.com/chart/top" Required="true"/>
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -516,6 +548,8 @@
 		query=@Utils.UrlEncode(Model.Url)
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -536,6 +570,7 @@
       <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.imdb.com/chart/top" Required="true"/>
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -543,6 +578,8 @@
 		query=@Utils.UrlEncode(Model.Url)
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
@@ -560,6 +597,7 @@
       <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.imdb.com/chart/top" Required="true"/>
       <Resource Id="SelectEngine"/> 
     </Parameters>
+    <Paging PageSize="100"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -567,13 +605,15 @@
 		query=@Utils.UrlEncode(Model.Url)
 	    &token=@Model.Key
 		&se=@Model.Engine
+        &page_size=@(Model.PageCursor.NextTake)
+		&page=@(Model.PageCursor.Page)		
       ]]>
       </Fetch.Url>  
     </Fetch>
     <Parse>
       <JsonPath Expr="result.hits.*">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>	
-        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Region Queries Count" Converter="Int"/>
+        <JsonPath Expr="region_queries_count" Id="RegionQueriesCount" Title="Queries Count" Converter="Int"/>
         <JsonPath Expr="weight" Id="ConnectionStrength" Title="Connection Strength" Converter="Int"/>
         <JsonPath Expr="keyword_id" Id="KeywordId" Title="Keyword Id" Converter="Int"/>		
       </JsonPath>
