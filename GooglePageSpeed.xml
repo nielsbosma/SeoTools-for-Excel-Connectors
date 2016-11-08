@@ -2,35 +2,98 @@
 <Suite Title="Google PageSpeed" Id="GooglePageSpeed" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GooglePageSpeed.xml" HelpUrl="http://seotoolsforexcel.com/google-pagespeed/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <Resources>
+    <Resource Id="Locales">
+	  <Item Id="ar" Title="Arabic"/>
+		<Item Id="bg" Title="Bulgarian"/>
+		<Item Id="ca" Title="Catalan"/>
+		<Item Id="zh-TW" Title="Traditional Chinese (Taiwan)"/>
+		<Item Id="zh-CN" Title="Simplified Chinese"/>
+		<Item Id="hr" Title="Croatian"/>
+		<Item Id="cs" Title="Czech"/>
+		<Item Id="da" Title="Danish"/>
+		<Item Id="nl" Title="Dutch"/>
+		<Item Id="en-GB" Title="English (UK)"/>
+		<Item Id="fil" Title="Filipino"/>
+		<Item Id="fi" Title="Finnish"/>
+		<Item Id="fr" Title="French"/>
+		<Item Id="de" Title="German"/>
+		<Item Id="el" Title="Greek"/>
+		<Item Id="iw" Title="Hebrew"/>
+		<Item Id="hi" Title="Hindi"/>
+		<Item Id="hu" Title="Hungarian"/>
+		<Item Id="id" Title="Indonesian"/>
+		<Item Id="it" Title="Italian"/>
+		<Item Id="ja" Title="Japanese"/>
+		<Item Id="ko" Title="Korean"/>
+		<Item Id="lv" Title="Latvian"/>
+		<Item Id="lt" Title="Lithuanian"/>
+		<Item Id="no" Title="Norwegian"/>
+		<Item Id="pl" Title="Polish"/>
+		<Item Id="pt-BR" Title="Portuguese (Brazilian)"/>
+		<Item Id="pt-PT" Title="Portuguese (Portugal)"/>
+		<Item Id="ro" Title="Romanian"/>
+		<Item Id="ru" Title="Russian"/>
+		<Item Id="sr" Title="Serbian"/>
+		<Item Id="sk" Title="Slovakian"/>
+		<Item Id="sl" Title="Slovenian"/>
+		<Item Id="es" Title="Spanish"/>
+		<Item Id="sv" Title="Swedish"/>
+		<Item Id="th" Title="Thai"/>
+		<Item Id="tr" Title="Turkish"/>
+		<Item Id="uk" Title="Ukrainian"/>
+		<Item Id="vi" Title="Vietnamese"/>
+    </Resource>
+  </Resources>
   
   <RestConnector Id="GooglePageSpeed" Title="Google PageSpeed" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="true"/>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Select Id="Locale" Title="Locale" Required="true" DefaultValue="en">
+        <DataSource>
+          <Item Id="en" Title="English (US)"/>
+          <Resource Id="Locales"/>
+        </DataSource>
+      </Select>	  
       <Radio Id="Strategy" Title="Strategy" DefaultValue="desktop" Required="true">
         <DataSource>
           <Item Id="desktop" Title="Desktop"/>
           <Item Id="mobile" Title="Mobile"/>
         </DataSource>
       </Radio>
+      <Checkbox Id="ExcludeTPR" Title="Exclude Third Party Resources" DefaultValue="false"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/pagespeedonline/v1/runPagespeed?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;key=AIzaSyBnAw8FGjUQTVYA8Qrs0VUH4EiVcFIR6bk&amp;strategy=@(Model.Strategy)">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://www.googleapis.com/pagespeedonline/v2/runPagespeed?
+		  url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))
+		  &key=AIzaSyBnAw8FGjUQTVYA8Qrs0VUH4EiVcFIR6bk
+		  &strategy=@(Model.Strategy)
+		  &filter_third_party_resources=@(Model.ExcludeTPR ? "true" : "false")
+		  &locale=@(Model.Locale)
+	  
+      ]]>
+      </Fetch.Url>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+      </HttpSettings>	  
+    </Fetch>	
     <Parse>
-      <JsonPath Id="Score" Expr="score" Converter="Int"/>
-      <JsonPath Id="CssBytes" Expr="pageStats.cssResponseBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="HtmlBytes" Expr="pageStats.htmlResponseBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="ImageBytes" Expr="pageStats.imageResponseBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="JavascriptBytes" Expr="pageStats.javascriptResponseBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="OtherBytes" Expr="pageStats.otherResponseBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="TotalBytes" Expr="pageStats.totalRequestBytes" Converter="Int" Checked="false"/>
-      <JsonPath Id="CssResources" Expr="pageStats.numberCssResources" Converter="Int" Checked="false"/>
-      <JsonPath Id="JsResources" Expr="pageStats.numberJsResources" Converter="Int" Checked="false"/>
-      <JsonPath Id="Resources" Expr="pageStats.numberResources" Converter="Int" Checked="false"/>
-      <JsonPath Id="Hosts" Expr="pageStats.numberHosts" Converter="Int" Checked="false"/>
-      <JsonPath Id="Title" Expr="title" Converter="String" Checked="false"/>
+      <JsonPath Id="Score" Expr="ruleGroups.SPEED.score" Title="Score" Converter="Int"/>
+      <JsonPath Id="MEScore" Expr="ruleGroups.USABILITY.score" Converter="Int" Title="Usability Score" Checked="false"/>
+      <JsonPath Id="CssBytes" Expr="pageStats.cssResponseBytes" Converter="Int" Title="Css Bytes" Checked="false"/>
+      <JsonPath Id="HtmlBytes" Expr="pageStats.htmlResponseBytes" Converter="Int" Title="HTML Bytes" Checked="false"/>
+      <JsonPath Id="ImageBytes" Expr="pageStats.imageResponseBytes" Converter="Int" Title="IMG Bytes" Checked="false"/>
+      <JsonPath Id="JavascriptBytes" Expr="pageStats.javascriptResponseBytes" Converter="Int" Title="JS Bytes" Checked="false"/>
+      <JsonPath Id="OtherBytes" Expr="pageStats.otherResponseBytes" Converter="Int" Title="Other Bytes" Checked="false"/>
+      <JsonPath Id="TotalBytes" Expr="pageStats.totalRequestBytes" Converter="Int" Title="Total Req Bytes" Checked="false"/>
+      <JsonPath Id="CssResources" Expr="pageStats.numberCssResources" Converter="Int" Title="Css Resources" Checked="false"/>
+      <JsonPath Id="JsResources" Expr="pageStats.numberJsResources" Converter="Int" Title="JS Resources" Checked="false"/>
+      <JsonPath Id="Resources" Expr="pageStats.numberResources" Converter="Int" Title="HTTP Resources" Checked="false"/>
+      <JsonPath Id="Hosts" Expr="pageStats.numberHosts" Converter="Int" Title="Unique Hosts Ref" Checked="false"/>
+      <JsonPath Id="Title" Expr="title" Title="Title" Converter="String" Checked="false"/>
     </Parse>
   </RestConnector>
 
