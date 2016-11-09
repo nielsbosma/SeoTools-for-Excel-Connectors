@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" RequireVersion="6.0.0" Title="Vimeo" Id="Vimeo">
+<Suite RequireVersion="6.0.0" Title="Vimeo" Id="Vimeo">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -11,6 +11,7 @@
     <Parameters>
       <Text Id="Tag" Title="Tag" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet"/>
     </Parameters>
+    <Paging PageSize="25"/>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -18,41 +19,39 @@
 		  @Utils.UrlEncode(Model.Tag)
 		  /videos
 		  ?&access_token=@(Model.AccessToken)
+		  &per_page=@(Model.PageCursor.NextTake)
+		  &page=@(Model.PageCursor.Page+1)
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Accept">application/vnd.vimeo.*+json;version=3.2</Header>
+        </RequestHeaders>
+      </HttpSettings>	  
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions')].values.*">
-        <JsonPath Expr="value" Id="i" Tag="page_impressions" Title="Impressions" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_unique')].values.*">
-        <JsonPath Expr="value" Id="iu" Tag="page_impressions_unique" Title="Unique" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Tag="page_impressions_paid" Title="Paid" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="pu" Tag="page_impressions_paid_unique" Title="Paid Unique" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="page_impressions_organic" Title="Organic" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ou" Tag="page_impressions_organic_unique" Title="Organic Unique" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_viral')].values.*">
-        <JsonPath Expr="value" Id="v" Tag="page_impressions_viral" Title="Viral" Converter="Int" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_viral_unique')].values.*">
-        <JsonPath Expr="value" Id="vu" Tag="page_impressions_viral_unique" Title="Viral Unique" Converter="Int" HelpText=""/>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="link" Id="Url" Title="URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Title" Title="Title" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="stats.plays" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+        <JsonPath Expr="metadata.connections.comments.total" Id="Comments" Title="Comments" Converter="Int" HelpText=""/>
+        <JsonPath Expr="metadata.connections.likes.total" Id="Likes" Title="Likes" Converter="Int" HelpText=""/>
+        <JsonPath Expr="metadata.connections.credits.total" Id="Credits" Title="Credits" Converter="Int" HelpText=""/>
+        <JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="Int" HelpText=""/>
+        <JsonPath Expr="language" Id="Language" Title="Language" Converter="String" HelpText=""/>
+        <JsonPath Expr="modified_time" Id="Modified" Title="Modified" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.bio" Id="Bio" Title="Bio" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.websites[*].link" Id="UserWebsite" Title="UserWebsite" Converter="String" HelpText=""/>
+        <JsonPath Expr="user.metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+        <JsonPath Expr="user.metadata.connections.videos.total" Id="Videos" Title="Videos" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.error_user_msg"/>
-    </Fail>
   </RestConnector>
 
 </Suite>
