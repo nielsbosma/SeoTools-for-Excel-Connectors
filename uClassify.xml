@@ -17,7 +17,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="uClassify" Title="uClassify">
+  <RestConnector Id="SimpleClassification" Title="Simple Classification">
     <Parameters>
       <Text Id="Classifier" Title="Classifier" DefaultValue="" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
       <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
@@ -31,7 +31,11 @@
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://uclassify.com@(Model.Classifier)/Classify@(Model.Mode)?readkey=@(Model.ReadApiKey)&output=json&version=1.01&@(Model.Mode)=@(Utils.UrlEncode(Model.Input))
+        https://api.uclassify.com/v1/uclassify/
+				@(Model.Classifier.Substring(18))
+				/Classify
+				?readkey=@(Model.ReadApiKey)
+				&text=@(Utils.UrlEncode(Model.Input))
       ]]>
       </Fetch.Url>
     </Fetch>
@@ -41,7 +45,7 @@
           <![CDATA[
           @{
             string body = Model.FetchedResult.Body;
-            string result = JObject.Parse(body)["cls1"].Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Name).Take(1).FirstOrDefault();
+            string result = JObject.Parse(body).Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Name).Take(1).FirstOrDefault();
           }
           @result
         ]]>
@@ -52,7 +56,7 @@
         <![CDATA[
         @{
           string body = Model.FetchedResult.Body;
-          string result = JObject.Parse(body)["cls1"].Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Value.ToString()).Take(1).FirstOrDefault();
+          string result = JObject.Parse(body).Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Value.ToString()).Take(1).FirstOrDefault();
         }
         @result
         ]]>
@@ -64,5 +68,41 @@
     </Fail>
   </RestConnector>
 
-</Suite>
+  <RestConnector Id="DetailedTopic" Title="Detailed Topic Classifier">
+    <Parameters>
+      <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
+        <DataSource>
+          <Item Id="Text" Title="Text"/>
+          <Item Id="Url" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Input" Title="Input" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://api.uclassify.com/v1/uclassify/topics/
+				/Classify
+				?readkey=@(Model.ReadApiKey)
+				&text=@(Utils.UrlEncode(Model.Input))
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="Arts" Id="Arts" Title="Arts" Converter="Double"/>
+      <JsonPath Expr="Computers" Id="Computers" Title="Computers" Converter="Double"/>
+      <JsonPath Expr="Games" Id="Games" Title="Games" Converter="Double"/>
+      <JsonPath Expr="Health" Id="Health" Title="Health" Converter="Double"/>
+      <JsonPath Expr="Home" Id="Home" Title="Home" Converter="Double"/>
+      <JsonPath Expr="Recreation" Id="Recreation" Title="Recreation" Converter="Double"/>
+      <JsonPath Expr="Science" Id="Science" Title="Science" Converter="Double"/>
+      <JsonPath Expr="Society" Id="Society" Title="Society" Converter="Double"/>
+      <JsonPath Expr="Sports" Id="Sports" Title="Sports" Converter="Double"/>
+			
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.errorMessage"/>
+    </Fail>
+  </RestConnector>	
 
+</Suite>
