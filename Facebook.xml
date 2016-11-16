@@ -113,21 +113,24 @@
     <Parameters>
       <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/filippak/" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
     </Parameters>
-    <Paging PageSize="25">
+    <Paging PageSize="100">
       <Parse>
-		<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+		<JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/feed?
-		id=@(Model.Id)
-		&access_token=@(Model.AccessToken)
-	    &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
+        @if(Model.PageCursor.Page == 0)
         {
-          @: &after=@(Model.Cursor)
+		@: https://graph.facebook.com/feed?id=@(Model.Id)
+		@: &access_token=@(Model.AccessToken)
+	    @: &limit=@(Model.PageCursor.NextTake)
+		@: include_hidden=true
+        }
+		else
+        {
+          @(Model.Cursor)
         }
       ]]>
       </Fetch.Url>
@@ -146,7 +149,7 @@
 		<JsonPath Title="Author" Id="Author" Expr="name" Converter="String" HelpText=""/>
       </JsonPath>
       <JsonPath Expr="data.*">			
-		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
+		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>	
 		<JsonPath Title="Updated" Id="Updated" Expr="updated_time" Converter="DateTime" HelpText=""/>
       </JsonPath>
     </Parse>
