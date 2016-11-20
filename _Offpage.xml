@@ -57,6 +57,7 @@
   </RestConnector>
 -->
   
+
   <RestConnector Id="YahooIndex" Title="Yahoo Index" AvailableInSpider="false" HelpText="Scrape number of indexed pages with url on Yahoo.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Required="true"/>
@@ -91,6 +92,34 @@
     </Parse>
   </RestConnector>
   
+  <RestConnector Id="DmozEntries2" Title="Dmoz Entries2"  AvailableInSpider="false" HelpText="Scrape number of entries on Dmoz with domain.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http//dn.se"	Required="true"/>
+    </Parameters>
+    <Fetch Url="http://search.dmoz.org/cgi-bin/search?search=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))&amp;all=yes&amp;cat=Adult&amp;t=s">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//*[@@id='site-list-header']">		
+        <Compute Id="Strip" Title="Strip" Converter="Int">
+          <Compute.Expr>
+          <![CDATA[
+          @{
+            string result = Model.Strip.Substring(Model.Strip.IndexOf("of")+3);
+          }
+          @result
+					]]>				
+          </Compute.Expr>
+          <Xpath Expr="div" Id="Strip" Converter="String"/>
+        </Compute>
+      </Xpath>					
+    </Parse>
+  </RestConnector>
+
+<!-- OLD VERSION
+
   <RestConnector Id="DmozEntries" Title="Dmoz Entries" AvailableInSpider="false" HelpText="Scrape number of entries on Dmoz with domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Required="true"/>
@@ -103,8 +132,9 @@
     <Parse>
       <Regex Expr="DMOZ Sites[^\(]+\(.+of (\d+)\)&lt;" IgnoreCase="true" Converter="Int"/>
     </Parse>
-  </RestConnector>
-  
+  </RestConnector>	
+-->
+ 
   <RestConnector Id="BingIndex" Title="Bing Index" AvailableInSpider="false" HelpText="Scrape number of indexed pages with url on Bing through query &quot;site:&lt;url&gt;&quot;.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Required="true"/>
