@@ -82,11 +82,20 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-
+	
   <RestConnector Id="ListKeywords" Title="Keywords List" HelpUrl="List or create keywords for a specific domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="false" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
-    </Parameters>
+		<!--
+      <Radio Id="SearchType" Title="Search Type" DefaultValue="All" Required="true">
+        <DataSource>
+          <Item Id="All" Title="All"/>				
+          <Item Id="1" Title="Desktop"/>
+          <Item Id="2" Title="Mobile"/>
+        </DataSource>
+      </Radio>
+		-->
+			</Parameters>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -112,6 +121,26 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
         <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="Int" HelpText=""/>
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="$.*">
+        <Compute Id="SearchType" Title="Search Type">
+          <Compute.Expr>
+        <![CDATA[
+					@if(Model.searchtype == 1)
+					{
+						@: Web
+					}
+					else
+					{
+						@: Mobile
+					}
+        ]]>
+          </Compute.Expr>
+          <JsonPath Expr="search_type" Id="searchtype" Converter="Int"/>
+        </Compute>
+      </JsonPath>
+      <JsonPath Expr="$.*">				
+        <JsonPath Expr="search_type" Id="SearchType" Title="SearchType" Converter="Int" HelpText=""/>
         <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" HelpText=""/>
         <JsonPath Expr="search_volume" Id="SearchVolume" Title="Search Volume" Converter="Int" HelpText=""/>
       </JsonPath>
@@ -124,5 +153,6 @@
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
-  </RestConnector>
+  </RestConnector>	
+	
 </Suite>
