@@ -108,6 +108,42 @@
       <JsonPath Expr="error.message"/>
     </Fail>
   </RestConnector>
+  
+  <RestConnector Id="EventAttendings" Title="Event Attendings">
+    <Parameters>
+      <Text Id="Id" Title="Id" DefaultValue="" Required="true" Debug.DefaultValue="1620248291609521"/>
+    </Parameters>
+    <Paging PageSize="25">
+      <Parse>
+		<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/
+		@(Model.Id)
+		/attending?
+		&access_token=@(Model.AccessToken)
+	    &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="data.*">
+		<JsonPath Title="Id" Id="Id" Expr="id" Converter="String" HelpText=""/>		  
+		<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" HelpText=""/>
+		<JsonPath Title="RSVP" Id="Rsvp" Expr="rsvp_status" Converter="String" HelpText=""/>		
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
 
   <RestConnector Id="Feed" Title="Page Feed">
     <Parameters>
