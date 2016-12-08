@@ -43,6 +43,46 @@
       <JsonPath Expr="detail"/>
     </Fail>
   </RestConnector>
+  
+  <RestConnector Id="Reports" Title="Reports">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[@Endpoint()reports?count=100]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.reports.*">
+        <JsonPath Title="Id" Id="Id" Expr="id"/>
+        <JsonPath Title="Title" Id="Title" Expr="campaign_title"/>
+        <JsonPath Title="List" Id="List" Expr="list_name"/>		
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Int"/>
+        <JsonPath Title="Opens" Id="Opens" Expr="opens.opens_total" Converter="Int"/>
+        <JsonPath Title="Unique Opens" Id="UniqueOpens" Expr="opens.unique_opens" Converter="Int"/>
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="opens.open_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="clicks.clicks_total" Converter="Int"/>
+        <JsonPath Title="Unique Clicks" Id="UniqueClicks" Expr="clicks.unique_clicks" Converter="Int"/>
+        <JsonPath Title="Subscriber Clicks" Id="SubscriberClicks" Expr="clicks.unique_subscriber_clicks" Converter="Int"/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="clicks.click_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Abuse Reports" Id="AbuseReports" Expr="abuse_reports" Converter="Int"/>
+        <JsonPath Title="Unsubscribed" Id="Unsubscribed" Expr="unsubscribed" Converter="Int"/>
+        <JsonPath Title="Hard Bounces" Id="HardBounces" Expr="bounces.hard_bounces" Converter="Int"/>
+        <JsonPath Title="Soft Bounces" Id="SoftBounces" Expr="bounces.soft_bounces" Converter="Int"/>
+        <JsonPath Title="Syntax Errors" Id="SyntaxErrors" Expr="bounces.syntax_errors" Converter="Int"/>
+        <JsonPath Title="Forwards" Id="Forwards" Expr="forwards.forwards_count" Converter="Int"/>
+        <JsonPath Title="Forwards Opens" Id="ForwardsOpens" Expr="forwards.forwards_opens" Converter="Int"/>		
+        <JsonPath Title="Send" Id="Send" Expr="send_time" Converter="DateTime"/>
+        <JsonPath Title="Subject" Id="Subject" Expr="subject_line"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
 
   <RestConnector Id="Lists" Title="Lists">
     <Fetch>
@@ -73,8 +113,9 @@
   <RestConnector Id="Members" Title="Members">
     <Parameters>
       <Text Id="ListId" Title="List" Required="true" Select.Connector="Lists"/>
-      <Radio Id="Status" Title="Status" DefaultValue="subscribed" Required="true">
+      <Radio Id="Status" Title="Status" DefaultValue="all" Required="true">
         <DataSource>
+          <Item Id="all" Title="All"/>		
           <Item Id="subscribed" Title="Subscribed"/>
           <Item Id="unsubscribed" Title="Unsubscribed"/>
           <Item Id="cleaned" Title="Cleaned"/>
@@ -91,7 +132,10 @@
         <![CDATA[
           @Endpoint()
           lists/@(Model.ListId)/members?
-          status=@(Model.Status)
+		  @if(Model.Status != "all")
+		  {
+			@: status=@(Model.Status)
+          }
           &count=@(Model.PageCursor.NextTake)
           &offset=@(Model.PageCursor.NextSkip)
           ]]>
@@ -106,9 +150,15 @@
       <JsonPath Expr="$.members.*">
         <JsonPath Title="Id" Id="Id" Expr="id"/>
         <JsonPath Title="Email" Id="Email" Expr="email_address"/>
-        <JsonPath Title="Open Rate" Id="openRate" Expr="stats.avg_open_rate" Converter="Double"/>
-        <JsonPath Title="Click Rate" Id="clickRate" Expr="stats.avg_click_rate" Converter="Double"/>
+        <JsonPath Title="Status" Id="Status" Expr="status" Converter="String"/>	
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="stats.avg_open_rate" Converter="Double"/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="stats.avg_click_rate" Converter="Double"/>
         <JsonPath Title="Rating" Id="Rating" Expr="member_rating" Converter="Int"/>
+        <JsonPath Title="Email Client" Id="EmailClient" Expr="email_client" Converter="String"/>
+        <JsonPath Title="Country Code" Id="CountryCode" Expr="location.country_code" Converter="String"/>		
+        <JsonPath Title="Subscribed" Id="Subscribed" Expr="timestamp_opt" Converter="DateTime"/>
+        <JsonPath Title="Updated" Id="Updated" Expr="last_changed" Converter="DateTime"/>
+        <JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="String"/>		
       </JsonPath>
     </Parse>
     <Fail>
