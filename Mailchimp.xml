@@ -34,7 +34,7 @@
         <JsonPath Title="Opens" Id="Opens" Expr="report_summary.opens" Converter="Int"/>
         <JsonPath Title="Unique Opens" Id="UniqueOpens" Expr="report_summary.unique_opens" Converter="Int"/>
         <JsonPath Title="Open Rate" Id="OpenRate" Expr="report_summary.open_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
-        <JsonPath Title="Clicks" Id="Clicks" Expr="reportSummaryClicks" Converter="Int"/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="report_summary.clicks" Converter="Int"/>
         <JsonPath Title="Subscriber Clicks" Id="SubscriberClicks" Expr="report_summary.subscriber_clicks" Converter="Int"/>
         <JsonPath Title="Click Rate" Id="ClickRate" Expr="report_summary.click_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
       </JsonPath>
@@ -44,7 +44,7 @@
     </Fail>
   </RestConnector>
   
-  <RestConnector Id="Reports" Title="Reports">
+  <RestConnector Id="ReportCampaigns" Title="Report - Campaigns">
     <Fetch>
       <Fetch.Url>
         <![CDATA[@Endpoint()reports?count=100]]>
@@ -74,7 +74,7 @@
         <JsonPath Title="Soft Bounces" Id="SoftBounces" Expr="bounces.soft_bounces" Converter="Int"/>
         <JsonPath Title="Syntax Errors" Id="SyntaxErrors" Expr="bounces.syntax_errors" Converter="Int"/>
         <JsonPath Title="Forwards" Id="Forwards" Expr="forwards.forwards_count" Converter="Int"/>
-        <JsonPath Title="Forwards Opens" Id="ForwardsOpens" Expr="forwards.forwards_opens" Converter="Int"/>		
+        <JsonPath Title="Forwards Opens" Id="ForwardsOpens" Expr="forwards.forwards_opens" Converter="Int"/>
         <JsonPath Title="Send" Id="Send" Expr="send_time" Converter="DateTime"/>
         <JsonPath Title="Subject" Id="Subject" Expr="subject_line"/>
       </JsonPath>
@@ -83,6 +83,123 @@
       <JsonPath Expr="detail"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="ReportDomainPerformance" Title="Report - Domain Performance">
+    <Parameters>
+			<Text Id="CampaignId" Title="Campaign Id" Required="true" Select.Connector="Campaigns"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          reports/@(Model.CampaignId)/domain-performance?
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.domains.*">
+        <JsonPath Title="Domain" Id="Domain" Expr="domain" Converter="String"/>
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Int"/>
+        <JsonPath Title="Bounces" Id="Bounces" Expr="bounces" Converter="Int"/>
+        <JsonPath Title="Opens" Id="Opens" Expr="opens" Converter="Int"/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="clicks" Converter="Int"/>
+        <JsonPath Title="Unsubscribed" Id="Unsubscribed" Expr="unsubs" Converter="Int"/>
+        <JsonPath Title="Emails PCT" Id="EmailsPCT" Expr="emails_pct" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Bounces PCT" Id="BouncesPCT" Expr="bounces_pct" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Opens PCT" Id="OpensPCT" Expr="opens_pct" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Clicks PCT" Id="ClicksPCT" Expr="clicks_pct" Converter="Double" Converter.ResultFormat="0.00%"/>
+	      <JsonPath Title="Unsubscribes PCT" Id="UnsubscribesPCT" Expr="unsubs_pct" Converter="Double" Converter.ResultFormat="0.00%"/>
+				</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SearchMembers" Title="Search Members">
+    <Parameters>
+			<Text Id="Query" Title="Query" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          search-members?
+					&query=@(Utils.UrlEncode(Model.Query))
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.full_search.members.*">
+        <JsonPath Title="Id" Id="Id" Expr="id"/>
+        <JsonPath Title="Email" Id="Email" Expr="email_address"/>
+        <JsonPath Title="Status" Id="Status" Expr="status" Converter="String"/>
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="stats.avg_open_rate" Converter="Double"/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="stats.avg_click_rate" Converter="Double"/>
+        <JsonPath Title="Rating" Id="Rating" Expr="member_rating" Converter="Int"/>
+        <JsonPath Title="Email Client" Id="EmailClient" Expr="email_client" Converter="String"/>
+        <JsonPath Title="Country Code" Id="CountryCode" Expr="location.country_code" Converter="String"/>
+        <JsonPath Title="Subscribed" Id="Subscribed" Expr="timestamp_opt" Converter="DateTime"/>
+        <JsonPath Title="Updated" Id="Updated" Expr="last_changed" Converter="DateTime"/>
+        <JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="String"/>
+				</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SearchCampaigns" Title="Search Campaigns">
+    <Parameters>
+			<Text Id="Query" Title="Query" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          search-campaigns?
+					&query=@(Utils.UrlEncode(Model.Query))
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*.campaign">
+        <JsonPath Title="Id" Id="Id" Expr="id"/>
+        <JsonPath Title="Title" Id="Title" Expr="settings.title"/>
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Int"/>
+        <JsonPath Title="Archive URL" Id="ArchiveUrl" Expr="archive_url"/>
+        <JsonPath Title="Type" Id="Type" Expr="type"/>
+        <JsonPath Title="Status" Id="Status" Expr="status"/>
+        <JsonPath Title="Created" Id="Created" Expr="create_time" Converter="DateTime"/>
+        <JsonPath Title="Send" Id="Send" Expr="send_time" Converter="DateTime"/>
+        <JsonPath Title="Subject" Id="Subject" Expr="settings.subject_line"/>
+        <JsonPath Title="Opens" Id="Opens" Expr="report_summary.opens" Converter="Int"/>
+        <JsonPath Title="Unique Opens" Id="UniqueOpens" Expr="report_summary.unique_opens" Converter="Int"/>
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="report_summary.open_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="report_summary.clicks" Converter="Int"/>
+        <JsonPath Title="Subscriber Clicks" Id="SubscriberClicks" Expr="report_summary.subscriber_clicks" Converter="Int"/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="report_summary.click_rate" Converter="Double" Converter.ResultFormat="0.00%"/>
+				</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>	
 
   <RestConnector Id="Lists" Title="Lists">
     <Fetch>
@@ -115,12 +232,13 @@
       <Text Id="ListId" Title="List" Required="true" Select.Connector="Lists"/>
       <Radio Id="Status" Title="Status" DefaultValue="all" Required="true">
         <DataSource>
-          <Item Id="all" Title="All"/>		
+          <Item Id="all" Title="All"/>
           <Item Id="subscribed" Title="Subscribed"/>
           <Item Id="unsubscribed" Title="Unsubscribed"/>
           <Item Id="cleaned" Title="Cleaned"/>
         </DataSource>
       </Radio>
+      <Checkbox Id="VIP" Title="VIP Only" DefaultValue="False" HelpText="If checked, you will receive all members with VIP status."/>			
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -138,6 +256,7 @@
           }
           &count=@(Model.PageCursor.NextTake)
           &offset=@(Model.PageCursor.NextSkip)
+					&vip_only=@(Model.VIP ? "true" : "false")
           ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -155,10 +274,73 @@
         <JsonPath Title="Click Rate" Id="ClickRate" Expr="stats.avg_click_rate" Converter="Double"/>
         <JsonPath Title="Rating" Id="Rating" Expr="member_rating" Converter="Int"/>
         <JsonPath Title="Email Client" Id="EmailClient" Expr="email_client" Converter="String"/>
-        <JsonPath Title="Country Code" Id="CountryCode" Expr="location.country_code" Converter="String"/>		
+        <JsonPath Title="Country Code" Id="CountryCode" Expr="location.country_code" Converter="String"/>
         <JsonPath Title="Subscribed" Id="Subscribed" Expr="timestamp_opt" Converter="DateTime"/>
         <JsonPath Title="Updated" Id="Updated" Expr="last_changed" Converter="DateTime"/>
-        <JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="String"/>		
+        <JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="RecentActivity" Title="Recent Activity" HelpText="Get recent daily, aggregated activity stats for your list. Max 180 day history.">
+    <Parameters>
+      <Text Id="ListId" Title="List" Required="true" Select.Connector="Lists"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          lists/@(Model.ListId)/activity
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.activity.*">
+        <JsonPath Title="Date" Id="Date" Expr="day" Converter="DateTime"/>
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Int"/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="recipient_clicks" Converter="Int"/>
+        <JsonPath Title="Hard Bounces" Id="HardBounces" Expr="hard_bounce" Converter="Int"/>
+        <JsonPath Title="Soft Bounces" Id="SoftBounces" Expr="soft_bounce" Converter="Int"/>
+        <JsonPath Title="Subscribes" Id="Subscribes" Expr="subs" Converter="Int"/>
+        <JsonPath Title="Other Adds" Id="OtherAdds" Expr="other_adds" Converter="Int"/>
+        <JsonPath Title="Unsubscribes" Id="Unsubscribes" Expr="unsubs" Converter="Int"/>
+        <JsonPath Title="Other Removes" Id="OtherRemoves" Expr="other_removes" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Clients" Title="Clients" HelpText="Get information about the most popular email clients for subscribers in a specific list.">
+    <Parameters>
+      <Text Id="ListId" Title="List" Required="true" Select.Connector="Lists"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @Endpoint()
+          lists/@(Model.ListId)/clients			
+          ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.clients.*">
+        <JsonPath Title="Client" Id="Client" Expr="client" Converter="String"/>
+        <JsonPath Title="Members" Id="Members" Expr="members" Converter="Int"/>
       </JsonPath>
     </Parse>
     <Fail>
