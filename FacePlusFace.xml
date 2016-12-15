@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="FacePlusFace" RequireVersion="5.2.6" Id="FacePlusFace" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacePlusFace.xml" HelpUrl="http://seotoolsforexcel.com/FacePlusFace/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/FacePlusFace/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/FacePlusFace/"/>
+    <Text Id="ApiSecret" Title="API Secret" Required="true" HelpUrl="http://seotoolsforexcel.com/FacePlusFace/"/>	
+  </Settings>
+
+  <RestConnector Id="FaceAnalyzer" Title="Face Analyzer">
+    <Parameters>
+      <Text Id="ImageUrl" Title="Image URL" DefaultValue="" Required="true" Debug.DefaultValue="https://pbs.twimg.com/profile_images/969016461/24385.jpg"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+         https://apius.faceplusplus.com/v2/detection/detect?
+		 url=@(Model.ImageUrl)
+		 &api_secret=@(Model.ApiSecret)
+		 &api_key=@(Model.ApiKey)
+		 &attribute=gender,age,race,smiling
+      ]]>
+      </Fetch.Url>
+    </Fetch>	
+    <Parse>
+      <JsonPath Expr="face.*">		
+		<JsonPath Title="Age" Id="Age" Expr="attribute.age.value" Converter="Int" HelpText=""/>
+		<JsonPath Title="Age Range" Id="AgeRange" Expr="attribute.age.range" Converter="Int" HelpText="" Checked="false"/>		
+		<JsonPath Title="Gender" Id="Gender" Expr="attribute.gender.value" Converter="String" HelpText=""/>
+		<JsonPath Title="Gender Confidence" Id="GenderConfidence" Expr="attribute.gender.confidence" Converter="Double" Checked="false"/>		
+		<JsonPath Title="Race" Id="Race" Expr="attribute.race.value" Converter="String" HelpText=""/>
+		<JsonPath Title="Race Confidence" Id="RaceConfidence" Expr="attribute.race.confidence" Converter="Double" Checked="false"/>
+		<JsonPath Title="Smiling" Id="Smiling" Expr="attribute.smiling.value" Converter="Double" HelpText=""/>	
+      </JsonPath>	
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+  
+</Suite>
