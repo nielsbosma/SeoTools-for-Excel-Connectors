@@ -15,11 +15,13 @@
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/person.json?
-		email=@Model.Email
-		&apiKey=@Model.Key
+				email=@Model.Email
       ]]>
       </Fetch.Url>
 	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
 	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
 	  </HttpSettings>	  
     </Fetch>
@@ -49,11 +51,13 @@
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/name/normalizer.json?
-		q=@Utils.UrlEncode(Model.NameString)
-		&apiKey=@Model.Key
+				q=@Utils.UrlEncode(Model.NameString)
       ]]>
       </Fetch.Url>
 	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
 	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
 	  </HttpSettings>	  
     </Fetch>
@@ -85,13 +89,15 @@
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/name/deducer.json?
-		email=@Utils.UrlEncode(Model.NameString)
-		&apiKey=@Model.Key
+				email=@Utils.UrlEncode(Model.NameString)
       ]]>
       </Fetch.Url>
 	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
 	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
-	  </HttpSettings>
+	  </HttpSettings>	
     </Fetch>
     <Parse>
       <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String"/>
@@ -112,13 +118,15 @@
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/name/deducer.json?
-		username=@Utils.UrlEncode(Model.NameString)
-		&apiKey=@Model.Key
+				username=@Utils.UrlEncode(Model.NameString)
       ]]>
       </Fetch.Url>
 	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
 	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
-	  </HttpSettings>
+	  </HttpSettings>	
     </Fetch>
     <Parse>
       <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String"/>
@@ -140,13 +148,15 @@
         <![CDATA[
         https://api.fullcontact.com/v2/company/lookup.json?
 		domain=@Utils.UrlEncode(Model.Domain)
-		&apiKey=@Model.Key
 		&keyPeople=true
       ]]>
       </Fetch.Url>
 	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
 	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
-	  </HttpSettings>	  
+	  </HttpSettings>		  
     </Fetch>
     <Parse>
       <JsonPath Expr="organization.name" Id="OrganizationsName" Title="Organization" Converter="String"/>
@@ -166,6 +176,34 @@
         <JsonPath Expr="name" Id="KeyPeopleName" Title="Key People Name" Converter="String"/>
         <JsonPath Expr="title" Id="KeyPeopleTitle" Title="Working Title" Converter="String"/>
       </JsonPath>	  
+	</Parse>
+  </RestConnector>
+	
+  <RestConnector Id="EmailVerification" Title="Email Verification">
+    <Parameters>
+      <Text Id="Email" Title="Email" Debug.DefaultValue="viktoria.isaksson@missioncouncil.se" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/verification/email?
+		email=@Model.Email
+      ]]>
+      </Fetch.Url>
+	  <HttpSettings>
+			<RequestHeaders>
+				<Header Name="X-FullContact-APIKey">@Model.Key</Header>
+			</RequestHeaders>
+	    <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
+	  </HttpSettings>	  
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="$..message" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="$..validSyntax" Id="ValidSyntax" Title="ValidSyntax" Converter="Bool"/>
+        <JsonPath Expr="$..deliverable" Id="Deliverable" Title="Deliverable" Converter="Bool"/>
+        <JsonPath Expr="$..catchall" Id="CatchAll" Title="Catch-all" Converter="Bool"/>
+        <JsonPath Expr="$..risky" Id="Risky" Title="Risky" Converter="Bool"/>
+        <JsonPath Expr="$..disposable" Id="Disposable" Title="Disposable" Converter="Bool"/>				
 	</Parse>
   </RestConnector>
 
