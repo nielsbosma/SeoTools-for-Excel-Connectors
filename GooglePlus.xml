@@ -3,9 +3,66 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/google0/">
-    <Text Id="Key" Title="API Key" Required="true"/>
-  </Settings>
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/plus.login" StayAuthenticated="true"/>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+  
+  <RazorFunctions>
+    <![CDATA[
+    
+    string[] _SelectedDimensions() { 
+      string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+      return ((ResultField[])Model.Headers)
+        .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
+        .Select(e => e.Identifier)
+        .ToArray();
+    }
+    
+    string SelectedDimensions() {
+      return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
+    }
+    
+    string DimensionIndex(string dimension) { 
+      return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
+    }
+    
+    string _RenderOperator(string op)
+    {
+	    return op == "==" ? "equals" :
+		    op == "!=" ? "notEquals" :
+		    op == "=~" ? "contains" :
+		    "notContains";
+    }
+
+    string RenderFilter()
+    {
+	    var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+
+	    var filters = lines
+		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+		    .Where(e => e.Success)
+		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}", 
+			    e.Groups[1].Value.Trim(), 
+			    _RenderOperator(e.Groups[2].Value.Trim()), 
+			    e.Groups[3].Value.Trim()));
+
+	    if(filters.Any())
+	    {
+		    return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
+	    }
+
+	    return "";
+    }
+    
+   ]]>
+  </RazorFunctions>
 
   <RestConnector Id="ActivitySearch" Title="Activities Search">
     <Parameters>
@@ -27,8 +84,7 @@
         <![CDATA[
         https://www.googleapis.com/plus/v1/activities?
         query=@Utils.UrlEncode(Model.Query)
-        &key=@Model.Key
-        &order=@(Model.Sorting)		
+        &orderBy=@(Model.Sorting)		
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -36,6 +92,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
     </Fetch>
     <Parse>
       <JsonPath Expr="items[*]">
@@ -69,7 +130,6 @@
         <![CDATA[
         https://www.googleapis.com/plus/v1/people?
 		    query=@Utils.UrlEncode(Model.Query)
-		    &key=@Model.Key
 		    &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -77,6 +137,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="items[*]">
@@ -98,9 +163,13 @@
         <![CDATA[
         https://www.googleapis.com/plus/v1/activities/
 		    @Utils.UrlEncode(Model.Id)
-		    ?key=@Model.Key
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="id" Id="Id" Converter="String"/>
@@ -127,9 +196,13 @@
         <![CDATA[
         https://www.googleapis.com/plus/v1/people/
 		    @Utils.UrlEncode(Model.Id)
-		    ?key=@Model.Key
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="id" Id="Id" Converter="String"/>
@@ -159,7 +232,6 @@
         https://www.googleapis.com/plus/v1/people/
 		    @Utils.UrlEncode(Model.Id)
 		    /activities/public?
-		    key=@Model.Key
 		    &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -167,6 +239,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="items[*]">
