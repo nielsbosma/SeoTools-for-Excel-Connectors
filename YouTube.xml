@@ -3,15 +3,85 @@
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/youtube/">
-    <Text Id="ApiKey" Title="API Key" Required="true"/>
-  </Settings>
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/youtube.readonly" StayAuthenticated="true"/>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+  
+  <RazorFunctions>
+    <![CDATA[
+    
+    string[] _SelectedDimensions() { 
+      string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+      return ((ResultField[])Model.Headers)
+        .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
+        .Select(e => e.Identifier)
+        .ToArray();
+    }
+    
+    string SelectedDimensions() {
+      return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
+    }
+    
+    string DimensionIndex(string dimension) { 
+      return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
+    }
+    
+    string _RenderOperator(string op)
+    {
+	    return op == "==" ? "equals" :
+		    op == "!=" ? "notEquals" :
+		    op == "=~" ? "contains" :
+		    "notContains";
+    }
+
+    string RenderFilter()
+    {
+	    var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+
+	    var filters = lines
+		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+		    .Where(e => e.Success)
+		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}", 
+			    e.Groups[1].Value.Trim(), 
+			    _RenderOperator(e.Groups[2].Value.Trim()), 
+			    e.Groups[3].Value.Trim()));
+
+	    if(filters.Any())
+	    {
+		    return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
+	    }
+
+	    return "";
+    }
+    
+   ]]>
+  </RazorFunctions>
 
   <RestConnector Id="VideoStatistics" Title="Video Statistics">
     <Parameters>
       <Text Id="VideoId" Title="Video Id" Required="true"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/youtube/v3/videos?id=@Model.VideoId&amp;key=@Model.ApiKey&amp;part=statistics"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/videos?
+				id=@(Model.VideoId)
+				&part=statistics
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
+    </Fetch>		
     <Parse>
       <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue="0"/>
@@ -25,7 +95,20 @@
     <Parameters>
       <Text Id="VideoId" Title="Video Id" Required="true"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/youtube/v3/videos?id=@Model.VideoId&amp;key=@Model.ApiKey&amp;part=snippet"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/videos?
+				id=@(Model.VideoId)
+				&part=snippet
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
+    </Fetch>
     <Parse>
       <JsonPath Title="Created" Identifier="Views" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime"/>
       <JsonPath Title="Title" Identifier="Title" Expr="$.items.[snippet].[title]" Converter="String"/>
@@ -33,17 +116,56 @@
     </Parse>
   </RestConnector>  
 
-  <RestConnector Id="ChannelStatistics" Title="Channel Lookup">
+  <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
     <Parameters>
       <Text Id="ChannelId" Title="Channel Id" Required="true"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/youtube/v3/channels?id=@Model.ChannelId&amp;key=@Model.ApiKey&amp;part=statistics"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/channels?
+				id=@(Model.ChannelId)
+				&part=statistics
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
+    </Fetch>		
     <Parse>
       <JsonPath Title="Subscribers" Identifier="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Videos" Identifier="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
+
+  <RestConnector Id="ChannelDetails" Title="Channel Details">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/channels?
+				id=@(Model.ChannelId)
+				&part=snippet
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
+    </Fetch>		
+    <Parse>
+      <JsonPath Title="Title" Identifier="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
+      <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
+      <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
+      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>			
+    </Parse>
+  </RestConnector>	
   
   <RestConnector Id="SearchVideos" Title="Videos Search">
     <Parameters>
@@ -77,7 +199,6 @@
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
-        key=@Model.ApiKey
         &part=snippet
         &type=video
 		    &order=@(Model.Sorting)
@@ -91,6 +212,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>			
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -104,6 +230,7 @@
         <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
+        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/> 				
         <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
@@ -138,8 +265,7 @@
     <Fetch Url="">
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/youtube/v3/search?
-        key=@Model.ApiKey
+        https://www.googleapis.com/youtube/v3/search?´
         &part=snippet
         &type=channel
 		    &order=@(Model.Sorting)		
@@ -152,6 +278,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -194,7 +325,6 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
-        key=@Model.ApiKey
         &part=snippet
         &type=playlist
 		    &order=@(Model.Sorting)
@@ -206,6 +336,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -240,7 +375,6 @@
         <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
 		    order=date
-        &key=@Model.ApiKey
         &part=snippet
         &channelId=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
@@ -250,6 +384,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -282,7 +421,6 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/playlistItems?
-        &key=@Model.ApiKey
         &part=snippet
         &playlistId=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
@@ -292,6 +430,11 @@
         }
       ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>				
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
