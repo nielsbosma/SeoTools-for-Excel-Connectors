@@ -42,6 +42,63 @@
 			<Item Id="impression_device" Title="Device"/>
 			<Item Id="age" Title="Age"/>
 			<Item Id="gender" Title="Gender"/>
+			<Item Id="gender,age" Title="Gender/Age"/>			
+    </Resource>
+
+    <Resource Id="Currencies">
+			<Item Id="AED" Title="AED"/>
+			<Item Id="ARS" Title="ARS"/>
+			<Item Id="AUD" Title="AUD"/>
+			<Item Id="BDT" Title="BDT"/>
+			<Item Id="BRL" Title="BRL"/>
+			<Item Id="CAD" Title="CAD"/>
+			<Item Id="CHF" Title="CHF"/>
+			<Item Id="CLP" Title="CLP"/>
+			<Item Id="CNY" Title="CNY"/>
+			<Item Id="COP" Title="COP"/>
+			<Item Id="CRC" Title="CRC"/>
+			<Item Id="CZK" Title="CZK"/>
+			<Item Id="DKK" Title="DKK"/>
+			<Item Id="DZD" Title="DZD"/>
+			<Item Id="EGP" Title="EGP"/>
+			<Item Id="EUR" Title="EUR"/>
+			<Item Id="GBP" Title="GBP"/>
+			<Item Id="GTQ" Title="GTQ"/>
+			<Item Id="HKD" Title="HKD"/>
+			<Item Id="HNL" Title="HNL"/>
+			<Item Id="HUF" Title="HUF"/>
+			<Item Id="IDR" Title="IDR"/>
+			<Item Id="ILS" Title="ILS"/>
+			<Item Id="INR" Title="INR"/>
+			<Item Id="ISK" Title="ISK"/>
+			<Item Id="JPY" Title="JPY"/>
+			<Item Id="KRW" Title="KRW"/>
+			<Item Id="MXN" Title="MXN"/>
+			<Item Id="MYR" Title="MYR"/>
+			<Item Id="NGN" Title="NGN"/>
+			<Item Id="NIO" Title="NIO"/>
+			<Item Id="NOK" Title="NOK"/>
+			<Item Id="NZD" Title="NZD"/>
+			<Item Id="PEN" Title="PEN"/>
+			<Item Id="PHP" Title="PHP"/>
+			<Item Id="PKR" Title="PKR"/>
+			<Item Id="PLN" Title="PLN"/>
+			<Item Id="PYG" Title="PYG"/>
+			<Item Id="QAR" Title="QAR"/>
+			<Item Id="RON" Title="RON"/>
+			<Item Id="RUB" Title="RUB"/>
+			<Item Id="SAR" Title="SAR"/>
+			<Item Id="SEK" Title="SEK"/>
+			<Item Id="SGD" Title="SGD"/>
+			<Item Id="THB" Title="THB"/>
+			<Item Id="TRY" Title="TRY"/>
+			<Item Id="TWD" Title="TWD"/>
+			<Item Id="USD" Title="USD"/>
+			<Item Id="UYU" Title="UYU"/>
+			<Item Id="VEF" Title="VEF"/>
+			<Item Id="VND" Title="VND"/>
+			<Item Id="ZAR" Title="ZAR"/>
+
     </Resource>			
   </Resources>	
 	
@@ -230,6 +287,27 @@
     <Fail>
       <JsonPath Expr="$.error.message"/> 
     </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ListAssociatedBusinesses" Title="List Associated Businesses" Hidden="false">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/me
+			/businesses?
+		  &access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="BusinessId" Title="Business Id" Tag="id" Converter="String" HelpText=""/>			
+        <JsonPath Expr="name" Id="Name" Title="Name" Tag="name" Converter="String" HelpText=""/>		
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
   </RestConnector>	
 
   <RestConnector Id="AccountStatistics" Title="Account Statistics" Hidden="false">
@@ -305,7 +383,7 @@
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/insights?
-			fields=@SelectedFields().Substring(1)
+			fields=@SelectedFields().Substring(2)
 			&breakdowns=@(Model.Type)
 		  &sort=@(Model.Sort)
 			_
@@ -317,7 +395,23 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="@(Model.Type)" Id="Category" Title="Category" Converter="String" HelpText=""/>		
+        <Compute Id="Category" Title="Category">
+          <Compute.Expr>
+        <![CDATA[
+					@if(Model.Type == "gender,age")
+					{
+						@(Model.Gender) @: - @(Model.AgeGroup)
+					}
+					else
+					{
+						@(Model.Category)
+					}
+        ]]>   
+          </Compute.Expr>
+          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
+          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
+					<JsonPath Expr="@(Model.Type)" Id="Category" Converter="String"/>
+				</Compute>					
         <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
@@ -338,70 +432,6 @@
       <JsonPath Expr="$.error.message"/> 
     </Fail>
   </RestConnector>	
-
-  <RestConnector Id="AccountStatisticsGenderAge" Title="Account Statistics by Gender/Age" Hidden="false">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
-        <DataSource>
-          <Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
-        <DataSource>
-          <Item Id="descending" Title="Descending"/>
-          <Item Id="ascending" Title="Ascending"/>
-        </DataSource>
-      </Radio>			
-			</Parameters>	
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/insights?
-			fields=@SelectedFields().Substring(1)
-			&breakdowns=gender,age
-		  &sort=@(Model.Sort)
-			_
-			@(Model.Direction)		
-			&date_preset=@(Model.TimeInterval)
-		  &access_token=@(Model.AccessToken)
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <Compute Id="Category" Title="Category">
-          <Compute.Expr>
-            @(Model.Gender) - @(Model.AgeGroup)
-          </Compute.Expr>
-          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
-          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
-        <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="website_clicks" Id="WebsiteClicks" Title="Website Clicks" Tag="website_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="app_store_clicks" Id="AppStoreClicks" Title="App Store Clicks" Tag="app_store_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_impressions" Id="SocialImpressions" Title="Social Impressions" Tag="social_impressions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_reach" Id="SocialReach" Title="Social Reach" Tag="social_reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_clicks" Id="SocialClicks" Title="Social Clicks" Tag="social_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_actions" Id="Actions" Title="Actions" Tag="total_actions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_action_value" Id="ActionsValue" Title="Actions Value" Tag="total_action_value" Converter="Int" HelpText=""/>
-        <JsonPath Expr="cost_per_total_action" Id="CostPerAction" Title="Cost per Action" Tag="cost_per_total_action" Converter="Int" HelpText=""/>				
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="cpc" Converter="Double" HelpText=""/>
-        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" Converter="Double" HelpText=""/>				
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.message"/> 
-    </Fail>
-  </RestConnector>
 
   <RestConnector Id="CampaignStatistics" Title="Campaign Statistics" Hidden="false">
     <Parameters>
@@ -478,7 +508,7 @@
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/@(Model.CampaignId)/insights?
-			fields=@SelectedFields().Substring(1)
+			fields=@SelectedFields().Substring(2)
 			&breakdowns=@(Model.Type)
 		  &sort=@(Model.Sort)
 			_
@@ -490,72 +520,23 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="@(Model.Type)" Id="Category" Title="Category" Converter="String" HelpText=""/>		
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
-        <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="website_clicks" Id="WebsiteClicks" Title="Website Clicks" Tag="website_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="app_store_clicks" Id="AppStoreClicks" Title="App Store Clicks" Tag="app_store_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_impressions" Id="SocialImpressions" Title="Social Impressions" Tag="social_impressions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_reach" Id="SocialReach" Title="Social Reach" Tag="social_reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_clicks" Id="SocialClicks" Title="Social Clicks" Tag="social_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_actions" Id="Actions" Title="Actions" Tag="total_actions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_action_value" Id="ActionsValue" Title="Actions Value" Tag="total_action_value" Converter="Int" HelpText=""/>
-        <JsonPath Expr="cost_per_total_action" Id="CostPerAction" Title="Cost per Action" Tag="cost_per_total_action" Converter="Int" HelpText=""/>				
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="cpc" Converter="Double" HelpText=""/>
-        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" Converter="Double" HelpText=""/>				
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.message"/> 
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="CampaignStatisticsGenderAge" Title="Campaign Statistics by Gender/Age" Hidden="false">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="CampaignId" Title="Campaign Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461710669" Select.Connector="ListCampaigns" Select.IdField="CampaignId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
-        <DataSource>
-          <Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
-        <DataSource>
-          <Item Id="descending" Title="Descending"/>
-          <Item Id="ascending" Title="Ascending"/>
-        </DataSource>
-      </Radio>			
-			</Parameters>	
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.CampaignId)/insights?
-			fields=@SelectedFields().Substring(1)
-			&breakdowns=gender,age
-		  &sort=@(Model.Sort)
-			_
-			@(Model.Direction)		
-			&date_preset=@(Model.TimeInterval)
-		  &access_token=@(Model.AccessToken)
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
         <Compute Id="Category" Title="Category">
           <Compute.Expr>
-            @(Model.Gender) - @(Model.AgeGroup)
+        <![CDATA[
+					@if(Model.Type == "gender,age")
+					{
+						@(Model.Gender) @: - @(Model.AgeGroup)
+					}
+					else
+					{
+						@(Model.Category)
+					}
+        ]]>   
           </Compute.Expr>
           <JsonPath Expr="gender" Id="Gender" Converter="String"/>
           <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
-        </Compute>
+					<JsonPath Expr="@(Model.Type)" Id="Category" Converter="String"/>
+				</Compute>		
         <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
@@ -651,7 +632,7 @@
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/@(Model.AdsetId)/insights?
-			fields=@SelectedFields().Substring(1)
+			fields=@SelectedFields().Substring(2)
 			&breakdowns=@(Model.Type)
 		  &sort=@(Model.Sort)
 			_
@@ -663,7 +644,23 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="@(Model.Type)" Id="Category" Title="Category" Converter="String" HelpText=""/>		
+        <Compute Id="Category" Title="Category">
+          <Compute.Expr>
+        <![CDATA[
+					@if(Model.Type == "gender,age")
+					{
+						@(Model.Gender) @: - @(Model.AgeGroup)
+					}
+					else
+					{
+						@(Model.Category)
+					}
+        ]]>   
+          </Compute.Expr>
+          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
+          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
+					<JsonPath Expr="@(Model.Type)" Id="Category" Converter="String"/>
+				</Compute>		
         <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
@@ -684,71 +681,6 @@
       <JsonPath Expr="$.error.message"/> 
     </Fail>
   </RestConnector>	
-
-  <RestConnector Id="AdsetStatisticsGenderAge" Title="Adset Statistics by Gender/Age" Hidden="false">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
-        <DataSource>
-          <Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
-        <DataSource>
-          <Item Id="descending" Title="Descending"/>
-          <Item Id="ascending" Title="Ascending"/>
-        </DataSource>
-      </Radio>			
-			</Parameters>	
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.AdsetId)/insights?
-			fields=@SelectedFields().Substring(1)
-			&breakdowns=gender,age
-		  &sort=@(Model.Sort)
-			_
-			@(Model.Direction)		
-			&date_preset=@(Model.TimeInterval)
-		  &access_token=@(Model.AccessToken)
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <Compute Id="Category" Title="Category">
-          <Compute.Expr>
-            @(Model.Gender) - @(Model.AgeGroup)
-          </Compute.Expr>
-          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
-          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
-        <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="website_clicks" Id="WebsiteClicks" Title="Website Clicks" Tag="website_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="app_store_clicks" Id="AppStoreClicks" Title="App Store Clicks" Tag="app_store_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_impressions" Id="SocialImpressions" Title="Social Impressions" Tag="social_impressions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_reach" Id="SocialReach" Title="Social Reach" Tag="social_reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_clicks" Id="SocialClicks" Title="Social Clicks" Tag="social_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_actions" Id="Actions" Title="Actions" Tag="total_actions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_action_value" Id="ActionsValue" Title="Actions Value" Tag="total_action_value" Converter="Int" HelpText=""/>
-        <JsonPath Expr="cost_per_total_action" Id="CostPerAction" Title="Cost per Action" Tag="cost_per_total_action" Converter="Int" HelpText=""/>				
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="cpc" Converter="Double" HelpText=""/>
-        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" Converter="Double" HelpText=""/>				
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.message"/> 
-    </Fail>
-  </RestConnector>
 
   <RestConnector Id="AdStatistics" Title="Ad Statistics" Hidden="false">
     <Parameters>
@@ -824,7 +756,7 @@
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/@(Model.AdId)/insights?
-			fields=@SelectedFields().Substring(1)
+			fields=@SelectedFields().Substring(2)
 			&breakdowns=@(Model.Type)
 		  &sort=@(Model.Sort)
 			_
@@ -836,7 +768,23 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="@(Model.Type)" Id="Category" Title="Category" Converter="String" HelpText=""/>		
+        <Compute Id="Category" Title="Category">
+          <Compute.Expr>
+        <![CDATA[
+					@if(Model.Type == "gender,age")
+					{
+						@(Model.Gender) @: - @(Model.AgeGroup)
+					}
+					else
+					{
+						@(Model.Category)
+					}
+        ]]>   
+          </Compute.Expr>
+          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
+          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
+					<JsonPath Expr="@(Model.Type)" Id="Category" Converter="String"/>
+				</Compute>	
         <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
@@ -858,72 +806,7 @@
     </Fail>
   </RestConnector>	
 
-  <RestConnector Id="AdStatisticsGenderAge" Title="Ad Statistics by Gender/Age" Hidden="false">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
-        <DataSource>
-          <Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
-        <DataSource>
-          <Item Id="descending" Title="Descending"/>
-          <Item Id="ascending" Title="Ascending"/>
-        </DataSource>
-      </Radio>		
-			</Parameters>	
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.AdId)/insights?
-			fields=@SelectedFields().Substring(1)
-			&breakdowns=gender,age
-		  &sort=@(Model.Sort)
-			_
-			@(Model.Direction)		
-			&date_preset=@(Model.TimeInterval)
-		  &access_token=@(Model.AccessToken)
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <Compute Id="Category" Title="Category">
-          <Compute.Expr>
-            @(Model.Gender) - @(Model.AgeGroup)
-          </Compute.Expr>
-          <JsonPath Expr="gender" Id="Gender" Converter="String"/>
-          <JsonPath Expr="age" Id="AgeGroup" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
-        <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="website_clicks" Id="WebsiteClicks" Title="Website Clicks" Tag="website_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="app_store_clicks" Id="AppStoreClicks" Title="App Store Clicks" Tag="app_store_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_impressions" Id="SocialImpressions" Title="Social Impressions" Tag="social_impressions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_reach" Id="SocialReach" Title="Social Reach" Tag="social_reach" Converter="Int" HelpText=""/>
-        <JsonPath Expr="social_clicks" Id="SocialClicks" Title="Social Clicks" Tag="social_clicks" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_actions" Id="Actions" Title="Actions" Tag="total_actions" Converter="Int" HelpText=""/>
-        <JsonPath Expr="total_action_value" Id="ActionsValue" Title="Actions Value" Tag="total_action_value" Converter="Int" HelpText=""/>
-        <JsonPath Expr="cost_per_total_action" Id="CostPerAction" Title="Cost per Action" Tag="cost_per_total_action" Converter="Int" HelpText=""/>				
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="cpc" Converter="Double" HelpText=""/>
-        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" Converter="Double" HelpText=""/>				
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.message"/> 
-    </Fail>
-  </RestConnector>
-
- <RestConnector Id="AdBidsStatistics" Title="Ad Bids Statistics" Hidden="false">
+ <RestConnector Id="AdBidsReachStatistics" Title="Ad Bids Reach Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
 			<Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>		
@@ -970,7 +853,7 @@
     </Fail>
   </RestConnector>
 
- <RestConnector Id="AdBidsSummary" Title="Ad Bids Summary" Hidden="false">
+ <RestConnector Id="AdBidsReachSummary" Title="Ad Bids Reach Summary" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
 			<Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>		
@@ -1104,8 +987,8 @@
 				<JsonPath Expr="name" Id="Name" Title="Name" Tag="name" Converter="String" HelpText=""/>				
 				<JsonPath Expr="status" Id="Status" Title="Status" Tag="status" Converter="String" HelpText=""/>
 				<JsonPath Expr="permalink_url" Id="Permalink" Title="Permalink" Tag="permalink_url" Converter="String" HelpText=""/>
-				<JsonPath Expr="original_height" Id="OriginalHeight" Title="Original Height" Tag="original_height" Converter="String" HelpText=""/>
-				<JsonPath Expr="original_width" Id="OriginalWidth" Title="Original Width" Tag="original_width" Converter="String" HelpText=""/>				
+				<JsonPath Expr="original_height" Id="OriginalHeight" Title="Original Height" Tag="original_height" Converter="Int" HelpText=""/>
+				<JsonPath Expr="original_width" Id="OriginalWidth" Title="Original Width" Tag="original_width" Converter="Int" HelpText=""/>				
 			</JsonPath>
     </Parse>
     <Fail>
@@ -1113,6 +996,169 @@
     </Fail>
   </RestConnector>		
 
+ <RestConnector Id="AccountMinimumBudgets" Title="Account Minimum Budgets" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="BidAmount" Title="Bid Amount" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Select Id="Currency" Title="Select Currency" Required="true" DefaultValue="USD">
+        <DataSource>
+          <Resource Id="Currencies"/>
+        </DataSource>
+      </Select>
+		</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/minimum_budgets?
+			@if(Model.BidAmount != "")
+			{
+			@: bid_amount=@(Model.BidAmount)
+			}
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>		
+      <JsonPath Expr="data[?(@@.currency=='@(Model.Currency)')]">	
+				<JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+				<JsonPath Expr="min_daily_budget_imp" Id="Impressions" Title="Impressions" Converter="Int" HelpText=""/>
+				<JsonPath Expr="min_daily_budget_video_views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="min_daily_budget_high_freq" Id="HighFrequency" Title="High Frequency" Converter="Int" HelpText=""/>
+				<JsonPath Expr="min_daily_budget_low_freq" Id="LowFrequency" Title="Low Frequency" Converter="Int" HelpText=""/>				
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="AccountRateCard" Title="Account Rate Card" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+			</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/ratecard?	
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>		
+      <JsonPath Expr="data[*]">	
+				<JsonPath Expr="rate" Id="Rate" Title="Rate" Converter="Int" HelpText=""/>
+				<JsonPath Expr="country" Id="Country" Title="Country" HelpText=""/>
+				<JsonPath Expr="currency" Id="Currency" Title="Currency" HelpText=""/>				
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="AccountTargetingSearch" Title="Account Targeting Search" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true"/>			
+			</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/targetingsearch?
+			q=@Utils.UrlEncode(Model.Query)
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>		
+      <JsonPath Expr="data[*]">	
+				<JsonPath Expr="id" Id="DescriptorId" Title="Descriptor Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+				<JsonPath Expr="audience_size" Id="AudienceSize" Title="Audience Size" Converter="Int" HelpText=""/>				
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="AccountUsers" Title="Account Users" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+			</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/users?
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>		
+      <JsonPath Expr="data[*]">	
+				<JsonPath Expr="id" Id="UserId" Title="User Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <Compute Id="Role" Title="Role">
+          <Compute.Expr>
+        <![CDATA[
+					@if(Model.RoleInput == 1001)
+					{
+						@: Administrator
+					}
+					else if(Model.RoleInput == 1002)
+					{
+						@: Advertiser
+					}
+					else if(Model.RoleInput == 1003)
+					{
+						@: Analyst access
+					}
+					else if(Model.RoleInput == 1004)
+					{
+						@: Direct sales access
+					}
+					else
+					{
+						@: Other
+					}					
+        ]]>
+          </Compute.Expr>
+          <JsonPath Expr="role" Id="RoleInput" Converter="Int"/>
+        </Compute>			
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="BusinessConnectionObjects" Title="Business Connection Objects" Hidden="false">
+    <Parameters>
+      <Text Id="BusinessId" Title="Business Id" DefaultValue="" Required="true" Debug.DefaultValue="10153736079886289" Select.Connector="ListAssociatedBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>			
+			</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/@(Model.BusinessId)/pages?
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>		
+      <JsonPath Expr="data[*]">	
+				<JsonPath Expr="id" Id="PageId" Title="Page Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="category" Id="Category" Title="Category" Converter="String" HelpText=""/>
+				<JsonPath Expr="access_type" Id="AccessType" Title="Access Type" Converter="String" HelpText=""/>
+				<JsonPath Expr="access_status" Id="AccessStatus" Title="Access Status" Converter="String" HelpText=""/>					
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>	
+	
   <RestConnector Id="AccountActionTypes" Title="Account Actions Breakdown" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
