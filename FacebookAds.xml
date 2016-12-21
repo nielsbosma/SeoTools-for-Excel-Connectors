@@ -36,7 +36,12 @@
 			<Item Id="cost_per_total_action" Title="Cost per Action"/>
 			<Item Id="cpc" Title="CPC"/>
 			<Item Id="frequency" Title="Frequency"/>
-    </Resource>			
+    </Resource>
+	
+    <Resource Id="FrequencySortings">
+			<Item Id="reach" Title="Reach"/>
+			<Item Id="frequency_value" Title="Frequency"/>
+    </Resource>	
 
     <Resource Id="Type">
 			<Item Id="impression_device" Title="Device"/>
@@ -433,7 +438,54 @@
     <Fail>
       <JsonPath Expr="$.error.message"/> 
     </Fail>
-  </RestConnector>	
+  </RestConnector>
+
+  <RestConnector Id="AccountReachFrequency" Title="Account Reach Frequency" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+        <DataSource>
+          <Resource Id="TimeIntervals"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
+        <DataSource>
+          <Resource Id="FrequencySortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
+	</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/insights?
+			fields=reach
+			&breakdowns=frequency_value
+			&sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&date_preset=@(Model.TimeInterval)
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="date_start" Id="DateStart" Title="Date Start" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="date_stop" Id="DateStop" Title="Date Stop" Converter="DateTime" HelpText=""/>		
+        <JsonPath Expr="reach" Id="Reach" Title="Reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="frequency_value" Id="Frequency" Title="Frequency" Converter="Int" HelpText=""/>				
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>  
 
   <RestConnector Id="CampaignStatistics" Title="Campaign Statistics" Hidden="false">
     <Parameters>
@@ -560,6 +612,54 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="CampaignReachFrequency" Title="Campaign Reach Frequency" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+	  <Text Id="CampaignId" Title="Campaign Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461710669" Select.Connector="ListCampaigns" Select.IdField="CampaignId" Select.TitleField="Name"/>
+      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+        <DataSource>
+          <Resource Id="TimeIntervals"/>
+        </DataSource>
+      </Select>	
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
+        <DataSource>
+          <Resource Id="FrequencySortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
+	</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/@(Model.CampaignId)/insights?
+			fields=reach
+			&breakdowns=frequency_value
+			&sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&date_preset=@(Model.TimeInterval)
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="date_start" Id="DateStart" Title="Date Start" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="date_stop" Id="DateStop" Title="Date Stop" Converter="DateTime" HelpText=""/>		
+        <JsonPath Expr="reach" Id="Reach" Title="Reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="frequency_value" Id="Frequency" Title="Frequency" Converter="Int" HelpText=""/>				
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>  
+
   <RestConnector Id="AdsetStatistics" Title="Adset Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
@@ -607,7 +707,7 @@
   <RestConnector Id="AdsetStatisticsBreakdown" Title="Adset Statistics Breakdown" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
+	  <Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
       <Select Id="Type" Title="Select Method or Demography" Required="true" DefaultValue="impression_device">
         <DataSource>
           <Resource Id="Type"/>
@@ -682,7 +782,55 @@
     <Fail>
       <JsonPath Expr="$.error.message"/> 
     </Fail>
-  </RestConnector>	
+  </RestConnector>
+ 
+  <RestConnector Id="AdsetReachFrequency" Title="Adset Reach Frequency" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+	  <Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
+      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+        <DataSource>
+          <Resource Id="TimeIntervals"/>
+        </DataSource>
+      </Select>	
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
+        <DataSource>
+          <Resource Id="FrequencySortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
+			</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/@(Model.AdsetId)/insights?
+			fields=reach
+			&breakdowns=frequency_value
+			&sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&date_preset=@(Model.TimeInterval)
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="date_start" Id="DateStart" Title="Date Start" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="date_stop" Id="DateStop" Title="Date Stop" Converter="DateTime" HelpText=""/>		
+        <JsonPath Expr="reach" Id="Reach" Title="Reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="frequency_value" Id="Frequency" Title="Frequency" Converter="Int" HelpText=""/>				
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>  
 
   <RestConnector Id="AdStatistics" Title="Ad Statistics" Hidden="false">
     <Parameters>
@@ -731,7 +879,7 @@
   <RestConnector Id="AdStatisticsBreakdown" Title="Ad Statistics Breakdown" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
+	  <Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
       <Select Id="Type" Title="Select Method or Demography" Required="true" DefaultValue="impression_device">
         <DataSource>
           <Resource Id="Type"/>
@@ -758,7 +906,7 @@
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/@(Model.AdId)/insights?
-			fields=@SelectedFields().Substring(2)
+			fields=@SelectedFields().Substring(1)
 			&breakdowns=@(Model.Type)
 		  &sort=@(Model.Sort)
 			_
@@ -806,7 +954,55 @@
     <Fail>
       <JsonPath Expr="$.error.message"/> 
     </Fail>
-  </RestConnector>	
+  </RestConnector>
+
+  <RestConnector Id="AdReachFrequency" Title="Ad Reach Frequency" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+	  <Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
+      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+        <DataSource>
+          <Resource Id="TimeIntervals"/>
+        </DataSource>
+      </Select>	
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
+        <DataSource>
+          <Resource Id="FrequencySortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
+	</Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/@(Model.AdId)/insights?
+			fields=reach
+			&breakdowns=frequency_value
+			&sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&date_preset=@(Model.TimeInterval)
+			&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="date_start" Id="DateStart" Title="Date Start" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="date_stop" Id="DateStop" Title="Date Stop" Converter="DateTime" HelpText=""/>		
+        <JsonPath Expr="reach" Id="Reach" Title="Reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="frequency_value" Id="Frequency" Title="Frequency" Converter="Int" HelpText=""/>				
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>  
 
  <RestConnector Id="AdBidsReachStatistics" Title="Ad Bids Reach Statistics" Hidden="false">
     <Parameters>
