@@ -320,25 +320,55 @@
   <RestConnector Id="AccountStatistics" Title="Account Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+      <DateInterval Id="DateInterval" Title="Interval"/>
+      <Radio Id="Level" Title="Sub level:" DefaultValue="account" Required="false">
         <DataSource>
-          <Resource Id="TimeIntervals"/>
+          <Item Id="none" Title="None"/>
+          <Item Id="campaign" Title="Campaign"/>					
+          <Item Id="adset" Title="Adset"/>
+          <Item Id="ad" Title="Ad"/>
         </DataSource>
-      </Select>			
+      </Radio>			
+				
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
 			</Parameters>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
 		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/insights?
-			fields=@SelectedFields()			
-			&date_preset=@(Model.TimeInterval)
+			fields=@SelectedFields()
+			@if(Model.Level != "none")
+			{
+			@: &level=@(Model.Level)
+			}
+		  &sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="String" Tag="impressions" HelpText=""/>			
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="String" Tag="campaign_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="campaign_name" Id="CampaigName" Title="Campaign Name" Converter="String" Tag="campaign_name" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_id" Id="AdsetId" Title="Adset Id" Converter="String" Tag="adset_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_name" Id="AdsetName" Title="Adset Name" Converter="String" Tag="adset_name" HelpText="" Checked="false"/>	
+        <JsonPath Expr="ad_id" Id="AdId" Title="Ad Id" Converter="String" Tag="ad_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="ad_name" Id="AdName" Title="Ad Name" Converter="String" Tag="ad_name" HelpText="" Checked="false"/>					
+        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
@@ -369,11 +399,7 @@
           <Resource Id="Type"/>
         </DataSource>
       </Select>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
         <DataSource>
           <Resource Id="Sortings"/>
@@ -395,7 +421,8 @@
 		  &sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -443,11 +470,7 @@
   <RestConnector Id="AccountReachFrequency" Title="Account Reach Frequency" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
         <DataSource>
           <Resource Id="FrequencySortings"/>
@@ -469,7 +492,8 @@
 			&sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 			&access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -490,26 +514,64 @@
   <RestConnector Id="CampaignStatistics" Title="Campaign Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="CampaignId" Title="Campaign Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461710669" Select.Connector="ListCampaigns" Select.IdField="CampaignId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+      <DateInterval Id="DateInterval" Title="Interval"/>
+			<Text Id="CampaignId" Title="Filter by Campaign Id" DefaultValue="" Required="false" Debug.DefaultValue="6018461710669" Select.Connector="ListCampaigns" Select.IdField="CampaignId" Select.TitleField="Name"/>
+      <Radio Id="Level" Title="Sub level for filtered campaign" DefaultValue="account" Required="false">
         <DataSource>
-          <Resource Id="TimeIntervals"/>
+          <Item Id="none" Title="None"/>
+          <Item Id="adset" Title="Adset"/>
+          <Item Id="ad" Title="Ad"/>
         </DataSource>
-      </Select>	
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
 			</Parameters>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.CampaignId)/insights?
-			fields=@SelectedFields()		
-			&date_preset=@(Model.TimeInterval)
+		  https://graph.facebook.com/v2.8/
+			@if(Model.CampaignId != "")
+			{
+			@(Model.CampaignId)
+			@: /insights?
+			}
+			else
+			{
+			@: act_@(Model.AccountId)
+			@: /insights?level=campaign
+			}
+			&fields=@SelectedFields()
+			@if(Model.Level != "none")
+			{
+			@: &level=@(Model.Level)
+			}			
+		  &sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="String" Tag="impressions" HelpText=""/>			
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="String" Tag="campaign_id" HelpText="" Checked="true"/>
+        <JsonPath Expr="campaign_name" Id="CampaigName" Title="Campaign Name" Converter="String" Tag="campaign_name" HelpText="" Checked="true"/>
+        <JsonPath Expr="adset_id" Id="AdsetId" Title="Adset Id" Converter="String" Tag="adset_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_name" Id="AdsetName" Title="Adset Name" Converter="String" Tag="adset_name" HelpText="" Checked="false"/>	
+        <JsonPath Expr="ad_id" Id="AdId" Title="Ad Id" Converter="String" Tag="ad_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="ad_name" Id="AdName" Title="Ad Name" Converter="String" Tag="ad_name" HelpText="" Checked="false"/>								
+        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
@@ -541,11 +603,7 @@
           <Resource Id="Type"/>
         </DataSource>
       </Select>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>		
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
         <DataSource>
           <Resource Id="Sortings"/>
@@ -567,7 +625,8 @@
 		  &sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -616,11 +675,7 @@
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
 	  <Text Id="CampaignId" Title="Campaign Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461710669" Select.Connector="ListCampaigns" Select.IdField="CampaignId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
         <DataSource>
           <Resource Id="FrequencySortings"/>
@@ -642,7 +697,8 @@
 			&sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 			&access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -663,26 +719,63 @@
   <RestConnector Id="AdsetStatistics" Title="Adset Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+      <DateInterval Id="DateInterval" Title="Interval"/>
+			<Text Id="AdsetId" Title="Filter by Adset Id" DefaultValue="" Required="false" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
+      <Radio Id="Level" Title="Sub level for filtered campaign" DefaultValue="account" Required="false">
         <DataSource>
-          <Resource Id="TimeIntervals"/>
+          <Item Id="none" Title="None"/>
+          <Item Id="ad" Title="Ad"/>
         </DataSource>
-      </Select>			
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>
 			</Parameters>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.AdsetId)/insights?
-			fields=@SelectedFields()			
-			&date_preset=@(Model.TimeInterval)
+		  https://graph.facebook.com/v2.8/
+			@if(Model.AdsetId != "")
+			{
+			@(Model.AdsetId)
+			@: /insights?
+			}
+			else
+			{
+			@: act_@(Model.AccountId)
+			@: /insights?level=adset
+			}
+			&fields=@SelectedFields()
+			@if(Model.Level != "none")
+			{
+			@: &level=@(Model.Level)
+			}			
+		  &sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="String" Tag="impressions" HelpText=""/>			
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="String" Tag="campaign_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="campaign_name" Id="CampaigName" Title="Campaign Name" Converter="String" Tag="campaign_name" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_id" Id="AdsetId" Title="Adset Id" Converter="String" Tag="adset_id" HelpText="" Checked="true"/>
+        <JsonPath Expr="adset_name" Id="AdsetName" Title="Adset Name" Converter="String" Tag="adset_name" HelpText="" Checked="true"/>	
+        <JsonPath Expr="ad_id" Id="AdId" Title="Ad Id" Converter="String" Tag="ad_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="ad_name" Id="AdName" Title="Ad Name" Converter="String" Tag="ad_name" HelpText="" Checked="false"/>								
+        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
@@ -713,11 +806,7 @@
           <Resource Id="Type"/>
         </DataSource>
       </Select>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
         <DataSource>
           <Resource Id="Sortings"/>
@@ -739,7 +828,8 @@
 		  &sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -788,11 +878,7 @@
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
 	  <Text Id="AdsetId" Title="Adset Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461711469" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
         <DataSource>
           <Resource Id="FrequencySortings"/>
@@ -814,7 +900,8 @@
 			&sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 			&access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -835,26 +922,53 @@
   <RestConnector Id="AdStatistics" Title="Ad Statistics" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
-			<Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
+      <DateInterval Id="DateInterval" Title="Interval"/>
+			<Text Id="AdId" Title="Filter by Ad Id" DefaultValue="" Required="false" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
         <DataSource>
-          <Resource Id="TimeIntervals"/>
+          <Resource Id="Sortings"/>
         </DataSource>
-      </Select>		
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>
 			</Parameters>	
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-		  https://graph.facebook.com/v2.8/@(Model.AdId)/insights?
-			fields=@SelectedFields()		
-			&date_preset=@(Model.TimeInterval)
+		  https://graph.facebook.com/v2.8/
+			@if(Model.AdId != "")
+			{
+			@(Model.AdId)
+			@: /insights?
+			}
+			else
+			{
+			@: act_@(Model.AccountId)
+			@: /insights?level=ad
+			}
+			&fields=@SelectedFields()
+		  &sort=@(Model.Sort)
+			_
+			@(Model.Direction)			
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="String" Tag="impressions" HelpText=""/>			
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="String" Tag="campaign_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="campaign_name" Id="CampaigName" Title="Campaign Name" Converter="String" Tag="campaign_name" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_id" Id="AdsetId" Title="Adset Id" Converter="String" Tag="adset_id" HelpText="" Checked="false"/>
+        <JsonPath Expr="adset_name" Id="AdsetName" Title="Adset Name" Converter="String" Tag="adset_name" HelpText="" Checked="false"/>	
+        <JsonPath Expr="ad_id" Id="AdId" Title="Ad Id" Converter="String" Tag="ad_id" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_name" Id="AdName" Title="Ad Name" Converter="String" Tag="ad_name" HelpText="" Checked="true"/>				
+        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>			
         <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
         <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Int" HelpText=""/>
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
@@ -885,11 +999,7 @@
           <Resource Id="Type"/>
         </DataSource>
       </Select>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
         <DataSource>
           <Resource Id="Sortings"/>
@@ -911,7 +1021,8 @@
 		  &sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 		  &access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -960,11 +1071,7 @@
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
 	  <Text Id="AdId" Title="Ad Id" DefaultValue="" Required="true" Debug.DefaultValue="6018461712869" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name"/>
-      <Select Id="TimeInterval" Title="Time Interval" Required="true" DefaultValue="lifetime">
-        <DataSource>
-          <Resource Id="TimeIntervals"/>
-        </DataSource>
-      </Select>	
+      <DateInterval Id="DateInterval" Title="Interval"/>	
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="reach">
         <DataSource>
           <Resource Id="FrequencySortings"/>
@@ -986,7 +1093,8 @@
 			&sort=@(Model.Sort)
 			_
 			@(Model.Direction)			
-			&date_preset=@(Model.TimeInterval)
+			&time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			&time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
 			&access_token=@(Model.AccessToken)
       ]]>
       </Fetch.Url>
@@ -1503,6 +1611,41 @@
       <JsonPath Expr="$.error.message"/> 
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="VideoStatistics" Title="Video Statistics" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="Name"/>
+    </Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.8/act_@(Model.AccountId)/advideos?
+			fields=@SelectedFields()
+		  &access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="VideoId" Title="Video Id" Tag="id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="content_category" Id="Category" Title="Category" Tag="content_category" Converter="String" HelpText=""/>	
+      </JsonPath>
+      <JsonPath Expr="data[*].from">			
+        <JsonPath Expr="name" Id="From" Title="From" Tag="from" Converter="String" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data.*">			
+        <JsonPath Expr="published" Id="Published" Title="Published" Tag="published" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="is_instagram_eligible" Id="InstagramEligible" Title="Instagram Eligible" Tag="is_instagram_eligible" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="picture" Id="Picture" Title="Picture" Tag="picture" Converter="String" HelpText=""/>
+        <JsonPath Expr="permalink_url" Id="Permalink" Title="Permalink" Tag="permalink_url" Converter="String" HelpText=""/>				
+        <JsonPath Expr="icon" Id="Icon" Title="Icon" Tag="icon" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/> 
+    </Fail>
+  </RestConnector>	
 
   <RazorFunctions>
     <![CDATA[
