@@ -7,6 +7,17 @@
     <Text Id="ApiToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/accuranker/"/>
   </Settings>
 
+  <Resources>
+		<Resource Id="Sortings">
+			<Item Id="keyword" Title="Keyword"/>
+			<Item Id="id" Title="Id"/>
+			<Item Id="domain" Title="Domain"/>
+			<Item Id="search_type" Title="Search Type"/>
+			<Item Id="date_added" Title="Created"/>
+			<Item Id="search_volume" Title="Search Volume"/>
+		</Resource>
+  </Resources>
+	
   <RestConnector Id="ListOrganizations" Title="Organizations List" HelpUrl="https://app.accuranker.com/api/v3/organizations/">
     <Fetch>
       <HttpSettings>
@@ -141,35 +152,22 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>	
-
-  <RestConnector Id="ListDomainsFilter" Title="Domains Filter List" HelpUrl="https://app.accuranker.com/api/v3/domains/" Hidden="True">
-    <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Token @Model.ApiToken</Header>
-        </RequestHeaders>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-      https://app.accuranker.com/api/v3/domains/?format=json
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
-        <JsonPath Expr="name" Id="Domain" Title="Domain" Converter="String" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error_message"/>
-    </Fail>
-  </RestConnector>
 	
   <RestConnector Id="ListKeywords" Title="Keywords List" HelpUrl="List or create keywords for a specific domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="false" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
       <Text Id="SearchDate" Title="Filter by Search Date" DefaultValue="" Required="false"/>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="keyword">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="descending" Required="true">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Radio>			
 		</Parameters>
     <Fetch>
       <HttpSettings>
@@ -192,6 +190,12 @@
 			{
 				@: &search_date=@(Model.SearchDate)
       }
+		  &ordering=
+			@if(Model.Direction == "desc")
+			{
+				@: -
+      }
+			@(Model.Sort)			
 			&format=json
       ]]>
       </Fetch.Url>
