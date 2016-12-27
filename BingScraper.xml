@@ -3,25 +3,21 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="BingScraper" Title="Bing Scraper">
+  <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="zlatan"/>
     </Parameters>
-    <Paging PageSize="10"/>
+    <Paging PageSize="10" EvenPages="false">
+      <Parse>
+        <Regex Id="AvaliableRows" Expr="&quot;sb_count&quot;&gt;\s*([\d\?\-]+\s*[\S]+\s*)?([0-9,\. &amp;#;]+)[^&lt;]*&lt;/span&gt;" IgnoreCase="true" DefaultValue="0" Converter="Int"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         http://www.bing.com/search?
 		    q=@Utils.UrlEncode(Model.Query)
-		    @if(Model.PageCursor.Page == 0)
-        {
-          @: &first=@(Model.PageCursor.Page+1)
-        }
-        else
-        {
-          @: &first=@((Model.PageCursor.Page+1)*10)
-        }
-		
+		    &first=@(Model.PageCursor.FetchedRows+1)
       ]]>
       </Fetch.Url>
     </Fetch>
@@ -36,6 +32,7 @@
     </Parse>
   </RestConnector>
 
+  <!--
   <RestConnector Id="OtherDomainsOnIp" Title="Other Domains On IP">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="83.168.203.192" Required="true"/>
@@ -66,6 +63,21 @@
       <XPath Expr="//li[@@class='b_algo']//div/p">
         <XPath Expr="." Title="Description" Id="Description" Converter="String"/>
       </XPath>
+    </Parse>
+  </RestConnector>
+  -->
+
+  <RestConnector Id="NumberOfResults" Title="Number of Results" AvailableInSpider="false" >
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.bing.com/search?q=@Utils.UrlEncode(Model.Query)">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;sb_count&quot;&gt;\s*([\d\?\-]+\s*[\S]+\s*)?([0-9,\. &amp;#;]+)[^&lt;]*&lt;/span&gt;" IgnoreCase="true" DefaultValue="0" Converter="Int"/>
     </Parse>
   </RestConnector>
 
