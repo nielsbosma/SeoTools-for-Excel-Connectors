@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Google BigQuery" Id="GoogleBigQuery" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleBigQuery.xml" HelpUrl="http://seotoolsforexcel.com/google-bigquery/" HelpText="Documentation">
+
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/bigquery.user" StayAuthenticated="true"/>
+
+  <RestConnector Id="Projects" Title="Projects" Hidden="">
+    <Parameters>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/bigquery/v2/projects">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.projects.*">
+        <JsonPath Expr="projectReference.projectId" Id="Id" Title="Id"/>
+        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Datasets" Title="Datasets" Hidden="">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.ProjectId)/datasets">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.datasets.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Tables" Title="Tables" Hidden="">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" Debug.DefaultValue="bigquery-public-data" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="DatasetId" Title="Dataset ID" Debug.DefaultValue="samples" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.ProjectId)/datasets/@(Model.DatasetId)/tables">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tables.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Query" Title="Query">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" Debug.DefaultValue="bigquery-public-data" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="DatasetId" Title="Dataset ID" Debug.DefaultValue="samples" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="SELECT * FROM [publicdata.samples.shakespeare]" Multiline="true"/>
+    </Parameters>
+    <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.ProjectId)/queries">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+          {
+            "query": "@Model.Query",
+            "defaultDataset": {
+              "datasetId": "@Model.DatasetId"
+            }
+          }
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tables.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+  
+</Suite>
