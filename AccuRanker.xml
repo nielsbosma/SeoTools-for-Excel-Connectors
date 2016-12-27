@@ -8,16 +8,16 @@
   </Settings>
 
   <Resources>
-		<Resource Id="Sortings">
-			<Item Id="keyword" Title="Keyword"/>
-			<Item Id="id" Title="Id"/>
-			<Item Id="domain" Title="Domain"/>
-			<Item Id="search_type" Title="Search Type"/>
-			<Item Id="date_added" Title="Created"/>
-			<Item Id="search_volume" Title="Search Volume"/>
-		</Resource>
+    <Resource Id="Sortings">
+      <Item Id="keyword" Title="Keyword"/>
+      <Item Id="id" Title="Id"/>
+      <Item Id="domain" Title="Domain"/>
+      <Item Id="search_type" Title="Search Type"/>
+      <Item Id="date_added" Title="Created"/>
+      <Item Id="search_volume" Title="Search Volume"/>
+    </Resource>
   </Resources>
-	
+
   <RestConnector Id="ListOrganizations" Title="Organizations List" HelpUrl="https://app.accuranker.com/api/v3/organizations/">
     <Fetch>
       <HttpSettings>
@@ -27,8 +27,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/organizations/?format=json
-      ]]>
+        https://app.accuranker.com/api/v3/organizations/?format=json
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -52,8 +52,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/groups/?format=json
-      ]]>
+        https://app.accuranker.com/api/v3/groups/?format=json
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -63,11 +63,13 @@
         <JsonPath Expr="organization" Id="Organization" Title="Organization" Converter="Int" HelpText=""/>
         <Compute Id="Domains" Title="Domains">
           <Compute.Expr>
-					@{
-						var temp = Regex.Replace(Model.Domains, @"\s+", string.Empty);
-						var domainstripped = temp.Substring(1,temp.Length-2);
-					}
-					@domainstripped
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.Domains, @"\s+", string.Empty);
+              var domainstripped = temp.Substring(1,temp.Length-2);
+            }
+            @domainstripped
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="domains" Id="Domains" Converter="String"/>
         </Compute>
@@ -78,7 +80,7 @@
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RestConnector Id="ListDomains" Title="Domains List" HelpUrl="https://app.accuranker.com/api/v3/domains/">
     <Fetch>
@@ -89,8 +91,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/domains/?format=json
-      ]]>
+        https://app.accuranker.com/api/v3/domains/?format=json
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -100,30 +102,32 @@
         <JsonPath Expr="group" Id="Group" Title="Group" Converter="Int" HelpText=""/>
         <Compute Id="Competitors" Title="Competitors">
           <Compute.Expr>
-					@{
-						var temp = Regex.Replace(Model.Competitors, @"\s+", string.Empty);
-						var competitorsstripped = temp.Substring(1,temp.Length-2);
-					}
-					@competitorsstripped
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.Competitors, @"\s+", string.Empty);
+              var competitorsstripped = temp.Substring(1,temp.Length-2);
+            }
+            @competitorsstripped
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="competitors" Id="Competitors" Converter="String"/>
         </Compute>
         <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" HelpText=""/>
         <JsonPath Expr="ranks_updated_at" Id="RanksUpdatedAt" Title="Rank Updated" Converter="DateTime" HelpText=""/>
         <JsonPath Expr="date_of_first_rank" Id="FirstRankAt" Title="First Ranked" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="public_report_url" Id="ReportUrl" Title="Report URL" Converter="String" HelpText=""/>				
+        <JsonPath Expr="public_report_url" Id="ReportUrl" Title="Report URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-	
+
   <RestConnector Id="DomainAverageRank" Title="Domain Average Rank" HelpUrl="https://app.accuranker.com/api/v3/domains/">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
-		</Parameters>
-		<Fetch>
+    </Parameters>
+    <Fetch>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
@@ -151,8 +155,8 @@
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
-  </RestConnector>	
-	
+  </RestConnector>
+
   <RestConnector Id="ListKeywords" Title="Keywords List" HelpUrl="List or create keywords for a specific domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="false" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
@@ -171,11 +175,11 @@
       <Radio Id="SearchType" Title="SearchType" DefaultValue="all" Required="true">
         <DataSource>
           <Item Id="all" Title="All"/>
-					<Item Id="web" Title="Web"/>
+          <Item Id="web" Title="Web"/>
           <Item Id="mobile" Title="Mobile"/>
         </DataSource>
       </Radio>
-		</Parameters>
+    </Parameters>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -184,27 +188,27 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/
-      @if(Model.Domain == "")
-      {
-        @: keywords/?
-      }
-      else
-      {
-        @: domains/@(Model.Domain)/keywords/?
-      }
-			@if(Model.SearchDate != "")
-			{
-				@: &search_date=@(Model.SearchDate)
-      }
-		  &ordering=
-			@if(Model.Direction == "desc")
-			{
-				@: -
-      }
-			@(Model.Sort)
-			&format=json
-      ]]>
+        https://app.accuranker.com/api/v3/
+        @if(Model.Domain == "")
+        {
+          @: keywords/?
+        }
+        else
+        {
+          @: domains/@(Model.Domain)/keywords/?
+        }
+			  @if(Model.SearchDate != "")
+			  {
+				  @: &search_date=@(Model.SearchDate)
+        }
+		    &ordering=
+			  @if(Model.Direction == "desc")
+			  {
+				  @: -
+        }
+			  @(Model.Sort)
+			  &format=json
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -214,19 +218,19 @@
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
         <Compute Id="SearchType" Title="Search Type">
           <Compute.Expr>
-        <![CDATA[
-					@if(Model.searchtype == 1)
-					{
-						@: Web
-					}
-					else
-					{
-						@: Mobile
-					}
-        ]]>
+            <![CDATA[
+					  @if(Model.searchtype == 1)
+					  {
+						  @: Web
+					  }
+					  else
+					  {
+						  @: Mobile
+					  }
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="search_type" Id="searchtype" Converter="Int"/>
-        </Compute>				
+        </Compute>
         <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" HelpText=""/>
         <JsonPath Expr="search_volume" Id="SearchVolume" Title="Search Volume" Converter="Int" HelpText=""/>
         <JsonPath Expr="rank.search_date" Id="SearchDate" Title="SearchDate" Converter="DateTime" HelpText=""/>
@@ -241,7 +245,7 @@
   </RestConnector>
 
   <RestConnector Id="CompetitorsList" Title="Competitors List" HelpUrl="https://app.accuranker.com/api/v3/competitors/" Hidden="False">
-		<Fetch>
+    <Fetch>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
@@ -249,8 +253,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/competitors/
-      ]]>
+        https://app.accuranker.com/api/v3/competitors/
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -274,8 +278,8 @@
   <RestConnector Id="CompetitorsforDomain" Title="Competitors for Domain" HelpUrl="https://app.accuranker.com/api/v3/domains/{domain_id}/competitors/" Hidden="False">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain."/>
-		</Parameters>	
-		<Fetch>
+    </Parameters>
+    <Fetch>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
@@ -283,8 +287,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/domains/@(Model.Domain)/competitors/
-      ]]>
+        https://app.accuranker.com/api/v3/domains/@(Model.Domain)/competitors/
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -308,8 +312,8 @@
     <Parameters>
       <Text Id="Competitor" Title="Competitor" DefaultValue="" Required="true" Select.Connector="CompetitorsList" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a competitor."/>
       <Text Id="SearchDate" Title="Filter by Search Date" DefaultValue="" Required="false"/>
-			</Parameters>	
-		<Fetch>
+    </Parameters>
+    <Fetch>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
@@ -317,12 +321,12 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-      https://app.accuranker.com/api/v3/competitors/@(Model.Competitor)/keywords/?
-			@if(Model.SearchDate != "")
-			{
-				@: &search_date=@(Model.SearchDate)
-      }
-			]]>
+        https://app.accuranker.com/api/v3/competitors/@(Model.Competitor)/keywords/?
+			  @if(Model.SearchDate != "")
+			  {
+				  @: &search_date=@(Model.SearchDate)
+        }
+			  ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -341,23 +345,23 @@
   </RestConnector>
 
   <RazorFunctions>
-  <![CDATA[
-  String GetQuery()
-	{
-		if(Model.SearchType == "web")
-		{
-			return "=='1'";
-		}
-		else if(Model.SearchType == "mobile")
-		{
-			return "=='2'";
-		}
-		else
-		{
-			return ">>'0'";
-		}
-  }
-  ]]>
-  </RazorFunctions>	
-	
+    <![CDATA[
+    String GetQuery()
+	  {
+		  if(Model.SearchType == "web")
+		  {
+			  return "=='1'";
+		  }
+		  else if(Model.SearchType == "mobile")
+		  {
+			  return "=='2'";
+		  }
+		  else
+		  {
+			  return ">>'0'";
+		  }
+    }
+    ]]>
+  </RazorFunctions>
+
 </Suite>
