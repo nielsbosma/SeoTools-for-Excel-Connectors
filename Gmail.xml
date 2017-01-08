@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite RequireVersion="5.1" Title="Gmail" Id="Gmail" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSearchConsole.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/gmail.readonly" StayAuthenticated="true"/>
 
@@ -13,70 +13,20 @@
       </Fail>
     </Resource>
   </Resources>
-  
-  <RazorFunctions>
-    <![CDATA[
-    
-    string[] _SelectedDimensions() { 
-      string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-      return ((ResultField[])Model.Headers)
-        .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
-        .Select(e => e.Identifier)
-        .ToArray();
-    }
-    
-    string SelectedDimensions() {
-      return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
-    }
-    
-    string DimensionIndex(string dimension) { 
-      return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
-    }
-    
-    string _RenderOperator(string op)
-    {
-	    return op == "==" ? "equals" :
-		    op == "!=" ? "notEquals" :
-		    op == "=~" ? "contains" :
-		    "notContains";
-    }
-
-    string RenderFilter()
-    {
-	    var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
-
-	    var filters = lines
-		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
-		    .Where(e => e.Success)
-		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}", 
-			    e.Groups[1].Value.Trim(), 
-			    _RenderOperator(e.Groups[2].Value.Trim()), 
-			    e.Groups[3].Value.Trim()));
-
-	    if(filters.Any())
-	    {
-		    return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
-	    }
-
-	    return "";
-    }
-    
-   ]]>
-  </RazorFunctions>
 
   <RestConnector Id="Mails" Title="Mails" Hidden="false">
     <Parameters>
-      <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>	
+      <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash" DefaultValue="False"/>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
-		<JsonPath Id="NextPageToken" Expr="$.nextPageToken"/>
+        <JsonPath Id="NextPageToken" Expr="$.nextPageToken"/>
       </Parse>
-    </Paging>	
+    </Paging>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/messages?
 				&maxResults=@(Model.PageCursor.NextTake)
 		    &includeSpamTrash=@(Model.IncludeSpamTrash ? "true" : "false")
@@ -88,8 +38,8 @@
         {
           @: &pageToken=@Model.NextPageToken
         }
-      ]]>
-      </Fetch.Url>	
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -104,14 +54,14 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RestConnector Id="MailLookup" Title="Mail Lookup" Hidden="false">
     <Parameters>
       <Text Id="MailId" Title="Mail Id" DefaultValue="" Required="true" Debug.DefaultValue=""/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/messages/@(Utils.UrlEncode(Model.MailId))
       ]]>
       </Fetch.Url>
@@ -129,7 +79,7 @@
           <Compute.Expr>
             @(DateTimeOffset.FromUnixTimeMilliseconds(Model.Sent))
           </Compute.Expr>
-					<JsonPath Expr="internalDate" Id="Sent" Title="Sent" Converter="Long"/>
+          <JsonPath Expr="internalDate" Id="Sent" Title="Sent" Converter="Long"/>
         </Compute>
         <JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
         <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
@@ -141,17 +91,17 @@
 
   <RestConnector Id="Threads" Title="Threads" Hidden="false">
     <Parameters>
-      <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>	
+      <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash" DefaultValue="False"/>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
-		<JsonPath Id="NextPageToken" Expr="$.nextPageToken"/>
+        <JsonPath Id="NextPageToken" Expr="$.nextPageToken"/>
       </Parse>
     </Paging>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/threads?
 				&maxResults=@(Model.PageCursor.NextTake)
 		    &includeSpamTrash=@(Model.IncludeSpamTrash ? "true" : "false")
@@ -164,7 +114,7 @@
           @: &pageToken=@Model.NextPageToken
         }	 
       ]]>
-      </Fetch.Url>	
+      </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -186,10 +136,10 @@
     </Parameters>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/threads/@(Utils.UrlEncode(Model.ThreadId))
       ]]>
-      </Fetch.Url>	
+      </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -197,13 +147,13 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.messages.*">		
+      <JsonPath Expr="$.messages.*">
         <JsonPath Expr="id" Id="MailId" Title="Mail Id" Converter="String"/>
         <Compute Id="Date" Title="Date" Converter="DateTime">
           <Compute.Expr>
             @(DateTimeOffset.FromUnixTimeMilliseconds(Model.Sent))
           </Compute.Expr>
-					<JsonPath Expr="internalDate" Id="Sent" Title="Sent" Converter="Long"/>
+          <JsonPath Expr="internalDate" Id="Sent" Title="Sent" Converter="Long"/>
         </Compute>
         <JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
         <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
@@ -216,9 +166,9 @@
   <RestConnector Id="Labels" Title="Labels" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/labels
-      ]]>
+        ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
@@ -229,7 +179,7 @@
     <Parse>
       <JsonPath Expr="$.labels.*">
         <JsonPath Expr="id" Id="LabelId" Title="Label Id" Converter="String"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>	
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="messageListVisibility" Id="Visibility" Title="Visibility" Converter="String"/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
       </JsonPath>
@@ -243,9 +193,9 @@
     </Parameters>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/labels/@(Utils.UrlEncode(Model.LabelId))
-      ]]>
+        ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
@@ -271,7 +221,7 @@
   <RestConnector Id="Drafts" Title="Drafts" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/drafts
       ]]>
       </Fetch.Url>
@@ -284,7 +234,7 @@
     <Parse>
       <JsonPath Expr="$.drafts.*">
         <JsonPath Expr="id" Id="DraftId" Title="Draft Id" Converter="String"/>
-        <JsonPath Expr="message.id" Id="EmailId" Title="Email Id" Converter="String"/>	
+        <JsonPath Expr="message.id" Id="EmailId" Title="Email Id" Converter="String"/>
         <JsonPath Expr="message.threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
       </JsonPath>
     </Parse>
@@ -294,7 +244,7 @@
   <RestConnector Id="ForwardingAdresses" Title="Settings - ForwardingAdresses" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses
       ]]>
       </Fetch.Url>
@@ -305,7 +255,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.forwardingAddresses.*">		
+      <JsonPath Expr="$.forwardingAddresses.*">
         <JsonPath Expr="forwardingEmail" Id="Email" Title="Email" Converter="String"/>
         <JsonPath Expr="verificationStatus" Id="Status" Title="Status" Converter="String"/>
       </JsonPath>
@@ -313,34 +263,12 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SettingsImap" Title="Settings - Imap" Hidden="false">
+  <RestConnector Id="SettingsImap" Title="Settings - IMAP" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/settings/imap
-      ]]>
-      </Fetch.Url>	
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-        <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool"/>
-        <JsonPath Expr="autoExpunge" Id="AutoExpunge" Title="AutoExpunge" Converter="Bool"/>
-        <JsonPath Expr="expungeBehavior" Id="ExpungeBehavior" Title="Expunge Behavior" Converter="String"/>
-        <JsonPath Expr="maxFolderSize" Id="MaxFolderSize" Title="Max Folder Size" Converter="Int"/>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-	
-  <RestConnector Id="SettingsPop" Title="Settings - Pop" Hidden="false">
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/settings/pop
-      ]]>
+        ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
@@ -349,19 +277,21 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-        <JsonPath Expr="accessWindow" Id="AccessWindow" Title="AccessWindow" Converter="String"/>
-        <JsonPath Expr="disposition" Id="Disposition" Title="Disposition" Converter="String"/>
+      <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool"/>
+      <JsonPath Expr="autoExpunge" Id="AutoExpunge" Title="AutoExpunge" Converter="Bool"/>
+      <JsonPath Expr="expungeBehavior" Id="ExpungeBehavior" Title="Expunge Behavior" Converter="String"/>
+      <JsonPath Expr="maxFolderSize" Id="MaxFolderSize" Title="Max Folder Size" Converter="Int"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SettingsVacation" Title="Settings - Vacation" Hidden="false">
+  <RestConnector Id="SettingsPop" Title="Settings - POP" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/settings/vacation
-      ]]>
-      </Fetch.Url>	
+        <![CDATA[
+        https://www.googleapis.com/gmail/v1/users/me/settings/pop
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -369,10 +299,30 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-        <JsonPath Expr="enableAutoReply" Id="Enabled" Title="Enabled" Converter="Bool"/>
-        <JsonPath Expr="responseSubject" Id="Response" Title="Response" Converter="String"/>
-        <JsonPath Expr="restrictToContacts" Id="RestrictToContacts" Title="Restrict To Contacts" Converter="Bool"/>
-        <JsonPath Expr="restrictToDomain" Id="RestrictToDomain" Title="Restrict To Domain" Converter="Bool"/>
+      <JsonPath Expr="accessWindow" Id="AccessWindow" Title="AccessWindow" Converter="String"/>
+      <JsonPath Expr="disposition" Id="Disposition" Title="Disposition" Converter="String"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SettingsVacation" Title="Settings - Vacation" Hidden="false">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/gmail/v1/users/me/settings/vacation
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="enableAutoReply" Id="Enabled" Title="Enabled" Converter="Bool"/>
+      <JsonPath Expr="responseSubject" Id="Response" Title="Response" Converter="String"/>
+      <JsonPath Expr="restrictToContacts" Id="RestrictToContacts" Title="Restrict To Contacts" Converter="Bool"/>
+      <JsonPath Expr="restrictToDomain" Id="RestrictToDomain" Title="Restrict To Domain" Converter="Bool"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
@@ -380,7 +330,7 @@
   <RestConnector Id="SettingsAutoForwarding" Title="Settings - AutoForwarding" Hidden="false">
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
+        <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/settings/autoForwarding
       ]]>
       </Fetch.Url>
@@ -391,7 +341,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-        <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool"/>	
+      <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
