@@ -1,0 +1,577 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Ahrefs" Id="Ahrefs" RequireVersion="6.0.5" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Ahrefs.xml" HelpUrl="http://seotoolsforexcel.com/ahrefs/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/ahrefs/">
+    <Text Id="ApiToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/ahrefs/"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="OrderAnchors">
+      <Item Id="anchor" Title="Anchor"/>
+      <Item Id="backlinks" Title="Backlinks"/>
+      <Item Id="refpages" Title="Refpages"/>
+      <Item Id="refdomains" Title="Refdomains"/>
+      <Item Id="first_seen" Title="First Seen"/>
+      <Item Id="last_visited" Title="Last Visited"/>
+    </Resource>
+
+    <Resource Id="OrderBacklinks">
+      <Item Id="url_from" Title="URL From"/>
+      <Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
+      <Item Id="ip_from" Title="IP From"/>
+      <Item Id="links_external" Title="Links External"/>
+      <Item Id="encoding" Title="Encoding"/>
+      <Item Id="first_seen" Title="First Seen"/>
+      <Item Id="prev_visited" Title="Prev Visited"/>
+      <Item Id="original" Title="Original"/>
+      <Item Id="redirect" Title="Redirect"/>
+      <Item Id="alt" Title="Alt"/>
+      <Item Id="text_pre" Title="Text Pre"/>
+      <Item Id="url_to" Title="URL to"/>
+      <Item Id="domain_rating" Title="Domain Rating"/>
+      <Item Id="links_internal" Title="Links Internal"/>
+      <Item Id="page_size" Title="Page Size"/>
+      <Item Id="title" Title="Title"/>
+      <Item Id="last_visited" Title="Last Visited"/>
+      <Item Id="sitewide" Title="Sitewide"/>
+      <Item Id="link_type" Title="Link Type"/>
+      <Item Id="nofollow" Title="Nofollow"/>
+      <Item Id="anchor" Title="Anchor"/>
+      <Item Id="text_post" Title="Text Post"/>		
+    </Resource>
+
+    <Resource Id="OrderBackLinksNewLost">
+      <Item Id="url_from" Title="URL From"/>
+      <Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
+      <Item Id="date" Title="Date"/>
+      <Item Id="links_external" Title="Links External"/>
+      <Item Id="encoding" Title="Encoding"/>
+      <Item Id="first_seen" Title="First Seen"/>
+      <Item Id="prev_visited" Title="Prev Visited"/>
+      <Item Id="original" Title="Original"/>
+      <Item Id="redirect" Title="Redirect"/>
+      <Item Id="alt" Title="Alt"/>
+      <Item Id="text_pre" Title="Text Pre"/>
+      <Item Id="url_to" Title="URL to"/>
+      <Item Id="domain_rating" Title="Domain Rating"/>
+      <Item Id="links_internal" Title="Links Internal"/>
+      <Item Id="http_code" Title="HTTP Code"/>
+      <Item Id="title" Title="Title"/>
+      <Item Id="last_visited" Title="Last Visited"/>
+      <Item Id="sitewide" Title="Sitewide"/>
+      <Item Id="link_type" Title="Link Type"/>
+      <Item Id="nofollow" Title="Nofollow"/>
+      <Item Id="anchor" Title="Anchor"/>
+      <Item Id="text_post" Title="Text Post"/>
+      <Item Id="origin" Title="Origin"/>
+      <Item Id="type" Title="Type"/>
+    </Resource>
+		
+    <Resource Id="OrderBackLinksNewLostCounters">
+      <Item Id="date" Title="Date"/>
+      <Item Id="url_to" Title="URL To"/>
+      <Item Id="new" Title="New"/>
+      <Item Id="Lost" Title="Lost"/>
+      <Item Id="new_total" Title="New Total"/>
+      <Item Id="lost_total" Title="Lost Total"/>
+    </Resource>		
+		
+    <Resource Id="OrderPages">
+      <Item Id="url" Title="URL"/>
+      <Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
+      <Item Id="size" Title="Size"/>
+      <Item Id="redirect_url" Title="Redirect URL"/>
+      <Item Id="content_encoding" Title="Content Encoding"/>
+      <Item Id="backlinks" Title="Backlinks"/>
+      <Item Id="dofollow" Title="Dofollow"/>
+      <Item Id="refdomains" Title="Refdomains"/>
+      <Item Id="refclass_c" Title="Refclass C"/>
+      <Item Id="refips" Title="Refips"/>		
+      <Item Id="links_external" Title="Links External"/>
+      <Item Id="encoding" Title="Encoding"/>
+      <Item Id="redirects" Title="Redirects"/>
+      <Item Id="links_internal" Title="Links Internal"/>
+      <Item Id="http_code" Title="HTTP Code"/>
+      <Item Id="title" Title="Title"/>
+      <Item Id="last_visited" Title="Last Visited"/>
+      <Item Id="nofollow" Title="Nofollow"/>
+    </Resource>
+				
+  </Resources>
+	
+  <RestConnector Id="AhrefsRank" Title="Ahrefs Rank" HelpUrl="https://ahrefs.com/api/documentation/ahrefs-rank">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=ahrefs_rank
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="pages.*">
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Anchors" Title="Anchors" HelpUrl="https://ahrefs.com/api/documentation/anchors">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Where" Title="Where" DefaultValue="" Required="false" HelpText="The result can be filtered, returning only data that satisfies the specified comma-separated set of conditions."/>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="anchor">
+        <DataSource>
+          <Resource Id="OrderAnchors"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>			
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=anchors
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				&order_by=@(Model.OrderBy):@(Model.Direction)				
+				@if(Model.Where != "")
+				{
+					@: &where=@Utils.UrlEncode(Model.Where)
+				}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="anchors.*">
+        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" HelpText=""/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="refpages" Id="Refpages" Title="Refpages" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refdomains" Id="Refdomains" Title="Refdomains" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText=""/>				
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
+	
+  <RestConnector Id="Backlinks" Title="Backlinks" HelpUrl="https://ahrefs.com/api/documentation/backlinks">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Where" Title="Where" DefaultValue="" Required="false" HelpText="The result can be filtered, returning only data that satisfies the specified comma-separated set of conditions."/>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="url_from">
+        <DataSource>
+          <Resource Id="OrderBacklinks"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>			
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=backlinks
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				&order_by=@(Model.OrderBy):@(Model.Direction)				
+				@if(Model.Where != "")
+				{
+					@: &where=@Utils.UrlEncode(Model.Where)
+				}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="refpages.*">
+        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText=""/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText=""/>
+        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText=""/>
+        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText=""/>
+        <JsonPath Expr="ip_from" Id="IpFrom" Title="IP From" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText=""/>	
+        <JsonPath Expr="page_size" Id="PageSize" Title="PageSize" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="sitewide" Id="Sitewide" Title="Sitewide" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="url_from_first_seen" Id="UrlFromFirstSeen" Title="URL From First Seen" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="first_origin" Id="FirstOrigin" Title="First Origin" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="last_origin" Id="LastOrigin" Title="Last Origin" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="language" Id="Language" Title="Language" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="BacklinksNewAndLost" Title="Backlinks New and Lost" HelpUrl="https://ahrefs.com/api/documentation/backlinks-new-lost">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Where" Title="Where" DefaultValue="" Required="false" HelpText="The result can be filtered, returning only data that satisfies the specified comma-separated set of conditions."/>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="date">
+        <DataSource>
+          <Resource Id="OrderBackLinksNewLost"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>			
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=backlinks_new_lost
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				&order_by=@(Model.OrderBy):@(Model.Direction)				
+				@if(Model.Where != "")
+				{
+					@: &where=@Utils.UrlEncode(Model.Where)
+				}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="refpages.*">
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText=""/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText=""/>
+        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText=""/>
+        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText=""/>
+        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText=""/>	
+        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="sitewide" Id="Sitewide" Title="Sitewide" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText=""/>
+        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="BacklinksNewAndLostCounters" Title="Backlinks New and Lost Counters" HelpUrl="https://ahrefs.com/api/documentation/backlinks-new-lost-counters">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Where" Title="Where" DefaultValue="" Required="false" HelpText="The result can be filtered, returning only data that satisfies the specified comma-separated set of conditions."/>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="date">
+        <DataSource>
+          <Resource Id="OrderBackLinksNewLostCounters"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>			
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=backlinks_new_lost_counters
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				&order_by=@(Model.OrderBy):@(Model.Direction)				
+				@if(Model.Where != "")
+				{
+					@: &where=@Utils.UrlEncode(Model.Where)
+				}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="counts.*">
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText=""/>
+        <JsonPath Expr="new" Id="New" Title="New" Converter="Int" HelpText=""/>
+        <JsonPath Expr="lost" Id="Lost" Title="Lost" Converter="Int" HelpText=""/>
+        <JsonPath Expr="new_total" Id="NewTotal" Title="New Total" Converter="Int" HelpText=""/>
+        <JsonPath Expr="lost_total" Id="LostTotal" Title="Lost Total" Converter="Int" HelpText=""/>
+				
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
+
+  <RestConnector Id="DomainRating" Title="Domain Rating" HelpUrl="https://ahrefs.com/api/documentation/domain-rating">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=domain_rating
+				&target=@Utils.UrlEncode(Model.Url)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="domain">
+        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText=""/>
+        <JsonPath Expr="ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Metrics" Title="Metrics" HelpUrl="https://ahrefs.com/api/documentation/metrics_extended">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=metrics_extended
+				&target=@Utils.UrlEncode(Model.Url)
+				&mode=@(Model.Mode)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics">
+        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="refpages" Id="Refpages" Title="Refpages" Converter="Int" HelpText=""/>
+        <JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="text" Id="Text" Title="Text" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="image" Id="Image" Title="Image" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="sitewide" Id="Sitewide" Title="Sitewide" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="not_sitewide" Id="NotSitewide" Title="Not Sitewide" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Int" Checked="false" HelpText=""/>	
+        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="canonical" Id="Canonical" Title="Canonical" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="gov" Id="Gov" Title="Gov" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="edu" Id="Edu" Title="Edu" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="rss" Id="RSS" Title="RSS" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="alternate" Id="Alternate" Title="Alternate" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="html_pages" Id="HtmlPages" Title="Html Pages" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refdomains" Id="RefDomains" Title="Ref Domains" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refclass_c" Id="RefClassC" Title="Ref Class C" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refips" Id="Refips" Title="Refips" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="linked_root_domains" Id="LinkedRootDomains" Title="Linked Root Domains" Converter="Int" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
+
+  <RestConnector Id="Pages" Title="Pages" HelpUrl="https://ahrefs.com/api/documentation/pages-extended">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="" Required="true" HelpText="Target to query for metrics"/>			
+      <Radio Id="Mode" Title="Mode" DefaultValue="Exact" Required="true">
+        <DataSource>
+          <Item Id="exact" Title="Exact"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="subdomains" Title="Subdomain"/>
+          <Item Id="prefix" Title="Prefix"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Where" Title="Where" DefaultValue="" Required="false" HelpText="The result can be filtered, returning only data that satisfies the specified comma-separated set of conditions."/>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="url">
+        <DataSource>
+          <Resource Id="OrderPages"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>			
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of rows to be returned back"/>
+      <Text Id="Skip" Title="Skip" DefaultValue="0" Required="true" HelpText="Number of rows to skip"/>			
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://apiv2.ahrefs.com/?token=@(Model.ApiToken)&output=json
+				&from=pages_extended
+				&target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.MaxResults)
+				@if(Model.Skip != "0")
+				{
+					@: &offset=@(Model.Skip))
+				}
+				&mode=@(Model.Mode)
+				&order_by=@(Model.OrderBy):@(Model.Direction)				
+				@if(Model.Where != "")
+				{
+					@: &where=@Utils.UrlEncode(Model.Where)
+				}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="pages.*">
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText=""/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText=""/>
+        <JsonPath Expr="http_code" Id="HttpCode" Title="Http Code" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="size" Id="Size" Title="Size" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="redirect_url" Id="RedirectUrl" Title="Redirect URL" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="content_encoding" Id="ContenctEncoding" Title="Contenct Encoding" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="redirects" Id="Redirects" Title="Redirects" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refdomains" Id="RefDomains" Title="Ref Domains" Converter="Int" Checked="false" HelpText=""/>				
+        <JsonPath Expr="refclass_c" Id="RefClassC" Title="Ref Class C" Converter="Int" Checked="false" HelpText=""/>
+        <JsonPath Expr="refips" Id="Refips" Title="Refips" Converter="Int" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
+	
+</Suite>
