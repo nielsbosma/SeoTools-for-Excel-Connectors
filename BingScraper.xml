@@ -6,6 +6,8 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="zlatan"/>
+      <Text Id="DomainFilter" Title="Filter by Domain" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="LanguageFilter" Title="Filter by 2-letter Language Code" DefaultValue="" Required="false" Debug.DefaultValue=""/>			
     </Parameters>
     <Paging PageSize="10" EvenPages="false">
       <Parse> 
@@ -23,6 +25,14 @@
         <![CDATA[
         http://www.bing.com/search?
 		    q=@Utils.UrlEncode(Model.Query)
+        @if(Model.DomainFilter != "")
+        {
+          @: %20domain:@Utils.UrlEncode(Model.DomainFilter)
+        }
+        @if(Model.LanguageFilter != "")
+        {
+          @: %20language:@Utils.UrlEncode(Model.LanguageFilter)
+        }
 		    &first=@(Model.PageCursor.FetchedRows+1)
       ]]>
       </Fetch.Url>
@@ -38,14 +48,27 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="NumberOfResults" Title="Number of Results" AvailableInSpider="false" >
+  <RestConnector Id="NumberOfResults" Title="Number of Results" AvailableInSpider="false">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true"/>
+      <Text Id="DomainFilter" Title="Filter by Domain" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="LanguageFilter" Title="Filter by 2-letter Language Code" DefaultValue="" Required="false" Debug.DefaultValue=""/>			
     </Parameters>
-    <Fetch Url="http://www.bing.com/search?q=@Utils.UrlEncode(Model.Query)">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="500" RandomTo="1500" IfSame="Host"/>
-      </HttpSettings>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://www.bing.com/search?
+		    q=@Utils.UrlEncode(Model.Query)
+        @if(Model.DomainFilter != "")
+        {
+          @: %20domain:@Utils.UrlEncode(Model.DomainFilter)
+        }
+        @if(Model.LanguageFilter != "")
+        {
+          @: %20language:@Utils.UrlEncode(Model.LanguageFilter)
+        }
+      ]]>
+      </Fetch.Url>
     </Fetch>
     <Parse>
       <Regex IgnoreCase="true" DefaultValue="0" Converter="Int">
@@ -55,6 +78,25 @@
             ]]>
         </Regex.Expr>
       </Regex>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="RelatedSearches" Title="Related Searches" AvailableInSpider="false">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true"/>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://www.bing.com/search?
+		    q=@Utils.UrlEncode(Model.Query)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//*[@@id='b_context']/li/ul/li[*]">
+				<XPath Title="Results" Id="Results" Expr="a" Converter="String"/>
+			</XPath>
     </Parse>
   </RestConnector>
 
