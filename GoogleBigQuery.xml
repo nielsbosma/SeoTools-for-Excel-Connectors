@@ -64,9 +64,9 @@
 
   <RestConnector Id="Query" Title="Query">
     <Parameters>
-      <Text Id="ProjectId" Title="Project ID" Debug.DefaultValue="bigquery-public-data" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="ProjectId" Title="Project ID" Debug.DefaultValue="seotoolsforexcel.com:seotoolsforexcel" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="DatasetId" Title="Dataset ID" Debug.DefaultValue="samples" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="SELECT * FROM [publicdata.samples.shakespeare]" Multiline="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="SELECT * FROM [publicdata.samples.shakespeare] LIMIT 10" Multiline="true"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.ProjectId)/queries">
       <HttpSettings>
@@ -86,10 +86,17 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.tables.*">
-        <JsonPath Expr="id" Id="Id" Title="Id"/>
-        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
-      </JsonPath>
+      <Table>
+        <JsonPath Id='Headers' Expr="$.schema.fields.*">
+          <JsonPath Expr="name"/>
+        </JsonPath>
+        <JsonPath Id='Converters' Expr="$.schema.fields.*">
+          <JsonPath Expr="type"/>
+        </JsonPath>
+        <JsonPath Id='Cells' Expr='$.rows..f.*'>
+          <JsonPath Expr="v"/>
+        </JsonPath>
+      </Table>
     </Parse>
   </RestConnector>
   
