@@ -7,6 +7,19 @@
     <Text Id="AuthToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/accuapi/"/>
   </Settings>
 
+  <RestConnector Id="Locales" Title="Locales" Hidden="true">
+    <Fetch Url="http://api.accuapi.com/engines?auth_token=@(Model.AuthToken)"/>
+    <Parse>
+      <JsonPath Expr="keys($[?(@@.engine=='google')].locales)">
+        <JsonPath Expr="key" Id="Id" Title="Id"/>
+        <JsonPath Expr="value.description" Id="Title" Title="Title"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+  
   <AssemblyConnector Id="SERP" Title="SERP" Type="SeoTools.Addins.AccuApi.SerpConnector">
     <Parameters>
       <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="SEO" Required="true" HelpText=""/>
@@ -15,13 +28,9 @@
           <Item Id="google" Title="Google"/>
         </DataSource>
       </Select>
-      <Select Id="Locale" Title="Locale" Required="true" DefaultValue="en-US">
-        <DataSource>
-          <ISOLocaleCodes/>
-        </DataSource>
-      </Select>
-      <Text Id="Geo" Title="Location" Debug.DefaultValue="Stockholm" Required="true" HelpText=""/>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="stockholmseo.se" Required="false" HelpText=""/>
+      <Text Id="Locale" Title="Locale" Required="true" DefaultValue="en-US" Select.Connector="Locales"/>
+      <Text Id="Geo" Title="Location" Debug.DefaultValue="New York" Required="true" HelpText=""/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText=""/>
       <Radio Id="Device" Title="Device" DefaultValue="desktop">
         <DataSource>
           <Item Id="desktop" Title="Desktop" />
