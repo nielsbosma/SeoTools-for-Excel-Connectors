@@ -556,6 +556,74 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="AccountStatisticsBreakdownPeriod" Title="Account Statistics Breakdown by Period" Hidden="false">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="DaysIncrementation" Title="Days of Incrementation" DefaultValue="1" Required="true" Debug.DefaultValue=""/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="impressions">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="descending" Title="Descending"/>
+          <Item Id="ascending" Title="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="25">
+      <Parse>
+        <JsonPath Id="NextResults" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		    https://graph.facebook.com/v2.8/act_@(Model.AccountId)/insights?
+			  fields=@SelectedFields().Substring
+		    &sort=@(Model.Sort)
+			  _
+			  @(Model.Direction)		
+			  &time_range[since]=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+			  &time_range[until]=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+				&time_increment=@(Model.DaysIncrementation)
+		    &access_token=@(Model.AccessToken)
+          &limit=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &after=@Model.NextResults
+          }		  
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="date_start" Id="DateStart" Title="Date Start" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="date_stop" Id="DateStop" Title="Date Stop" Converter="DateTime" HelpText=""/>				
+				<JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>
+        <JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="spend" Id="Spent" Title="Spent" Tag="spend" Converter="Double" HelpText=""/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Tag="clicks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="website_clicks" Id="WebsiteClicks" Title="Website Clicks" Tag="website_clicks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="app_store_clicks" Id="AppStoreClicks" Title="App Store Clicks" Tag="app_store_clicks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="social_impressions" Id="SocialImpressions" Title="Social Impressions" Tag="social_impressions" Converter="Int" HelpText=""/>
+        <JsonPath Expr="social_reach" Id="SocialReach" Title="Social Reach" Tag="social_reach" Converter="Int" HelpText=""/>
+        <JsonPath Expr="social_spend" Id="SocialSpent" Title="Social Spent" Tag="social_spend" Converter="Double" HelpText=""/>
+        <JsonPath Expr="social_clicks" Id="SocialClicks" Title="Social Clicks" Tag="social_clicks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="total_actions" Id="Actions" Title="Actions" Tag="total_actions" Converter="Int" HelpText=""/>
+        <JsonPath Expr="total_action_value" Id="ActionsValue" Title="Actions Value" Tag="total_action_value" Converter="Int" HelpText=""/>
+        <JsonPath Expr="cost_per_total_action" Id="CostPerAction" Title="Cost per Action" Tag="cost_per_total_action" Converter="Double" HelpText=""/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="cpc" Converter="Double" HelpText=""/>
+        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" Converter="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>	
+
   <RestConnector Id="AccountStatisticsBreakdown" Title="Account Statistics Breakdown" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
@@ -2121,13 +2189,13 @@
     </Fail>
   </RestConnector>
 
-  <RazorFunctions>
+<RazorFunctions>
     <![CDATA[
       string SelectedFields() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-        return string.Join(",",((ResultField[])Model.Headers).Where(e => fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
       }
     ]]>
-  </RazorFunctions>
+  </RazorFunctions>	
 
 </Suite>
