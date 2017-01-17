@@ -9,7 +9,7 @@
 
   <RestConnector Id="UserLookup" Title="User Lookup">
     <Parameters>
-      <Text Id="User" Title="Username or Id or me" Debug.DefaultValue="viviangomes" Required="true"/>
+      <Text Id="User" Title="Username or User Id or Me" Debug.DefaultValue="viviangomes" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -34,23 +34,23 @@
         <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
         <JsonPath Expr="account_type" Id="AccountType" Title="Account Type" Converter="String"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-			  <JsonPath Expr="image..url" Id="Avatar" Title="Avatar" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
 			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="message"/>
-    </Fail>			
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="PinLookup" Title="Pin Lookup">
     <Parameters>
-      <Text Id="Pin" Title="Pin Id" Debug.DefaultValue="viviangomes" Required="true"/>
+      <Text Id="Pin" Title="Pin Id" Debug.DefaultValue="470837336012272856" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
 				https://api.pinterest.com/v1/pins/@(Model.Pin)/?access_token=@(Model.Key)
-				&fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link
+				&fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -63,19 +63,20 @@
         <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
         <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
         <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
-        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>				
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
         <JsonPath Expr="board.id" Id="BoardId" Title="Board Id" Converter="String"/>
         <JsonPath Expr="board.name" Id="BoardName" Title="Board Name" Converter="String"/>
         <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
         <JsonPath Expr="creator.id" Id="CreatorId" Title="Creator Id" Converter="String"/>
         <JsonPath Expr="creator.first_name" Id="CreatorFirstName" Title="Creator First Name" Converter="String"/>
-        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>				
+        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
 			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="message"/>
-    </Fail>			
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="BoardLookup" Title="Board Lookup">
@@ -101,16 +102,16 @@
         <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
         <JsonPath Expr="privacy" Id="Privacy" Title="Privacy" Converter="String"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-			  <JsonPath Expr="image..url" Id="Avatar" Title="Avatar" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
         <JsonPath Expr="creator.id" Id="CreatorId" Title="Creator Id" Converter="String"/>
         <JsonPath Expr="creator.first_name" Id="CreatorFirstName" Title="Creator First Name" Converter="String"/>
-        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>				
-        <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>			
+        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>
+        <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
 			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="message"/>
-    </Fail>			
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="BoardPins" Title="Board Pins">
@@ -121,14 +122,14 @@
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
       </Parse>
-    </Paging>			
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
 				https://api.pinterest.com/v1/boards/@(Model.BoardId)/pins/?access_token=@(Model.Key)
-				&fields=id,link,note,url,counts,created_at,creator,media,original_link
+				&fields=id,link,note,url,counts,created_at,creator,media,original_link,image
 				&limit=@(Model.PageCursor.NextTake)
-				@if(Model.PageCursor.Page != 0)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
         {
           @: &cursor=@Model.Cursor
         }
@@ -137,7 +138,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="PinId" Title="Pin Id" Converter="String"/>			
+        <JsonPath Expr="id" Id="PinId" Title="Pin Id" Converter="String"/>
         <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
         <JsonPath Expr="note" Id="Note" Title="Note" Converter="String"/>
         <JsonPath Expr="media.type" Id="Type" Title="Type" Converter="String"/>
@@ -145,17 +146,331 @@
         <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
         <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
         <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
-        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>				
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
         <JsonPath Expr="creator.id" Id="CreatorId" Title="Creator Id" Converter="String"/>
         <JsonPath Expr="creator.first_name" Id="CreatorFirstName" Title="Creator First Name" Converter="String"/>
-        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>				
+        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>	
 			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="message"/>
-    </Fail>		
-  </RestConnector>		
-	
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyBoards" Title="My Boards">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/boards?access_token=@(Model.Key)
+				&fields=id,name,url,counts,created_at,creator,description,privacy,image
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="BoardId" Title="Board Id" Converter="String"/>
+        <JsonPath Expr="name" Id="BoardName" Title="BoardName" Converter="String"/>
+        <JsonPath Expr="counts.pins" Id="Pins" Title="Pins" Converter="Int"/>
+        <JsonPath Expr="counts.collaborators" Id="Collaborators" Title="Collaborators" Converter="Int"/>
+        <JsonPath Expr="counts.followers" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="privacy" Id="Privacy" Title="Privacy" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyFollowers" Title="My Followers">
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/followers?access_token=@(Model.Key)
+				&fields=first_name,id,last_name,url,account_type,bio,counts,created_at,username,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="UserId" Title="User Id" Converter="String"/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="counts.pins" Id="Pins" Title="Pins" Converter="Int"/>
+        <JsonPath Expr="counts.followers" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="counts.following" Id="Following" Title="Following" Converter="Int"/>
+        <JsonPath Expr="counts.boards" Id="Boards" Title="Boards" Converter="Int"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="first_name" Id="FirstName" Title="First Name" Converter="String"/>
+        <JsonPath Expr="last_name" Id="LastName" Title="Last Name" Converter="String"/>
+        <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="account_type" Id="AccountType" Title="Account Type" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyFollowings" Title="My Followings">
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/following/users/?access_token=@(Model.Key)
+				&fields=first_name,id,last_name,url,account_type,bio,counts,created_at,username,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="UserId" Title="User Id" Converter="String"/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="counts.pins" Id="Pins" Title="Pins" Converter="Int"/>
+        <JsonPath Expr="counts.followers" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="counts.following" Id="Following" Title="Following" Converter="Int"/>
+        <JsonPath Expr="counts.boards" Id="Boards" Title="Boards" Converter="Int"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="first_name" Id="FirstName" Title="First Name" Converter="String"/>
+        <JsonPath Expr="last_name" Id="LastName" Title="Last Name" Converter="String"/>
+        <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="account_type" Id="AccountType" Title="Account Type" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyLikedPins" Title="My Liked Pins">
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/likes/?access_token=@(Model.Key)
+				&fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="note" Id="Note" Title="Note" Converter="String"/>
+        <JsonPath Expr="media.type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
+        <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+        <JsonPath Expr="board.id" Id="BoardId" Title="Board Id" Converter="String"/>
+        <JsonPath Expr="board.name" Id="BoardName" Title="Board Name" Converter="String"/>
+        <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
+        <JsonPath Expr="creator.id" Id="CreatorId" Title="Creator Id" Converter="String"/>
+        <JsonPath Expr="creator.first_name" Id="CreatorFirstName" Title="Creator First Name" Converter="String"/>
+        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>
+        <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyPins" Title="My Pins">
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/pins/?access_token=@(Model.Key)
+				&fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="note" Id="Note" Title="Note" Converter="String"/>
+        <JsonPath Expr="media.type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
+        <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+        <JsonPath Expr="board.id" Id="BoardId" Title="Board Id" Converter="String"/>
+        <JsonPath Expr="board.name" Id="BoardName" Title="Board Name" Converter="String"/>
+        <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyPinsSearch" Title="My Pins Search">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="hawaii" Required="true"/>
+    </Parameters>
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/search/pins/
+				?query=@Utils.UrlEncode(Model.Query)
+				&access_token=@(Model.Key)
+				&fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="note" Id="Note" Title="Note" Converter="String"/>
+        <JsonPath Expr="media.type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
+        <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+        <JsonPath Expr="board.id" Id="BoardId" Title="Board Id" Converter="String"/>
+        <JsonPath Expr="board.name" Id="BoardName" Title="Board Name" Converter="String"/>
+        <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyBoardsSearch" Title="My Boards Search">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="hawaii" Required="true"/>
+    </Parameters>	
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/search/boards/
+				?query=@Utils.UrlEncode(Model.Query)
+				&access_token=@(Model.Key)
+				&fields=id,name,url,counts,created_at,creator,description,privacy,image
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="BoardId" Title="Board Id" Converter="String"/>
+        <JsonPath Expr="name" Id="BoardName" Title="BoardName" Converter="String"/>
+        <JsonPath Expr="counts.pins" Id="Pins" Title="Pins" Converter="Int"/>
+        <JsonPath Expr="counts.collaborators" Id="Collaborators" Title="Collaborators" Converter="Int"/>
+        <JsonPath Expr="counts.followers" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="privacy" Id="Privacy" Title="Privacy" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+			  <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyInterests" Title="My Interests">
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/me/following/interests/?access_token=@(Model.Key)
+				&fields=id,name
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="InterestId" Title="Interest Id" Converter="String"/>
+        <JsonPath Expr="name" Id="Interest Name" Title="Interest Name" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
 
 </Suite>
