@@ -37,6 +37,9 @@
 			  <JsonPath Expr="image..url" Id="Avatar" Title="Avatar" Converter="String"/>
 			</JsonPath>
     </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>			
   </RestConnector>
 
   <RestConnector Id="PinLookup" Title="Pin Lookup">
@@ -70,11 +73,14 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
 			</JsonPath>
     </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>			
   </RestConnector>
 
   <RestConnector Id="BoardLookup" Title="Board Lookup">
     <Parameters>
-      <Text Id="BoardId" Title="Board Id or valid board/slug combination" Debug.DefaultValue="292241532009023790" Required="true"/>
+      <Text Id="BoardId" Title="Board Id or board/slug combo" Debug.DefaultValue="292241532009023790" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -102,6 +108,53 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>			
 			</JsonPath>
     </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>			
+  </RestConnector>
+
+  <RestConnector Id="BoardPins" Title="Board Pins">
+    <Parameters>
+      <Text Id="BoardId" Title="Board Id or board/slug combo" Debug.DefaultValue="292241532009023790" Required="true"/>
+    </Parameters>
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="page.cursor"/>
+      </Parse>
+    </Paging>			
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.pinterest.com/v1/boards/@(Model.BoardId)/pins/?access_token=@(Model.Key)
+				&fields=id,link,note,url,counts,created_at,creator,media,original_link
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0)
+        {
+          @: &cursor=@Model.Cursor
+        }
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Expr="id" Id="PinId" Title="Pin Id" Converter="String"/>			
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="note" Id="Note" Title="Note" Converter="String"/>
+        <JsonPath Expr="media.type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="counts.likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="counts.comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="counts.repins" Id="Repins" Title="Repins" Converter="Int"/>
+        <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <JsonPath Expr="original_link" Id="OriginalLink" Title="Original Link" Converter="String"/>				
+        <JsonPath Expr="creator.id" Id="CreatorId" Title="Creator Id" Converter="String"/>
+        <JsonPath Expr="creator.first_name" Id="CreatorFirstName" Title="Creator First Name" Converter="String"/>
+        <JsonPath Expr="creator.last_name" Id="CreatorLastName" Title="Creator Last Name" Converter="String"/>				
+        <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>	
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>		
   </RestConnector>		
 	
 
