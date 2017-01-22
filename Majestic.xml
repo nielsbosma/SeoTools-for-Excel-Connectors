@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Majestic" Id="Majestic" RequireVersion="6.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Majestic.xml" HelpUrl="http://seotoolsforexcel.com/Majestic/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="Whats this?" HelpUrl="http://seotoolsforexcel.com/">
+    <Text Id="ApiToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/"/>
+  </Settings>
+	
+  <Resources>
+    <Resource Id="OrderAnchors">
+      <Item Id="anchor" Title="Anchor"/>
+      <Item Id="backlinks" Title="Backlinks"/>
+      <Item Id="refpages" Title="Refpages"/>
+      <Item Id="refdomains" Title="Refdomains"/>
+      <Item Id="first_seen" Title="First Seen"/>
+      <Item Id="last_visited" Title="Last Visited"/>
+    </Resource>
+  </Resources>
+	
+  <RestConnector Id="IndexData" Title="Index Data" HelpUrl="https://developer-support.majestic.com/api/commands/get-index-item-info.shtml">
+    <Parameters>
+      <Text Id="Urls" Title="URL(s)" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Enter one or more URLs separated by a new line" Multiline="true"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="true">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetIndexItemInfo
+					&@RenderQuery(GetQuery())
+					&datasource=fresh
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Results.Data[*]">		
+        <JsonPath Expr="Item" Id="Item" Title="Item" Converter="String" HelpText=""/>
+      </JsonPath>				
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+		
+			string itemsToQuery = Model.Urls;
+      string[] items = Regex.Split(itemsToQuery, "\n");
+			
+			Dictionary<string,string> GetQuery() {
+			return new Dictionary<string,string> {
+			for (int i = 0; i < items.Length; i++)
+			{
+				{"item", + i, items[i]},
+			}
+				{"items", + i, items.Length.ToString()},		
+			};
+    }
+		  
+		string RenderQuery(Dictionary<string,string> query) {
+	  return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
+		}
+		]]>
+  </RazorFunctions>	
+
+</Suite>
