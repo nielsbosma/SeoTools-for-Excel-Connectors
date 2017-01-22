@@ -33,7 +33,8 @@
         <![CDATA[
 					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
 					&cmd=GetIndexItemInfo
-					&@RenderQuery(GetQuery())
+					&@(Items())
+					&@(Filter())
 					&datasource=fresh
 				]]>
       </Fetch.Url>
@@ -50,24 +51,30 @@
 
   <RazorFunctions>
     <![CDATA[
-		
+		string Items()
+		{
+			string itemsToQuery = Model.Urls;
+      string[] items = Regex.Split(itemsToQuery, "\n");
+			return "items=" + items.Length.ToString();
+		}
+
+		string Filter()
+		{
 			string itemsToQuery = Model.Urls;
       string[] items = Regex.Split(itemsToQuery, "\n");
 			
-			Dictionary<string,string> GetQuery() {
-			return new Dictionary<string,string> {
+			Dictionary<string, string> parameters = new Dictionary<string, string>();
 			for (int i = 0; i < items.Length; i++)
 			{
-				{"item", + i, items[i]},
+				parameters.Add("item" + i, items[i]);
 			}
-				{"items", + i, items.Length.ToString()},		
-			};
-    }
-		  
-		string RenderQuery(Dictionary<string,string> query) {
-	  return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
+			foreach (var keyValuePair in parameters)
+			{
+			 return keyValuePair.Key.ToString() + " = " + keyValuePair.Value.ToString();
+			}
+			return "";
 		}
 		]]>
-  </RazorFunctions>	
+	</RazorFunctions>	
 
 </Suite>
