@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="InstagramAPI" RequireVersion="5.2.6" Id="InstagramAPI" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Facebook.xml" HelpUrl="http://seotoolsforexcel.com/facebook/" HelpText="Documentation">
+<Suite Title="Instagram" RequireVersion="5.2.6" Id="Instagram" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Facebook.xml" HelpUrl="http://seotoolsforexcel.com/facebook/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/facebook/">
-    <Text Id="AccessToken" Title="Access Token" Required="true" HelpUrl="http://seotoolsforexcel.com/facebook/"/>
-  </Settings>
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://api.instagram.com/oauth/authorize/?client_id=d46344c0534a4f2c8c6498325ee25cb6&amp;redirect_uri={0}&amp;response_type=token&amp;scope=basic+public_content+follower_list"/>
   
   <RestConnector Id="TagSearch" Title="Tag Search">
     <Parameters>
@@ -19,16 +17,16 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-         https://api.instagram.com/v1/tags/
-		@(Model.Tag)
-		/media/recent
-		?access_token=@(Model.AccessToken)
-	    &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &max_tag_id=@(Model.Cursor)
-        }
-      ]]>
+        https://api.instagram.com/v1/tags/
+          @(Model.Tag)
+          /media/recent
+          ?access_token=@(Model.Authenticator.Token)
+          &count=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &max_tag_id=@(Model.Cursor)
+          }
+        ]]>
       </Fetch.Url>
 	  <!--
       <HttpSettings>
@@ -67,60 +65,6 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="TagSearchResume" Title="Tag Search Resume">
-    <Paging PageSize="25">
-      <Parse>
-		<JsonPath Id="NextUrl" Expr="pagination.next_url"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-				@if(Model.PageCursor.Page == 0)
-        {
-				@: https://api.instagram.com/v1/tags/inredning/media/recent?access_token=182075008.ae8b5cc.400bc1e7c9bc4986ad5c9b7e223c1165&count=25&max_tag_id=AQB71vjRqxjxoHkSFHcHBYv9kYzpFSjVdaWKTgMueryyX2Fr3fyoySCdDl3ub4RoYFjdggOtA2cmaMINXUHgEC1uJ8SdNzYTnwuKcr1u20Ll0yu-eXSXco0HMUsCQjZYTS4
-        }
-				else
-				{
-				@(Model.NextUrl)
-				}
-      ]]>
-    </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="1000" RandomTo="1050" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">	
-		<JsonPath Title="URL" Id="Url" Expr="link" Converter="String" HelpText=""/>
-		<JsonPath Title="Id" Id="Id" Expr="id" Converter="String" HelpText=""/>
-		<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
-		<JsonPath Title="Type" Id="Type" Expr="type" Converter="String" HelpText=""/>
-		<JsonPath Title="Text" Id="Text" Expr="caption.text" Converter="String" HelpText=""/>
-		<JsonPath Title="Likes" Id="Likes" Expr="likes.count" Converter="Int" HelpText=""/>
-		<JsonPath Title="Comments" Id="Comments" Expr="comments.count" Converter="Int" HelpText=""/>
-		<JsonPath Title="TagsArray" Id="TagsArray" Expr="tags" Converter="String" HelpText=""/>
-		<JsonPath Title="ImageUrl" Id="ImageUrl" Expr="images.thumbnail.url" Converter="String" HelpText="" Checked="true"/>
-		<JsonPath Title="User Id" Id="UserId" Expr="caption.from.id" Converter="String" HelpText=""/>
-		<JsonPath Title="User" Id="User" Expr="caption.from.username" Converter="String" HelpText=""/>
-			<Compute Id="UserUrl" Title="User URL">
-				<Compute.Expr>
-					https://www.instagram.com/@(Model.Username)
-				</Compute.Expr>
-				<JsonPath Expr="caption.from.username" Id="Username" Converter="String"/>
-			</Compute>
-		<JsonPath Title="Name" Id="Name" Expr="caption.from.full_name" Converter="String" HelpText=""/>
-		<JsonPath Title="Location" Id="Location" Expr="location.name" Converter="String" HelpText=""/>
-		<JsonPath Title="Latitude" Id="Latitude" Expr="location.latitude" Converter="String" HelpText=""/>
-		<JsonPath Title="Longitude" Id="Longitude" Expr="location.longitude" Converter="String" HelpText=""/>	
-      </JsonPath>
-		<JsonPath Title="NextUrl" Id="pagination.next_url" Expr="pagination.next_url" Converter="String" Checked="false" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>	
-
   <RestConnector Id="UserLookup" Title="UserLookup">
     <Parameters>
       <Text Id="UserId" Title="User Id" DefaultValue="" Required="true" Debug.DefaultValue=""/>
@@ -128,10 +72,10 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-         https://api.instagram.com/v1/users/
-		@(Model.UserId)
-		?access_token=@(Model.AccessToken)
-      ]]>
+          https://api.instagram.com/v1/users/
+          @(Model.UserId)
+          ?access_token=@(Model.Authenticator.Token)
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -158,9 +102,9 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-         https://api.instagram.com/v1/media/
-		@(Model.PostId)
-		?access_token=@(Model.AccessToken)
+        https://api.instagram.com/v1/media/
+		    @(Model.PostId)
+		    ?access_token=@(Model.Authenticator.Token)
       ]]>
       </Fetch.Url>
     </Fetch>	
@@ -202,7 +146,7 @@
         <![CDATA[
          https://api.instagram.com/v1/media/
 		@(Model.PostId)/comments
-		?access_token=@(Model.AccessToken)
+		?access_token=@(Model.Authenticator.Token)
       ]]>
       </Fetch.Url>
     </Fetch>
@@ -229,7 +173,7 @@
         <![CDATA[
          https://api.instagram.com/v1/tags/search?
 		q=@Utils.UrlEncode(Model.Query)
-		&access_token=@(Model.AccessToken)
+		&access_token=@(Model.Authenticator.Token)
       ]]>
       </Fetch.Url>
     </Fetch>
