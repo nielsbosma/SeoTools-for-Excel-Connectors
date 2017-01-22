@@ -170,6 +170,147 @@
     </Fail>
   </RestConnector>	
 
+  <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://developer-support.majestic.com/api/commands/get-anchor-text.shtml">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>			
+      <Text Id="FilterAnchorText" Title="Filter by Anchor Text" DefaultValue="" Required="false" HelpText=""/>
+      <Radio Id="FilterAnchorTextMode" Title="Anchor Text Matching" DefaultValue="2" Required="false">
+        <DataSource>
+					<Item Id="2" Title="Contains"/>
+          <Item Id="1" Title="Exact"/>
+        </DataSource>
+      </Radio>
+			<Checkbox Id="TextMode" Title="Remove punctunation and delimiters" DefaultValue="False" HelpText=""/>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetAnchorText
+					&item=@(Model.Url)
+					&Count=@(Model.MaxResults)
+					&datasource=@(Model.Datasource)
+				  @if(Model.TextMode == true)
+					{
+					@: &TextMode=1
+					}
+					@if(Model.FilterAnchorText != "")
+					{
+						@: &FilterAnchorText=@(Utils.UrlEncode(Model.FilterAnchorText))
+						@: &FilterAnchorTextMode=@(Model.FilterAnchorTextMode)						
+					}				
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.AnchorText.Data[*]">
+        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText=""/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="TotalLinks" Id="TotalLinks" Title="TotalLinks" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="DeletedLinks" Id="DeletedLinks" Title="DeletedLinks" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="NoFollowLinks" Id="NoFollowLinks" Title="NoFollowLinks" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="NoFollowLinks" Id="NoFollowLinks" Title="NoFollowLinks" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="EstimatedLinkCitationFlow" Id="EstimatedLinkCitationFlow" Title="EstimatedLinkCitationFlow" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="EstimatedLinkTrustFlow" Id="EstimatedLinkTrustFlow" Title="EstimatedLinkTrustFlow" Converter="Int" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+	
+  <RestConnector Id="HostedDomains" Title="Hosted Domains" HelpUrl="https://developer-support.majestic.com/api/commands/get-hosted-domains.shtml">
+    <Parameters>
+      <Text Id="Domain" Title="Domain or IP" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Domain or IP to query"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>			
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetHostedDomains
+					&Domain=@Utils.UrlEncode(Model.Domain))
+					&MaxDomains=@(Model.MaxResults)
+					&datasource=@(Model.Datasource)				
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.DomainsOnSubnet.Data[*]">
+        <JsonPath Expr="Domain" Id="Domain" Title="Domain" Converter="String" HelpText=""/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText=""/>
+        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText=""/>
+        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_0" Id="TopicalTrustFlow_Topic_0" Title="TopicalTrustFlow_Topic_0" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_0" Id="TopicalTrustFlow_Value_0" Title="TopicalTrustFlow_Value_0" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="IPAddress" Id="IPAddress" Title="IPAddress" Converter="String" HelpText="" Checked="false"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Keywords" Title="Keywords" HelpUrl="https://developer-support.majestic.com/api/commands/get-keyword-info.shtml">
+    <Parameters>
+      <Text Id="Keywords" Title="Keywords" DefaultValue="seo tools" Required="true" HelpText="Enter one or more keywords separated by a new line" Multiline="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetKeywordInfo
+					&@FetchKeywords()
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Keywords.Data[*]">
+        <JsonPath Expr="Keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+        <JsonPath Expr="BroadSearchVolume" Id="BroadSearchVolume" Title="BroadSearchVolume" Converter="Int" HelpText=""/>
+        <JsonPath Expr="PhraseSearchVolume" Id="PhraseSearchVolume" Title="PhraseSearchVolume" Converter="Int" HelpText=""/>
+        <JsonPath Expr="PhraseDomainsInAnchor" Id="PhraseDomainsInAnchor" Title="PhraseDomainsInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadDomainsInAnchor" Id="BroadDomainsInAnchor" Title="BroadDomainsInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadDomainsInAnchorAndInTitle" Id="BroadDomainsInAnchorAndInTitle" Title="BroadDomainsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadDomainsInTitle" Id="BroadDomainsInTitle" Title="BroadDomainsInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadDomainsInURL" Id="BroadDomainsInURL" Title="BroadDomainsInURL" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadFoundFlag" Id="BroadFoundFlag" Title="BroadFoundFlag" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadURLsInAnchor" Id="BroadURLsInAnchor" Title="BroadURLsInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadURLsInAnchorAndInTitle" Id="BroadURLsInAnchorAndInTitle" Title="BroadURLsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadURLsInTitle" Id="BroadURLsInTitle" Title="BroadURLsInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadURLsInURL" Id="BroadURLsInURL" Title="BroadURLsInURL" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseDomainsInAnchor" Id="PhraseDomainsInAnchor" Title="PhraseDomainsInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseDomainsInAnchorAndInTitle" Id="PhraseDomainsInAnchorAndInTitle" Title="PhraseDomainsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseDomainsInTitle" Id="PhraseDomainsInTitle" Title="PhraseDomainsInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseDomainsInURL" Id="PhraseDomainsInURL" Title="PhraseDomainsInURL" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseFoundFlag" Id="PhraseFoundFlag" Title="PhraseFoundFlag" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseURLsInAnchor" Id="PhraseURLsInAnchor" Title="PhraseURLsInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseURLsInAnchorAndInTitle" Id="PhraseURLsInAnchorAndInTitle" Title="PhraseURLsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseURLsInTitle" Id="PhraseURLsInTitle" Title="PhraseURLsInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseURLsInURL" Id="PhraseURLsInURL" Title="PhraseURLsInURL" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="TreatedAs" Id="TreatedAs" Title="TreatedAs" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="WordCount" Id="WordCount" Title="WordCount" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="Item" Id="Item" Title="Item" Converter="Int" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>	
 
   <RazorFunctions>
 		<![CDATA[
@@ -178,6 +319,12 @@
 			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
 			return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
 		}
+		
+		string FetchKeywords()
+		{
+			string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(1000).ToArray();
+			return string.Join("&",lines.Select((e, i) => "item" + (i+1) + "=" + Utils.UrlEncode(e)).ToArray());
+		}		
 		]]>
 	</RazorFunctions>	
 </Suite>
