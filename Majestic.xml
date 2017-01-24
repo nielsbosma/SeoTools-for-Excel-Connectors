@@ -1,23 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="Majestic" Id="Majestic" RequireVersion="6.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Majestic.xml" HelpUrl="http://seotoolsforexcel.com/Majestic/" HelpText="Documentation">
 
-  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpText="Whats this?" HelpUrl="http://seotoolsforexcel.com/">
     <Text Id="ApiToken" Title="API Token" Required="true" HelpUrl="http://seotoolsforexcel.com/"/>
   </Settings>
-	
+
   <Resources>
-    <Resource Id="OrderAnchors">
-      <Item Id="anchor" Title="Anchor"/>
-      <Item Id="backlinks" Title="Backlinks"/>
-      <Item Id="refpages" Title="Refpages"/>
+    <Resource Id="OrderTopics">
+      <Item Id="trustflow&amp;links" Title="Default"/>
+      <Item Id="topic" Title="Topic"/>
+      <Item Id="links" Title="Links"/>
+      <Item Id="pages" Title="Pages"/>
       <Item Id="refdomains" Title="Refdomains"/>
-      <Item Id="first_seen" Title="First Seen"/>
-      <Item Id="last_visited" Title="Last Visited"/>
+      <Item Id="linksfromrefdomains" Title="Links from Refdomains"/>
+    </Resource>
+    <Resource Id="OrderRefDomains">
+      <Item Id="default" Title="Default"/>	
+      <Item Id="0" Title="Number of Matches"/>
+      <Item Id="1" Title="AlexaRank"/>
+      <Item Id="2" Title="Referring Root Domains"/>
+      <Item Id="3" Title="External Backlinks"/>
+      <Item Id="4" Title="URLs from Root Domain Added to Index"/>
+      <Item Id="5" Title="URLs from Root Domain Crawled"/>
+      <Item Id="6" Title="Root Domain First Crawled"/>
+      <Item Id="7" Title="Last URL Crawl"/>
+      <Item Id="8" Title="Domain IP Adress"/>
+      <Item Id="9" Title="Domain C-class subnet"/>
+      <Item Id="10" Title="Country code"/>
+      <Item Id="11" Title="Matched Links"/>
     </Resource>
   </Resources>
-
+	
   <RestConnector Id="IndexData" Title="Index Data" HelpUrl="https://developer-support.majestic.com/api/commands/get-index-item-info.shtml">
     <Parameters>
       <Text Id="Urls" Title="URL(s)" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Enter one or more URLs separated by a new line" Multiline="true"/>
@@ -27,63 +42,60 @@
           <Item Id="historic" Title="Historic"/>
         </DataSource>
       </Radio>
-    </Parameters>		
+    </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
 					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
 					&cmd=GetIndexItemInfo
-					&@FetchUrls()
+					&@FetchIndexUrls()
 					&datasource=@(Model.Datasource)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="DataTables.Results.Data[*]">
-        <JsonPath Expr="Item" Id="Item" Title="Item" Converter="String" HelpText=""/>
-        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText=""/>
-        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText=""/>
+        <JsonPath Expr="Item" Id="Item" Title="Item" Converter="String" HelpText="Actual item in its original form"/>
+        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="Citation Flow of Domain or Subdomain or URL being queried"/>
+        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="Trust Flow of Domain or Subdomain or URL being queried"/>
         <JsonPath Expr="TrustMetric" Id="TrustMetric" Title="TrustMetric" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText="Number of external backlinks for this item" Checked="false"/>
         <JsonPath Expr="ExtBackLinksEDU" Id="ExtBackLinksEDU" Title="ExtBackLinksEDU" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="ExtBackLinksEDU_Exact" Id="ExtBackLinksEDU_Exact" Title="ExtBackLinksEDU_Exact" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="ExtBackLinksGOV" Id="ExtBackLinksGOV" Title="ExtBackLinksGOV" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="ExtBackLinksGOV_Exact" Id="ExtBackLinksGOV_Exact" Title="ExtBackLinksGOV_Exact" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="IndexedURLs" Id="IndexedURLs" Title="IndexedURLs" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RefDomainsEDU" Id="RefDomainsEDU" Title="RefDomainsEDU" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RefDomainsEDU_Exact" Id="RefDomainsEDU_Exact" Title="RefDomainsEDU_Exact" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="IndexedURLs" Id="IndexedURLs" Title="IndexedURLs" Converter="Int" HelpText="Number of URLs for given item type present in index" Checked="false"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="Number of referring domains known for this item" Checked="false"/>
+        <JsonPath Expr="RefDomainsEDU" Id="RefDomainsEDU" Title="RefDomainsEDU" Converter="Int" HelpText="Number of referring domains and external backlinks from EDUcational" Checked="false"/>
+        <JsonPath Expr="RefDomainsEDU_Exact" Id="RefDomainsEDU_Exact" Title="RefDomainsEDU_Exact" Converter="Int" HelpText="Same as above but applies only to domains with exact TLDs such as .EDU and .GOV/.MIL thus excluding any regional versions." Checked="false"/>
         <JsonPath Expr="RefDomainsGOV" Id="RefDomainsGOV" Title="RefDomainsGOV" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="RefDomainsGOV_Exact" Id="RefDomainsGOV_Exact" Title="RefDomainsGOV_Exact" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RefIPs" Id="RefIPs" Title="RefIPs" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RefSubNets" Id="RefSubNets" Title="RefSubNets" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="CrawledFlag" Id="CrawledFlag" Title="CrawledFlag" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="FinalRedirectResult" Id="FinalRedirectResult" Title="FinalRedirectResult" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="LastCrawlDate" Id="LastCrawlDate" Title="LastCrawlDate" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="LastCrawlResult" Id="LastCrawlResult" Title="LastCrawlResult" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="OutDomainsExternal" Id="OutDomainsExternal" Title="OutDomainsExternal" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="OutLinksExternal" Id="OutLinksExternal" Title="OutLinksExternal" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="RedirectFlag" Id="RedirectFlag" Title="RedirectFlag" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="RedirectTo" Id="RedirectTo" Title="RedirectTo" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="RefIPs" Id="RefIPs" Title="RefIPs" Converter="Int" HelpText="Number of referring IP addresses" Checked="false"/>
+        <JsonPath Expr="RefSubNets" Id="RefSubNets" Title="RefSubNets" Converter="Int" HelpText="Number of referring C-class subnets" Checked="false"/>
+        <JsonPath Expr="CrawledFlag" Id="CrawledFlag" Title="CrawledFlag" Converter="String" HelpText="If set to true true then this URL was crawled. Not applicable to domain/subdomains" Checked="false"/>
+        <JsonPath Expr="FinalRedirectResult" Id="FinalRedirectResult" Title="FinalRedirectResult" Converter="String" HelpText="If URL redirects then we include crawl result of where it leads to" Checked="false"/>
+        <JsonPath Expr="LastCrawlDate" Id="LastCrawlDate" Title="LastCrawlDate" Converter="String" HelpText="Date when URL was crawled, only meaningful if CrawledFlag is true." Checked="false"/>
+        <JsonPath Expr="LastCrawlResult" Id="LastCrawlResult" Title="LastCrawlResult" Converter="String" HelpText="Last crawl result, usually self-explanatory phrase" Checked="false"/>
+        <JsonPath Expr="OutDomainsExternal" Id="OutDomainsExternal" Title="OutDomainsExternal" Converter="Int" HelpText="number of external domains crawled URL links out to" Checked="false"/>
+        <JsonPath Expr="OutLinksExternal" Id="OutLinksExternal" Title="OutLinksExternal" Converter="Int" HelpText="Same as OutDomainsExternal only counts external out links" Checked="false"/>
+        <JsonPath Expr="RedirectFlag" Id="RedirectFlag" Title="RedirectFlag" Converter="String" HelpText="If set to true then URL was found to be redirecting" Checked="false"/>
+        <JsonPath Expr="RedirectTo" Id="RedirectTo" Title="RedirectTo" Converter="String" HelpText="Target location of redirect - only present if URL was crawled and found to be redirecting" Checked="false"/>
         <JsonPath Expr="ResultCode" Id="ResultCode" Title="ResultCode" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="Status" Id="Status" Title="Status" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="Title" Id="Title" Title="Title" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Topic_0" Id="TopicalTrustFlow_Topic_0" Title="TopicalTrustFlow_Topic_0" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Value_0" Id="TopicalTrustFlow_Value_0" Title="TopicalTrustFlow_Value_0" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Topic_1" Id="TopicalTrustFlow_Topic_1" Title="TopicalTrustFlow_Topic_1" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Value_1" Id="TopicalTrustFlow_Value_1" Title="TopicalTrustFlow_Value_1" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Topic_2" Id="TopicalTrustFlow_Topic_2" Title="TopicalTrustFlow_Topic_2" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TopicalTrustFlow_Value_2" Id="TopicalTrustFlow_Value_2" Title="TopicalTrustFlow_Value_2" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="Status" Id="Status" Title="Status" Converter="String" HelpText="Status of this item in index" Checked="false"/>
+        <JsonPath Expr="Title" Id="Title" Title="Title" Converter="String" HelpText="Title of the URL if it was successfully crawled and present on page" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_0" Id="TopicalTrustFlow_Topic_0" Title="TopicalTrustFlow_Topic_0" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_0" Id="TopicalTrustFlow_Value_0" Title="TopicalTrustFlow_Value_0" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_1" Id="TopicalTrustFlow_Topic_1" Title="TopicalTrustFlow_Topic_1" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_1" Id="TopicalTrustFlow_Value_1" Title="TopicalTrustFlow_Value_1" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_2" Id="TopicalTrustFlow_Topic_2" Title="TopicalTrustFlow_Topic_2" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_2" Id="TopicalTrustFlow_Value_2" Title="TopicalTrustFlow_Value_2" Converter="String" HelpText="Categories of Topical Trust Flow of Domain or Subdomain or URL being queried" Checked="false"/>
         <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="AnalysisResUnitsCost" Id="AnalysisResUnitsCost" Title="AnalysisResUnitsCost" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="DownloadBacklinksAnalysisResUnitsCost" Id="DownloadBacklinksAnalysisResUnitsCost" Title="DownloadBacklinksAnalysisResUnitsCost" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="DownloadRefDomainBacklinksAnalysisResUnitsCost" Id="DownloadRefDomainBacklinksAnalysisResUnitsCost" Title="DownloadRefDomainBacklinksAnalysisResUnitsCost" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="GetTopBackLinksAnalysisResUnitsCost" Id="GetTopBackLinksAnalysisResUnitsCost" Title="GetTopBackLinksAnalysisResUnitsCost" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ItemNum" Id="ItemNum" Title="ItemNum" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="DownloadRefDomainBacklinksAnalysisResUnitsCost" Id="DownloadRefDomainBacklinksAnalysisResUnitsCost" Title="DownloadRefDomainBacklinksAnalysisResUnitsCost" Converter="Int" HelpText="mount of analysis resource units that will be required to analyse this item" Checked="false"/>
+        <JsonPath Expr="GetTopBackLinksAnalysisResUnitsCost" Id="GetTopBackLinksAnalysisResUnitsCost" Title="GetTopBackLinksAnalysisResUnitsCost" Converter="Int" HelpText="Amount of analysis resource units that will be required to analyse this item" Checked="false"/>
+        <JsonPath Expr="ItemNum" Id="ItemNum" Title="ItemNum" Converter="Int" HelpText="Integer indicating numeric position of item in original request" Checked="false"/>
+        <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="Type of the item" Checked="false"/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -107,9 +119,9 @@
           <Item Id="3" Title="3"/>
           <Item Id="10" Title="10"/>
         </DataSource>
-      </Radio>			
+      </Radio>
       <Text Id="MaxUrls" Title="Max same source URLs" DefaultValue="" Required="false" HelpText="If set to greater than 0, then it will set a limit to number of same source urls returned."/>
-      <Text Id="FilterTopic" Title="Filter by Topic" DefaultValue="" Required="false" HelpText="For example: Computers/Programming/Languages"/>			
+      <Text Id="FilterTopic" Title="Filter by Topic" DefaultValue="" Required="false" HelpText="For example: Computers/Programming/Languages"/>
 			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
     </Parameters>
     <Fetch>
@@ -117,7 +129,7 @@
         <![CDATA[
 					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
 					&cmd=GetBackLinkData
-					&item=@(Model.Url)
+					&item=@Utils.UrlEncode(Model.Url)
 					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 					@if(Model.MaxDomains != "-1")
@@ -131,44 +143,44 @@
 					@if(Model.FilterTopic != "")
 					{
 						@: &FilterTopic=@(Model.FilterTopic)
-					}					
+					}
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="DataTables.BackLinks.Data[*]">
-        <JsonPath Expr="SourceURL" Id="SourceURL" Title="SourceURL" Converter="String" HelpText=""/>
-        <JsonPath Expr="TargetURL" Id="TargetURL" Title="TargetURL" Converter="String" HelpText=""/>
-        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText=""/>
-        <JsonPath Expr="Date" Id="Date" Title="Date" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="DateLost" Id="DateLost" Title="DateLost" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="FirstIndexedDate" Id="FirstIndexedDate" Title="FirstIndexedDate" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagAltText" Id="FlagAltText" Title="FlagAltText" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagDeleted" Id="FlagDeleted" Title="FlagDeleted" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagFrame" Id="FlagFrame" Title="FlagFrame" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagImages" Id="FlagImages" Title="FlagImages" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagMention" Id="FlagMention" Title="FlagMention" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagNoFollow" Id="FlagNoFollow" Title="FlagNoFollow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="FlagRedirect" Id="FlagRedirect" Title="FlagRedirect" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="LastSeenDate" Id="LastSeenDate" Title="LastSeenDate" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="LinkType" Id="LinkType" Title="LinkType" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="LinkSubType" Id="LinkSubType" Title="LinkSubType" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="ReasonLost" Id="ReasonLost" Title="ReasonLost" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="SourceCitationFlow" Id="SourceCitationFlow" Title="SourceCitationFlow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="SourceTrustFlow" Id="SourceTrustFlow" Title="SourceTrustFlow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="TargetCitationFlow" Id="TargetCitationFlow" Title="TargetCitationFlow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="TargetTrustFlow" Id="TargetTrustFlow" Title="TargetTrustFlow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="TargetTopicalTrustFlow_Topic_0" Id="TargetTopicalTrustFlow_Topic_0" Title="TargetTopicalTrustFlow_Topic_0" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="TargetTopicalTrustFlow_Value_0" Id="TargetTopicalTrustFlow_Value_0" Title="TargetTopicalTrustFlow_Value_0" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="SourceTopicalTrustFlow_Topic_0" Id="SourceTopicalTrustFlow_Topic_0" Title="SourceTopicalTrustFlow_Topic_0" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="SourceTopicalTrustFlow_Value_0" Id="SourceTopicalTrustFlow_Value_0" Title="SourceTopicalTrustFlow_Value_0" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="SourceURL" Id="SourceURL" Title="SourceURL" Converter="String" HelpText="backlink"/>
+        <JsonPath Expr="TargetURL" Id="TargetURL" Title="TargetURL" Converter="String" HelpText="target URL to which source URL linked to"/>
+        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText="anchor text used"/>
+        <JsonPath Expr="Date" Id="Date" Title="Date" Converter="String" HelpText="last crawl date" Checked="false"/>
+        <JsonPath Expr="DateLost" Id="DateLost" Title="DateLost" Converter="String" HelpText="date when this link was lost. If FlagDeleted is true" Checked="false"/>
+        <JsonPath Expr="FirstIndexedDate" Id="FirstIndexedDate" Title="FirstIndexedDate" Converter="String" HelpText="date when this link was first indexed" Checked="false"/>
+        <JsonPath Expr="FlagAltText" Id="FlagAltText" Title="FlagAltText" Converter="Int" HelpText="if set to true then it is AltText type" Checked="false"/>
+        <JsonPath Expr="FlagDeleted" Id="FlagDeleted" Title="FlagDeleted" Converter="Int" HelpText="if set to true then it was deleted" Checked="false"/>
+        <JsonPath Expr="FlagFrame" Id="FlagFrame" Title="FlagFrame" Converter="Int" HelpText="if set to true then it is a frame" Checked="false"/>
+        <JsonPath Expr="FlagImages" Id="FlagImages" Title="FlagImages" Converter="Int" HelpText="if set to true then it is an image" Checked="false"/>
+        <JsonPath Expr="FlagMention" Id="FlagMention" Title="FlagMention" Converter="Int" HelpText="if set to true then it is Mention type" Checked="false"/>
+        <JsonPath Expr="FlagNoFollow" Id="FlagNoFollow" Title="FlagNoFollow" Converter="Int" HelpText=" if set to true then this link was marked as NOFOLLOW" Checked="false"/>
+        <JsonPath Expr="FlagRedirect" Id="FlagRedirect" Title="FlagRedirect" Converter="Int" HelpText="if set to true then it is redirect" Checked="false"/>
+        <JsonPath Expr="LastSeenDate" Id="LastSeenDate" Title="LastSeenDate" Converter="String" HelpText="date when this link was last seen" Checked="false"/>
+        <JsonPath Expr="LinkType" Id="LinkType" Title="LinkType" Converter="String" HelpText="compact version of link type" Checked="false"/>
+        <JsonPath Expr="LinkSubType" Id="LinkSubType" Title="LinkSubType" Converter="String" HelpText="compact version of link subtype" Checked="false"/>
+        <JsonPath Expr="ReasonLost" Id="ReasonLost" Title="ReasonLost" Converter="String" HelpText="reason for loss of link, effectively last crawl code of the source link" Checked="false"/>
+        <JsonPath Expr="SourceCitationFlow" Id="SourceCitationFlow" Title="SourceCitationFlow" Converter="Int" HelpText="CitationFlow of the source URL" Checked="false"/>
+        <JsonPath Expr="SourceTrustFlow" Id="SourceTrustFlow" Title="SourceTrustFlow" Converter="Int" HelpText="TrustFlow of the source URL" Checked="false"/>
+        <JsonPath Expr="TargetCitationFlow" Id="TargetCitationFlow" Title="TargetCitationFlow" Converter="Int" HelpText="CitationFlow of the target URL" Checked="false"/>
+        <JsonPath Expr="TargetTrustFlow" Id="TargetTrustFlow" Title="TargetTrustFlow" Converter="Int" HelpText="TrustFlow of the target URL" Checked="false"/>
+        <JsonPath Expr="TargetTopicalTrustFlow_Topic_0" Id="TargetTopicalTrustFlow_Topic_0" Title="TargetTopicalTrustFlow_Topic_0" Converter="String" HelpText="Trust Flow Categories of the target URL. Only returned in the Fresh Index." Checked="false"/>
+        <JsonPath Expr="TargetTopicalTrustFlow_Value_0" Id="TargetTopicalTrustFlow_Value_0" Title="TargetTopicalTrustFlow_Value_0" Converter="Int" HelpText="Value of the Topical Trust Flow for this category of the target URL. Only returned in the Fresh Index." Checked="false"/>
+        <JsonPath Expr="SourceTopicalTrustFlow_Topic_0" Id="SourceTopicalTrustFlow_Topic_0" Title="SourceTopicalTrustFlow_Topic_0" Converter="String" HelpText="Trust Flow Categories of the source URL. Only returned in the Fresh Index." Checked="false"/>
+        <JsonPath Expr="SourceTopicalTrustFlow_Value_0" Id="SourceTopicalTrustFlow_Value_0" Title="SourceTopicalTrustFlow_Value_0" Converter="Int" HelpText="Value of the Topical Trust Flow for this category of the source URL. Only returned in the Fresh Index." Checked="false"/>
+        <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="legacy metric of the SourceURL, scaled down from CitationFlow" Checked="false"/>
       </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="ErrorMessage"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://developer-support.majestic.com/api/commands/get-anchor-text.shtml">
     <Parameters>
@@ -178,7 +190,7 @@
           <Item Id="fresh" Title="Fresh"/>
           <Item Id="historic" Title="Historic"/>
         </DataSource>
-      </Radio>			
+      </Radio>
       <Text Id="FilterAnchorText" Title="Filter by Anchor Text" DefaultValue="" Required="false" HelpText=""/>
       <Radio Id="FilterAnchorTextMode" Title="Anchor Text Matching" DefaultValue="2" Required="false">
         <DataSource>
@@ -194,7 +206,7 @@
         <![CDATA[
 					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
 					&cmd=GetAnchorText
-					&item=@(Model.Url)
+					&item=@Utils.UrlEncode((Model.Url)
 					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 				  @if(Model.TextMode == true)
@@ -204,21 +216,20 @@
 					@if(Model.FilterAnchorText != "")
 					{
 						@: &FilterAnchorText=@(Utils.UrlEncode(Model.FilterAnchorText))
-						@: &FilterAnchorTextMode=@(Model.FilterAnchorTextMode)						
-					}				
+						@: &FilterAnchorTextMode=@(Model.FilterAnchorTextMode)
+					}
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="DataTables.AnchorText.Data[*]">
-        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText=""/>
-        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="TotalLinks" Id="TotalLinks" Title="TotalLinks" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="DeletedLinks" Id="DeletedLinks" Title="DeletedLinks" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="NoFollowLinks" Id="NoFollowLinks" Title="NoFollowLinks" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="NoFollowLinks" Id="NoFollowLinks" Title="NoFollowLinks" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="EstimatedLinkCitationFlow" Id="EstimatedLinkCitationFlow" Title="EstimatedLinkCitationFlow" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="EstimatedLinkTrustFlow" Id="EstimatedLinkTrustFlow" Title="EstimatedLinkTrustFlow" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText="anchor text"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="number of referring domains with given anchor text" Checked="false"/>
+        <JsonPath Expr="TotalLinks" Id="TotalLinks" Title="TotalLinks" Converter="Int" HelpText=" total number of backlinks - external with given anchor text" Checked="false"/>
+        <JsonPath Expr="DeletedLinks" Id="DeletedLinks" Title="DeletedLinks" Converter="Int" HelpText="number of links that were marked as deleted" Checked="false"/>
+        <JsonPath Expr="NoFollowLinks" Id="NoFollowLinks" Title="NoFollowLinks" Converter="Int" HelpText="number of links that were nofollow" Checked="false"/>
+        <JsonPath Expr="EstimatedLinkCitationFlow" Id="EstimatedLinkCitationFlow" Title="EstimatedLinkCitationFlow" Converter="Int" HelpText="estimated Citation Flow of referring links that pass it" Checked="false"/>
+        <JsonPath Expr="EstimatedLinkTrustFlow" Id="EstimatedLinkTrustFlow" Title="EstimatedLinkTrustFlow" Converter="Int" HelpText="estimated Trust Flow of referring links that pass it" Checked="false"/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -234,7 +245,7 @@
           <Item Id="fresh" Title="Fresh"/>
           <Item Id="historic" Title="Historic"/>
         </DataSource>
-      </Radio>			
+      </Radio>
 			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
     </Parameters>
     <Fetch>
@@ -244,7 +255,7 @@
 					&cmd=GetHostedDomains
 					&Domain=@Utils.UrlEncode(Model.Domain))
 					&MaxDomains=@(Model.MaxResults)
-					&datasource=@(Model.Datasource)				
+					&datasource=@(Model.Datasource)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -280,15 +291,15 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="DataTables.Keywords.Data[*]">
-        <JsonPath Expr="Keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
-        <JsonPath Expr="BroadSearchVolume" Id="BroadSearchVolume" Title="BroadSearchVolume" Converter="Int" HelpText=""/>
-        <JsonPath Expr="PhraseSearchVolume" Id="PhraseSearchVolume" Title="PhraseSearchVolume" Converter="Int" HelpText=""/>
+        <JsonPath Expr="Keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Actual keyword queried"/>
+        <JsonPath Expr="BroadSearchVolume" Id="BroadSearchVolume" Title="BroadSearchVolume" Converter="Int" HelpText="The estimated search volume for ALL exact keywords tht would be matched by broad matching logic."/>
+        <JsonPath Expr="PhraseSearchVolume" Id="PhraseSearchVolume" Title="PhraseSearchVolume" Converter="Int" HelpText="The Estimated search volume for exact keyword."/>
         <JsonPath Expr="PhraseDomainsInAnchor" Id="PhraseDomainsInAnchor" Title="PhraseDomainsInAnchor" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadDomainsInAnchor" Id="BroadDomainsInAnchor" Title="BroadDomainsInAnchor" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadDomainsInAnchorAndInTitle" Id="BroadDomainsInAnchorAndInTitle" Title="BroadDomainsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadDomainsInTitle" Id="BroadDomainsInTitle" Title="BroadDomainsInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadDomainsInURL" Id="BroadDomainsInURL" Title="BroadDomainsInURL" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="BroadFoundFlag" Id="BroadFoundFlag" Title="BroadFoundFlag" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="BroadFoundFlag" Id="BroadFoundFlag" Title="BroadFoundFlag" Converter="Int" HelpText="Is the same as PhraseFoundFlag, only for Broad matching mode for a given keyword" Checked="false"/>
         <JsonPath Expr="BroadURLsInAnchor" Id="BroadURLsInAnchor" Title="BroadURLsInAnchor" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadURLsInAnchorAndInTitle" Id="BroadURLsInAnchorAndInTitle" Title="BroadURLsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="BroadURLsInTitle" Id="BroadURLsInTitle" Title="BroadURLsInTitle" Converter="Int" HelpText="" Checked="false"/>
@@ -297,15 +308,339 @@
         <JsonPath Expr="PhraseDomainsInAnchorAndInTitle" Id="PhraseDomainsInAnchorAndInTitle" Title="PhraseDomainsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="PhraseDomainsInTitle" Id="PhraseDomainsInTitle" Title="PhraseDomainsInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="PhraseDomainsInURL" Id="PhraseDomainsInURL" Title="PhraseDomainsInURL" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="PhraseFoundFlag" Id="PhraseFoundFlag" Title="PhraseFoundFlag" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="PhraseFoundFlag" Id="PhraseFoundFlag" Title="PhraseFoundFlag" Converter="Int" HelpText="If true the phrase was found in our database" Checked="false"/>
         <JsonPath Expr="PhraseURLsInAnchor" Id="PhraseURLsInAnchor" Title="PhraseURLsInAnchor" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="PhraseURLsInAnchorAndInTitle" Id="PhraseURLsInAnchorAndInTitle" Title="PhraseURLsInAnchorAndInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="PhraseURLsInTitle" Id="PhraseURLsInTitle" Title="PhraseURLsInTitle" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="PhraseURLsInURL" Id="PhraseURLsInURL" Title="PhraseURLsInURL" Converter="Int" HelpText="" Checked="false"/>
-        <JsonPath Expr="TreatedAs" Id="TreatedAs" Title="TreatedAs" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="WordCount" Id="WordCount" Title="WordCount" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="TreatedAs" Id="TreatedAs" Title="TreatedAs" Converter="String" HelpText="The keyword with removed delimiters" Checked="false"/>
+        <JsonPath Expr="WordCount" Id="WordCount" Title="WordCount" Converter="Int" HelpText="The number of words in keyword." Checked="false"/>
         <JsonPath Expr="Item" Id="Item" Title="Item" Converter="Int" HelpText="" Checked="false"/>
       </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="NewAndLostBackLinks" Title="New and Lost Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-new-lost-back-links.shtml">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Radio Id="Mode" Title="Mode" DefaultValue="0" Required="false">
+        <DataSource>
+          <Item Id="0" Title="New"/>
+          <Item Id="1" Title="Lost"/>
+        </DataSource>
+      </Radio>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetNewLostBackLinks
+					&item=@Utils.UrlEncode(Model.Url)
+					&Count=@(Model.MaxResults)
+					&datasource=@(Model.Datasource)
+					&Mode=@(Model.Mode)
+					&Datefrom=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+					&Dateto=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.BackLinks.Data[*]">
+        <JsonPath Expr="SourceURL" Id="SourceURL" Title="SourceURL" Converter="String" HelpText=""/>
+        <JsonPath Expr="TargetURL" Id="TargetURL" Title="TargetURL" Converter="String" HelpText="the URL the link had been pointed at"/>
+        <JsonPath Expr="AnchorText" Id="AnchorText" Title="AnchorText" Converter="String" HelpText="anchor text of lost link"/>
+        <JsonPath Expr="Date" Id="Date" Title="Date" Converter="String" HelpText="date link was last encountered" Checked="false"/>
+        <JsonPath Expr="DateLost" Id="DateLost" Title="DateLost" Converter="String" HelpText="date link was lost" Checked="false"/>
+        <JsonPath Expr="FirstIndexedDate" Id="FirstIndexedDate" Title="FirstIndexedDate" Converter="String" HelpText="date this link was first discovered within queried index" Checked="false"/>
+        <JsonPath Expr="FlagAltText" Id="FlagAltText" Title="FlagAltText" Converter="Int" HelpText="value of 1 indicates a link with alt text" Checked="false"/>
+        <JsonPath Expr="FlagDeleted" Id="FlagDeleted" Title="FlagDeleted" Converter="Int" HelpText="value of 1 indicates a deleted link" Checked="false"/>
+        <JsonPath Expr="FlagFrame" Id="FlagFrame" Title="FlagFrame" Converter="Int" HelpText="value of 1 indicates a link in an iframe" Checked="false"/>
+        <JsonPath Expr="FlagImages" Id="FlagImages" Title="FlagImages" Converter="Int" HelpText="value of 1 indicates an image link" Checked="false"/>
+        <JsonPath Expr="FlagMention" Id="FlagMention" Title="FlagMention" Converter="Int" HelpText="value of 1 indicates a mention" Checked="false"/>
+        <JsonPath Expr="FlagNoFollow" Id="FlagNoFollow" Title="FlagNoFollow" Converter="Int" HelpText="value of 1 indicates a nofollow link" Checked="false"/>
+        <JsonPath Expr="FlagRedirect" Id="FlagRedirect" Title="FlagRedirect" Converter="Int" HelpText="value of 1 indicates a redirect link" Checked="false"/>
+        <JsonPath Expr="LastSeenDate" Id="LastSeenDate" Title="LastSeenDate" Converter="String" HelpText="date this link was last seen within queried index" Checked="false"/>
+        <JsonPath Expr="LinkSubType" Id="LinkSubType" Title="LinkSubType" Converter="String" HelpText="more specific information on the type of link" Checked="false"/>
+        <JsonPath Expr="LinkType" Id="LinkType" Title="LinkType" Converter="String" HelpText="the type of link" Checked="false"/>
+        <JsonPath Expr="ReasonLost" Id="ReasonLost" Title="ReasonLost" Converter="String" HelpText="reason link was lost, when available" Checked="false"/>
+        <JsonPath Expr="SourceCitationFlow" Id="SourceCitationFlow" Title="SourceCitationFlow" Converter="Int" HelpText="the Citation Flow of the source URL" Checked="false"/>
+        <JsonPath Expr="SourceTrustFlow" Id="SourceTrustFlow" Title="SourceTrustFlow" Converter="Int" HelpText="the Trust Flow of the source URL" Checked="false"/>
+        <JsonPath Expr="TargetCitationFlow" Id="TargetCitationFlow" Title="TargetCitationFlow" Converter="Int" HelpText="the Citation Flow of the target URL" Checked="false"/>
+        <JsonPath Expr="TargetTrustFlow" Id="TargetTrustFlow" Title="TargetTrustFlow" Converter="Int" HelpText="the Trust Flow of the target URL" Checked="false"/>
+        <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="TopPages" Title="Top Pages" HelpUrl="https://developer-support.majestic.com/api/commands/get-top-pages.shtml">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetTopPages
+					&Query=@Utils.UrlEncode(Model.Url)
+					&Count=@(Model.MaxResults)
+					&datasource=@(Model.Datasource)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Matches.Data[*]">
+        <JsonPath Expr="URL" Id="URL" Title="URL" Converter="String" HelpText="URL from root domain or subdomain"/>
+        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="Citation Flow of this URL"/>
+        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="Trust Flow of this URL"/>
+        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText="number of external backlinks pointing to this URL"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="number of referring domains pointing to this URL"/>
+        <JsonPath Expr="RefIPs" Id="RefIPs" Title="RefIPs" Converter="Int" HelpText="number of referring IP addresses pointing to this URL" Checked="false"/>
+        <JsonPath Expr="RefSubNets" Id="RefSubNets" Title="RefSubNets" Converter="Int" HelpText="number of referring IP Class C subnets pointing to this URL" Checked="false"/>
+        <JsonPath Expr="Title" Id="Title" Title="Title" Converter="String" HelpText="title of the page if it was crawled - FlagPageData set to True - or same value as URL"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_0" Id="TopicalTrustFlow_Topic_0" Title="TopicalTrustFlow_Topic_0" Converter="String" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_0" Id="TopicalTrustFlow_Value_0" Title="TopicalTrustFlow_Value_0" Converter="Int" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_1" Id="TopicalTrustFlow_Topic_1" Title="TopicalTrustFlow_Topic_1" Converter="String" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_1" Id="TopicalTrustFlow_Value_1" Title="TopicalTrustFlow_Value_1" Converter="Int" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_2" Id="TopicalTrustFlow_Topic_2" Title="TopicalTrustFlow_Topic_2" Converter="String" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="TopicalTrustFlow_Value_2" Id="TopicalTrustFlow_Value_2" Title="TopicalTrustFlow_Value_2" Converter="Int" HelpText="Topical Trust Flow Categories for this URL, currently only available in the Fresh Index" Checked="false"/>
+        <JsonPath Expr="Date" Id="Date" Title="Date" Converter="String" HelpText="last crawl date if FlagPageData is True, or first found backlink date otherwise." Checked="false"/>
+        <JsonPath Expr="FlagPageData" Id="FlagPageData" Title="FlagPageData" Converter="String" HelpText="True if the URL was crawled, False otherwise" Checked="false"/>
+        <JsonPath Expr="FlagRedirect" Id="FlagRedirect" Title="FlagRedirect" Converter="String" HelpText="True if the URL was found to be redirecting elsewhere on crawl, False otherwise" Checked="false"/>
+        <JsonPath Expr="FlagFrames" Id="FlagFrames" Title="FlagFrames" Converter="String" HelpText="True if this URL is part of frameset" Checked="false"/>
+        <JsonPath Expr="LastCrawlResult" Id="LastCrawlResult" Title="LastCrawlResult" Converter="String" HelpText="describes the response from attempting to crawl the page" Checked="false"/>
+        <JsonPath Expr="FinalRedirectResult" Id="FinalRedirectResult" Title="FinalRedirectResult" Converter="String" HelpText="describes the response from attempting to crawl the page after all redirects are followed" Checked="false"/>
+        <JsonPath Expr="RedirectTo" Id="RedirectTo" Title="RedirectTo" Converter="String" HelpText="the initial redirect location" Checked="false"/>
+        <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="ACRank value of the URL" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Topics" Title="Topics" HelpUrl="https://developer-support.majestic.com/api/commands/get-topics.shtml">
+    <Parameters>
+      <Text Id="Url" Title="URL" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="trustflow&amp;links">
+        <DataSource>
+          <Resource Id="OrderTopics"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+				</DataSource>
+      </Radio>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+			<Text Id="Offset" Title="Offset" DefaultValue="0" Required="false" HelpText="row number to start returning data from for pagnation."/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetTopics
+					&item=@Utils.UrlEncode(Model.Url)
+					&Count=@(Model.MaxResults)
+					&datasource=@(Model.Datasource)
+					&SortBy=@(Model.OrderBy)
+					&SortOrder=@(Model.Direction)
+				  @if(Model.Offset != "0")
+					{
+					@: &From=@(Model.Offset)
+					}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Topics.Data[*]">
+        <JsonPath Expr="Topic" Id="Topic" Title="Topic" Converter="String" HelpText="The Topic for which the following links have been found"/>
+        <JsonPath Expr="Links" Id="Links" Title="Links" Converter="Int" HelpText="Number of links which directly pass trust flow of this topic"/>
+        <JsonPath Expr="TopicalTrustFlow" Id="TopicalTrustFlow" Title="TopicalTrustFlow" Converter="Int" HelpText="A value indicating the amount of trust flow passed by these links"/>
+        <JsonPath Expr="LinksFromRefDomains" Id="LinksFromRefDomains" Title="LinksFromRefDomains" Converter="Int" HelpText="Links which come from a domain which has this topic associated with it"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="A count of the topical domains that point to the site or domain or URL"/>
+        <JsonPath Expr="Pages" Id="Pages" Title="Pages" Converter="Int" HelpText="Number of pages on the target site or domain or URL which have this topic associated with them"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SearchByKeyword" Title="Search by Keyword" HelpUrl="https://developer-support.majestic.com/api/commands/search-by-keyword.shtml">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="seotools" Required="true" HelpText="Query to search for"/>
+      <Radio Id="Scope" Title="Scope" DefaultValue="2" Required="false">
+        <DataSource>
+          <Item Id="2" Title="URLs"/>
+          <Item Id="0" Title="Root Domains"/>
+					</DataSource>
+      </Radio>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="10" Required="true" HelpText="Number o of results to be returned back"/>
+			<Text Id="Offset" Title="Offset" DefaultValue="0" Required="false" HelpText="row number to start returning data from for pagnation."/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=SearchByKeyword
+					&query=@Utils.UrlEncode(Model.Query)
+					&Count=@(Model.MaxResults)
+				  @if(Model.Offset != "0")
+					{
+					@: &From=@(Model.Offset)
+					}
+					&scope=@(Model.Scope)
+					
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Results.Data[*]">
+        <JsonPath Expr="Item" Id="Item" Title="Item" Converter="String" HelpText="The resulting Root Domain or URL"/>
+        <JsonPath Expr="Title" Id="Title" Title="Title" Converter="String" HelpText="The title of the resutlt."/>
+        <JsonPath Expr="SearchScore" Id="SearchScore" Title="SearchScore" Converter="Int" HelpText="A unique Majestic metric to give a score to the result."/>
+        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="Citation Flow for the Item" Checked="false"/>
+        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="Trust Flow for the Item" Checked="false"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="Ref Domains for the Item" Checked="false"/>
+        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText="External Backlinks for the Item" Checked="false"/>
+        <JsonPath Expr="ScoreInTitle" Id="ScoreInTitle" Title="ScoreInTitle" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="ScoreInURL" Id="ScoreInURL" Title="ScoreInURL" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="ScoreInAnchor" Id="ScoreInAnchor" Title="ScoreInAnchor" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="ScoreOther" Id="ScoreOther" Title="ScoreOther" Converter="Int" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ReferringDomains" Title="Referring Domains" HelpUrl="https://developer-support.majestic.com/api/commands/get-ref-domains.shtml ">
+    <Parameters>
+      <Text Id="Urls" Title="URLs" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query" Multiline="true"/>
+      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+        <DataSource>
+          <Item Id="fresh" Title="Fresh"/>
+          <Item Id="historic" Title="Historic"/>
+        </DataSource>
+      </Radio>
+      <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="default">
+        <DataSource>
+          <Resource Id="OrderRefDomains"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="1" Required="true">
+        <DataSource>
+          <Item Id="0" Title="Ascending"/>
+          <Item Id="1" Title="Descending"/>
+				</DataSource>
+      </Radio>
+			<Text Id="MaxResults" Title="MaxResults" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back"/>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetRefDomains
+					&@FetchRefDomains()
+					&datasource=@(Model.Datasource)
+					@if(Model.OrderBy != "default")
+					{
+						@: &OrderBy1=@(Model.OrderBy)
+						@: &OrderDir1=@(Model.Direction)
+					}
+					&Count=@(Model.MaxResults)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Results.Data[*]">
+        <JsonPath Expr="Position" Id="Position" Title="Position" Converter="Int" HelpText="Relative position based on your order by selection"/>
+        <JsonPath Expr="Domain" Id="Domain" Title="Domain" Converter="String" HelpText="The referring domain which matches at least 1 of the items in your request"/>
+        <JsonPath Expr="RefDomains" Id="RefDomains" Title="RefDomains" Converter="Int" HelpText="Number of ref domains the Domain as listed in 'Domain' has"/>
+        <JsonPath Expr="AlexaRank" Id="AlexaRank" Title="AlexaRank" Converter="Int" HelpText="Alexa Rank of the root domain"/>
+        <JsonPath Expr="Matches" Id="Matches" Title="Matches" Converter="Int" HelpText="How many items in your list of submitted items are linked to by this domain"/>
+        <JsonPath Expr="MatchedLinks" Id="MatchedLinks" Title="MatchedLinks" Converter="Int" HelpText="Cumulative total number of backlinks from this domain to all submitted items"/>
+        <JsonPath Expr="ExtBackLinks" Id="ExtBackLinks" Title="ExtBackLinks" Converter="Int" HelpText="number of external backlinks pointing to the root domain listed in the 'Domain' field"/>
+        <JsonPath Expr="IndexedURLs" Id="IndexedURLs" Title="IndexedURLs" Converter="Int" HelpText="number of unique URLs in index (includes crawled and uncrawled) for the domain listed in the 'Domain' field"/>
+        <JsonPath Expr="CrawledURLs" Id="CrawledURLs" Title="CrawledURLs" Converter="Int" HelpText="number of unique URLs that were crawled of the domain listed in the 'Domain' field"/>
+        <JsonPath Expr="FirstCrawled" Id="FirstCrawled" Title="FirstCrawled" Converter="String" HelpText="date when domain was first crawled"/>
+        <JsonPath Expr="LastSuccessfulCrawl" Id="LastSuccessfulCrawl" Title="LastSuccessfulCrawl" Converter="String" HelpText="date when domain was last successfully crawled"/>
+        <JsonPath Expr="IP" Id="IP" Title="IP" Converter="String" HelpText="IPv4 Address of the domain"/>
+        <JsonPath Expr="SubNet" Id="SubNet" Title="SubNet" Converter="String" HelpText="calculated from IP"/>
+        <JsonPath Expr="CountryCode" Id="CountryCode" Title="CountryCode" Converter="String" HelpText="geo-located country of hosting based on IP address"/>
+        <JsonPath Expr="TLD" Id="TLD" Title="TLD" Converter="String" HelpText="top level domain of the root domain"/>
+        <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="Citation Flow of domain"/>
+        <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="Trust Flow of domain"/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_0" Id="TopicalTrustFlow_Topic_0" Title="TopicalTrustFlow_Topic_0" Converter="String" HelpText="Highest Trust Flow Category of the domain. Only returned in the Fresh Index."/>
+        <JsonPath Expr="TopicalTrustFlow_Value_0" Id="TopicalTrustFlow_Value_0" Title="TopicalTrustFlow_Value_0" Converter="Int" HelpText="Value of the highest Topical Trust Flow for this category of the domain."/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_1" Id="TopicalTrustFlow_Topic_1" Title="TopicalTrustFlow_Topic_1" Converter="String" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Value_1" Id="TopicalTrustFlow_Value_1" Title="TopicalTrustFlow_Value_1" Converter="Int" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_2" Id="TopicalTrustFlow_Topic_2" Title="TopicalTrustFlow_Topic_2" Converter="String" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Value_2" Id="TopicalTrustFlow_Value_2" Title="TopicalTrustFlow_Value_2" Converter="Int" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_3" Id="TopicalTrustFlow_Topic_3" Title="TopicalTrustFlow_Topic_3" Converter="String" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Value_3" Id="TopicalTrustFlow_Value_3" Title="TopicalTrustFlow_Value_3" Converter="Int" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Topic_4" Id="TopicalTrustFlow_Topic_4" Title="TopicalTrustFlow_Topic_4" Converter="String" HelpText=""/>
+        <JsonPath Expr="TopicalTrustFlow_Value_4" Id="TopicalTrustFlow_Value_4" Title="TopicalTrustFlow_Value_4" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="ErrorMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SubscriptionInfo" Title="Subscription Info" HelpUrl="https://developer-support.majestic.com/api/commands/get-subscription-info.shtml">
+    <Parameters>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
+					&cmd=GetSubscriptionInfo
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Subscriptions.Data[0]">
+        <JsonPath Expr="IndexItemInfoResUnits" Id="IndexItemInfoResUnits" Title="IndexItemInfoResUnits" Converter="Int" HelpText="Resource units that are used to lookup backlinks counts for URLs, subdomains and root domains."/>
+        <JsonPath Expr="AnalysisResUnits" Id="AnalysisResUnits" Title="AnalysisResUnits" Converter="Int" HelpText="Resource units used in analysis of backlinks."/>
+        <JsonPath Expr="RetrievalResUnits" Id="RetrievalResUnits" Title="RetrievalResUnits" Converter="Int" HelpText="Resource units used when backlinks are retrieved."/>			
+      </JsonPath>				
+      <JsonPath Expr="DataTables.SubscriptionPlans.Data[*]">
+        <JsonPath Expr="SubscriptionID" Id="SubscriptionID" Title="Subscription ID" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="Title" Id="Title" Title="Subscription Title" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="Created" Id="Created" Title="Subscription Created" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="Active" Id="Active" Title="Active" Converter="Int" HelpText="" Checked="false"/>
+        <JsonPath Expr="ExpirationDate" Id="ExpirationDate" Title="Subscription Expiration" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="MaxPeriods" Id="MaxPeriods" Title="MaxPeriods" Converter="Int" HelpText="" Checked="false"/>				
+      </JsonPath>				
     </Parse>
     <Fail>
       <JsonPath Expr="ErrorMessage"/>
@@ -314,17 +649,21 @@
 
   <RazorFunctions>
 		<![CDATA[
-		string FetchUrls()
+		string FetchIndexUrls()
 		{
 			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
 			return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
 		}
-		
 		string FetchKeywords()
 		{
 			string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(1000).ToArray();
 			return string.Join("&",lines.Select((e, i) => "item" + (i+1) + "=" + Utils.UrlEncode(e)).ToArray());
-		}		
+		}
+		string FetchRefDomains()
+		{
+			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+			return string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
+		}
 		]]>
 	</RazorFunctions>	
 </Suite>
