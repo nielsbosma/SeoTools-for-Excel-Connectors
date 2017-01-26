@@ -448,6 +448,7 @@
 		  ?&access_token=@(Model.AccessToken)
 		  &since=@(Model.FromDate)
 		  &until=@(Model.ToDate)
+			&period=day
       ]]>
       </Fetch.Url>
     </Fetch>
@@ -832,14 +833,66 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="PostClicksbyType" Title="Post Clicks by Type">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.7/
+		  @(Model.PostId)
+		  /insights/
+		  post_consumptions_by_type_unique
+		  ?&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Regex Expr="&quot;link\s*clicks&quot;:\s*(\d*)" Id="LinkClicks" Title="Link Clicks" Converter="Int" Group="1"/>
+			<Regex Expr="&quot;photo\s*view&quot;:\s*(\d*)" Id="PhotoViews" Title="Photo Views" Converter="Int" Group="1"/>
+			<Regex Expr="&quot;video\s*play&quot;:\s*(\d*)" Id="VideoPlays" Title="Video Plays" Converter="Int" Group="1"/>
+			<Regex Expr="&quot;other\s*clicks&quot;:\s*(\d*)" Id="OtherClicks" Title="Other Clicks" Converter="Int" Group="1"/>	
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.error_user_msg"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="PostStoriesbyType" Title="Post Stories by Type">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+		  https://graph.facebook.com/v2.7/
+		  @(Model.PostId)
+		  /insights/
+		  post_stories_by_action_type
+		  ?&access_token=@(Model.AccessToken)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Regex Expr="&quot;like&quot;:\s*(\d*)" Id="Likes" Title="Likes" Converter="Int" Group="1"/>
+			<Regex Expr="&quot;comment&quot;:\s*(\d*)" Id="Comments" Title="Comments" Converter="Int" Group="1"/>
+			<Regex Expr="&quot;share&quot;:\s*(\d*)" Id="Shares" Title="Shares" Converter="Int" Group="1"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.error_user_msg"/>
+    </Fail>
+  </RestConnector>		
+
   <RazorFunctions>
     <![CDATA[
       string SelectedFields() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-        return string.Join(",",((ResultField[])Model.Headers).Where(e => fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
       }
     ]]>
   </RazorFunctions>
-
 
 </Suite>
