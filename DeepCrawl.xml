@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="DeepCrawl" Id="DeepCrawl" RequireVersion="6.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DeepCrawl.xml" HelpUrl="http://seotoolsforexcel.com/DeepCrawl/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/DeepCrawl/">
+    <Text Id="APIKeyValue" Title="API Key Value" Required="true" HelpUrl="http://seotoolsforexcel.com/DeepCrawl/"/>
+    <Text Id="APIKeyId" Title="API Key Id" Required="true" HelpUrl="http://seotoolsforexcel.com/DeepCrawl/"/>
+    <Text Id="Token" Title="Session Token" Required="false" HelpUrl="http://seotoolsforexcel.com/DeepCrawl/"/>
+  </Settings>
+
+  <RestConnector Id="GenerateToken" Title="GenerateToken" HelpUrl="http://api-docs.deepcrawl.com/">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/sessions
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="token" Id="Token" Title="Token" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ListAccounts" Title="List Accounts" HelpUrl="http://api-docs.deepcrawl.com/#accounts-accounts-get">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/accounts
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="AccountId" Title="Account Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="AccountName" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="credits_available" Id="CreditsAvailable" Title="Credits Available" Converter="Int" HelpText=""/>
+        <JsonPath Expr="projects_count" Id="Projects" Title="Projects" Converter="Int" HelpText=""/>
+        <JsonPath Expr="active_projects_count" Id="ActiveProjects" Title="Active Projects" Converter="Int" HelpText=""/>
+        <JsonPath Expr="limit_projects_max" Id="MaxProjects" Title="Max Projects" Converter="Int" HelpText=""/>
+        <JsonPath Expr="limit_levels_max" Id="MaxLimitLevels" Title="Max Limit Levels" Converter="Int" HelpText=""/>
+        <JsonPath Expr="limit_pages_max" Id="MaxLimitPages" Title="Max Limit Pages" Converter="Int" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="Country" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+	
+  <RestConnector Id="ListProjectsHidden">
+    <Parameters>
+      <Text Id="AccountId" Required="true" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="AccountName"/>
+		</Parameters>	
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/accounts/@(Model.AccountId)/projects
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ProjectId" Title="Account Id"/>
+        <JsonPath Expr="name" Id="ProjectName" Title="Name"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ListProjects" Title="List Projects" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get">
+    <Parameters>
+      <Text Id="AccountId" Title="Select Account Id" DefaultValue="" Required="true" Select.Connector="ListAccounts" Select.IdField="AccountId" Select.TitleField="AccountName" HelpText="Select an account"/>
+      <Text Id="ProjectIdFilter" Title="Filter by Project Id" DefaultValue="" Required="false" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+			</Parameters>	
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/
+				accounts/@(Model.AccountId)
+				/projects
+				@if(Model.ProjectIdFilter != "")
+				{
+					@: /@(Model.ProjectIdFilter)
+				}
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="@(AdjustParse())">
+        <JsonPath Expr="id" Id="ProjectId" Title="Project Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="site_primary" Id="PrimarySite" Title="Primary Site" Converter="String" HelpText=""/>
+        <JsonPath Expr="crawls_count" Id="CrawlCount" Title="Crawl Count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="issues_count" Id="IssuesCount" Title="Issues Count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="_crawls_finished_last_finished_at" Id="LastCrawl" Title="Last Crawl" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>	
+
+  <RazorFunctions>
+    <![CDATA[
+    String CreateBasicAuth()
+	  {
+			string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.APIKeyId + ":" + Model.APIKeyValue));
+			return AuthString;
+    }
+		
+		String AdjustParse()
+	  {
+		  if(Model.ProjectIdFilter == "")
+		  {
+			  return "$.*'";
+		  }
+		  else
+		  {
+			  return "$.";
+			}
+		}
+    ]]>
+  </RazorFunctions>
+
+</Suite>
