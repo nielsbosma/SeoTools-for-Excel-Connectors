@@ -1,42 +1,49 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="5.1" Title="Amazon" Id="Amazon" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
+<Suite RequireVersion="6.0" Title="Amazon" Id="Amazon" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <Resources>
+    <Resource Id="Sortings">
+      <Item Id="relevanceblender" Title="Relevance"/>
+      <Item Id="price-asc-rank" Title="Price: Low to High"/>
+      <Item Id="price-desc-rank" Title="Price: High to Low"/>
+      <Item Id="review-rank" Title="Avg. Customer Review"/>
+      <Item Id="date-desc-rank" Title="Newest Arrivals"/>
+    </Resource>
+  </Resources>	
   
   <RestConnector Id="Search" Title="Search">
     <Parameters>
-      <Text Id="Query" Title="Query" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
       <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
+      <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="relevanceblender">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>		
     </Parameters>
-    <!--
-    <Paging PageSize="1" MaxTake="100"/>
-    &amp;page=@(Model.PageCursor.NextSkip+1)
-    -->
-    <Fetch Url="http://www.@(Model.Domain)/s?field-keywords=@(Utils.UrlEncode(Model.Query))"/>
+    <Paging PageSize="10" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://www.@(Model.Domain)/s?
+				field-keywords=@(Utils.UrlEncode(Model.Query))
+				&page=@(Model.PageCursor.Page+1)
+				&sort=@(Model.Sort)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
     <Parse>
       <XPath Expr="//ul[contains(@@class,'s-result-list')]/li[descendant::span[contains(@@class,'-price')]]">
-        <XPath Id="asin" Title="ASIN" Expr="." Attribute="data-asin" />
-        <XPath Id="title" Title="Title" Expr=".//h2" />
-        <XPath Id="price" Title="Price" Expr=".//span[contains(@@class,'-price')]" />
+        <XPath Id="Url" Title="URL" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
+				<XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" />	
+        <XPath Id="Title" Title="Title" Expr=".//h2" />
+        <XPath Id="Price" Title="Price" Expr=".//span[contains(@@class,'-price')]"/>
+        <XPath Id="AverageReview" Title="Avg. Review" Expr=".//i[contains(@@class,'a-icon a-icon-star a-star')]" Converter="String"/>
+        <XPath Id="Reviews" Title="Reviews" Expr=".//*/div[2]/div[3]/div[2]/div[1]/a" Converter="Int"/>
       </XPath>
     </Parse>
   </RestConnector>
-  
-  <!--
-  <AggregateConnector Id="Rank" Title="Rank">
-    <Parameters>
-      <Text Id="Asin" Title="ASIN" Required="true"/>
-    </Parameters>
-    <Columns>
-      <AggregateColumn Id="" Title="" Convert="">
-        <Expr>
-          
-        </Expr>
-      </AggregateColumn>
-      
-      
-    </Columns>
-  </AggregateConnector>
-  -->
  
 </Suite>
