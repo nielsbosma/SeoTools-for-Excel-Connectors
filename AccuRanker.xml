@@ -319,7 +319,7 @@
           <Header Name='Authorization'>Token @Model.ApiToken</Header>
         </RequestHeaders>
       </HttpSettings>
-      <Fetch.Url>
+			<Fetch.Url>
         <![CDATA[
         https://app.accuranker.com/api/v3/competitors/@(Model.Competitor)/keywords/?
 			  @if(Model.SearchDate != "")
@@ -343,6 +343,69 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="KeywordLookup" Title="Keyword Lookup" HelpUrl="" Hidden="False">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain."/>
+      <Text Id="Keyword" Title="Keyword Id" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Token @Model.ApiToken</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/domains/@(Model.Domain)/keywords/@(Model.Keyword)/
+			  ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.id" Id="KeywordId" Title="Keyword Id" Converter="Long" HelpText=""/>
+			<JsonPath Expr="$.domain" Id="DomainId" Title="Domain Id" Converter="Long" HelpText=""/>
+			<JsonPath Expr="$.keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+			<JsonPath Expr="$.search_volume" Id="SearchVolume" Title="Search Volume" Converter="Int" HelpText=""/>
+			<JsonPath Expr="$.rank.search_date" Id="SearchDate" Title="Search Date" Converter="DateTime" HelpText=""/>
+			<JsonPath Expr="$.rank.rank" Id="Rank" Title="Rank" Converter="Int" HelpText=""/>
+			<JsonPath Expr="$.rank.url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+			<JsonPath Expr="$.rank.est_traffic" Id="EstTraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>			
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KeywordHistory" Title="Keyword History" HelpUrl="" Hidden="False">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain."/>
+      <Text Id="Keyword" Title="Keyword Id" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Paging PageSize="30"/>		
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Token @Model.ApiToken</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.accuranker.com/api/v3/domains/@(Model.Domain)/keywords/@(Model.Keyword)/
+			  ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.history.*">
+        <JsonPath Expr="search_date" Id="SearchDate" Title="Search Date" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int" HelpText=""/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="est_traffic" Id="EstTraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>
+			</JsonPath>		
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
 
   <RazorFunctions>
     <![CDATA[
