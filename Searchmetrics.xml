@@ -53,7 +53,7 @@
   </Resources>
 
   <!-- HIDDEN: -->
-  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="http://api.searchmetrics.com/v3/documentation/start" Hidden="false">
+  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="http://api.searchmetrics.com/v3/documentation/start" Hidden="true">
     <Fetch Url="http://api.searchmetrics.com/v3/token">
       <HttpSettings>
         <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
@@ -75,6 +75,7 @@
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
+      <Text Id="FilterMonth" Title="Specific Month (Format: YYYYMM)" Debug.DefaultValue="201602" Required="false" HelpText=""/>			
     </Parameters>
     <Prepare>
       <Connector Id="Authorization"/>
@@ -82,9 +83,18 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				http://api.searchmetrics.com/v3/ResearchOrganicGetCountDomainKeyword.json?
+				http://api.searchmetrics.com/v3/ResearchOrganicGetCountDomainKeyword
+				@if(Model.FilterMonth != "")
+				{
+					@: Historic
+				}
+				.json?
 				countrycode=@(Model.Country)
 				&url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host))
+				@if(Model.FilterMonth != "")
+				{
+					@: &year_month=@(Model.FilterMonth)
+				}
 				&access_token=@(Model.Authorization)
 				]]>
       </Fetch.Url>
@@ -92,6 +102,43 @@
     <Parse>
       <JsonPath Expr="$.response" Converter="Int"/>
     </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ResearchOrganicGetListCommonKeywords" Title="Organic Common Keywords" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListCommonKeywords" HelpText="Number of organic keywords for a given domain.">
+    <Parameters>
+      <Text Id="Domain1" Title="First Domain" Debug.DefaultValue="google.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain2" Title="Second Domain" Debug.DefaultValue="bing.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Paging PageSize="100" MinTake="100" IncrementTake="100"/>		
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/ResearchOrganicGetListCommonKeywords.json?
+        url_1=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain1).Host)
+        &url_2=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain2).Host)
+        &countrycode=@Model.Country
+        &limit=@(Model.PageCursor.PageSize)
+        &offset=@(Model.PageCursor.NextSkip)
+				&access_token=@(Model.Authorization)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Common keyword"/>
+        <JsonPath Expr="dom1_pos" Id="Url1Pos" Title="URL1 Position" Converter="Int" HelpText="Position of the first URL"/>
+        <JsonPath Expr="dom2_pos" Id="Url2Pos" Title="URL2 Position" Converter="Int" HelpText="Position of second URL"/>
+        <JsonPath Expr="dom1_traffic" Id="Url1AvgTraffic" Title="Url1 Avg Traffic" Converter="Double" HelpText="Average traffic for the first URL"/>
+        <JsonPath Expr="dom2_traffic" Id="Url2AvgTraffic" Title="Url2 Avg Traffic" Converter="Double" HelpText="Average traffic for the second URL"/>
+      </JsonPath>
+		</Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
@@ -117,7 +164,7 @@
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
 				&access_token=@(Model.Authorization)
-      ]]>
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -137,6 +184,111 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="ResearchOrganicGetListIndustrySpread" Title="Organic Domain Keyword Industry Spread " HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListIndustrySpread" HelpText="Competitor domains in the organic search.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Resource Id="SelectCountry"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/ResearchOrganicGetListIndustrySpread.json?
+        url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
+        &countrycode=@Model.Country
+				&access_token=@(Model.Authorization)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="category" Id="CategoryId" Title="Category Id" Converter="Int" HelpText="ID of the industry sector"/>
+        <Compute Id="Category" Title="Category">
+          <Compute.Expr>
+            <![CDATA[
+					  @if(Model.category == 194590)
+					  {
+						  @: Sports and Fitness
+					  }
+					  else if(Model.category == 194593)
+					  {
+						  @: Finance
+					  }
+					  else if(Model.category == 194594)
+					  {
+						  @: Home and Garden
+					  }
+					  else if(Model.category == 194595)
+					  {
+						  @: Hobbies and Leisure
+					  }
+					  else if(Model.category == 194597)
+					  {
+						  @: Vehicles
+					  }
+					  else if(Model.category == 194598)
+					  {
+						  @: Media and Events
+					  }
+					  else if(Model.category == 194600)
+					  {
+						  @: Travel and Tourism
+					  }
+					  else if(Model.category == 194601)
+					  {
+						  @: Gifts and Occasions
+					  }
+					  else if(Model.category == 194602)
+					  {
+						  @: Family and Community
+					  }
+					  else if(Model.category == 194603)
+					  {
+						  @: Health
+					  }
+					  else if(Model.category == 194605)
+					  {
+						  @: Real Estate
+					  }
+					  else if(Model.category == 194606)
+					  {
+						  @: Apparel
+					  }
+					  else if(Model.category == 194608)
+					  {
+						  @: Food
+					  }
+					  else if(Model.category == 194610)
+					  {
+						  @: Beauty and Personal Care
+					  }
+					  else if(Model.category == 194849)
+					  {
+						  @: Law and Government Products
+					  }
+					  else if(Model.category == 196581)
+					  {
+						  @: Consumer Electronics
+					  }
+					  else if(Model.category == 196722)
+					  {
+						  @: Computers
+					  }					
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="category" Id="category" Converter="Int"/>
+        </Compute>				
+        <JsonPath Expr="percent" Id="Share" Title="Share" Converter="Double" HelpText="Percentage of keywords of the respective domain that belong to the respective industry sector"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>	
 
   <RestConnector Id="ResearchOrganicGetListSubdomains" Title="Organic Subdomains" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSubdomains" HelpText="The Subdomains in the organic search">
     <Parameters>
