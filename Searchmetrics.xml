@@ -43,21 +43,45 @@
     </Resource>
   </Resources>
 
+  <!-- HIDDEN: -->
+  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="http://api.searchmetrics.com/v3/documentation/start" Hidden="false">
+    <Fetch Url="http://api.searchmetrics.com/v3/token">
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestMethod>POST</RequestMethod>
+        <RequestForm>
+          <Param Name='grant_type'>client_credentials</Param>
+          <Param Name='client_id'>@(Model.OAuthConsumerKey)</Param>
+          <Param Name='client_secret'>@(Model.OAuthConsumerSecret)</Param>
+        </RequestForm>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.access_token" Id="Authorization"/>
+    </Parse>
+  </RestConnector>
+  <!-- //HIDDEN -->	
+	
   <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Organic Domain Keyword Count" HelpUrl="http://api.searchmetrics.com/api-calls/service/ResearchOrganicGetCountDomainKeyword" HelpText="Number of organic keywords for a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
-    <Fetch Url="http://api.searchmetrics.com/v1/ResearchOrganicGetCountDomainKeyword.json?countrycode=@Model.Country&amp;url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-        </OAuth>
-      </HttpSettings>
-    </Fetch>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://api.searchmetrics.com/v3/ResearchOrganicGetCountDomainKeyword.json?
+				countrycode=@(Model.Country)
+				&url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host))
+				&access_token=@(Model.Authorization)
+				]]>
+      </Fetch.Url>
+    </Fetch>		
     <Parse>
-      <JsonPath Expr="$[0]" Converter="Int"/>
+      <JsonPath Expr="$.response" Converter="Int"/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
