@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="SEMrush" Id="SEMrush" RequireVersion="6.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SEMrush.xml" HelpUrl="http://seotoolsforexcel.com/semrush/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/semrush/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="SelectDatabase">
+      <Select Id="Database" Title="Database" Required="false" DefaultValue="">
+        <DataSource>
+          <Item Id="" Title="[all]"/>
+          <Item Id="us" Title="google.com"/>
+          <Item Id="uk" Title="google.co.uk"/>
+          <Item Id="ca" Title="google.ca"/>
+          <Item Id="ru" Title="google.ru"/>
+          <Item Id="de" Title="google.de"/>
+          <Item Id="fr" Title="google.fr"/>
+          <Item Id="es" Title="google.es"/>
+          <Item Id="it" Title="google.it"/>
+          <Item Id="br" Title="google.com.br"/>
+          <Item Id="au" Title="google.com.au"/>
+          <Item Id="bing-us" Title="bing.com"/>
+          <Item Id="ar" Title="google.com.ar"/>
+          <Item Id="be" Title="google.be"/>
+          <Item Id="ch" Title="google.ch"/>
+          <Item Id="dk" Title="google.dk"/>
+          <Item Id="fi" Title="google.fi"/>
+          <Item Id="hk" Title="google.com.hk"/>
+          <Item Id="ie" Title="google.ie"/>
+          <Item Id="il" Title="google.co.il"/>
+          <Item Id="mx" Title="google.com.mx"/>
+          <Item Id="nl" Title="google.nl"/>
+          <Item Id="no" Title="google.no"/>
+          <Item Id="pl" Title="google.pl"/>
+          <Item Id="se" Title="google.se"/>
+          <Item Id="sg" Title="google.com.sg"/>
+          <Item Id="tr" Title="google.com.tr"/>
+          <Item Id="mobile-us" Title="google.com"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^(ERROR 50.*)" Tag="EmptyResult"/>
+        <Compute>
+          <Compute.Expr>
+            <![CDATA[
+            @if((Model.Error is string) && !string.IsNullOrEmpty(Model.Error))
+            {
+            @: SEMrush returned: @Model.Error
+            }
+            ]]>
+          </Compute.Expr>
+          <Regex Id="Error" Expr="^(ERROR.*)"/>
+        </Compute>
+      </Fail>
+    </Resource>
+  </Resources>
+  
+  <RestConnector Id="DomainRanks" Title="Domain Overview" HelpUrl="http://www.semrush.com/api-analytics/#domain_ranks" HelpText="Provides live or historical data on a domain’s keyword rankings in both organic and paid search in all regional databases.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=domain_ranks
+        &key=@Model.ApiKey
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+        &database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+          @: &display_date=@Model.DisplayDate.AddDays(15 - Model.DisplayDate.Day).ToString("yyyyMMdd")
+        }
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="true"/>
+        <Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="true"/>
+        <Field Id="Rk" Title="Rank" Tag="Rank" Converter="long" Checked="true"/>
+        <Field Id="Or" Title="Organic Keywords" Tag="Organic Keywords" Converter="long" Checked="true"/>
+        <Field Id="Ot" Title="Organic Traffic" Tag="Organic Traffic" Converter="long" Checked="true"/>
+        <Field Id="Oc" Title="Organic Cost" Tag="Organic Cost" Converter="long" Checked="true"/>
+        <Field Id="Ad" Title="Adwords Keywords" Tag="Adwords Keywords" Converter="String" Checked="true"/>
+        <Field Id="At" Title="Adwords Traffic" Tag="Adwords Traffic" Converter="long" Checked="true"/>
+        <Field Id="Ac" Title="Adwords Cost" Tag="Adwords Cost" Converter="long" Checked="true"/>
+      </Csv>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+  
+</Suite>
