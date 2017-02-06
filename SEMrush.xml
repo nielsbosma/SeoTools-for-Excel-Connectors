@@ -100,5 +100,54 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+
+  <RestConnector Id="DomainOrganicSearchKeywords" Title="Domain Organic Search Keywords" HelpUrl="https://www.semrush.com/api-analytics/#domain_organic" HelpText="Lists keywords that bring users to a domain via Google's top 20 organic search results.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="true" HelpText="Number of rows to be returned back"/>			
+    </Parameters>	
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=domain_organic
+        &key=@Model.ApiKey
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+        &database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+          @: &display_date=@Model.DisplayDate.AddDays(15 - Model.DisplayDate.Day).ToString("yyyyMMdd")
+        }
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="true"/>
+        <Field Id="Pp" Title="Previous Position" Tag="Previous Position" Converter="Int" Checked="true"/>
+        <Field Id="Pd" Title="Position Difference" Tag="Position Difference" Converter="Int" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="true"/>
+        <Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="true"/>
+        <Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+				
+				
+				
+      </Csv>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>	
   
 </Suite>
