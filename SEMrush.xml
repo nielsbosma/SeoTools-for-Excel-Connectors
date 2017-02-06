@@ -59,8 +59,8 @@
       </Fail>
     </Resource>
   </Resources>
-  
-  <RestConnector Id="DomainRanks" Title="Domain Overview" HelpUrl="http://www.semrush.com/api-analytics/#domain_ranks" HelpText="Provides live or historical data on a domain’s keyword rankings in both organic and paid search in all regional databases.">
+
+  <RestConnector Id="DomainOverview" Title="Domain Overview" HelpUrl="http://www.semrush.com/api-analytics/#domain_ranks" HelpText="Provides live or historical data on a domain’s keyword rankings in both organic and paid search in all regional databases.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
       <Resource Id="SelectDatabase"/>
@@ -105,9 +105,29 @@
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
       <Resource Id="SelectDatabase"/>
+			<Radio Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="new" Title="New"/>
+          <Item Id="lost" Title="Lost"/>
+          <Item Id="rise" Title="Rise"/>
+          <Item Id="fall" Title="Fall"/>
+        </DataSource>
+      </Radio>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
-      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="true" HelpText="Number of rows to be returned back"/>			
-    </Parameters>	
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="tr_desc" Title="Traffic Desc"/>
+          <Item Id="tr_asc" Title="Traffic Asc"/>
+          <Item Id="po_desc" Title="Position Desc"/>
+          <Item Id="po_asc" Title="Position Asc"/>
+          <Item Id="tc_desc" Title="Competition Desc"/>
+          <Item Id="tc_asc" Title="Competition Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -122,6 +142,14 @@
         {
           @: &display_date=@Model.DisplayDate.AddDays(15 - Model.DisplayDate.Day).ToString("yyyyMMdd")
         }
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+				@if(Model.KeywordType != "all")
+				{
+					@: &display_positions=@Model.KeywordType
+				}
       ]]>
       </Fetch.Url>
       <RequestHeaders>
@@ -142,12 +170,842 @@
         <Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="true"/>
         <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
         <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
-				
-				
-				
       </Csv>
     </Parse>
     <Resource Id="Fail"/>
-  </RestConnector>	
-  
+  </RestConnector>
+
+  <RestConnector Id="Anchors" Title="Anchors" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_anchors" HelpText="Lists anchor texts used in backlinks leading to the queried domain, root domain, or URL. It also includes the number of backlinks and referring domains per anchor.">
+    <Parameters>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+			<Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+        <DataSource>
+          <Item Id="root_domain" Title="Root Domain"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="url" Title="URL"/>
+        </DataSource>
+			</Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="backlinks_num_desc" Title="Backlinks Desc"/>
+          <Item Id="backlinks_num_asc" Title="Backlinks Asc"/>
+          <Item Id="last_seen_desc" Title="Last Seen Desc"/>
+          <Item Id="last_seen_asc" Title="Last Seen Asc"/>
+          <Item Id="first_seen_desc" Title="First Seen Desc"/>
+          <Item Id="first_seen_asc" Title="First Seen Asc"/>
+          <Item Id="domains_num_desc" Title="Domains Desc"/>
+          <Item Id="domains_num_asc" Title="Domains Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/v1/?
+        type=backlinks_anchors
+        &target=@Utils.UrlEncode(Utils.UrlProperty(Model.Target).Domain)
+				&target_type=@(Model.Type)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="anchor" Title="Anchor" Tag="anchor" Converter="String" Checked="true"/>
+        <Field Id="domains_num" Title="Domains" Tag="domains_num" Converter="Int" Checked="true"/>
+        <Field Id="backlinks_num" Title="Backlinks" Tag="backlinks_num" Converter="Int" Checked="true"/>
+        <Field Id="first_seen" Title="First Seen" Tag="first_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Backlinks" Title="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks" HelpText="Lists backlinks for a domain, root domain, or URL.">
+    <Parameters>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+			<Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+        <DataSource>
+          <Item Id="root_domain" Title="Root Domain"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="url" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="last_seen_desc" Title="Last Seen Desc"/>
+          <Item Id="last_seen_asc" Title="Last Seen Asc"/>
+          <Item Id="first_seen_desc" Title="First Seen Desc"/>
+          <Item Id="first_seen_asc" Title="First Seen Asc"/>
+          <Item Id="page_score_desc" Title="Page Score Desc"/>
+          <Item Id="page_score_asc" Title="Page Score Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/v1/?
+        type=backlinks
+        &target=@Utils.UrlEncode(Utils.UrlProperty(Model.Target).Domain)
+				&target_type=@(Model.Type)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="page_score" Title="Page Score" Tag="page_score" Converter="Int" Checked="true"/>
+        <Field Id="page_trust_score" Title="Page Trust Score" Tag="page_trust_score" Converter="Int" Checked="true"/>
+        <Field Id="response_code" Title="Response Code" Tag="response_code" Converter="Int" Checked="true"/>
+        <Field Id="source_size" Title="Source Size" Tag="source_size" Converter="Double" Checked="true"/>
+        <Field Id="external_num" Title="External Links" Tag="external_num" Converter="Int" Checked="true"/>
+        <Field Id="internal_num" Title="Internal Links" Tag="internal_num" Converter="Int" Checked="true"/>
+        <Field Id="redirect_url" Title="Redirect URL" Tag="redirect_url" Converter="String" Checked="true"/>
+        <Field Id="source_url" Title="Source URL" Tag="source_url" Converter="String" Checked="true"/>
+        <Field Id="source_title" Title="Source Title" Tag="source_title" Converter="String" Checked="true"/>
+        <Field Id="image_url" Title="Image URL" Tag="image_url" Converter="String" Checked="true"/>
+        <Field Id="target_url" Title="Target URL" Tag="target_url" Converter="String" Checked="true"/>
+        <Field Id="target_title" Title="Target Title" Tag="target_title" Converter="String" Checked="true"/>
+        <Field Id="anchor" Title="Anchor" Tag="anchor" Converter="String" Checked="true"/>
+        <Field Id="image_alt" Title="Image Alt" Tag="image_alt" Converter="String" Checked="true"/>
+        <Field Id="first_seen" Title="First Seen" Tag="first_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="nofollow" Title="Nofollow" Tag="nofollow" Converter="Bool" Checked="true"/>
+        <Field Id="form" Title="Form" Tag="form" Converter="Bool" Checked="true"/>
+        <Field Id="frame" Title="Frame" Tag="frame" Converter="Bool" Checked="true"/>
+        <Field Id="image" Title="Image" Tag="image" Converter="Bool" Checked="true"/>
+        <Field Id="sitewide" Title="Sitewide" Tag="sitewide" Converter="Bool" Checked="true"/>
+        <Field Id="newlink" Title="Newlink" Tag="newlink" Converter="Bool" Checked="true"/>
+        <Field Id="lostlink" Title="Lostlink" Tag="lostlink" Converter="Bool" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CompetitorsinOrganicSearch" Title="Competitors in Organic Search" HelpUrl="https://www.semrush.com/api-analytics/#domain_organic_organic" HelpText="Lists a domain’s competitors in organic search results.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="np_desc" Title="Common Keywords Desc"/>
+          <Item Id="cr_desc" Title="Competitor Relevance Desc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=domain_organic_organic
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+				&database=@Utils.UrlEncode(Model.Database)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="true"/>
+        <Field Id="Cr" Title="Competitor Relevance" Tag="Competitor Relevance" Converter="Double" Checked="true"/>
+        <Field Id="Np" Title="Common Keywords" Tag="Common Keywords" Converter="Int" Checked="true"/>
+        <Field Id="Or" Title="Organic Keywords" Tag="Organic Keywords" Converter="Int" Checked="true"/>
+        <Field Id="Ot" Title="Organic Traffic" Tag="Organic Traffic" Converter="Int" Checked="true"/>
+        <Field Id="Oc" Title="Organic Cost" Tag="Organic Cost" Converter="Double" Checked="true"/>
+        <Field Id="Ad" Title="Adwords Keywords" Tag="Adwords Keywords" Converter="Int" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CompetitorsinPaidSearch" Title="Competitors in Paid Search" HelpUrl="https://www.semrush.com/api-analytics/#domain_adwords_adwords" HelpText="Lists a domain’s competitors in paid search results.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="np_desc" Title="Common Keywords Desc"/>
+          <Item Id="cr_desc" Title="Competitor Relevance Desc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=domain_adwords_adwords
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+				&database=@Utils.UrlEncode(Model.Database)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="true"/>
+        <Field Id="Cr" Title="Competitor Relevance" Tag="Competitor Relevance" Converter="Double" Checked="true"/>
+        <Field Id="Np" Title="Common Keywords" Tag="Common Keywords" Converter="Int" Checked="true"/>
+        <Field Id="Ad" Title="Adwords Keywords" Tag="Adwords Keywords" Converter="Int" Checked="true"/>
+        <Field Id="At" Title="Adwords Traffic" Tag="Adwords Traffic" Converter="Int" Checked="true"/>
+        <Field Id="Ac" Title="Adwords Cost" Tag="Adwords Cost" Converter="Double" Checked="true"/>
+        <Field Id="Or" Title="Organic Keywords" Tag="Organic Keywords" Converter="Int" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="DomainPaidSearchKeywords" Title="Domain Paid Search Keywords" HelpUrl="https://www.semrush.com/api-analytics/#domain_adwords" HelpText="Lists keywords that bring users to a domain via Google's paid search results.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+			<Radio Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="new" Title="New"/>
+          <Item Id="lost" Title="Lost"/>
+          <Item Id="rise" Title="Rise"/>
+          <Item Id="fall" Title="Fall"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="tr_desc" Title="Traffic Desc"/>
+          <Item Id="tr_asc" Title="Traffic Asc"/>
+          <Item Id="po_desc" Title="Position Desc"/>
+          <Item Id="po_asc" Title="Position Asc"/>
+          <Item Id="tc_desc" Title="Competition Desc"/>
+          <Item Id="tc_asc" Title="Competition Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=domain_adwords
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+				&database=@Utils.UrlEncode(Model.Database)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+				@if(Model.KeywordType != "all")
+				{
+					@: &display_positions=@Model.KeywordType
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="true"/>
+        <Field Id="Pp" Title="Previous Position" Tag="Previous Position" Converter="Int" Checked="true"/>
+        <Field Id="Pd" Title="Position Difference" Tag="Position Difference" Converter="Int" Checked="true"/>
+				<Field Id="Ab" Title="Adwords Block" Tag="Adwords Block" Converter="String" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="true"/>
+        <Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+	      <Field Id="Tt" Title="Title" Tag="Title" Converter="String" Checked="true"/>
+	      <Field Id="Ds" Title="Description" Tag="Description" Converter="String" Checked="true"/>
+	      <Field Id="Vu" Title="Visible URL" Tag="Visible Url" Converter="String" Checked="true"/>
+        <Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="IndexedPages" Title="Indexed Pages" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_pages" HelpText="Shows indexed pages of the queried domain.">
+    <Parameters>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+			<Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+        <DataSource>
+          <Item Id="root_domain" Title="Root Domain"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="url" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="backlinks_num_desc" Title="Backlinks Desc"/>
+          <Item Id="backlinks_num_asc" Title="Backlinks Asc"/>
+          <Item Id="domains_num_desc" Title="Domains Desc"/>
+          <Item Id="domains_num_asc" Title="Domains Asc"/>
+          <Item Id="last_seen_desc" Title="Last Seen Desc"/>
+          <Item Id="last_seen_asc" Title="Last Seen Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/v1/?
+        type=backlinks_pages
+				&target_type=@Model.Type
+        &target=@Utils.UrlEncode(Utils.UrlProperty(Model.Target).Domain)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="source_url" Title="Source URL" Tag="source_url" Converter="String" Checked="true"/>
+        <Field Id="source_title" Title="Source Title" Tag="source_title" Converter="String" Checked="true"/>
+        <Field Id="backlinks_num" Title="Backlinks" Tag="backlinks_num" Converter="Int" Checked="true"/>
+        <Field Id="domains_num" Title="Domains" Tag="domains_num" Converter="Int" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="external_num" Title="External Links" Tag="external_num" Converter="Int" Checked="true"/>
+        <Field Id="internal_num" Title="Internal Links" Tag="internal_num" Converter="Int" Checked="true"/>
+        <Field Id="response_code" Title="Response Code" Tag="response_code" Converter="Int" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordOverview" Title="Keyword Overview" HelpUrl="https://www.semrush.com/api-analytics/#phrase_all" HelpText="Provides a summary of a keyword, including its volume, CPC, competition, and the number of results in all regional databases.">
+    <Parameters>
+      <Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_all
+        &phrase=@Utils.UrlEncode(Model.Phrase)
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="true"/>
+        <Field Id="Ph" Title="Phrase" Tag="Phrase" Converter="String" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="true"/>
+        <Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordDifficulty" Title="Keyword Difficulty" HelpUrl="https://www.semrush.com/api-analytics/#phrase_kdi" HelpText="Provides keyword difficulty, an index that helps to estimate how difficult it would be to seize competitors' positions in organic search within the Google's top 20 with an indicated search term.">
+    <Parameters>
+      <Text Id="Phrase" Title="Phrases (Up to 100 keywords separated by &quot;;&quot;) " Debug.DefaultValue="" Required="true" HelpUrl="" Multiline="true"/>
+      <Resource Id="SelectDatabase"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_kdi
+        &phrase=@(FetchPhrases())
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Kd" Title="Keyword Difficulty Index" Tag="Keyword Difficulty Index" Converter="Double" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="OrganicResults" Title="Organic Results" HelpUrl="https://www.semrush.com/api-analytics/#phrase_organic" HelpText="Lists domains that are ranking in Google's top 20 organic search results with a requested keyword.">
+    <Parameters>
+      <Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_organic
+        &phrase=@Utils.UrlEncode(Model.Phrase)
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+          @: &display_date=@Model.DisplayDate.AddDays(15 - Model.DisplayDate.Day).ToString("yyyyMMdd")
+        }
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="true"/>
+        <Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PaidResults" Title="Paid Results" HelpUrl="https://www.semrush.com/api-analytics/#phrase_adwords" HelpText="Lists domains that are ranking in Google's top 20 paid search results with a requested keyword.">
+    <Parameters>
+      <Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_adwords
+        &phrase=@Utils.UrlEncode(Model.Phrase)
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+          @: &display_date=@Model.DisplayDate.AddDays(15 - Model.DisplayDate.Day).ToString("yyyyMMdd")
+        }
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="true"/>
+        <Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PhraseMatchKeywords" Title="Phrase Match Keywords" HelpUrl="https://www.semrush.com/api-analytics/#phrase_fullsearch" HelpText="Offers a list of phrase matches and alternate search queries, including particular keywords or keyword expressions.">
+    <Parameters>
+      <Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="nq_desc" Title="Search Volume Desc"/>
+          <Item Id="nq_asc" Title="Search Volume Asc"/>
+          <Item Id="cp_desc" Title="CPC Desc"/>
+          <Item Id="cp_asc" Title="CPC Asc"/>
+          <Item Id="co_desc" Title="Competition Desc"/>
+          <Item Id="co_asc" Title="Competition Asc"/>
+          <Item Id="nr_desc" Title="Results Desc"/>
+          <Item Id="nr_asc" Title="Results Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_fullsearch
+        &phrase=@Utils.UrlEncode(Model.Phrase)
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="true"/>
+        <Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ReferringDomains" Title="Referring Domains" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refdomains" HelpText="Lists domains pointing to the queried domain, root domain, or URL.">
+    <Parameters>
+		<Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+			<Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+        <DataSource>
+          <Item Id="root_domain" Title="Root Domain"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="url" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="domain_score_desc" Title="Domain Score Desc"/>
+          <Item Id="domain_score_asc" Title="Domain Score Asc"/>
+          <Item Id="backlinks_desc" Title="Backlinks Desc"/>
+          <Item Id="backlinks_asc" Title="Backlinks Asc"/>
+          <Item Id="last_seen_desc" Title="Last Seen Desc"/>
+          <Item Id="last_seen_asc" Title="Last Seen Asc"/>
+          <Item Id="first_seen_desc" Title="First Seen Desc"/>
+          <Item Id="first_seen_asc" Title="First Seen Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/v1/?
+        type=backlinks_refdomains
+				&target_type=@Model.Type
+				&target=@Utils.UrlEncode(Utils.UrlProperty(Model.Target).Domain)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="domain_score" Title="Domain Score" Tag="domain_score" Converter="Double" Checked="true"/>
+        <Field Id="domain_trust_score" Title="Domain Trust Score" Tag="domain_trust_score" Converter="Double" Checked="true"/>
+        <Field Id="domain" Title="Domain" Tag="domain" Converter="String" Checked="true"/>
+        <Field Id="backlinks_num" Title="Backlinks" Tag="backlinks_num" Converter="Int" Checked="true"/>
+        <Field Id="ip" Title="IP" Tag="ip" Converter="String" Checked="true"/>
+        <Field Id="country" Title="Country" Tag="country" Converter="String" Checked="true"/>
+        <Field Id="first_seen" Title="First Seen" Tag="first_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ReferringIPs" Title="Referring IPs" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refips" HelpText="Lists IP addresses where backlinks to a domain, root domain, or URL are coming from.">
+    <Parameters>
+		<Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" HelpUrl=""/>
+			<Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+        <DataSource>
+          <Item Id="root_domain" Title="Root Domain"/>
+          <Item Id="domain" Title="Domain"/>
+          <Item Id="url" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="backlinks_num_desc" Title="Backlinks Desc"/>
+          <Item Id="backlinks_num_asc" Title="Backlinks Asc"/>
+          <Item Id="domains_num_desc" Title="Domains Desc"/>
+          <Item Id="domains_num_asc" Title="Domains Asc"/>
+          <Item Id="last_seen_desc" Title="Last Seen Desc"/>
+          <Item Id="last_seen_asc" Title="Last Seen Asc"/>
+          <Item Id="first_seen_desc" Title="First Seen Desc"/>
+          <Item Id="first_seen_asc" Title="First Seen Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/v1/?
+        type=backlinks_refips
+				&target_type=@Model.Type
+				&target=@Utils.UrlEncode(Utils.UrlProperty(Model.Target).Domain)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="ip" Title="IP" Tag="ip" Converter="String" Checked="true"/>
+        <Field Id="country" Title="Country" Tag="country" Converter="String" Checked="true"/>
+        <Field Id="domains_num" Title="Domains" Tag="domains_num" Converter="Int" Checked="true"/>
+        <Field Id="backlinks_num" Title="Backlinks" Tag="backlinks_num" Converter="Int" Checked="true"/>
+        <Field Id="first_seen" Title="First Seen" Tag="first_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RelatedKeywords" Title="Related Keywords" HelpUrl="https://www.semrush.com/api-analytics/#phrase_related" HelpText="Provides an extended list of related keywords, synonyms, and variations relevant to a queried term in a chosen database.">
+    <Parameters>
+      <Text Id="Phrase" Title="Keyword/Phrase" Debug.DefaultValue="" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+          <Item Id="nq_desc" Title="Search Volume Desc"/>
+          <Item Id="nq_asc" Title="Search Volume Asc"/>
+          <Item Id="cp_desc" Title="CPC Desc"/>
+          <Item Id="cp_asc" Title="CPC Asc"/>
+          <Item Id="co_desc" Title="Competition Desc"/>
+          <Item Id="co_asc" Title="Competition Asc"/>
+          <Item Id="nr_desc" Title="Results Desc"/>
+          <Item Id="nr_asc" Title="Results Asc"/>
+        </DataSource>
+      </Select>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=phrase_related
+        &phrase=@Utils.UrlEncode(Model.Phrase)
+        &key=@Model.ApiKey
+				&database=@Utils.UrlEncode(Model.Database)
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(Model.Sort != "default")
+				{
+					@: &display_sort=@Model.Sort
+				}
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="true"/>
+        <Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlOrganicSearchKeywords" Title="URL Organic Search Keywords" HelpUrl="https://www.semrush.com/api-analytics/#url_organic" HelpText="Lists keywords that bring users to a URL via Google's top 20 organic search results.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="http://nintendo.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=url_organic
+        &url=@Utils.UrlEncode(Model.Url)
+				&database=@Utils.UrlEncode(Model.Database)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="true"/>
+        <Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlPaidSearchKeywords" Title="URL Paid Search Keywords" HelpUrl="https://www.semrush.com/api-analytics/#url_adwords" HelpText="Lists keywords that bring users to a URL via Google's top 20 paid search results.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="http://nintendo.com" Required="true" HelpUrl=""/>
+      <Resource Id="SelectDatabase"/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/?
+        type=url_adwords
+        &url=@Utils.UrlEncode(Model.Url)
+				&database=@Utils.UrlEncode(Model.Database)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="true"/>
+        <Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="true"/>
+        <Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="true"/>
+        <Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="true"/>
+        <Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="true"/>
+        <Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="true"/>
+        <Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="true"/>
+        <Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="true"/>
+        <Field Id="Td" Title="Title" Tag="Title" Converter="String" Checked="true"/>
+        <Field Id="Description" Title="Description" Tag="Description" Converter="String" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<!--
+  <RestConnector Id="DisplayAdvertisers" Title="Display Advertisers" HelpUrl="https://www.semrush.com/api-analytics/#da_publisher_advertisers" HelpText="Lists advertisers whose display ads have appeared on a queried publisher’s website.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true" HelpUrl=""/>
+      <Text Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.semrush.com/analytics/da/v2/?
+        type=publisher_advertisers
+				&action=report
+        &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+        &key=@Model.ApiKey
+        &export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+      ]]>
+      </Fetch.Url>
+      <RequestHeaders>
+        <Header Name='User-Agent'>seotools-for-excel</Header>
+      </RequestHeaders>
+    </Fetch>
+    <Parse>
+      <Csv Separator=";" HasHeader="true">
+        <Field Id="domain" Title="Domain" Tag="domain" Converter="String" Checked="true"/>
+        <Field Id="ads_count" Title="Ads Count" Tag="ads_count" Converter="Int" Checked="true"/>
+        <Field Id="first_seen" Title="First Seen" Tag="first_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="last_seen" Title="Last Seen" Tag="last_seen" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
+        <Field Id="times_seen" Title="Times Seen" Tag="times_seen" Converter="Int" Checked="true"/>
+      </Csv>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	-->
+
+  <RazorFunctions>
+		<![CDATA[
+		string FetchPhrases()
+		{
+			string[] lines = ((string)Model.Phrase).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+			return string.Join(";",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+		}
+		]]>
+	</RazorFunctions>
+
 </Suite>
