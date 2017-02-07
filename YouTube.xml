@@ -3,7 +3,7 @@
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
-  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/youtube.readonly" StayAuthenticated="true"/>
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/youtube.force-ssl" StayAuthenticated="true"/>
 
   <Resources>
     <Resource Id="Fail">
@@ -66,41 +66,41 @@
 
   <RestConnector Id="VideoStatistics" Title="Video Statistics">
     <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="true"/>
+      <Text Id="VideoId" Title="Video Id or URL" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://www.googleapis.com/youtube/v3/videos?
-				id=@(Model.VideoId)
-				&part=statistics
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Favorites" Identifier="Favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue="0"/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="VideoDetails" Title="Video Details">
-    <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/videos?
-				id=@(Model.VideoId)
-				&part=snippet
+        https://www.googleapis.com/youtube/v3/videos?id=
+				@if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch/") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch/")+7).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch/")+7))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch?v=") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch?v=")+9).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch?v="))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch?v")+9))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/v/") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/v/")+3).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/v/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/v/")+3))
+				}
+				else
+				{
+					@(Model.VideoId)
+				}
+				&part=statistics,snippet
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -113,47 +113,38 @@
       <JsonPath Title="Created" Identifier="Views" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime"/>
       <JsonPath Title="Title" Identifier="Title" Expr="$.items.[snippet].[title]" Converter="String"/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String"/>
-      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String"/>
-      <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String"/>
+      <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Favorites" Identifier="Favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" Checked="false"/>
+      <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String"/>
+      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String"/>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true"/>
+      <Text Id="ChannelId" Title="Channel Id or URL" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://www.googleapis.com/youtube/v3/channels?
-				id=@(Model.ChannelId)
-				&part=statistics
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Title="Subscribers" Identifier="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Videos" Identifier="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="ChannelDetails" Title="Channel Details">
-    <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/channels?
-				id=@(Model.ChannelId)
-				&part=snippet
+        https://www.googleapis.com/youtube/v3/channels?id=
+				@if(Model.ChannelId.Contains("youtube") && Model.ChannelId.EndsWith("/"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9).TrimEnd('/'))
+				}
+				else if(Model.ChannelId.Contains("youtube"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9))
+				}
+				else
+				{
+					@(Model.ChannelId)
+				}
+				&part=statistics,snippet
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -166,6 +157,9 @@
       <JsonPath Title="Title" Identifier="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
+      <JsonPath Title="Subscribers" Identifier="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Videos" Identifier="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>
     </Parse>
   </RestConnector>
@@ -173,7 +167,7 @@
   <RestConnector Id="SearchVideos" Title="Videos Search">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
-      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="false">
         <DataSource>
           <Item Id="date" Title="Date"/>
           <Item Id="title" Title="Title"/>
@@ -182,7 +176,7 @@
           <Item Id="rating" Title="Rating"/>
         </DataSource>
       </Radio>
-      <Radio Id="Duration" Title="Duration" DefaultValue="any" Required="true">
+      <Radio Id="Duration" Title="Duration" DefaultValue="any" Required="false">
         <DataSource>
           <Item Id="any" Title="Any"/>
           <Item Id="long" Title="20 min+"/>
@@ -365,7 +359,7 @@
 
   <RestConnector Id="VideosFromChannel" Title="Channel Videos">
     <Parameters>
-      <Text DefaultValue="" Id="ChannelId" Title="ChannelId" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
+      <Text DefaultValue="" Id="ChannelId" Title="Channel Id or URL" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -379,7 +373,19 @@
         https://www.googleapis.com/youtube/v3/search?
 		    order=date
         &part=snippet
-        &channelId=@Utils.UrlEncode(Model.ChannelId)
+        &channelId=
+				@if(Model.ChannelId.Contains("youtube") && Model.ChannelId.EndsWith("/"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9).TrimEnd('/'))
+				}
+				else if(Model.ChannelId.Contains("youtube"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9))
+				}
+				else
+				{
+					@(Model.ChannelId)
+				}
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -412,7 +418,7 @@
 
   <RestConnector Id="VideosFromPlayList" Title="Playlist Videos">
     <Parameters>
-      <Text DefaultValue="" Id="Query" Title="Query" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L"/>
+      <Text DefaultValue="" Id="PlayListId" Title="PlayList Id" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L"/>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -425,7 +431,7 @@
         <![CDATA[
         https://www.googleapis.com/youtube/v3/playlistItems?
         &part=snippet
-        &playlistId=@Utils.UrlEncode(Model.Query)
+        &playlistId=@Utils.UrlEncode(Model.PlayListId)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -452,6 +458,146 @@
         <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="VideoComments" Title="Video Comments">
+    <Parameters>
+      <Text DefaultValue="" Id="VideoId" Title="Video Id or URL" Required="true" Debug.DefaultValue="MbHQo4KkBWc"/>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="time" Title="Time"/>
+          <Item Id="relevance" Title="Relevance"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="">
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/youtube/v3/commentThreads?videoId=
+				@if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch/") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch/")+7).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch/")+7))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch?v=") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch?v=")+9).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/watch?v="))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/watch?v")+9))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/v/") && Model.VideoId.EndsWith("/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/v/")+3).TrimEnd('/'))
+				}
+				else if(Model.VideoId.Contains("youtube") && Model.VideoId.Contains("/v/"))
+				{
+					@(Model.VideoId.Substring(Model.VideoId.IndexOf("/v/")+3))
+				}
+				else
+				{
+					@(Model.VideoId)
+				}
+				&part=snippet
+				&order=@(Model.Sorting)
+				&textFormat=plainText
+        &maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@Model.NextPageToken
+        }
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items.*">
+        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ChannelComments" Title="Channel Comments">
+    <Parameters>
+      <Text DefaultValue="" Id="ChannelId" Title="Channel Id or URL" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w"/>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="time" Title="Time"/>
+          <Item Id="relevance" Title="Relevance"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch Url="">
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/youtube/v3/commentThreads?channelId=
+				@if(Model.ChannelId.Contains("youtube") && Model.ChannelId.EndsWith("/"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9).TrimEnd('/'))
+				}
+				else if(Model.ChannelId.Contains("youtube"))
+				{
+					@(Model.ChannelId.Substring(Model.ChannelId.IndexOf("/channel/")+9))
+				}
+				else
+				{
+					@(Model.ChannelId)
+				}
+				&part=snippet
+				&order=@(Model.Sorting)
+				&textFormat=plainText
+        &maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@Model.NextPageToken
+        }
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items.*">
+        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
   </RestConnector>
