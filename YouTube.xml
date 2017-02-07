@@ -13,26 +13,26 @@
       </Fail>
     </Resource>
   </Resources>
-  
+
   <RazorFunctions>
     <![CDATA[
-    
-    string[] _SelectedDimensions() { 
+
+    string[] _SelectedDimensions() {
       string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
       return ((ResultField[])Model.Headers)
         .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
         .Select(e => e.Identifier)
         .ToArray();
     }
-    
+
     string SelectedDimensions() {
       return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
     }
-    
-    string DimensionIndex(string dimension) { 
+
+    string DimensionIndex(string dimension) {
       return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
     }
-    
+
     string _RenderOperator(string op)
     {
 	    return op == "==" ? "equals" :
@@ -48,9 +48,9 @@
 	    var filters = lines
 		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
 		    .Where(e => e.Success)
-		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}", 
-			    e.Groups[1].Value.Trim(), 
-			    _RenderOperator(e.Groups[2].Value.Trim()), 
+		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}",
+			    e.Groups[1].Value.Trim(),
+			    _RenderOperator(e.Groups[2].Value.Trim()),
 			    e.Groups[3].Value.Trim()));
 
 	    if(filters.Any())
@@ -60,7 +60,7 @@
 
 	    return "";
     }
-    
+
    ]]>
   </RazorFunctions>
 
@@ -80,8 +80,8 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>			
-    </Fetch>		
+      </HttpSettings>
+    </Fetch>
     <Parse>
       <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue="0"/>
@@ -90,7 +90,7 @@
       <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
-  
+
   <RestConnector Id="VideoDetails" Title="Video Details">
     <Parameters>
       <Text Id="VideoId" Title="Video Id" Required="true"/>
@@ -107,7 +107,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>			
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Title="Created" Identifier="Views" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime"/>
@@ -115,9 +115,9 @@
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String"/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String"/>
       <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String"/>
-      <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" Checked="false"/>	
+      <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" Checked="false"/>
     </Parse>
-  </RestConnector> 
+  </RestConnector>
 
   <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
     <Parameters>
@@ -135,8 +135,8 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>			
-    </Fetch>		
+      </HttpSettings>
+    </Fetch>
     <Parse>
       <JsonPath Title="Subscribers" Identifier="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Videos" Identifier="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
@@ -160,16 +160,16 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>			
-    </Fetch>		
+      </HttpSettings>
+    </Fetch>
     <Parse>
       <JsonPath Title="Title" Identifier="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
-      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>			
+      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>
     </Parse>
-  </RestConnector>	
-  
+  </RestConnector>
+
   <RestConnector Id="SearchVideos" Title="Videos Search">
     <Parameters>
       <Text DefaultValue="" Id="Query" Title="Query" Required="true"/>
@@ -197,7 +197,7 @@
         <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
-    </Paging>	  
+    </Paging>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
@@ -206,7 +206,7 @@
         &type=video
 		    &order=@(Model.Sorting)
 		    &videoDuration=@(Model.Duration)
-		    &videoDefinition=@(Model.videoDefinition ? "high" : "any")		
+		    &videoDefinition=@(Model.videoDefinition ? "high" : "any")
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -219,7 +219,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>			
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -233,7 +233,7 @@
         <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/> 				
+        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
@@ -271,7 +271,7 @@
         https://www.googleapis.com/youtube/v3/search?´
         &part=snippet
         &type=channel
-		    &order=@(Model.Sorting)		
+		    &order=@(Model.Sorting)
 		    &channelType=@(Model.ChannelType)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
@@ -285,7 +285,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>				
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -343,7 +343,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>				
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -365,7 +365,7 @@
 
   <RestConnector Id="VideosFromChannel" Title="Channel Videos">
     <Parameters>
-      <Text DefaultValue="" Id="Query" Title="Query" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
+      <Text DefaultValue="" Id="ChannelId" Title="ChannelId" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -379,7 +379,7 @@
         https://www.googleapis.com/youtube/v3/search?
 		    order=date
         &part=snippet
-        &channelId=@Utils.UrlEncode(Model.Query)
+        &channelId=@Utils.UrlEncode(Model.ChannelId)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -391,7 +391,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>				
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -437,7 +437,7 @@
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
-      </HttpSettings>				
+      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
