@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="eBay" RequireVersion="6.1.2" Id="EBay" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/eBay.xml" HelpUrl="http://seotoolsforexcel.com/eBay" HelpText="Documentation">
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/eBay/">
+    <Text Id="AppId" Title="App Id" Required="true" HelpUrl="http://seotoolsforexcel.com/eBay/"/>
+  </Settings>
+	
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <RestConnector Id="ItemsSearch" Title="Items Search" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
+    </Parameters>
+    <Paging PageSize="25"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					http://svcs.ebay.com/services/search/FindingService/v1
+					?OPERATION-NAME=findItemsByKeywords
+					&SERVICE-VERSION=1.0.0
+					&SECURITY-APPNAME=@(Model.AppId)
+					&RESPONSE-DATA-FORMAT=JSON
+					&REST-PAYLOAD&
+					keywords=@Utils.UrlEncode(Model.Query)
+					&paginationInput.entriesPerPage=@(Model.PageCursor.NextTake)
+					&paginationInput.pageNumber=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>	
+      <JsonPath Expr="$.findItemsByKeywordsResponse[0].searchResult[0].item[*]">
+        <JsonPath Expr="itemId[0]" Id="ItemId" Title="Item Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="title[0]" Id="Title" Title="Title" Converter="String" HelpText=""/>
+        <JsonPath Expr="primaryCategory[0].categoryId[0]" Id="CategoryId" Title="Category Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="primaryCategory[0].categoryName[0]" Id="CategoryName" Title="Category Name" Converter="String" HelpText=""/>				
+        <JsonPath Expr="viewItemURL[0]" Id="ItemUrl" Title="Item URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="galleryURL[0]" Id="GalleryUrl" Title="Gallery URL" Converter="String" HelpText=""/>				
+        <JsonPath Expr="paymentMethod[0]" Id="PaymentMethod" Title="Payment Method" Converter="String" HelpText=""/>
+        <JsonPath Expr="autoPay[0]" Id="AutoPay" Title="AutoPay" Converter="String" HelpText=""/>
+        <JsonPath Expr="postalCode[0]" Id="PostalCode" Title="Postal Code" Converter="Int" HelpText=""/>
+        <JsonPath Expr="location[0]" Id="Location" Title="Location" Converter="String" HelpText=""/>
+        <JsonPath Expr="country[0]" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].sellingState[0]" Id="SellingStatus" Title="SellingStatus" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].currentPrice[0].__value__" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].currentPrice[0].@@currencyId" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].bestOfferEnabled[0]" Id="BestOffer" Title="Best Offer" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].buyItNowAvailable[0]" Id="BuyItNow" Title="Buy It Now" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].startTime[0]" Id="StartTime" Title="Start Time" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].endTime[0]" Id="EndTime" Title="End Time" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].listingType[0]" Id="ListingType" Title="Listing Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="returnsAccepted[0]" Id="ReturnsAccepted" Title="Returns Accepted" Converter="String" HelpText=""/>
+        <JsonPath Expr="topRatedListing[0]" Id="TopRatedListing" Title="Top Rated Listing" Converter="String" HelpText=""/>
+      </JsonPath>				
+        <JsonPath Expr="$.findItemsByKeywordsResponse[0].paginationOutput[0].totalEntries[0]" Id="TotalResults" Title="Top Results" Converter="Long" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>
