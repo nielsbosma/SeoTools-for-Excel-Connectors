@@ -7,23 +7,75 @@
 	
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+  <Resources>
+    <Resource Id="GlobalIds">
+		 <Item Id="EBAY-AT" Title="Austria"/>
+		 <Item Id="EBAY-AU" Title="Australia"/>
+		 <Item Id="EBAY-CH" Title="Switzerland"/>
+		 <Item Id="EBAY-DE" Title="Germany"/>
+		 <Item Id="EBAY-ENCA" Title="Canada (English)"/>
+		 <Item Id="EBAY-ES" Title="Spain"/>
+		 <Item Id="EBAY-FR" Title="France"/>
+		 <Item Id="EBAY-FRBE" Title="Belgium (French)"/>
+		 <Item Id="EBAY-FRCA" Title="Canada (French)"/>
+		 <Item Id="EBAY-GB" Title="UK"/>
+		 <Item Id="EBAY-HK" Title="Hong Kong"/>
+		 <Item Id="EBAY-IE" Title="Ireland"/>
+		 <Item Id="EBAY-IN" Title="India"/>
+		 <Item Id="EBAY-IT" Title="Italy"/>
+		 <Item Id="EBAY-MOTOR" Title="Motors"/>
+		 <Item Id="EBAY-MY" Title="Malaysia"/>
+		 <Item Id="EBAY-NL" Title="Netherlands"/>
+		 <Item Id="EBAY-NLBE" Title="Belgium (Dutch)"/>
+		 <Item Id="EBAY-PH" Title="Philippines"/>
+		 <Item Id="EBAY-PL" Title="Poland"/>
+		 <Item Id="EBAY-SG" Title="Singapore"/>
+		 <Item Id="EBAY-US" Title="United States"/>
+    </Resource>
+    <Resource Id="Sortings">
+		 <Item Id="BestMatch" Title="Best Match"/>
+		 <Item Id="BidCountFewest" Title="Fewest Bids (Requires 'Auctions Only')"/>
+		 <Item Id="BidCountMost" Title="Most Bids (Requires 'Auctions Only')"/>
+		 <Item Id="CurrentPriceHighest" Title="Current Highest Price"/>
+		 <Item Id="EndTimeSoonest" Title="Soonest End Time"/>
+		 <Item Id="PricePlusShippingHighest" Title="Highest Price+Shipping"/>
+		 <Item Id="PricePlusShippingLowest" Title="Lowest Price+Shipping"/>
+		 <Item Id="StartTimeNewest" Title="Newest Start Time"/>
+    </Resource>		
+  </Resources>
+	
   <RestConnector Id="ItemsSearch" Title="Items Search" Hidden="false">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
+      <Checkbox Id="AuctionsListingOnly" Title="Auctions Only" DefaultValue="false"/>
+      <Select Id="GlobalId" Title="eBay Site" Required="false" DefaultValue="EBAY-US">
+        <DataSource>
+          <Resource Id="GlobalIds"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sort Results by" Required="false" DefaultValue="BestMatch">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>			
     </Parameters>
     <Paging PageSize="25"/>
-    <Fetch>
+    <Fetch>	
       <Fetch.Url>
         <![CDATA[
 					http://svcs.ebay.com/services/search/FindingService/v1
 					?OPERATION-NAME=findItemsByKeywords
-					&SERVICE-VERSION=1.0.0
-					&SECURITY-APPNAME=@(Model.AppId)
-					&RESPONSE-DATA-FORMAT=JSON
-					&REST-PAYLOAD&
-					keywords=@Utils.UrlEncode(Model.Query)
+					&keywords=@Utils.UrlEncode(Model.Query)
 					&paginationInput.entriesPerPage=@(Model.PageCursor.NextTake)
 					&paginationInput.pageNumber=@(Model.PageCursor.Page+1)
+					&GLOBAL-ID=@(Model.GlobalId)
+					&RESPONSE-DATA-FORMAT=JSON
+					&SECURITY-APPNAME=@(Model.AppId)
+					@if(Model.AuctionsListingOnly == true)
+					{
+						@: &itemFilter.name=ListingType&itemFilter.value=Auction
+					}
+					&sortOrder=@(Model.Sorting)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -41,6 +93,7 @@
         <JsonPath Expr="location[0]" Id="Location" Title="Location" Converter="String" HelpText=""/>
         <JsonPath Expr="country[0]" Id="Country" Title="Country" Converter="String" HelpText=""/>
         <JsonPath Expr="sellingStatus[0].sellingState[0]" Id="SellingStatus" Title="SellingStatus" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].bidCount[0]" Id="BidCount" Title="Bid Count" Converter="Int" HelpText="" DefaultValue="0"/>				
         <JsonPath Expr="sellingStatus[0].currentPrice[0].__value__" Id="Price" Title="Price" Converter="Double" HelpText=""/>
         <JsonPath Expr="sellingStatus[0].currentPrice[0].@@currencyId" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
         <JsonPath Expr="listingInfo[0].bestOfferEnabled[0]" Id="BestOffer" Title="Best Offer" Converter="String" HelpText=""/>
@@ -54,7 +107,7 @@
         <JsonPath Expr="$.findItemsByKeywordsResponse[0].paginationOutput[0].totalEntries[0]" Id="TotalResults" Title="Top Results" Converter="Long" HelpText=""/>
     </Parse>
     <Fail>
-      <JsonPath Expr="$.error.message"/>
+      <JsonPath Expr="$.findItemsByKeywordsResponse[0].errorMessage[0].error[0].message[0]"/>
     </Fail>
   </RestConnector>
 
