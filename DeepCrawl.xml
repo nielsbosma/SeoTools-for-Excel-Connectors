@@ -11,6 +11,15 @@
   <Resources>
     <Resource Id="SortProjects">
 		 <Item Id="-finished_at" Title="Last Crawl Date"/>
+		 <Item Id="finished_at" Title="Earliest Crawl Date"/>
+		 <Item Id="name" Title="Name (A-Z)"/>
+		 <Item Id="-name" Title="Name (Z-A)"/>
+		 <Item Id="site_primary" Title="URL (A-Z)"/>
+		 <Item Id="-site_primary" Title="URL (Z-A)"/>
+    </Resource>
+    <Resource Id="SortCrawls">
+		 <Item Id="-finished_at" Title="Last Crawl Date"/>
+		 <Item Id="finished_at" Title="Earliest Crawl Date"/>
 		 <Item Id="name" Title="Name (A-Z)"/>
 		 <Item Id="-name" Title="Name (Z-A)"/>
 		 <Item Id="site_primary" Title="URL (A-Z)"/>
@@ -41,7 +50,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="ListAccounts" Title="List Accounts" HelpUrl="http://api-docs.deepcrawl.com/#accounts-accounts-get" Hidden="false">
+  <RestConnector Id="ListAccounts" Title="List Accounts" HelpUrl="http://api-docs.deepcrawl.com/#accounts-accounts-get" Hidden="true">
 		<Prepare>
 			<Connector Id="GenerateToken"/>
 		</Prepare>
@@ -65,11 +74,11 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="ListProjectsHidden" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get" Hidden="true">
+  <RestConnector Id="ListProjectsHidden" HelpUrl="" Hidden="false">
 		<Prepare>
-			<Connector Id="GenerateToken"/>		
+			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
-		</Prepare>		
+		</Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -81,20 +90,94 @@
         https://prod-1-dc-api-oopeix3r.deepcrawl.com/
 				accounts/@(Model.AccountId)
 				/projects
+				?&per_page=200
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="ProjectId" Title="Project Id" Converter="Int" HelpText=""/>						
-        <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>			
+        <JsonPath Expr="id" Id="ProjectId" Title="Project Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="errors.message"/>
     </Fail>
   </RestConnector>
-	
+
+  <RestConnector Id="ListCrawlsHidden" HelpUrl="">
+		<Parameters>
+      <Text Id="ProjectIdFilter" Title="Filter Crawl by Project" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+			</Parameters>
+		<Prepare>
+			<Connector Id="GenerateToken"/>
+			<Connector Id="ListAccounts"/>
+		</Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/
+				accounts/@(Model.AccountId)
+				/projects/@(Model.ProjectIdFilter)
+				/crawls
+				?sort=-finished_at
+				&per_page=200			
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="CrawlId" Title="Crawl Id" Converter="Int"/>
+        <JsonPath Expr="crawling_at" Id="CrawlingAt" Title="Crawling At" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ListReportsHidden" HelpUrl="">
+		<Parameters>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="CrawlIdFilter" Title="Select a Crawl" DefaultValue="" Required="true" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
+		</Parameters>
+		<Prepare>
+			<Connector Id="GenerateToken"/>
+			<Connector Id="ListAccounts"/>
+		</Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/
+				accounts/@(Model.AccountId)
+				/projects/@(Model.ProjectIdFilter)
+				/crawls/@(Model.CrawlIdFilter)
+				/reports
+				?per_page=200
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ReportId" Title="Report Id" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="report_template" Id="ReportName" Title="Report Name" Converter="String" HelpText="" DefaultValue=" "/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>	
+
   <RestConnector Id="ListProjects" Title="List Projects" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get">
 		<Parameters>
       <Select Id="Sorting" Title="Sort Projects by" Required="false" DefaultValue="-finished_at">
@@ -104,9 +187,10 @@
       </Select>
 			</Parameters>
 		<Prepare>
-			<Connector Id="GenerateToken"/>		
+			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
-		</Prepare>		
+		</Prepare>
+    <Paging PageSize="200" EvenPages="false" MaxTake="2000"/>		
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -119,6 +203,8 @@
 				accounts/@(Model.AccountId)
 				/projects
 				?sort=@(Model.Sorting)
+				&per_page=@(Model.PageCursor.NextTake)
+				&page=@(Model.PageCursor.Page+1				
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -127,7 +213,7 @@
         <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
         <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
         <JsonPath Expr="_crawls_finished_last_finished_at" Id="LastCrawlDate" Title="Last Crawl Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="crawls_count" Id="CrawlCount" Title="Crawl Count" Converter="Int" HelpText=""/>				
+        <JsonPath Expr="crawls_count" Id="CrawlCount" Title="Crawl Count" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -137,39 +223,142 @@
 
   <RestConnector Id="ListCrawls" Title="List Crawls" HelpUrl="http://api-docs.deepcrawl.com/#crawls-crawls-get">
 		<Parameters>
-      <Text Id="ProjectIdFilter" Title="Filter Crawl by Project" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>		
-      <Select Id="Sorting" Title="Sort Projects by" Required="false" DefaultValue="-finished_at">
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Select Id="Sorting" Title="Sort Crawls by" Required="false" DefaultValue="-finished_at">
         <DataSource>
-          <Resource Id="SortProjects"/>
+          <Resource Id="SortCrawls"/>
         </DataSource>
       </Select>
-			</Parameters>
+		</Parameters>
 		<Prepare>
-			<Connector Id="GenerateToken"/>		
+			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
-		</Prepare>		
+		</Prepare>
+    <Paging PageSize="200" EvenPages="false" MaxTake="2000"/>		
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='X-Auth-Token'>@(Model.Token)</Header>
         </RequestHeaders>
-      </HttpSettings>/projects/project_id/crawls
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
         https://prod-1-dc-api-oopeix3r.deepcrawl.com/
 				accounts/@(Model.AccountId)
 				/projects/@(Model.ProjectIdFilter)
 				/crawls
+				?sort=@(Model.Sorting)
+				&per_page=@(Model.PageCursor.NextTake)
+				&page=@(Model.PageCursor.Page+1				
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="finished_at" Id="DateFinished" Title="Date Finished" Converter="String" HelpText="" DefaultValue=" "/>			
-        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="" DefaultValue=" "/>	
-        <JsonPath Expr="all_pages_total" Id="UrlsCrawled" Title="URLs Crawled" Converter="Int" HelpText="" DefaultValue=" "/>		
-        <JsonPath Expr="uncrawled_urls_total" Id="Uncrawled" Title="Uncrawled" Converter="Int" HelpText="" DefaultValue=" "/>		
+        <JsonPath Expr="finished_at" Id="DateFinished" Title="Date Finished" Converter="String" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="all_pages_total" Id="UrlsCrawled" Title="URLs Crawled" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="uncrawled_urls_total" Id="Uncrawled" Title="Uncrawled" Converter="Int" HelpText="" DefaultValue=" "/>
         <JsonPath Expr="stats_crawl_levels[(@@.length-1)].level" Id="Depth" Title="Depth" Converter="Int" HelpText="" DefaultValue=" "/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="CrawlSummary" Title="Crawl Summary" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
+		<Parameters>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="CrawlIdFilter" Title="Select a Crawl" DefaultValue="" Required="true" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
+		</Parameters>
+		<Prepare>
+			<Connector Id="GenerateToken"/>
+			<Connector Id="ListAccounts"/>
+		</Prepare>
+    <Paging PageSize="200" EvenPages="false" MaxTake="2000"/>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/
+				accounts/@(Model.AccountId)
+				/projects/@(Model.ProjectIdFilter)
+				/crawls/@(Model.CrawlIdFilter)
+				/reports
+				?per_page=@(Model.PageCursor.NextTake)
+				&page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ReportId" Title="Report Id" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="report_template" Id="ReportName" Title="Report Name" Converter="String" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="report_type" Id="ReportType" Title="Report Type" Converter="String" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="total_rows" Id="All" Title="All" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="change_weight" Id="Change" Title="Change" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="added_total" Id="Added" Title="Added" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="removed_total" Id="Removed" Title="Removed" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="missing_total" Id="Missing" Title="Missing" Converter="Int" HelpText="" DefaultValue=" "/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+	
+  <RestConnector Id="ReportDetails" Title="Report Details" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
+		<Parameters>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" DefaultValue="" Debug.DefaultValue="76280" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="CrawlIdFilter" Title="Select a Crawl" DefaultValue="" Required="true" Debug.DefaultValue="573647" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
+      <Text Id="ReportIdFilter" Title="Select a Report" DefaultValue="" Required="true" Debug.DefaultValue="140885524" Select.Connector="ListReportsHidden" Select.IdField="ReportId" Select.TitleField="ReportName"/>
+      <Text Id="UrlFilter" Title="URL Filter" DefaultValue="" Debug.DefaultValue="" Required="false" HelpText="Filter Results by URL string"/>			
+      <Radio Id="FilterType" Title="Filter String Type" DefaultValue="name_cont" Required="false">
+        <DataSource>
+          <Item Id="cont" Title="Contains"/>
+          <Item Id="eql" Title="Equals"/>
+        </DataSource>
+      </Radio>
+		</Parameters>			
+		<Prepare>
+			<Connector Id="GenerateToken"/>
+			<Connector Id="ListAccounts"/>
+		</Prepare>
+    <Paging PageSize="200" MaxTake="2000"/>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='X-Auth-Token'>@(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://prod-1-dc-api-oopeix3r.deepcrawl.com/
+				accounts/@(Model.AccountId)
+				/projects/@(Model.ProjectIdFilter)
+				/crawls/@(Model.CrawlIdFilter)
+				/reports/@(Model.ReportIdFilter)
+				/report_rows?
+				@if(Model.UrlFilter != "")
+				{
+					@: &q[url_@(Model.FilterType)
+					@: ]=@Utils.UrlEncode(Model.UrlFilter)
+				}
+				&per_page=@(Model.PageCursor.NextTake)
+				&page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="data.url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="data.found_at_url" Id="FoundatUrl" Title="Found at URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="data.level" Id="Level" Title="Level" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -185,8 +374,6 @@
 			return AuthString;
     }
     ]]>
-		
-		
   </RazorFunctions>
 
 </Suite>
@@ -197,7 +384,12 @@ Issues:
 - Status not available as value in projects
 - URLs not available as value in projects
 - Primay Pages not available as value in crawls
+- URLs not available as sorting in crawls
+- Primary Pages not available as sorting in crawls
+- Report Trend requires crawl id input. API doesn't support "every crawl" based on project id.
 
 Questions:
 - What is Crawl Sources?
+- Is Crawl Category same as Crawl Type?
+- Crawl Summary no sorting options?
 -->
