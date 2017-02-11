@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Klout" Title="Klout" Id="Klout" RequireVersion="6.1.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Klout.xml" HelpUrl="http://seotoolsforexcel.com/Klout/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="">
+    <Text Id="APIKey" Title="API Key" Required="true" HelpUrl=""/>
+    <Text Id="MyTwitterId" Title="My Twitter Account Id" Required="false" HelpUrl=""/>
+  </Settings>
+
+  <RestConnector Id="TwitterIdCode" Title="TwitterIdCode" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/identity.json/tw/@(Model.MyTwitterId)?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="id" Id="TwitterScoreId" Title="Twitter Score Id" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Score" Title="Score &amp; Trend">
+		<Prepare>
+			<Connector Id="TwitterIdCode"/>
+		</Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/score?&key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+			<JsonPath Expr="scoreDelta.dayChange" Id="DayChange" Title="Daily Change" Converter="Double" HelpText=""/>
+			<JsonPath Expr="scoreDelta.weekChange" Id="WeekChange" Title="Weekly Change" Converter="Double" HelpText=""/>
+			<JsonPath Expr="scoreDelta.monthChange" Id="MonthChange" Title="Monthly Change" Converter="Double" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Influence" Title="Influence">
+    <Parameters>
+      <Radio Id="Type" Title="Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="myInfluencers" Title="Influencers"/>
+          <Item Id="myInfluencees" Title="Influencees"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+		<Prepare>
+			<Connector Id="TwitterIdCode"/>
+		</Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/influence?&key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.@(Model.Type)[*]">
+				<JsonPath Expr="entity.payload.nick" Id="Nick" Title="Nick" Converter="String" HelpText=""/>
+				<JsonPath Expr="entity.payload.score.score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+				<JsonPath Expr="entity.payload.scoreDeltas.dayChange" Id="DayChange" Title="Daily Change" Converter="Double" HelpText=""/>
+				<JsonPath Expr="entity.payload.scoreDeltas.weekChange" Id="WeekChange" Title="Weekly Change" Converter="Double" HelpText=""/>
+				<JsonPath Expr="entity.payload.scoreDeltas.monthChange" Id="MonthChange" Title="Monthly Change" Converter="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Topics" Title="Topics">
+		<Prepare>
+			<Connector Id="TwitterIdCode"/>
+		</Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/topics?&key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+				<JsonPath Expr="displayName" Id="Topic" Title="Topic" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>
