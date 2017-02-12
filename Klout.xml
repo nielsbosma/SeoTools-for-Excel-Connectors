@@ -5,19 +5,38 @@
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Klout/">
     <Text Id="APIKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
-    <Text Id="MyTwitterId" Title="My Twitter Account Id" Required="false" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
+    <Text Id="MyTwitterUsername" Title="My Twitter Username" Required="false" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
   </Settings>
 
-  <RestConnector Id="TwitterIdCode" Title="TwitterIdCode" Hidden="true">
+  <RestConnector Id="KloutIdDefaultFetcher" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://api.klout.com/v2/identity.json/tw/@(Model.MyTwitterId)?key=@(Model.APIKey)
+        http://api.klout.com/v2/identity.json/twitter?screenName=@(Model.MyTwitterUsername)&key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="id" Id="TwitterScoreId" Title="Twitter Score Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="id" Id="KloutIdDefault" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KloutIdfromCustomAccount" Title="Klout Id from Custom Account" Hidden="false">
+    <Parameters>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/identity.json/twitter?screenName=@(Model.TwitterUsername)&key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="id" Id="KloutId" Title="Klout Id" Converter="String" HelpText=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="description"/>
@@ -25,13 +44,25 @@
   </RestConnector>
 
   <RestConnector Id="Score" Title="Score and Trend">
+    <Parameters>
+      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
+    </Parameters>
 		<Prepare>
-			<Connector Id="TwitterIdCode"/>
+			<Connector Id="KloutIdDefaultFetcher"/>
 		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/score?&key=@(Model.APIKey)
+        http://api.klout.com/v2/user.json/
+				@if(Model.CustomKloutId != "")
+				{
+					@(Model.CustomKloutId)
+				}
+				else
+				{
+					@(Model.KloutIdDefault)
+				}
+				/score?key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -48,6 +79,7 @@
 
   <RestConnector Id="Influence" Title="Influence">
     <Parameters>
+      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
       <Radio Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="myInfluencers" Title="Who influences the user"/>
@@ -56,12 +88,21 @@
       </Radio>
     </Parameters>
 		<Prepare>
-			<Connector Id="TwitterIdCode"/>
+			<Connector Id="KloutIdDefaultFetcher"/>
 		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/influence?&key=@(Model.APIKey)
+        http://api.klout.com/v2/user.json/
+				@if(Model.CustomKloutId != "")
+				{
+					@(Model.CustomKloutId)
+				}
+				else
+				{
+					@(Model.KloutIdDefault)
+				}
+				/influence?key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -80,13 +121,25 @@
   </RestConnector>
 
   <RestConnector Id="Topics" Title="Topics">
+    <Parameters>
+      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
+    </Parameters>
 		<Prepare>
-			<Connector Id="TwitterIdCode"/>
+			<Connector Id="KloutIdDefaultFetcher"/>
 		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://api.klout.com/v2/user.json/@(Model.TwitterScoreId)/topics?&key=@(Model.APIKey)
+        http://api.klout.com/v2/user.json/
+				@if(Model.CustomKloutId != "")
+				{
+					@(Model.CustomKloutId)
+				}
+				else
+				{
+					@(Model.KloutIdDefault)
+				}
+				/topics?key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
     </Fetch>
