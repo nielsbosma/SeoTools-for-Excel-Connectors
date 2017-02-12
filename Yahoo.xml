@@ -19,7 +19,7 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
       <Radio Id="Period" Title="Period" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="Anytime"/>
@@ -73,7 +73,7 @@
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="aftonbladet.se" Required="false"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
       <Radio Id="Period" Title="Period" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="Anytime"/>
@@ -163,6 +163,28 @@
         <Regex Expr="&lt;span&gt;([0-9,\\. ]+) result(s)?&lt;/span&gt;" IgnoreCase="true" Converter="Int"/>
         <XPath Expr="count(//div[@@id = 'web']/ol/li)" Converter="Int"/>
       </Try>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="RelatedSearches" Title="Related Searches" HelpText="Returns Related Search Suggestions">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://se.search.yahoo.com/search?
+				p=@Utils.UrlEncode(Model.Query)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//ul[@@class='compDlink']/li">
+        <XPath Id="Suggestions" Title="Suggestions" Expr="span" Converter="String"/>
+      </XPath>
     </Parse>
   </RestConnector>
 
