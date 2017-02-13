@@ -1,8 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite Category="SEO" Title="Majestic" Id="Majestic" RequireVersion="6.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Majestic.xml" HelpUrl="http://seotoolsforexcel.com/Majestic/" HelpText="Documentation">
-
-  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.8/dialog/oauth?client_id=658289924351209&amp;response_type=token&amp;scope=ads_read,ads_management&amp;redirect_uri={0}"/>
-
+  
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpText="Whats this?" HelpUrl="http://seotoolsforexcel.com/">
@@ -18,6 +16,7 @@
       <Item Id="refdomains" Title="Refdomains"/>
       <Item Id="linksfromrefdomains" Title="Links from Refdomains"/>
     </Resource>
+    
     <Resource Id="OrderRefDomains">
       <Item Id="default" Title="Default"/>	
       <Item Id="0" Title="Number of Matches"/>
@@ -29,8 +28,8 @@
       <Item Id="6" Title="Root Domain First Crawled"/>
       <Item Id="7" Title="Last URL Crawl"/>
       <Item Id="8" Title="Domain IP Adress"/>
-      <Item Id="9" Title="Domain C-class subnet"/>
-      <Item Id="10" Title="Country code"/>
+      <Item Id="9" Title="Domain C-class Subnet"/>
+      <Item Id="10" Title="Country Code"/>
       <Item Id="11" Title="Matched Links"/>
     </Resource>
   </Resources>
@@ -45,12 +44,13 @@
         </DataSource>
       </Radio>
     </Parameters>
+    <Batch Parameter="Urls" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
 					https://api.majestic.com/api/json?app_api_key=@(Model.ApiToken)
 					&cmd=GetIndexItemInfo
-					&@FetchIndexUrls()
+					&@FetchIndexUrls2()
 					&datasource=@(Model.Datasource)
 				]]>
       </Fetch.Url>
@@ -105,7 +105,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="BackLinks" Title="BackLinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-back-link-data.shtml">
+  <RestConnector Id="Backlinks" Title="Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-back-link-data.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
       <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
@@ -651,21 +651,31 @@
 
   <RazorFunctions>
 		<![CDATA[
+    
 		string FetchIndexUrls()
 		{
 			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
 			return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
 		}
+    
+    string FetchIndexUrls2()
+    {
+      string[] lines = (string[])Model.UrlsBatch;
+      return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
+    }
+    
 		string FetchKeywords()
 		{
 			string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(1000).ToArray();
 			return string.Join("&",lines.Select((e, i) => "item" + (i+1) + "=" + Utils.UrlEncode(e)).ToArray());
 		}
+    
 		string FetchRefDomains()
 		{
 			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
 			return string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
 		}
+    
 		]]>
 	</RazorFunctions>	
 </Suite>
