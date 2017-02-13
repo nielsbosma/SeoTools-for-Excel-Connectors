@@ -160,8 +160,8 @@
   <RestConnector Id="ListKeywords" Title="Keywords List" HelpUrl="List or create keywords for a specific domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="false" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain. Leave blank for all domains."/>
-      <Text Id="SearchDate" Title="Filter by Search Date" DefaultValue="" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="keyword">
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+    <Select Id="Sort" Title="Sort" Required="true" DefaultValue="keyword">
         <DataSource>
           <Resource Id="Sortings"/>
         </DataSource>
@@ -197,9 +197,9 @@
         {
           @: domains/@(Model.Domain)/keywords/?
         }
-			  @if(Model.SearchDate != "")
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 			  {
-				  @: &search_date=@(Model.SearchDate)
+				  @: &search_date=&date=@Model.DisplayDate.ToString("yyyy-MM-dd")
         }
 		    &ordering=
 			  @if(Model.Direction == "desc")
@@ -311,8 +311,8 @@
   <RestConnector Id="CompetitorKeywords" Title="Competitor Keywords" HelpUrl="https://app.accuranker.com/api/v3/competitors/40164/keywords/" Hidden="False">
     <Parameters>
       <Text Id="Competitor" Title="Competitor" DefaultValue="" Required="true" Select.Connector="CompetitorsList" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a competitor."/>
-      <Text Id="SearchDate" Title="Filter by Search Date" DefaultValue="" Required="false"/>
-    </Parameters>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+		</Parameters>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -322,9 +322,9 @@
 			<Fetch.Url>
         <![CDATA[
         https://app.accuranker.com/api/v3/competitors/@(Model.Competitor)/keywords/?
-			  @if(Model.SearchDate != "")
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 			  {
-				  @: &search_date=@(Model.SearchDate)
+				  @: &search_date=&date=@Model.DisplayDate.ToString("yyyy-MM-dd")
         }
 			  ]]>
       </Fetch.Url>
@@ -369,7 +369,7 @@
 			<JsonPath Expr="$.rank.search_date" Id="SearchDate" Title="Search Date" Converter="DateTime" HelpText=""/>
 			<JsonPath Expr="$.rank.rank" Id="Rank" Title="Rank" Converter="Int" HelpText=""/>
 			<JsonPath Expr="$.rank.url" Id="Url" Title="URL" Converter="String" HelpText=""/>
-			<JsonPath Expr="$.rank.est_traffic" Id="EstTraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>			
+			<JsonPath Expr="$.rank.est_traffic" Id="EstTraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
@@ -381,7 +381,7 @@
       <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="ListDomains" Select.IdField="Id" Select.TitleField="domain" HelpText="Select a domain."/>
       <Text Id="Keyword" Title="Keyword Id" DefaultValue="" Required="true"/>
     </Parameters>
-    <Paging PageSize="30"/>		
+    <Paging PageSize="30"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -400,12 +400,12 @@
 				<JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int" HelpText=""/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
 				<JsonPath Expr="est_traffic" Id="EstTraffic" Title="Estimated Traffic" Converter="Int" HelpText=""/>
-			</JsonPath>		
+			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
