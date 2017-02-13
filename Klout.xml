@@ -1,16 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite Category="Social" Title="Klout" Id="Klout" RequireVersion="6.1.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Klout.xml" HelpUrl="http://seotoolsforexcel.com/Klout/" HelpText="Documentation">
 
-  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Klout/">
     <Text Id="APIKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
-    <Text Id="MyTwitterUsername" Title="My Twitter Username" Required="false" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
   </Settings>
 
-  <!-- PREPARE TESTING -->
-
-  <RestConnector Id="KloutIdDefaultFetcher2" Hidden="true">
+  <RestConnector Id="KloutIdDefaultFetcher" Hidden="true">
     <Parameters>
       <Text Id="TwitterUsername" Title="Twitter Username" Required="true" HelpText=""/>
     </Parameters>
@@ -29,12 +26,12 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="Score2" Title="Score and Trend - With Prepare">
+  <RestConnector Id="ScoreTrend" Title="Score and Trend">
     <Parameters>
       <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText=""/>
     </Parameters>
     <Prepare>
-      <Connector Id="KloutIdDefaultFetcher2" Parameters="TwitterUsername"/>
+      <Connector Id="KloutIdDefaultFetcher" Parameters="TwitterUsername"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
@@ -56,80 +53,9 @@
     </Fail>
   </RestConnector>
 
-  <!-- //PREPARE TESTING -->
-  
-  <RestConnector Id="KloutIdDefaultFetcher" Hidden="true">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://api.klout.com/v2/identity.json/twitter?screenName=@(Model.MyTwitterUsername)&key=@(Model.APIKey)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="id" Id="KloutIdDefault" Converter="String" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="description"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="KloutIdfromCustomAccount" Title="Klout Id from Custom Account" Hidden="false">
-    <Parameters>
-      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://api.klout.com/v2/identity.json/twitter?screenName=@(Model.TwitterUsername)&key=@(Model.APIKey)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="id" Id="KloutId" Title="Klout Id" Converter="String" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="description"/>
-    </Fail>
-  </RestConnector>
-  
-  <RestConnector Id="Score" Title="Score and Trend">
-    <Parameters>
-      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
-    </Parameters>
-		<Prepare>
-			<Connector Id="KloutIdDefaultFetcher"/>
-		</Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://api.klout.com/v2/user.json/
-				@if(Model.CustomKloutId != "")
-				{
-					@(Model.CustomKloutId)
-				}
-				else
-				{
-					@(Model.KloutIdDefault)
-				}
-				/score?key=@(Model.APIKey)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
-			<JsonPath Expr="scoreDelta.dayChange" Id="DayChange" Title="Daily Change" Converter="Double" HelpText=""/>
-			<JsonPath Expr="scoreDelta.weekChange" Id="WeekChange" Title="Weekly Change" Converter="Double" HelpText=""/>
-			<JsonPath Expr="scoreDelta.monthChange" Id="MonthChange" Title="Monthly Change" Converter="Double" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="description"/>
-    </Fail>
-  </RestConnector>
-
   <RestConnector Id="Influence" Title="Influence">
     <Parameters>
-      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText=""/>
       <Radio Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="myInfluencers" Title="Who influences the user"/>
@@ -137,21 +63,14 @@
         </DataSource>
       </Radio>
     </Parameters>
-		<Prepare>
-			<Connector Id="KloutIdDefaultFetcher"/>
-		</Prepare>
+    <Prepare>
+      <Connector Id="KloutIdDefaultFetcher" Parameters="TwitterUsername"/>
+    </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         http://api.klout.com/v2/user.json/
-				@if(Model.CustomKloutId != "")
-				{
-					@(Model.CustomKloutId)
-				}
-				else
-				{
-					@(Model.KloutIdDefault)
-				}
+			  @(Model.KloutIdDefault)
 				/influence?key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
@@ -172,23 +91,16 @@
 
   <RestConnector Id="Topics" Title="Topics">
     <Parameters>
-      <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText=""/>
     </Parameters>
-		<Prepare>
-			<Connector Id="KloutIdDefaultFetcher"/>
-		</Prepare>
+    <Prepare>
+      <Connector Id="KloutIdDefaultFetcher" Parameters="TwitterUsername"/>
+    </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         http://api.klout.com/v2/user.json/
-				@if(Model.CustomKloutId != "")
-				{
-					@(Model.CustomKloutId)
-				}
-				else
-				{
-					@(Model.KloutIdDefault)
-				}
+			  @(Model.KloutIdDefault)
 				/topics?key=@(Model.APIKey)
         ]]>
       </Fetch.Url>
