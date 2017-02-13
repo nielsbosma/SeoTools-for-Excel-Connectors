@@ -8,6 +8,56 @@
     <Text Id="MyTwitterUsername" Title="My Twitter Username" Required="false" HelpUrl="http://seotoolsforexcel.com/Klout/"/>
   </Settings>
 
+  <!-- PREPARE TESTING -->
+
+  <RestConnector Id="KloutIdDefaultFetcher2" Hidden="true">
+    <Parameters>
+      <Text Id="TwitterUsername" Title="Twitter Username" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/identity.json/twitter?screenName=@(Model.TwitterUsername)&key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="KloutIdDefault" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Score2" Title="Score and Trend - With Prepare">
+    <Parameters>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText=""/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="KloutIdDefaultFetcher2" Parameters="TwitterUsername"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/user.json/
+			  @(Model.KloutIdDefault)
+				/score?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+      <JsonPath Expr="scoreDelta.dayChange" Id="DayChange" Title="Daily Change" Converter="Double" HelpText=""/>
+      <JsonPath Expr="scoreDelta.weekChange" Id="WeekChange" Title="Weekly Change" Converter="Double" HelpText=""/>
+      <JsonPath Expr="scoreDelta.monthChange" Id="MonthChange" Title="Monthly Change" Converter="Double" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <!-- //PREPARE TESTING -->
+  
   <RestConnector Id="KloutIdDefaultFetcher" Hidden="true">
     <Fetch>
       <Fetch.Url>
@@ -42,7 +92,7 @@
       <JsonPath Expr="description"/>
     </Fail>
   </RestConnector>
-
+  
   <RestConnector Id="Score" Title="Score and Trend">
     <Parameters>
       <Text Id="CustomKloutId" Title="Custom Klout Id (Optional)" Debug.DefaultValue="161285197326785661" Required="false" HelpText="Leave blank for default account in Settings"/>
