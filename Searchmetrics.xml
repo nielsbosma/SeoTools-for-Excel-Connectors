@@ -69,8 +69,8 @@
       <JsonPath Expr="$.access_token" Id="Authorization"/>
     </Parse>
   </RestConnector>
-  <!-- //HIDDEN -->	
-	
+  <!-- //HIDDEN -->
+
   <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Organic Domain Keyword Count" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetCountDomainKeyword" HelpText="Number of organic keywords for a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
@@ -370,27 +370,27 @@
   <RestConnector Id="ResearchOrganicGetListRankingsKeyword" Title="Organic Keyword Rankings" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListRankingsKeyword" HelpText="Rankings for a given keyword in organic search results.">
     <Parameters>
       <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="dogs" Required="true" HelpText=""/>
-      <Text Id="FilterDate" Title="Specific Date (Format: YYYYMMDD)" Debug.DefaultValue="" Required="false" HelpText=""/>			
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Prepare>
       <Connector Id="Authorization"/>
     </Prepare>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
-    <Fetch>	
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
 				http://api.searchmetrics.com/v3/ResearchOrganicGetListRankingsKeyword
-				@if(Model.FilterDate != "")
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
 					@: Historic
 				}
 				.json?
         keyword=@(Utils.UrlEncode(Model.Keyword))
         &countrycode=@Model.Country
-				@if(Model.FilterDate != "")
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &date=@(Model.FilterDate)
+					@: &date=@Model.DisplayDate.ToString("yyyMMdd")
 				}
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
@@ -470,7 +470,7 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-	
+
   <RestConnector Id="ResearchOrganicGetListSeoVisibilityTop100Winners" Title="Organic Visibility Top100 Winners" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityTop100Winners" HelpText="Top100 Organic Visibility winners in a given country">
     <Parameters>
       <Resource Id="SelectCountry"/>
@@ -733,8 +733,8 @@
   <RestConnector Id="ResearchKeywordsGetListLosersHistoric" Title="Keyword Losers History" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListLosersHistoric" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain for a given date">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
-      <Text Id="FilterDate" Title="Specific Date (Format: YYYYMMDD)" Debug.DefaultValue="" Required="true" HelpText=""/>
-      <Resource Id="SelectCountry"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+    <Resource Id="SelectCountry"/>
     </Parameters>
     <Prepare>
       <Connector Id="Authorization"/>
@@ -746,7 +746,7 @@
 				http://api.searchmetrics.com/v3/ResearchKeywordsGetListLosersHistoric.json?
         url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
 				&countrycode=@Model.Country
-				&date=@(Model.FilterDate)		
+				&date=&date=@Model.DisplayDate.ToString("yyyMMdd")
 				&limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
 				&access_token=@(Model.Authorization)
@@ -786,7 +786,7 @@
         <![CDATA[
 				http://api.searchmetrics.com/v3/ResearchKeywordsGetListWinners.json?
         url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
-				&countrycode=@Model.Country			
+				&countrycode=@Model.Country
 				&limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
 				&access_token=@(Model.Authorization)
@@ -796,13 +796,13 @@
     <Parse>
       <JsonPath Expr="response.*">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>				
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
         <JsonPath Expr="trend_position" Id="TrendPosition" Title="Trend Position" Converter="Int" HelpText="Difference in keyword position between current and previous month."/>
         <JsonPath Expr="position_last" Id="PositionLast" Title="Position Last" Converter="Int" HelpText="Position of the given domain for the respective keyword in Google's organic search index in the previous month."/>
         <JsonPath Expr="delta_traffic_monthly" Id="DeltaTrafficMonthly" Title="Delta Traffic Monthly" Converter="Int" HelpText="Difference in estimated monthly traffic between current and last month via the respective keyword for the given domain."/>
         <JsonPath Expr="search_volume_monthly" Id="SearchVolumeMonthly" Title="Search Volume Monthly" Converter="Int" HelpText="Estimated search volume in Google for the respective Keyword."/>
-        <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>				
+        <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>
         <JsonPath Expr="traffic_monthly" Id="TrafficMonthly" Title="Traffic Monthly" Converter="Int" HelpText="Estimated current monthly traffic of the given domain from Google via the respective keyword."/>
         <JsonPath Expr="traffic_monthly_last" Id="TrafficMonthlyLast" Title="Traffic Monthly Last" Converter="Int" HelpText="Estimated monthly traffic last month of the given domain from Google via the respective keyword."/>
 			</JsonPath>
@@ -815,8 +815,8 @@
   <RestConnector Id="ResearchKeywordsGetListWinnersHistoric" Title="Keyword Winners History" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListWInnersHistoric" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain with access to historic data">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
-      <Text Id="FilterDate" Title="Specific Date (Format: YYYYMMDD)" Debug.DefaultValue="" Required="true" HelpText=""/>
-      <Resource Id="SelectCountry"/>		
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+      <Resource Id="SelectCountry"/>
     </Parameters>
     <Prepare>
       <Connector Id="Authorization"/>
@@ -828,7 +828,7 @@
 				http://api.searchmetrics.com/v3/ResearchKeywordsGetListWinnersHistoric.json?
         url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
 				&countrycode=@Model.Country
-				&date=@(Model.FilterDate)		
+				&date=&date=@Model.DisplayDate.ToString("yyyMMdd")
 				&limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
 				&access_token=@(Model.Authorization)
@@ -838,7 +838,7 @@
     <Parse>
       <JsonPath Expr="response.*">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>				
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
         <JsonPath Expr="trend_position" Id="TrendPosition" Title="Trend Position" Converter="Int" HelpText="Difference in keyword position between current and previous month."/>
         <JsonPath Expr="position_last" Id="PositionLast" Title="Position Last" Converter="Int" HelpText="Position of the given domain for the respective keyword in Google's organic search index in the previous month."/>
@@ -1394,7 +1394,7 @@
     </Fetch>
     <Parse>
        <JsonPath Expr="response.seo_value" Id="SeoValue" Title="Value" Converter="Double" HelpText="SEO value"/>
-       <JsonPath Expr="response.seo_value_potential" Id="SeoPotential" Title="Potential" Converter="Double" HelpText="SEO value potential"/>			 
+       <JsonPath Expr="response.seo_value_potential" Id="SeoPotential" Title="Potential" Converter="Double" HelpText="SEO value potential"/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
@@ -1423,7 +1423,7 @@
     </Fetch>
     <Parse>
        <JsonPath Expr="response.seo_value" Id="SeoValue" Title="Value" Converter="Double" HelpText="SEO value"/>
-       <JsonPath Expr="response.seo_value_potential" Id="SeoPotential" Title="Potential" Converter="Double" HelpText="SEO value potential"/>			 
+       <JsonPath Expr="response.seo_value_potential" Id="SeoPotential" Title="Potential" Converter="Double" HelpText="SEO value potential"/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
@@ -1450,12 +1450,12 @@
     </Fetch>
     <Parse>
        <JsonPath Expr="response.traffic_index" Id="TrafficIndex" Title="Index" Converter="Double" HelpText="Traffic index"/>
-       <JsonPath Expr="response.traffic_index_potential" Id="TrafficPotential" Title="Potential" Converter="Double" HelpText="Traffic potential"/>			 
+       <JsonPath Expr="response.traffic_index_potential" Id="TrafficPotential" Title="Potential" Converter="Double" HelpText="Traffic potential"/>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RestConnector Id="ResearchOrganicGetListSeoVisibilityHistoric" Title="Organic Visibility Historic" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityHistoric" HelpText="Searchmetrics SEO Visibility for a given URL in a given country in a given timeframe.">
     <Parameters>
