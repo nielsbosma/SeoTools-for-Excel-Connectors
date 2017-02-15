@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<Suite RequireVersion="6.0" Title="Google Search" Id="GoogleSearch" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSearch.xml" HelpUrl="http://seotoolsforexcel.com/GoogleSearch/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <RestConnector Id="SearchResults" Title="Search Results">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://www.google.se/search
+				?q=@Utils.UrlEncode(Model.Query)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="300" RandomTo="800" IfSame="Host"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//h3[@@class='r']/a[contains(@@href,'http')]">
+        <Compute Id="Title" Title="Title" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+							string decodedTitle = Uri.UnescapeDataString(Model.TitelRaw);
+							}
+							@decodedTitle
+						]]>
+          </Compute.Expr>
+          <Xpath Expr="." Id="TitelRaw" Converter="String"/>
+        </Compute>
+        <Compute Id="URL" Title="URL" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+							@{
+								var Cleaned = Regex.Match(Model.UrlRaw, "(?<=url\\?q\\=)(.*)(?=\\&amp;sa)");
+							}
+							@Cleaned
+            ]]>
+          </Compute.Expr>
+          <Xpath Expr="." Attribute="href" Id="UrlRaw" Converter="String"/>
+        </Compute>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
