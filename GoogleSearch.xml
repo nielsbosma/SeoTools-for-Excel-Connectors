@@ -4,40 +4,81 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
+  <Resources>
+    <Resource Id="Periods">
+      <Item Id="anytime" Title="Anytime"/>
+      <Item Id="h" Title="Last Hour"/>
+      <Item Id="d" Title="Last Day"/>
+      <Item Id="w" Title="Last Week"/>
+      <Item Id="m" Title="Last Month"/>
+      <Item Id="y" Title="Last Year"/>
+      <Item Id="custom" Title="Custom (Select Interval Below)"/>
+    </Resource>
+  </Resources>
+
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
-      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>			
+      <Select Id="Period" Title="Period" Required="false" DefaultValue="anytime">
+        <DataSource>
+          <Resource Id="Periods"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Custom Interval"/>
+      <Radio Id="PeriodSorting" Title="Sort Period Search" DefaultValue="relevance" Required="false">
+        <DataSource>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="date" Title="Date"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>
     </Parameters>
+    <Paging PageSize="10" EvePages="false"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://@(Model.Site)/search
-				?q=
+				https://@(Model.Site)/search?
+				hl=en&safe=off&q=
 				@if(Model.Domain != "")
 				{
 					@: site:@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)+
 				}
 				@Utils.UrlEncode(Model.Query)
+				@if(Model.Period != "anytime" && Model.Period != "custom")
+				{
+					@: &tbs=qdr:@(Model.Period)
+				}
+				else if(Model.Period == "custom")
+				{
+					@: &tbs=cdr:1,cd_min:@(Model.DateInterval.StartDate.ToString("MM/dd/yyyy")),cd_max:@(Model.DateInterval.EndDate.ToString("MM/dd/yyyy"))
+				}
+				@if(Model.Period != "anytime" && Model.PeriodSorting == "date")
+				{
+					@: ,sbd:1
+				}
+				@if(Model.PageCursor.Page != 0)
+        {
+          @: &start=@(Model.PageCursor.FetchedRows+1)
+        }
         ]]>
       </Fetch.Url>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>			
+        <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
         <RequestHeaders>
           <Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
-          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>	
-        </RequestHeaders>					
+          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
+        </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
       <XPath Expr="//h3[@@class='r']/a">
-        <Xpath Expr="." Id="Title" Converter="String"/>	
+        <Xpath Expr="." Id="Title" Converter="String"/>
       </XPath>
       <XPath Expr="//span[@@class='st'] | //div[@@class='st']">
         <Xpath Expr="." Id="Description" Converter="String"/>
       </XPath>
-      <XPath Expr="//h3[@@class='r']/a">				
+      <XPath Expr="//h3[@@class='r']/a">
         <Compute Id="URL" Title="URL" Converter="String">
           <Compute.Expr>
             <![CDATA[
@@ -47,18 +88,44 @@
 							@decodedUrl
             ]]>
           </Compute.Expr>
-					<Xpath Expr="." Attribute="href" Id="UrlRaw" Converter="String"/>						
+					<Xpath Expr="." Attribute="href" Id="UrlRaw" Converter="String"/>
         </Compute>
-      </XPath>			
+			</XPath>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
-	<Parameters>
+    <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Site" Title="Googe Site" DefaultValue="google.com" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
+      <Select Id="Period" Title="Period" Required="false" DefaultValue="anytime">
+        <DataSource>
+          <Resource Id="Periods"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Custom Interval"/>
+      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>
     </Parameters>
-    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=@(Utils.UrlEncode(Model.Query))&amp;btnG=Search">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://@(Model.Site)/search?
+				hl=en&safe=off&q=
+				@if(Model.Domain != "")
+				{
+					@: site:@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)+
+				}
+				@Utils.UrlEncode(Model.Query)
+				@if(Model.Period != "anytime" && Model.Period != "custom")
+				{
+					@: &tbs=qdr:@(Model.Period)
+				}
+				else if(Model.Period == "custom")
+				{
+					@: &tbs=cdr:1,cd_min:@(Model.DateInterval.StartDate.ToString("MM/dd/yyyy")),cd_max:@(Model.DateInterval.EndDate.ToString("MM/dd/yyyy"))
+				}
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
         <RequestHeaders>
@@ -69,14 +136,34 @@
     <Parse>
       <Regex Expr="&lt;div[^&gt;]*id=\&quot;resultStats\&quot;[^&gt;]*&gt;[^\d&lt;&gt;]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
     </Parse>
-  </RestConnector>	
+  </RestConnector>
 
   <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="true"/>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="aftonbladet.se"/>
+      <Select Id="Period" Title="Period" Required="false" DefaultValue="anytime">
+        <DataSource>
+          <Resource Id="Periods"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Custom Interval"/>
       <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>
     </Parameters>
-    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=site%3A@(Utils.UrlEncode(Model.Url))&amp;btnG=Search">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://@(Model.Site)/search?
+				hl=en&safe=off&q=site:@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Domain)
+				@if(Model.Period != "anytime" && Model.Period != "custom")
+				{
+					@: &tbs=qdr:@(Model.Period)
+				}
+				else if(Model.Period == "custom")
+				{
+					@: &tbs=cdr:1,cd_min:@(Model.DateInterval.StartDate.ToString("MM/dd/yyyy")),cd_max:@(Model.DateInterval.EndDate.ToString("MM/dd/yyyy"))
+				}
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
         <RequestHeaders>
@@ -87,6 +174,6 @@
     <Parse>
       <Regex Expr="&lt;div[^&gt;]*id=\&quot;resultStats\&quot;[^&gt;]*&gt;[^\d&lt;&gt;]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
     </Parse>
-  </RestConnector>	
+  </RestConnector>
 
 </Suite>
