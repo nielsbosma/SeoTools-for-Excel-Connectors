@@ -7,44 +7,86 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
+      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>			
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://www.google.se/search
-				?q=@Utils.UrlEncode(Model.Query)
+				https://@(Model.Site)/search
+				?q=
+				@if(Model.Domain != "")
+				{
+					@: site:@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)+
+				}
+				@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="300" RandomTo="800" IfSame="Host"/>
+        <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>			
+        <RequestHeaders>
+          <Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
+          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>	
+        </RequestHeaders>					
       </HttpSettings>
     </Fetch>
     <Parse>
-      <XPath Expr="//h3[@@class='r']/a[contains(@@href,'http')]">
-        <Compute Id="Title" Title="Title" Converter="String">
-          <Compute.Expr>
-            <![CDATA[
-              @{
-							string decodedTitle = Uri.UnescapeDataString(Model.TitelRaw);
-							}
-							@decodedTitle
-						]]>
-          </Compute.Expr>
-          <Xpath Expr="." Id="TitelRaw" Converter="String"/>
-        </Compute>
+      <XPath Expr="//h3[@@class='r']/a">
+        <Xpath Expr="." Id="Title" Converter="String"/>	
+      </XPath>
+      <XPath Expr="//span[@@class='st'] | //div[@@class='st']">
+        <Xpath Expr="." Id="Description" Converter="String"/>
+      </XPath>
+      <XPath Expr="//h3[@@class='r']/a">				
         <Compute Id="URL" Title="URL" Converter="String">
           <Compute.Expr>
             <![CDATA[
 							@{
-								var Cleaned = Regex.Match(Model.UrlRaw, "(?<=url\\?q\\=)(.*)(?=\\&amp;sa)");
+								string decodedUrl = Uri.UnescapeDataString(Model.UrlRaw);
 							}
-							@Cleaned
+							@decodedUrl
             ]]>
           </Compute.Expr>
-          <Xpath Expr="." Attribute="href" Id="UrlRaw" Converter="String"/>
+					<Xpath Expr="." Attribute="href" Id="UrlRaw" Converter="String"/>						
         </Compute>
-      </XPath>
+      </XPath>			
     </Parse>
   </RestConnector>
+
+  <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
+	<Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+      <Text Id="Site" Title="Googe Site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=@(Utils.UrlEncode(Model.Query))&amp;btnG=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&lt;div[^&gt;]*id=\&quot;resultStats\&quot;[^&gt;]*&gt;[^\d&lt;&gt;]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>	
+
+  <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true"/>
+      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch Url="http://www.@(Model.Site)/search?hl=en&amp;safe=off&amp;q=site%3A@(Utils.UrlEncode(Model.Url))&amp;btnG=Search">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="4000" RandomTo="5000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Google Chrome/36</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&lt;div[^&gt;]*id=\&quot;resultStats\&quot;[^&gt;]*&gt;[^\d&lt;&gt;]*([\d,]+)" IgnoreCase="true" Converter="Int"/>
+    </Parse>
+  </RestConnector>	
 
 </Suite>
