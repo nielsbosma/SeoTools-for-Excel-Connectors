@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="HubSpot" RequireVersion="6.1.2" Id="HubSpot" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/HubSpot.xml" HelpUrl="http://seotoolsforexcel.com/HubSpot/" HelpText="Documentation">
+<Suite Title="HubSpot" RequireVersion="6.1.2" Id="HubSpot" Category="CRM" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/HubSpot.xml" HelpUrl="http://seotoolsforexcel.com/HubSpot/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -7,24 +7,293 @@
     <Text Id="AccessToken" Title="Access Token" Required="true" HelpUrl="http://seotoolsforexcel.com/FacebookInsights"/>
   </Settings>
 
-  <RestConnector Id="ContactsList" Title="Contacts List" Hidden="false">
+  <RestConnector Id="AllContacts" Title="All Contacts" Hidden="false" HelpText="Returns all contacts that have been created in the portal.">
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="VidOffset" Expr="vid-offset"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-		  https://api.hubapi.com/contacts/v1/lists/all/contacts/all?
-			hapikey=@(Model.AccessToken)
-			&count=10
-      ]]>
-      </Fetch.Url>
-    </Fetch>
+				https://api.hubapi.com/contacts/v1/lists/all/contacts/all?
+				hapikey=@(Model.AccessToken)
+				&count=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &vidOffset=@(Model.VidOffset)
+				}
+				]]>
+				</Fetch.Url>
+			</Fetch>
     <Parse>
       <JsonPath Expr="contacts.*">
-        <JsonPath Expr="addedAt" Id="Added" Title="Added" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.phone.value" Id="Phone" Title="Phone" Converter="String" HelpText="Phone Number of the contact." DefaultValue=" "/>
+        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue=" ">
+          <Compute.Expr>
+            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
+          </Compute.Expr>
+					<JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
+        </Compute>
+        <Compute Id="Added" Title="Added" Converter="DateTime" HelpText="The Timestamp when contact was created." DefaultValue=" ">
+          <Compute.Expr>
+            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.AddedAt))
+          </Compute.Expr>
+          <JsonPath Expr="addedAt" Id="AddedAt" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
       </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="message"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="RecentContacts" Title="Recent Contacts" Hidden="false" HelpText="Returns all contacts that have been recently updated or created within the last 30 days.">
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="VidOffset" Expr="vid-offset"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.hubapi.com/contacts/v1/lists/recently_updated/contacts/recent?
+				hapikey=@(Model.AccessToken)
+				&count=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &vidOffset=@(Model.VidOffset)
+				}
+				]]>
+				</Fetch.Url>
+			</Fetch>
+    <Parse>
+      <JsonPath Expr="contacts.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Job Title of the contact." DefaultValue=" "/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.phone.value" Id="Phone" Title="Phone" Converter="String" HelpText="Phone Number of the contact." DefaultValue=" "/>
+        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue=" ">
+          <Compute.Expr>
+            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
+          </Compute.Expr>
+					<JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
+        </Compute>
+        <Compute Id="Added" Title="Added" Converter="DateTime" HelpText="The Timestamp when contact was created." DefaultValue=" ">
+          <Compute.Expr>
+            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.AddedAt))
+          </Compute.Expr>
+          <JsonPath Expr="addedAt" Id="AddedAt" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ContactsbyId" Title="Contacts by Id" Hidden="false" HelpText="Returns information about one or more contacts by their unique ID's.">
+		<Parameters>
+      <Text Id="ContactIds" Title="Contact Ids" Debug.DefaultValue="3842424" HelpText="Enter one or more Contact Ids separated by a new line" Required="true" Multiline="true"/>
+      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.hubapi.com/contacts/v1/contact/vids/batch/
+				?hapikey=@(Model.AccessToken)
+				&vid=@(FetchContactIdString())
+				@if(Model.IncludeDeleted == true)
+				{
+					@: &includeDeletes=true
+				}
+				]]>
+				</Fetch.Url>
+			</Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=" "/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue=" ">
+          <Compute.Expr>
+            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
+          </Compute.Expr>
+					<JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ContactbyEmail" Title="Contacts by Email" Hidden="false" HelpText="Returns information about one or more contacts by their E-mail addresses.">
+		<Parameters>
+      <Text Id="ContactEmails" Title="Contact Email Address" Debug.DefaultValue="email_abc9bd5cdf@abctest.com" Required="true" Multiline="true"/>
+      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.hubapi.com/contacts/v1/contact/emails/batch/
+				?email=@(FetchContactEmailString())/profile
+				&hapikey=@(Model.AccessToken)
+				@if(Model.IncludeDeleted == true)
+				{
+					@: &includeDeletes=true
+				}
+				]]>
+				</Fetch.Url>
+			</Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+				<JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+				<JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=" "/>
+				<JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=" "/>
+				<JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+				<JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+				<Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue=" ">
+					<Compute.Expr>
+						@(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
+					</Compute.Expr>
+					<JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
+				</Compute>
+				<JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+				<JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+		</Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SearchContacts" Title="Search Contacts" Hidden="false" HelpText="Returns contacts by the contact's email address, first and last name, and company name.">
+		<Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="portal" Required="true"/>
+		</Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.hubapi.com/contacts/v1/search/query?
+				q=@(Model.Query)
+				&hapikey=@(Model.AccessToken)
+				&count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+				]]>
+				</Fetch.Url>
+			</Fetch>
+    <Parse>
+      <JsonPath Expr="contacts.*">
+				<JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+				<JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=" "/>
+				<JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=" "/>
+				<JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+				<JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=" "/>
+				<Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue=" ">
+					<Compute.Expr>
+						@(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
+					</Compute.Expr>
+					<JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
+				</Compute>
+				<JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+				<JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+		</Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+  <![CDATA[
+	string FetchContactIdString()
+	{
+		string[] lines = ((string)Model.ContactIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+		return string.Join("&vid=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+	}
+	string FetchContactEmailString()
+	{
+		string[] lines = ((string)Model.ContactEmails).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+		return string.Join("&email=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+	}
+  ]]>
+  </RazorFunctions>
 
 </Suite>
