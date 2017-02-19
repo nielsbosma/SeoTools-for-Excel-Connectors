@@ -91,7 +91,7 @@
 
   <RestConnector Id="Topics" Title="Topics">
     <Parameters>
-      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText=""/>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText="Retrieves a user's Topics of interest."/>
     </Parameters>
     <Prepare>
       <Connector Id="KloutIdDefaultFetcher" Parameters="TwitterUsername"/>
@@ -108,6 +108,61 @@
     <Parse>
       <JsonPath Expr="$.*">
 				<JsonPath Expr="displayName" Id="Topic" Title="Topic" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="UserExpertise" Title="User Expertise">
+    <Parameters>
+      <Text Id="TwitterUsername" Title="Twitter Username" Debug.DefaultValue="seotools4excel" Required="true" HelpText="Retrieves a user's Klout Expertise Topics."/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/research/tw-user.json/username/
+				@(Model.TwitterUsername)
+				/expertise-topics
+				?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.topicSet[*]">
+				<JsonPath Expr="topicDisplayName" Id="Topic" Title="Topic" Converter="String" HelpText=""/>
+				<JsonPath Expr="topicScore" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ExpertsInTopic" Title="Experts in Topic">
+    <Parameters>
+      <Text Id="TopicSlug" Title="Topic Slug" Debug.DefaultValue="politics" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.klout.com/v2/research/topic.json/topic-slug/
+				@(Model.TopicSlug)/top-experts
+				?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.experts[*]">
+				<JsonPath Expr="twitterUsername" Id="Username" Title="Username" Converter="String" HelpText=""/>
+        <Compute Id="UserUrl" Title="User URL" Converter="String">
+          <Compute.Expr>
+            https://www.twitter.com/@(Model.UsernameInput)/
+          </Compute.Expr>
+					<JsonPath Expr="twitterUsername" Id="UsernameInput" Converter="String"/>
+        </Compute>
+				<JsonPath Expr="kloutScore" Id="KloutScore" Title="Klout Score" Converter="Double" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
