@@ -111,7 +111,7 @@
           <JsonPath Expr="source" Id="Source" Converter="String"/>
         </Compute>
         <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
-        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>								
+        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
         <JsonPath Expr="user.screen_name" Id="ScreenName" Title="Username" Converter="String"/>
       </JsonPath>
       <JsonPath Expr="$.statuses.*">
@@ -186,28 +186,28 @@
   </RestConnector>
 
   <RestConnector Id="UserTweets" Title="User Tweets" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/user_timeline">
-    <RazorFunctions>
-    <![CDATA[
-    Dictionary<string,string> GetQuery() {
-      return new Dictionary<string,string> {
-        {"screen_name", Model.ScreenName},
-        {"count", Model.PageCursor.NextTake.ToString()},
-        {"include_rts", Model.IncludeRts.ToString()},
-        {"max_id", Model.PageCursor.Page > 0 ? Model.MaxId : ""}
-      };
-    }
-    ]]>
-    </RazorFunctions>
     <Parameters>
       <Text Id="ScreenName" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
       <Checkbox Id="IncludeRts" Title="Include Retweets" DefaultValue="true"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
-        <JsonPath Id="MaxId" Expr="$[-1:].id_str"/>
+        <JsonPath Id="MaxId" Expr="$[@(Model.PageCursor.NextTake-1)].id_str"/>
       </Parse>
     </Paging>
-    <Fetch Url="https://api.twitter.com/1.1/statuses/user_timeline.json?@RenderQuery(GetQuery())">
+    <Fetch Url="">
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/1.1/statuses/user_timeline.json?
+				screen_name=@(Model.ScreenName)
+				&count=@(Model.PageCursor.NextTake)
+				&include_rts=@(Model.IncludeRts)
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &max_id=@(Model.MaxId)
+				}
+				]]>
+      </Fetch.Url>
       <HttpSettings>
         <OAuth>
           <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
@@ -229,22 +229,21 @@
         <JsonPath Expr="text" Id="Text" Title="Text"/>
         <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
         <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweeted" Converter="Int"/>
-        <Compute Id="SourceGo" Title="SourceGo">
+        <Compute Id="Source" Title="Source">
           <Compute.Expr>
-						<![CDATA[
-						@{
-						var temp = Model.Source.Substring(Model.Source.IndexOf("nofollow\">")+10);
-						var stringfinal = temp.Remove(temp.Length-4);
-						}
-						@stringfinal
-						]]>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
           </Compute.Expr>
-          <JsonPath Expr="source" Id="Source" Converter="String"/>
+					<JsonPath Expr="source" Id="SourceInput"/>
         </Compute>
         <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
-        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>				
+        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
       </JsonPath>
-    </Parse>
+		</Parse>
     <Fail>
       <JsonPath Expr="errors[0].message"/>
     </Fail>
@@ -394,7 +393,7 @@
 				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String"/>
 				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>								
+        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
 				<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 				<JsonPath Expr="user.screen_name" Id="UserName" Title="Username" Converter="String"/>
 				<Compute Id="UserUrl" Title="User URL">
@@ -404,7 +403,7 @@
 						]]>
           </Compute.Expr>
           <JsonPath Expr="user.screen_name" Id="UserNameInput" Converter="String"/>
-        </Compute>				
+        </Compute>
 				<JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
 				<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String"/>
 				<JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
@@ -418,21 +417,20 @@
 				<JsonPath Expr="user.url" Id="Website" Title="Website" Converter="String"/>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
-						<![CDATA[
-						@{
-						var temp = Model.Source.Substring(Model.Source.IndexOf("nofollow\">")+10);
-						var stringfinal = temp.Remove(temp.Length-4);
-						}
-						@stringfinal
-						]]>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
           </Compute.Expr>
-          <JsonPath Expr="source" Id="Source" Converter="String"/>
+					<JsonPath Expr="source" Id="SourceInput"/>
         </Compute>
 				<Compute Id="RetweetTweet" Title="Retweeted Tweet">
           <Compute.Expr>
 						<![CDATA[
 						@if(Model.Retweeted is string)
-						{ 
+						{
 							@: https://www.twitter.com/@(Model.RetweetedUsernameInput)/statuses/@(Model.Retweeted)/
 						}
             else
@@ -443,13 +441,13 @@
           </Compute.Expr>
           <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
 					<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
-        </Compute>				
+        </Compute>
 				<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsername" Title="Retweeted User" Converter="String" DefaultValue=" "/>
 				<Compute Id="ReplytoStatus" Title="Reply to Tweet">
           <Compute.Expr>
 						<![CDATA[
 						@if(Model.ReplytoStatus != "")
-						{ 
+						{
 							@: https://www.twitter.com/@(Model.ReplyToUserInput)/statuses/@(Model.ReplytoStatus)/
 						}
             else
@@ -460,7 +458,7 @@
           </Compute.Expr>
           <JsonPath Expr="in_reply_to_status_id" Id="ReplytoStatus" Converter="String"/>
 					<JsonPath Expr="in_reply_to_screen_name" Id="ReplyToUserInput" Title="Reply To User" Converter="String"/>
-        </Compute>				
+        </Compute>
 				<JsonPath Expr="in_reply_to_screen_name" Id="ReplyToUser" Title="Reply To User" Converter="String"/>
 			</JsonPath>
     </Parse>
@@ -551,18 +549,16 @@
 				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
-						<![CDATA[
-						@{
-						var temp = Model.Source.Substring(Model.Source.IndexOf("nofollow\">")+10);
-						var stringfinal = temp.Remove(temp.Length-4);
-						}
-						@stringfinal
-						]]>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
           </Compute.Expr>
-          <JsonPath Expr="source" Id="Source" Converter="String"/>
-        </Compute>
+				<JsonPath Expr="source" Id="SourceInput"/>
 			</JsonPath>
-      <JsonPath Expr="$.*">
+			<JsonPath Expr="$.*">
         <JsonPath Expr="user.id_str" Id="UserId" Title="Username"/>
         <JsonPath Expr="user.screen_name" Id="Username" Title="Username"/>
         <JsonPath Expr="user.name" Id="Name" Title="Name"/>
