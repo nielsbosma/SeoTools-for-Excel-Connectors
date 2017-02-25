@@ -4,7 +4,7 @@
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/twitter/">
-    <Text Id="OAuthToken" Title="OAuth Token" Required="true" HelpUrl="http://seotoolsforexcel.com/twitter-connector/"/>
+    <Text Id="OAuthToken" Title="OAuth Token" Required="true" HelpUrl="http://seotoolsforexcel.com/twitter/"/>
     <Text Id="OAuthTokenSecret" Title="OAuth Token Secret" Required="true"/>
     <Text Id="OAuthConsumerKey" Title="OAuth Consumer Key" Required="true"/>
     <Text Id="OAuthConsumerSecret" Title="OAuth Consumer Secret" Required="true"/>
@@ -87,6 +87,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.statuses.*">
+        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             https://twitter.com/@(Model.ScreenName)/status/@(Model.IdStr)
@@ -100,17 +101,17 @@
         <JsonPath Expr="text" Id="text" Title="Tweet"/>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
-						<![CDATA[
-						@{
-						var temp = Model.Source.Substring(Model.Source.IndexOf("nofollow\">")+10);
-						var stringfinal = temp.Remove(temp.Length-4);
-						}
-						@stringfinal
-						]]>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
           </Compute.Expr>
-          <JsonPath Expr="source" Id="Source" Converter="String"/>
+          <JsonPath Expr="source" Id="SourceInput" Converter="String"/>
         </Compute>
         <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
+        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
         <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
         <JsonPath Expr="user.screen_name" Id="ScreenName" Title="Username" Converter="String"/>
       </JsonPath>
