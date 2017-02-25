@@ -56,7 +56,17 @@
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
-        <JsonPath Id="NextResults" Expr="search_metadata.next_results"/>
+        <Compute Id="MaxId">
+          <Compute.Expr>
+					  <![CDATA[
+             @{
+              var IdOutput = Model.MaxIdString - 1;
+            }
+            @IdOutput
+						]]>
+						</Compute.Expr>
+						<JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="MaxIdString" Converter="Long"/>
+        </Compute>				
       </Parse>
     </Paging>
     <Fetch Url="">
@@ -71,16 +81,13 @@
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/search/tweets.json?
+				q=@Utils.UrlEncode(Model.Query)
         &lang=@Model.Language
         &sort=@Model.Sorting
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page == 0)
+        @if(Model.PageCursor.Page != 0)
         {
-          @: &q=@Utils.UrlEncode(Model.Query)
-        }
-        else
-        {
-          @: &@(Model.NextResults.Substring(1))
+          @: &max_id=@(Model.MaxId)
         }
       ]]>
       </Fetch.Url>
@@ -129,6 +136,7 @@
         <JsonPath Expr="user.description" Id="UserDescription" Title="Biography" Converter="String"/>
         <JsonPath Expr="user.followers_count" Id="UserFollowersCount" Title="Followers" Converter="Int"/>
       </JsonPath>
+        <JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="IdLast" Title="IdLast" Converter="String"/>
     </Parse>
     <Fail>
       <JsonPath Expr="errors[0].message"/>
@@ -193,7 +201,17 @@
     </Parameters>
     <Paging PageSize="200">
       <Parse>
-        <JsonPath Id="MaxId" Expr="$[@(Model.PageCursor.NextTake-1)].id_str"/>
+        <Compute Id="MaxId">
+          <Compute.Expr>
+					  <![CDATA[
+             @{
+              var IdOutput = Model.MaxIdString - 1;
+            }
+            @IdOutput
+						]]>
+						</Compute.Expr>
+						<JsonPath Expr="$[(@@.length-1)].id_str" Id="MaxIdString" Converter="Long"/>
+        </Compute>				
       </Parse>
     </Paging>
     <Fetch Url="">
@@ -220,16 +238,15 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
+        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>			
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             http://twitter.com/@(Model.ScreenName)/status/@(Model.Id)
           </Compute.Expr>
 		  <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         </Compute>
-        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="text" Id="Text" Title="Text"/>
-        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweeted" Converter="Int"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>				
+        <JsonPath Expr="text" Id="Tweet" Title="Tweet"/>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
             <![CDATA[
@@ -241,7 +258,8 @@
           </Compute.Expr>
 					<JsonPath Expr="source" Id="SourceInput"/>
         </Compute>
-        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>				
+        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>				
         <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
       </JsonPath>
 		</Parse>
@@ -376,7 +394,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-				<JsonPath Expr="id_str" Id="Id" Title="Tweet ID" Converter="String"/>
+				<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
       </JsonPath>
       <JsonPath Expr="$.*">
         <Compute Id="Url" Title="URL">
@@ -391,7 +409,7 @@
       </JsonPath>
       <JsonPath Expr="$.*">
 				<JsonPath Expr="created_at" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
-				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String"/>
+				<JsonPath Expr="text" Id="Tweet" Title="Tweet" Converter="String"/>
 				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
         <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
