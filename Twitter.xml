@@ -39,7 +39,7 @@
 
   <RestConnector Id="TweetSearch" Title="Tweet Search" HelpUrl="https://dev.twitter.com/rest/reference/get/search/tweets">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="barbarpappa" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="möhippa" HelpUrl="https://dev.twitter.com/rest/public/search"/>
       <Select Id="Language" Title="Language" Required="false" DefaultValue="">
         <DataSource>
           <Item Id="" Title="All"/>
@@ -56,24 +56,40 @@
     </Parameters>
     <Paging PageSize="10" EvenPages="false">
       <Parse>
+<!--			
         <Compute Id="MaxId">
           <Compute.Expr>
 					  <![CDATA[
-						@{
-						long num;
-						long result = 0;
-						bool isNum = Int64.TryParse(Model.MaxIdString, out num);
-						if(Model.MaxIdString is string)
+						
+						@if(Model.MaxIdString is string)
 						{
-							result = Convert.ToInt64(Model.MaxIdString) - 1;
+							long result = Convert.ToInt64(Model.MaxIdString) - 1;
+						}
+						@result
+						]]>
+						</Compute.Expr>
+					<JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="MaxIdString" Converter="Long"/>
+        </Compute>
+-->
+        <Compute Id="NextResults">
+          <Compute.Expr>
+					  <![CDATA[
+						@{
+						string result;
+						if(Model.NextResultsInput is string)
+						{
+							result = Model.NextResultsInput;
+						}
+						else
+						{
+							result = "";
 						}
 						}
 						@result
 						]]>
 						</Compute.Expr>
-					<JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="MaxIdString" Converter="String"/>
-        </Compute>
-				<JsonPath Expr="search_metadata.next_results" Id="NextResults" Converter="String"/>										
+					<JsonPath Expr="$.search_metadata.next_results" Id="NextResultsInput" Converter="String"/>
+        </Compute>				
       </Parse>
     </Paging>
     <Fetch Url="">
@@ -86,6 +102,7 @@
         </OAuth>
       </HttpSettings>
       <Fetch.Url>
+<!--			
         <![CDATA[
         https://api.twitter.com/1.1/search/tweets.json?
 				q=@Utils.UrlEncode(Model.Query)
@@ -96,6 +113,18 @@
         {
           @: &max_id=@(Model.MaxId)
         }
+      ]]>
+-->			
+        <![CDATA[
+        https://api.twitter.com/1.1/search/tweets.json
+        @if(Model.PageCursor.Page == 0)
+        {
+					@: ?q=@Utils.UrlEncode(Model.Query)&lang=@(Model.Language)&sort=@(Model.Sorting)&count=@(Model.PageCursor.NextTake)
+        }
+				else
+				{
+					@(Model.NextResults)
+				}
       ]]>
       </Fetch.Url>
     </Fetch>
