@@ -39,7 +39,6 @@
 
   <RestConnector Id="TweetSearch" Title="Tweet Search" HelpUrl="https://dev.twitter.com/rest/reference/get/search/tweets">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet" HelpUrl="https://dev.twitter.com/rest/public/search"/>
       <Select Id="Language" Title="Language" Required="false" DefaultValue="">
         <DataSource>
           <Item Id="" Title="All"/>
@@ -54,19 +53,26 @@
         </DataSource>
       </Radio>
     </Parameters>
-    <Paging PageSize="100" EvenPages="false">
+    <Paging PageSize="10" EvenPages="false">
       <Parse>
         <Compute Id="MaxId">
           <Compute.Expr>
 					  <![CDATA[
-             @{
-              var IdOutput = Model.MaxIdString - 1;
-            }
-            @IdOutput
+						@{
+						long num;
+						long result = 0;
+						bool isNum = Int64.TryParse(Model.MaxIdString, out num);
+						if(Model.MaxIdString is string)
+						{
+							result = Convert.ToInt64(Model.MaxIdString) - 1;
+						}
+						}
+						@result
 						]]>
 						</Compute.Expr>
-						<JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="MaxIdString" Converter="Long"/>
-        </Compute>				
+					<JsonPath Expr="$.statuses[(@@.length-1)].id_str" Id="MaxIdString" Converter="String"/>
+        </Compute>
+				<JsonPath Expr="search_metadata.next_results" Id="NextResults" Converter="String"/>										
       </Parse>
     </Paging>
     <Fetch Url="">
@@ -92,7 +98,7 @@
       ]]>
       </Fetch.Url>
     </Fetch>
-    <Parse>
+    <Parse>		
       <JsonPath Expr="$.statuses.*">
         <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
