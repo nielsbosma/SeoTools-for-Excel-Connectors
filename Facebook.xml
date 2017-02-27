@@ -3,48 +3,34 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.8/dialog/oauth?client_id=756579344523803&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri={0}"/>
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.8/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri={0}"/>
 
   <RestConnector Id="PageLookup" Title="Page Lookup">
     <Parameters>
-      <Text Id="Id" Title="Id or URL" Debug.DefaultValue="56796081303" Required="true"/>
-    </Parameters>
-    <Fetch Url="https://graph.facebook.com/v2.8/@(Model.Id)?fields=about,category,checkins,talking_about_count,website,name,likes,fan_count&amp;access_token=@(Model.Authenticator.Token)">
-    </Fetch>
-    <Parse>
-      <JsonPath Title="Page Id" Id="PageId" Expr="$.id" Converter="String" HelpText=""/>
-      <JsonPath Title="Title" Id="Title" Expr="$.name" Converter="String" HelpText=""/>
-      <JsonPath Title="Category" Id="Category" Expr="$.category" Converter="String" HelpText=""/>
-      <JsonPath Title="About" Id="About" Expr="$.about" Converter="String" HelpText=""/>
-      <JsonPath Title="Checkins" Id="checkins" Expr="$.checkins" Converter="Int" HelpText=""/>
-      <JsonPath Title="Fans" Id="Fans" Expr="$.fan_count" Converter="Int" HelpText=""/>
-      <JsonPath Title="Talking About" Id="TalkingAbout" Expr="$.talking_about_count" Converter="Int" HelpText=""/>
-      <JsonPath Title="Website" Id="Website" Expr="$.website" Converter="String" HelpText=""/>
-			<Compute Id="PageUrl" Title="Page URL">
-				<Compute.Expr>
-					http://www.facebook.com/@(Model.PageIdInput)
-				</Compute.Expr>
-				<JsonPath Id="PageIdInput" Expr="id" Converter="String"/>
-			</Compute>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="AvatarUrl" Title="Avatar URL">
-    <Parameters>
-      <Text Id="Id" Title="Page or User Id" DefaultValue="" Required="true"/>
+      <Text Id="Id" Title="Page Id" Debug.DefaultValue="56796081303" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/@(Model.Id)/?fields=picture&access_token=@(Model.Authenticator.Token)
+        https://graph.facebook.com/v2.8/
+				@(Model.Id)?
+				fields=@SelectedFields()
+				&access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Title="Avatar URL" Id="AvatarUrl" Expr="$.picture.data.url" Converter="String" HelpText=""/>
+      <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+      <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+      <JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category" HelpText=""/>
+      <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText=""/>
+      <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText=""/>
+      <JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins" HelpText=""/>
+      <JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count" HelpText=""/>
+      <JsonPath Title="Talking About" Id="TalkingAbout" Expr="talking_about_count" Converter="Int" Tag="talking_about_count" HelpText=""/>
+      <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText=""/>
+      <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText=""/>
+      <JsonPath Title="Page Link" Id="PageLink" Expr="link" Converter="String" Tag="link" HelpText=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
@@ -65,7 +51,7 @@
         <![CDATA[
         https://graph.facebook.com/v2.8/
 				@(Model.Id)/albums?
-				fields=count,description,created_time,name
+				fields=@SelectedFields()
 				&access_token=@(Model.Authenticator.Token)
 				&limit=@(Model.PageCursor.NextTake)
 				@if(Model.PageCursor.Page != 0)
@@ -77,17 +63,14 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Title="Album Id" Id="AlbumId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Title" Id="Title" Expr="name" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Count" Id="Count" Expr="count" Converter="Int" HelpText=""/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
-        <Compute Id="EventUrl" Title="Event URL">
-          <Compute.Expr>
-            http://www.facebook.com/@(Model.AlbumIdInput)
-          </Compute.Expr>
-		      <JsonPath Title="Album URL" Id="AlbumIdInput" Expr="id" Converter="String"/>
-        </Compute>
+				<JsonPath Title="Album Id" Id="AlbumId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Photo Count" Id="PhotoCount" Expr="photo_count" Converter="Int" Tag="photo_count" HelpText=""/>
+				<JsonPath Title="Video Count" Id="VideoCount" Expr="video_count" Converter="Int" Tag="video_count" HelpText=""/>
+				<JsonPath Title="Likes Total" Id="LikesTotal" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="Album Link" Id="AlbumLink" Expr="link" Converter="String" Tag="link" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -97,7 +80,7 @@
 
   <RestConnector Id="PageEvents" Title="Page Events">
     <Parameters>
-      <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/DJURGARDEN/?fref=ts"/>
+      <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="12228681353"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
@@ -131,7 +114,9 @@
 				<JsonPath Title="End Time" Id="EndTime" Expr="end_time" Converter="DateTime" HelpText="" DefaultValue=" "/>
 				<Compute Id="EventUrl" Title="Event URL">
 					<Compute.Expr>
+						<![CDATA[
 						http://www.facebook.com/events/@(Model.EventId)
+						]]>
 					</Compute.Expr>
 					<JsonPath Title="Event Id" Id="EventId" Expr="id" Converter="String"/>
 				</Compute>
@@ -154,9 +139,9 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/
-        @(Model.Id)
-        /attending?
+        https://graph.facebook.com/v2.8/
+        @(Model.Id)/attending?
+				fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -169,8 +154,9 @@
     <Parse>
       <JsonPath Expr="data.*">
 				<JsonPath Title="Id" Id="Id" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" HelpText=""/>
-				<JsonPath Title="RSVP" Id="Rsvp" Expr="rsvp_status" Converter="String" HelpText=""/>
+				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+				<JsonPath Title="RSVP" Id="Rsvp" Expr="rsvp_status" Converter="String" Tag="rsvp_status" HelpText=""/>
+				<JsonPath Title="User Link" Id="Userlink" Expr="link" Converter="String" Tag="link" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -180,7 +166,8 @@
 
   <RestConnector Id="PageFeed" Title="Page Feed">
     <Parameters>
-      <Text Id="Id" Title="Id or URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.facebook.com/filippak/" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
+      <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -190,32 +177,35 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        @if(Model.PageCursor.Page == 0)
+        https://graph.facebook.com/v2.8/
+        @(Model.Id)/feed?
+				fields=@SelectedFields()
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
         {
-				  @: https://graph.facebook.com/feed?id=@(Model.Id)
-				  @: &access_token=@(Model.Authenticator.Token)
-					@: &limit=@(Model.PageCursor.NextTake)
-				  @: include_hidden=true
-				}
-				else
-        {
-          @(Model.Cursor)
+					@: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+					@: &until=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
         }
-				]]>
+        &access_token=@(Model.Authenticator.Token)
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+      ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
 				<JsonPath Title="Post Id" Id="PostId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Message" Id="Message" Expr="message" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Story" Id="Story" Expr="story" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            https://www.facebook.com/@(Model.Id)/
-          </Compute.Expr>
-          <JsonPath Expr="id" Id="Id" Converter="String"/>
-        </Compute>
+				<JsonPath Title="Type" Id="Type" Expr="type" Converter="String" Tag="type" HelpText=""/>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="Message" Id="Message" Expr="message" Converter="String" Tag="message" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Post Link" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText=""/>
+				<JsonPath Title="Picture Link" Id="PictureLink" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=" "/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -225,7 +215,8 @@
 
   <RestConnector Id="PageVideos" Title="Page Videos">
     <Parameters>
-      <Text Id="Id" Title="Video Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText=""/>
+      <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="25">
       <Parse>
@@ -236,8 +227,16 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-		    @(Model.Id)/videos
-				?fields=description,created_time,title,source
+		    @(Model.Id)/videos?
+				fields=@SelectedFields()
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
+        {
+					@: &until=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+        }
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+					@: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+        }
 		    &access_token=@(Model.Authenticator.Token)
 	      &limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -250,11 +249,21 @@
     <Parse>
       <JsonPath Expr="data.*">
 				<JsonPath Title="Video Id" Id="VideoId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Title" Id="Title" Expr="title" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
-				<JsonPath Title="Video Link" Id="VideoLink" Expr="source" Converter="String" HelpText=""/>
-      </JsonPath>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="Message" Id="Message" Expr="message" Converter="String" Tag="message" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Length" Id="Length" Expr="length" Converter="Double" Tag="length" HelpText="" DefaultValue=" "/>
+        <Compute Id="VideoLink" Title="Video Link" Tag="permalink_url" HelpText="">
+          <Compute.Expr>
+						<![CDATA[
+            https://www.facebook.com@(Model.PermalinkInput)
+						]]>
+          </Compute.Expr>
+					<JsonPath Expr="permalink_url" Id="PermalinkInput" Converter="String"/>
+        </Compute>
+			</JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
@@ -264,6 +273,7 @@
   <RestConnector Id="PagePhotos" Title="Page Photos">
     <Parameters>
       <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
@@ -275,7 +285,15 @@
         <![CDATA[
         https://graph.facebook.com/v2.8/
 				@(Model.Id)/photos?
-				fields=album,created_time,height,width,link,picture
+				fields=@SelectedFields()
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
+        {
+					@: &until=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+        }
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+					@: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+        }
 				&access_token=@(Model.Authenticator.Token)
 				&limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -287,14 +305,12 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Title="Photo Id" Id="PhotoId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Width" Id="Width" Expr="width" Converter="Int" HelpText=""/>
-				<JsonPath Title="Height" Id="Height" Expr="height" Converter="Int" HelpText=""/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
-				<JsonPath Title="Photo Link" Id="PhotoLink" Expr="link" Converter="String" HelpText=""/>
-				<JsonPath Title="Photo Source" Id="PhotoSource" Expr="picture" Converter="String" HelpText=""/>
-				<JsonPath Title="Album Id" Id="AlbumId" Expr="album.id" Converter="String" HelpText=""/>
-				<JsonPath Title="Album Name" Id="AlbumName" Expr="album.name" Converter="String" HelpText=""/>
+				<JsonPath Title="Post Id" Id="PostId" Expr="id" Converter="String" HelpText=""/>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Post Link" Id="PostLink" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Picture Link" Id="PictureLink" Expr="picture" Converter="String" Tag="picture" HelpText="" DefaultValue=" "/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -302,7 +318,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PostLikers" Title="Post Likers">
+  <RestConnector Id="PostLikes" Title="Post Likes">
     <Parameters>
       <Text Id="Id" Title="Id (Use 'PageId_PostId' Format)" DefaultValue="" Required="true" Debug.DefaultValue="56796081303_10154300423791304" HelpText=""/>
     </Parameters>
@@ -315,9 +331,8 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-		    @(Model.Id)
-		    /likes
-				?fields=link,name
+		    @(Model.Id)/likes?
+				fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 	      &limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -330,8 +345,8 @@
     <Parse>
       <JsonPath Expr="data.*">
 				<JsonPath Title="User Id" Id="UserId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="User Name" Id="UserName" Expr="name" Converter="String" HelpText=""/>
-				<JsonPath Title="User URL" Id="UserUrl" Expr="link" Converter="String" HelpText=""/>
+				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+				<JsonPath Title="User URL" Id="UserUrl" Expr="link" Converter="String" Tag="link" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -339,7 +354,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PostComments" Title="Post Commentators">
+  <RestConnector Id="PostComments" Title="Post Comments">
     <Parameters>
       <Text Id="Id" Title="Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303_10154300423791304" HelpText=""/>
     </Parameters>
@@ -352,9 +367,8 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-		    @(Model.Id)
-		    /comments?
-				fields=comment_count,like_count,created_time,from,message
+		    @(Model.Id)/comments?
+				fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 	      &limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -366,13 +380,14 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" HelpText=""/>
-				<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" HelpText=""/>
-				<JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" HelpText=""/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" HelpText=""/>
-				<JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" HelpText=""/>
-				<JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" HelpText=""/>
+				<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" Tag="Id" HelpText=""/>
+				<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
+				<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
+				<JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=" "/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -388,36 +403,30 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-		    @(Model.Id)
-				?fields=shares,likes.summary(true),comments.summary(true),message,type,description,created_time,permalink_url,from,picture,
-				reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love),
-				reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow),
-				reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha),
-				reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad),
-				reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)
+		    @(Model.Id)?
+				fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.">
-				<JsonPath Title="Message" Id="Message" Expr="$.message" Converter="String" HelpText=""  DefaultValue=" "/>
-				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" HelpText="" DefaultValue="0"/>				
-				<JsonPath Title="Love" Id="Love" Expr="$.reactions_love.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Wow" Id="Wow" Expr="$.reactions_wow.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Haha" Id="Haha" Expr="$.reactions_haha.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Sad" Id="Sad" Expr="$.reactions_sad.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Angry" Id="Angry" Expr="$.reactions_angry.summary.total_count" Converter="Int" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Type" Id="Type" Expr="$.type" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Description" Id="Description" Expr="$.description" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Created" Id="Created" Expr="$.created_time" Converter="DateTime" HelpText=""/>
-				<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" HelpText=""/>
-				<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" HelpText=""/>
-				<JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" HelpText="" DefaultValue=" "/>
-				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" HelpText="" DefaultValue=" "/>
-
+				<JsonPath Title="Message" Id="Message" Expr="$.message" Converter="String" Tag="message" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Type" Id="Type" Expr="$.type" Converter="String" Tag="type" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Love" Id="Love" Expr="$.reactions_love.summary.total_count" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Wow" Id="Wow" Expr="$.reactions_wow.summary.total_count" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Haha" Id="Haha" Expr="$.reactions_haha.summary.total_count" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Sad" Id="Sad" Expr="$.reactions_sad.summary.total_count" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Angry" Id="Angry" Expr="$.reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Description" Id="Description" Expr="$.description" Converter="String" Tag="type" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Created" Id="Created" Expr="$.created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=" "/>
+				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" Tag="picture" HelpText="" DefaultValue=" "/>
 			</JsonPath>
     </Parse>
     <Fail>
@@ -433,21 +442,22 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-				@(Model.Id)
-				?fields=message,from,created_time,like_count,comment_count,permalink_url
+				@(Model.Id)?
+				fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.">
-				<JsonPath Title="Message" Id="Message" Expr="$.message" Converter="String" HelpText=""/>
-				<JsonPath Title="Likes" Id="Likes" Expr="$.like_count" Converter="Int" HelpText=""/>
-				<JsonPath Title="Comments" Id="Comments" Expr="$.comment_count" Converter="Int" HelpText=""/>
-				<JsonPath Title="Created" Id="Created" Expr="$.created_time" Converter="DateTime" HelpText=""/>
-				<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" HelpText=""/>
-				<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" HelpText=""/>
-				<JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" HelpText=""/>
+				<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" HelpText=""/>
+				<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
+				<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
+				<JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
+				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+				<JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
+				<JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=" "/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -467,7 +477,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/search?
+        https://graph.facebook.com/v2.8/search?
 		    q=@Utils.UrlEncode(Model.Query)
 		    &type=page
 		    &access_token=@(Model.Authenticator.Token)
@@ -485,7 +495,9 @@
 				<JsonPath Title="Page Name" Id="PageName" Expr="name" Converter="String" HelpText=""/>
         <Compute Id="PageUrl" Title="Page URL">
           <Compute.Expr>
+						<![CDATA[
             http://www.facebook.com/@(Model.PageId)
+						]]>
           </Compute.Expr>
 					<JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" HelpText=""/>
         </Compute>
@@ -508,7 +520,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/search?
+        https://graph.facebook.com/v2.8/search?
 		    q=@Utils.UrlEncode(Model.Query)
 		    &type=group
 		    &access_token=@(Model.Authenticator.Token)
@@ -529,7 +541,9 @@
 			<JsonPath Expr="data.*">
 				<Compute Id="GroupUrl" Title="Group URL">
 					<Compute.Expr>
+						<![CDATA[
 						http://www.facebook.com/groups/@(Model.GroupId)
+						]]>
 					</Compute.Expr>
 					<JsonPath Title="Group Id" Id="GroupId" Expr="id" Converter="String"/>
 				</Compute>
@@ -552,7 +566,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/search?
+        https://graph.facebook.com/v2.8/search?
 		    q=@Utils.UrlEncode(Model.Query)
 		    &type=event
 		    &access_token=@(Model.Authenticator.Token)
@@ -579,7 +593,9 @@
       <JsonPath Expr="data.*">
         <Compute Id="EventUrl" Title="Event URL">
           <Compute.Expr>
+						<![CDATA[
             http://www.facebook.com/events/@(Model.EventId)
+						]]>
           </Compute.Expr>
 		      <JsonPath Title="Event Id" Id="EventId" Expr="id" Converter="String"/>
         </Compute>
@@ -603,9 +619,9 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/search?
-				&access_token=@(Model.Authenticator.Token)
 				&q=@Utils.UrlEncode(Model.Query)
 				&type=user
+				&access_token=@(Model.Authenticator.Token)
 				&limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
 				]]>
@@ -619,7 +635,9 @@
       <JsonPath Expr="data.*">
         <Compute Id="PersonUrl" Title="Person URL">
           <Compute.Expr>
+						<![CDATA[
             http://www.facebook.com/@(Model.PersonId)
+						]]>
           </Compute.Expr>
 		      <JsonPath Title="Person Id" Id="PersonId" Expr="id" Converter="String" HelpText=""/>
         </Compute>
@@ -629,5 +647,14 @@
       <JsonPath Expr="error.message"/>
     </Fail>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
