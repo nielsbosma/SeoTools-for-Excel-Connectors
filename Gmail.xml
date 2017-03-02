@@ -56,15 +56,22 @@
   </RestConnector>
 
 
-  <RestConnector Id="SearchSpecificHidden" Title="SearchSpecificHidden" Hidden="true">
+  <RestConnector Id="SentBool" Title="Have I Sent to?" Hidden="false">
     <Parameters>
       <Text Id="EmailAddress" Title="E-Mail Address" DefaultValue="" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>			
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/gmail/v1/users/me/messages?
-				&q=in:sent%20to:
+				&q=
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+					@: after:@(((DateTime)Model.DateInterval.StartDate).ToString("yyyy/MM/dd"))%20
+					@: before:@(((DateTime)Model.DateInterval.EndDate).ToString("yyyy/MM/dd"))%20
+				}
+				in:sent%20to:
         @(Utils.UrlEncode(Model.EmailAddress))
         ]]>
       </Fetch.Url>
@@ -80,11 +87,11 @@
 				<![CDATA[
 				@if(Model.IdInput is string)
 				{
-					@(Model.IdInput)
+					@: TRUE
 				}
 				else
 				{
-					@: abc
+					@: FALSE
 				}
 				]]>
 			</Compute.Expr>
@@ -94,19 +101,23 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="HasSent" Title="Have I Emailed This Address?" Hidden="false">
+  <RestConnector Id="ReceivedBool" Title="Have I Received from?" Hidden="false">
     <Parameters>
-      <Text Id="EmailAddress" Title="Mail Id" DefaultValue="" Required="true" Debug.DefaultValue="ce@deepcrawl.com"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Text Id="EmailAddress" Title="E-Mail Address" DefaultValue="" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>			
     </Parameters>
-    <Prepare>
-      <Connector Id="SearchSpecificHidden" Parameters="EmailAddress"/>
-    </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/messages/@(Utils.UrlEncode(Model.MailIdFetch))
-				]]>
+        https://www.googleapis.com/gmail/v1/users/me/messages?
+				&q=
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+					@: after:@(((DateTime)Model.DateInterval.StartDate).ToString("yyyy/MM/dd"))%20
+					@: before:@(((DateTime)Model.DateInterval.EndDate).ToString("yyyy/MM/dd"))%20
+				}
+				from:@(Model.EmailAddress)%20to:me
+        ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
@@ -115,23 +126,24 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-			<Compute Id="SentBool" Title="Sent" Converter="String">
+			<Compute Id="MailIdFetch" Title="MailIdFetch" Converter="String">
 				<Compute.Expr>
 				<![CDATA[
 				@if(Model.IdInput is string)
 				{
-					@: FALSE
+					@: TRUE
 				}
 				else
 				{
-					@: TRUE
+					@: FALSE
 				}
 				]]>
 			</Compute.Expr>
-				<JsonPath Expr="error.message" Id="IdInput" Converter="String"/>
+				<JsonPath Expr="messages[0].id" Id="IdInput" Converter="String"/>
 			</Compute>
     </Parse>
-  </RestConnector>
+    <Resource Id="Fail"/>
+  </RestConnector>	
 
   <RestConnector Id="MailLookup" Title="Mail Lookup" Hidden="false">
     <Parameters>
