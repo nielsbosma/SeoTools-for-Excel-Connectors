@@ -14,7 +14,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Mails" Title="Mails" Hidden="false">
+  <RestConnector Id="Mails" Title="All Mails" Hidden="false">
     <Parameters>
       <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash" DefaultValue="False"/>
@@ -55,6 +55,84 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+
+  <RestConnector Id="SearchSpecificHidden" Title="SearchSpecificHidden" Hidden="true">
+    <Parameters>
+      <Text Id="EmailAddress" Title="E-Mail Address" DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/gmail/v1/users/me/messages?
+				&q=in:sent%20to:
+        @(Utils.UrlEncode(Model.EmailAddress))
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<Compute Id="MailIdFetch" Title="MailIdFetch" Converter="String">
+				<Compute.Expr>
+				<![CDATA[
+				@if(Model.IdInput is string)
+				{
+					@(Model.IdInput)
+				}
+				else
+				{
+					@: abc
+				}
+				]]>
+			</Compute.Expr>
+				<JsonPath Expr="messages[0].id" Id="IdInput" Converter="String"/>
+			</Compute>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="HasSent" Title="Have I Emailed This Address?" Hidden="false">
+    <Parameters>
+      <Text Id="EmailAddress" Title="Mail Id" DefaultValue="" Required="true" Debug.DefaultValue="ce@deepcrawl.com"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SearchSpecificHidden" Parameters="EmailAddress"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/gmail/v1/users/me/messages/@(Utils.UrlEncode(Model.MailIdFetch))
+				]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<Compute Id="SentBool" Title="Sent" Converter="String">
+				<Compute.Expr>
+				<![CDATA[
+				@if(Model.IdInput is string)
+				{
+					@: FALSE
+				}
+				else
+				{
+					@: TRUE
+				}
+				]]>
+			</Compute.Expr>
+				<JsonPath Expr="error.message" Id="IdInput" Converter="String"/>
+			</Compute>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="MailLookup" Title="Mail Lookup" Hidden="false">
     <Parameters>
       <Text Id="MailId" Title="Mail Id" DefaultValue="" Required="true" Debug.DefaultValue=""/>
@@ -89,7 +167,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Threads" Title="Threads" Hidden="false">
+  <RestConnector Id="Threads" Title="All Threads" Hidden="false">
     <Parameters>
       <Text Id="Query" Title="Query (optional)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash" DefaultValue="False"/>
@@ -165,7 +243,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Labels" Title="Labels" Hidden="false">
+  <RestConnector Id="Labels" Title="All Labels" Hidden="false">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -215,51 +293,6 @@
         <JsonPath Expr="threadsUnread" Id="UnreadThreads" Title="Unread Threads" Converter="Int"/>
         <JsonPath Expr="messageListVisibility" Id="Visibility" Title="Visibility" Converter="String"/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Drafts" Title="Drafts" Hidden="false">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/drafts
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.drafts.*">
-        <JsonPath Expr="id" Id="DraftId" Title="Draft Id" Converter="String"/>
-        <JsonPath Expr="message.id" Id="EmailId" Title="Email Id" Converter="String"/>
-        <JsonPath Expr="message.threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ForwardingAdresses" Title="Settings - ForwardingAdresses" Hidden="false">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.forwardingAddresses.*">
-        <JsonPath Expr="forwardingEmail" Id="Email" Title="Email" Converter="String"/>
-        <JsonPath Expr="verificationStatus" Id="Status" Title="Status" Converter="String"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
