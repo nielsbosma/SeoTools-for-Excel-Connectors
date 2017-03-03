@@ -82,7 +82,7 @@
       ]]>
       </Fetch.Url>
     </Fetch>
-    <Parse>		
+    <Parse>
       <JsonPath Expr="$.statuses.*">
         <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
@@ -201,7 +201,7 @@
 						]]>
 						</Compute.Expr>
 						<JsonPath Expr="$[(@@.length-1)].id_str" Id="MaxIdString" Converter="Long"/>
-        </Compute>				
+        </Compute>
       </Parse>
     </Paging>
     <Fetch Url="">
@@ -228,14 +228,14 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>			
+        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             http://twitter.com/@(Model.ScreenName)/status/@(Model.Id)
           </Compute.Expr>
 		  <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         </Compute>
-        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>				
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
         <JsonPath Expr="text" Id="Tweet" Title="Tweet"/>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
@@ -248,8 +248,8 @@
           </Compute.Expr>
 					<JsonPath Expr="source" Id="SourceInput"/>
         </Compute>
-        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>				
-        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>				
+        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
+        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
         <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=" "/>
       </JsonPath>
 		</Parse>
@@ -586,6 +586,116 @@
       <JsonPath Expr="errors[0].message"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="MyFriendshipsLookup" Title="My Friendships Lookup">
+		<Parameters>
+      <Radio Id="InputType" Title="Input Type" DefaultValue="ScreenName" Required="true">
+        <DataSource>
+          <Item Id="screen_name" Title="Screen Names"/>
+          <Item Id="user_id" Title="User Ids"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Usernames" Title="List of Users" Debug.DefaultValue="wearebuddler" HelpText="Enter up to 100 Users separated by a new line" Required="true" Multiline="true"/>
+		</Parameters>
+    <Fetch Url="">
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/1.1/friendships/lookup.json?
+				@(Model.InputType)=@(FetchUserString())
+				]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+				<JsonPath Expr="id_str" Id="Id" Title="User ID" Converter="String"/>
+      </JsonPath>
+      <JsonPath Expr="$.*">
+        <Compute Id="Url" Title="URL">
+          <Compute.Expr>
+						<![CDATA[
+            https://www.twitter.com/@(Model.Username)/
+						]]>
+          </Compute.Expr>
+          <JsonPath Expr="screen_name" Id="Username" Converter="String"/>
+        </Compute>
+      </JsonPath>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="screen_name" Id="ScreenName" Title="Username"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <Compute Id="Connections" Title="Connections">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.ConnectionsInput, @"\s+", " ");
+              var connectionsstripped = temp.Substring(1,temp.Length-2);
+            }
+            @connectionsstripped
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="connections" Id="ConnectionsInput" Converter="String"/>
+        </Compute>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="FriendshipLookup" Title="Friendship Lookup">
+		<Parameters>
+      <Radio Id="InputType" Title="Input Type" DefaultValue="ScreenName" Required="true">
+        <DataSource>
+          <Item Id="screen_name" Title="Screen Names"/>
+          <Item Id="user_id" Title="User Ids"/>
+        </DataSource>
+      </Radio>
+      <Text Id="SourceUser" Title="Source User" Debug.DefaultValue="wearebuddler" HelpText="The subject user." Required="true"/>
+      <Text Id="TargetUser" Title="Target User" Debug.DefaultValue="kenyavic" HelpText="The taget user." Required="true"/>
+		</Parameters>
+    <Fetch Url="">
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/1.1/friendships/show.json?
+				source_@(Model.InputType)=@(Model.SourceUser)
+				&target_@(Model.InputType)=@(Model.TargetUser)
+				]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.relationship.source">
+				<JsonPath Expr="followed_by" Id="FollowedBy" Title="Followed By" Converter="Bool"/>
+				<JsonPath Expr="following" Id="Following" Title="Following" Converter="Bool"/>
+				<JsonPath Expr="live_following" Id="LiveFollowing" Title="Live Following" Converter="Bool" Checked="false"/>
+				<JsonPath Expr="following_received" Id="FollowingReceived" Title="Following Received" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="following_requested" Id="FollowingRequested" Title="Following Requested" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="notifications_enabled" Id="NotificationsEnabled" Title="Notifications Enabled" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="can_dm" Id="CanDM" Title="Can DM" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="blocking" Id="Blocking" Title="Blocking" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="blocked_by" Id="BlockedBy" Title="Blocked By" Converter="String" DefaultValue=" " Checked="false"/>
+				<JsonPath Expr="muting" Id="Muting" Title="Muting" Converter="String" DefaultValue=" " Checked="false"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors[0].message"/>
+    </Fail>
+  </RestConnector>
+
 
   <RazorFunctions>
   <![CDATA[
