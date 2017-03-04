@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Scraping" Title="Spotify" Id="Spotify" RequireVersion="6.1.9" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Spotify.xml" HelpUrl="http://seotoolsforexcel.com/Spotify/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Spotify/">
+    <Text Id="ClientId" Title="Client Id" Required="true" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/"/>
+  </Settings>
+
+  <RestConnector Id="GenerateToken" Title="GenerateToken" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/" Hidden="false">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+					<![CDATA[grant_type=client_credentials]]>
+        </RequestBody>				
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://accounts.spotify.com/api/token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="access_token" Id="Token" Title="Token" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_description"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    String CreateBasicAuth()
+	  {
+			string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + ":" + Model.ClientSecret));
+			return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
