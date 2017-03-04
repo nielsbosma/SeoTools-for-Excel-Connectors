@@ -50,7 +50,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="ListAccounts" Title="List Accounts" HelpUrl="http://api-docs.deepcrawl.com/#accounts-accounts-get" Hidden="true">
+  <RestConnector Id="ListAccounts" Title="List Accounts" HelpUrl="http://api-docs.deepcrawl.com/#accounts-accounts-get" Hidden="false">
 		<Prepare>
 			<Connector Id="GenerateToken"/>
 		</Prepare>
@@ -126,7 +126,7 @@
 				/projects/@(Model.ProjectIdFilter)
 				/crawls
 				?sort=-finished_at
-				&per_page=200			
+				&per_page=200
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -134,6 +134,9 @@
       <JsonPath Expr="$.*">
         <JsonPath Expr="id" Id="CrawlId" Title="Crawl Id" Converter="Int"/>
         <JsonPath Expr="crawling_at" Id="CrawlingAt" Title="Crawling At" Converter="DateTime"/>
+      </JsonPath>
+      <JsonPath Expr="$[0]">
+        <JsonPath Expr="all_pages_total" Id="Urls" Title="Urls" Converter="Int"/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -176,7 +179,7 @@
     <Fail>
       <JsonPath Expr="errors.message"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RestConnector Id="ListProjects" Title="List Projects" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get">
 		<Parameters>
@@ -190,7 +193,7 @@
 			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
 		</Prepare>
-    <Paging PageSize="200" EvenPages="false" MaxTake="2000"/>		
+    <Paging PageSize="200" EvenPages="true" MaxTake="2000"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -204,7 +207,7 @@
 				/projects
 				?sort=@(Model.Sorting)
 				&per_page=@(Model.PageCursor.NextTake)
-				&page=@(Model.PageCursor.Page+1				
+				&page=@(Model.PageCursor.Page+1
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -214,6 +217,18 @@
         <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
         <JsonPath Expr="_crawls_finished_last_finished_at" Id="LastCrawlDate" Title="Last Crawl Date" Converter="DateTime" HelpText=""/>
         <JsonPath Expr="crawls_count" Id="CrawlCount" Title="Crawl Count" Converter="Int" HelpText=""/>
+        <Compute Id="CrawlSources" Title="Crawl Sources">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.CrawlTypesInput, @"\s+", " ");
+              var sourcesstripped = temp.Substring(1,temp.Length-2);
+            }
+            @sourcesstripped
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="crawl_types" Id="CrawlTypesInput" Converter="String"/>
+        </Compute>
       </JsonPath>
     </Parse>
     <Fail>
@@ -234,7 +249,7 @@
 			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
 		</Prepare>
-    <Paging PageSize="200" EvenPages="false" MaxTake="2000"/>		
+    <Paging PageSize="200" EvenPages="true" MaxTake="2000"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -249,16 +264,17 @@
 				/crawls
 				?sort=@(Model.Sorting)
 				&per_page=@(Model.PageCursor.NextTake)
-				&page=@(Model.PageCursor.Page+1				
+				&page=@(Model.PageCursor.Page+1
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="finished_at" Id="DateFinished" Title="Date Finished" Converter="String" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="finished_at" Id="DateFinished" Title="Date Finished" Converter="DateTime" HelpText="" DefaultValue=" "/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="" DefaultValue=" "/>
         <JsonPath Expr="all_pages_total" Id="UrlsCrawled" Title="URLs Crawled" Converter="Int" HelpText="" DefaultValue=" "/>
         <JsonPath Expr="uncrawled_urls_total" Id="Uncrawled" Title="Uncrawled" Converter="Int" HelpText="" DefaultValue=" "/>
+        <JsonPath Expr="unique_pages_total" Id="PrimaryPages" Title="Primary Pages" Converter="Int" HelpText="" DefaultValue=" "/>
         <JsonPath Expr="stats_crawl_levels[(@@.length-1)].level" Id="Depth" Title="Depth" Converter="Int" HelpText="" DefaultValue=" "/>
       </JsonPath>
     </Parse>
@@ -311,20 +327,20 @@
       <JsonPath Expr="errors.message"/>
     </Fail>
   </RestConnector>
-	
+
   <RestConnector Id="ReportDetails" Title="Report Details" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
 		<Parameters>
       <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" DefaultValue="" Debug.DefaultValue="76280" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
       <Text Id="CrawlIdFilter" Title="Select a Crawl" DefaultValue="" Required="true" Debug.DefaultValue="573647" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
       <Text Id="ReportIdFilter" Title="Select a Report" DefaultValue="" Required="true" Debug.DefaultValue="140885524" Select.Connector="ListReportsHidden" Select.IdField="ReportId" Select.TitleField="ReportName"/>
-      <Text Id="UrlFilter" Title="URL Filter" DefaultValue="" Debug.DefaultValue="" Required="false" HelpText="Filter Results by URL string"/>			
+      <Text Id="UrlFilter" Title="URL Filter" DefaultValue="" Debug.DefaultValue="" Required="false" HelpText="Filter Results by URL string"/>
       <Radio Id="FilterType" Title="Filter String Type" DefaultValue="name_cont" Required="false">
         <DataSource>
           <Item Id="cont" Title="Contains"/>
           <Item Id="eql" Title="Equals"/>
         </DataSource>
       </Radio>
-		</Parameters>			
+		</Parameters>
 		<Prepare>
 			<Connector Id="GenerateToken"/>
 			<Connector Id="ListAccounts"/>
@@ -364,7 +380,7 @@
     <Fail>
       <JsonPath Expr="errors.message"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
@@ -380,12 +396,11 @@
 
 <!--
 Issues:
-- Unable to sort projects by ?sort=crawls_count
-- Status not available as value in projects
-- URLs not available as value in projects
-- Primay Pages not available as value in crawls
+- Unable to sort projects by Crawls Count (crawls_count
+- Status not available as value in projects (requires parsing latest project with crawls endpoint)
+- URLs not available as value in projects (requires parsing latest project with crawls endpoint)
 - URLs not available as sorting in crawls
-- Primary Pages not available as sorting in crawls
+- Unable to sort crawls by Primary Pages (unique_pages_total?)
 - Report Trend requires crawl id input. API doesn't support "every crawl" based on project id.
 
 Questions:
