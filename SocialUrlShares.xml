@@ -1,17 +1,93 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="URL Shares" Id="SocialUrlShares" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/UrlShares.xml" HelpUrl="" HelpText="Documentation">
 
-  <RestConnector Id="FacebookShares" Title="Facebook Shares">
+  <RestConnector Id="AllSiteShares" Title="All Site Shares" HelpText="For specific site shares, use the individual connector.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="https://www.google.com"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="FacebookLikes" Parameters="Url"/>
+      <Connector Id="FacebookComments" Parameters="Url"/>
+      <Connector Id="StumbleUponStumbles" Parameters="Url"/>
+      <Connector Id="GooglePlusOnes" Parameters="Url"/>
+      <Connector Id="LinkedInShares" Parameters="Url"/>
+      <Connector Id="PinterestPinned" Parameters="Url"/>
+      <Connector Id="BufferShares" Parameters="Url"/>
+      <Connector Id="VKShares" Parameters="Url"/>
+    </Prepare>
+    <Fetch Url="http://graph.facebook.com/?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
+    <Parse>
+      <JsonPath Title="Facebook Shares" Id="Shares" Expr="share.share_count" Converter="Int" DefaultValue="0"/>
+        <Compute Id="FBLikes" Title="Facebook Likes" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.FBLikes)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="FBComments" Title="Facebook Comments" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.FBComments)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="Stumbles" Title="StumbleUpon Stumbles" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.Stumbles)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="GooglePlusOnes" Title="Google Plus Ones" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.PlusOnes)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="LinkedInShares" Title="LinkedIn Shares" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.LinkedIns)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="BufferShares" Title="Buffer Shares" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.Buffers)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="VKShares" Title="VK Shares" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.VKs)]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="PinterestPins" Title="Pinterest Pins" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[@(Model.Pinned)]]>
+          </Compute.Expr>
+        </Compute>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="FacebookShares" Title="Facebook Shares" AvailableInSpider="true">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
     </Parameters>
-    <Fetch Url="http://graph.facebook.com/?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="http://graph.facebook.com/?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
     <Parse>
-      <JsonPath Title="Shares" Id="Shares" Expr="share.share_count" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Facebook Shares" Id="Shares" Expr="share.share_count" Converter="Int" DefaultValue="0"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="FacebookLikes" Title="Facebook Likes" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://graph.facebook.com/?fields=og_object{likes.limit(0).summary(true)}&amp;id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
+    <Parse>
+      <JsonPath Title="Facebook Likes" Id="FBLikes" Expr="og_object.likes.summary.total_count" Converter="Int" DefaultValue="0"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="FacebookComments" Title="Facebook Comments" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true"/>
+    </Parameters>
+    <Fetch Url="https://graph.facebook.com/?fields=share&amp;id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
+    <Parse>
+      <JsonPath Title="Facebook Comments" Id="FBComments" Expr="share.comment_count" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
@@ -19,27 +95,9 @@
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
     </Parameters>
-    <Fetch Url="http://www.stumbleupon.com/services/1.01/badge.getinfo?url=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="http://www.stumbleupon.com/services/1.01/badge.getinfo?url=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
     <Parse>
-      <JsonPath Expr="$.result.views" Converter="Int" DefaultValue="0"/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="StumbleUponLikes" Title="StumbleUpon Likes" AvailableInSpider="true">
-    <Parameters>
-      <Text Id="Url" Title="URL" Required="true"/>
-    </Parameters>
-    <Fetch Url="http://www.stumbleupon.com/content/@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)}">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <XPath Title="Likes" Id="Likes" Expr="//nav[@@class='nav-tertiary']/ul/li[1]/a/mark[1]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Expr="$.result.views" Id="Stumbles" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
@@ -47,13 +105,9 @@
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
     </Parameters>
-    <Fetch Url="https://plusone.google.com/u/0/_/+1/fastbutton?count=true&amp;url=@(Utils.UrlEncode(Model.Url))">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="https://apis.google.com/u/0/se/0/_/+1/sharebutton?plusShare=true&amp;url=@(Utils.UrlEncode(Model.Url))"/>
     <Parse>
-      <Regex Title="PlusOne" Id="PlusOne" Expr="&lt;div id=&quot;aggregateCount&quot;[^&gt;]+&gt;([^&gt;]+)&lt;/div&gt;" Group="1" IgnoreCase="true" Converter="Int"/>
+      <Regex Title="PlusOne" Id="PlusOnes" Expr="\+(\d+)" Group="1" IgnoreCase="true" Converter="Int"/>
     </Parse>
   </RestConnector>
 
@@ -61,13 +115,9 @@
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
     </Parameters>
-    <Fetch Url="http://www.linkedin.com/countserv/count/share?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="http://www.linkedin.com/countserv/count/share?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_"/>
     <Parse>
-      <Regex Title="Shares" Id="Shares" Expr="&quot;count&quot;:(\d+)," Converter="Int"/>
+      <Regex Title="Shares" Id="LinkedIns" Expr="&quot;count&quot;:(\d+)," Converter="Int"/>
     </Parse>
   </RestConnector>
 
@@ -75,11 +125,7 @@
     <Parameters>
       <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
     </Parameters>
-    <Fetch Url="http://api.pinterest.com/v1/urls/count.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="http://api.pinterest.com/v1/urls/count.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))&amp;callback=_"/>
     <Parse>
       <Regex Title="Pinned" Id="Pinned" Expr="&quot;count&quot;:(\d+)" Converter="Int"/>
     </Parse>
@@ -89,13 +135,9 @@
     <Parameters>
       <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
     </Parameters>
-    <Fetch Url="https://api.bufferapp.com/1/links/shares.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="https://api.bufferapp.com/1/links/shares.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))"/>
     <Parse>
-      <Regex Title="Shares" Id="Shares" Expr="&quot;shares&quot;:(\d+)" Converter="Int" DefaultValue="0"/>
+      <Regex Title="Shares" Id="Buffers" Expr="&quot;shares&quot;:(\d+)" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
@@ -103,13 +145,9 @@
     <Parameters>
       <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
     </Parameters>
-    <Fetch Url="http://vk.com/share.php?act=count&amp;url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="0" RandomTo="0" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
+    <Fetch Url="http://vk.com/share.php?act=count&amp;url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))"/>
     <Parse>
-      <Regex Title="Shares" Id="Shares" Expr="(?&lt;=,\s*)(.*)(?=\))" Converter="Int" DefaultValue="0"/>
+      <Regex Title="Shares" Id="VKs" Expr="(?&lt;=,\s*)(.*)(?=\))" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
