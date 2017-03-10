@@ -166,9 +166,16 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PageFeed" Title="Page Feed">
+  <RestConnector Id="PagePosts" Title="Page Posts">
     <Parameters>
       <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
+      <Radio Id="PostType" Title="Post Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="feed" Title="Feed"/>
+          <Item Id="posts" Title="Posts by Page"/>
+          <Item Id="tagged" Title="Page tagged in"/>
+        </DataSource>
+      </Radio>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
@@ -180,7 +187,7 @@
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v2.8/
-        @(Model.Id)/feed?
+        @(Model.Id)/@(Model.PostType)?
 				fields=@SelectedFields()
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
         {
@@ -206,6 +213,8 @@
 				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
 				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
 				<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" HelpText="" DefaultValue="0"/>
+				<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
+				<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
 				<JsonPath Title="Post Link" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText=""/>
 				<JsonPath Title="Picture Link" Id="PictureLink" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
       </JsonPath>
