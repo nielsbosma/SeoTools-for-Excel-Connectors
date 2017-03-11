@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" Title="W3C Validate" Id="W3CValidate" RequireVersion="6.1.10" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/W3CValidate.xml" HelpUrl="http://seotoolsforexcel.com/W3CValidate/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <RestConnector Id="Validate" Title="Validate">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+    </Parameters>
+	<Fetch>
+    <Fetch.Url>
+      <![CDATA[
+      https://validator.w3.org/nu/
+			?doc=@(Utils.UrlEncode(Model.Url))
+			&out=xml
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<XPath Expr="count(//error)" Id="Errors" Title="Errors" Converter="Int" HelpText=""/>
+			<XPath Expr="count(//info[@@type='warning'])" Id="Warnings" Title="Warnings" Converter="Int" HelpText=""/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Items" Title="Items">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Checkbox Id="ErrorsOnly" Title="Only Show Errors" DefaultValue="false"/>
+    </Parameters>
+	<Fetch>
+    <Fetch.Url>
+      <![CDATA[
+      https://validator.w3.org/nu/
+			?doc=@(Utils.UrlEncode(Model.Url))
+			@if(Model.ErrorsOnly == true)
+			{
+				@: &level=error
+			}
+			&out=json
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="messages[*]">
+				<Compute Id="Type" Title="Type" Converter="String" HelpText="">
+					<Compute.Expr>
+							<![CDATA[
+							@if(Model.Type == "error")
+							{
+								@: Error
+							}
+							else
+							{
+								@: Warning
+							}
+							]]>
+					</Compute.Expr>
+				<JsonPath Expr="type" Id="Type" Converter="String"/>
+				</Compute>
+				<JsonPath Expr="message" Id="Message" Title="Message" Converter="String" HelpText=""/>
+				<JsonPath Expr="lastLine" Id="LastLine" Title="Last Line" Converter="Int" HelpText=""/>
+				<JsonPath Expr="lastColumn" Id="LastColumn" Title="Last Column" Converter="Int" HelpText=""/>
+				<JsonPath Expr="hiliteStart" Id="HiliteStart" Title="Hilite Start" Converter="Int" HelpText=""/>
+				<JsonPath Expr="hiliteLength" Id="HiliteLength" Title="Hilite Length" Converter="Int" HelpText=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
