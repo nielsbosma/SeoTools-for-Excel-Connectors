@@ -14,9 +14,9 @@
       <Item Id="refdomains" Title="Refdomains"/>
       <Item Id="linksfromrefdomains" Title="Links from Refdomains"/>
     </Resource>
-    
+
     <Resource Id="OrderRefDomains">
-      <Item Id="default" Title="Default"/>	
+      <Item Id="default" Title="Default"/>
       <Item Id="0" Title="Number of Matches"/>
       <Item Id="1" Title="AlexaRank"/>
       <Item Id="2" Title="Referring Root Domains"/>
@@ -31,7 +31,7 @@
       <Item Id="11" Title="Matched Links"/>
     </Resource>
   </Resources>
-	
+
   <RestConnector Id="IndexData" Title="Index Data" HelpUrl="https://developer-support.majestic.com/api/commands/get-index-item-info.shtml" AvailableInSpider="true">
     <Parameters>
       <Text Id="Urls" Title="URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Enter one or more URLs separated by a new line" Multiline="true"/>
@@ -45,8 +45,8 @@
     <Batch Parameter="Urls" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
-        <![CDATA[          
-          http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)          
+        <![CDATA[
+          http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetIndexItemInfo
 					&@FetchIndexUrls()
 					&datasource=@(Model.Datasource)
@@ -122,15 +122,18 @@
       </Radio>
       <Text Id="MaxUrls" Title="Max same source URLs" DefaultValue="" Required="false" HelpText="If set to greater than 0, then it will set a limit to number of same source urls returned."/>
       <Text Id="FilterTopic" Title="Filter by Topic" DefaultValue="" Required="false" HelpText="For example: Computers/Programming/Languages"/>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number of results to be returned back"/>
     </Parameters>
-    <Fetch>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.BackLinks.Headers.AvailableLines"/>
+      </Parse>
+    </Paging>
+		<Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetBackLinkData
 					&item=@Utils.UrlEncode(Model.Url)
-					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 					@if(Model.MaxDomains != "-1")
 					{
@@ -144,6 +147,8 @@
 					{
 						@: &FilterTopic=@(Model.FilterTopic)
 					}
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -199,15 +204,18 @@
         </DataSource>
       </Radio>
 			<Checkbox Id="TextMode" Title="Remove punctunation and delimiters" DefaultValue="False" HelpText=""/>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
-    </Parameters>
+		</Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.AnchorText.Headers.TotalResults"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetAnchorText
 					&item=@Utils.UrlEncode(Model.Url)
-					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 				  @if(Model.TextMode == true)
 					{
@@ -218,6 +226,8 @@
 						@: &FilterAnchorText=@(Utils.UrlEncode(Model.FilterAnchorText))
 						@: &FilterAnchorTextMode=@(Model.FilterAnchorTextMode)
 					}
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -236,7 +246,7 @@
       <JsonPath Expr="ErrorMessage"/>
     </Fail>
   </RestConnector>
-	
+
   <RestConnector Id="HostedDomains" Title="Hosted Domains" HelpUrl="https://developer-support.majestic.com/api/commands/get-hosted-domains.shtml">
     <Parameters>
       <Text Id="Domain" Title="Domain or IP" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Domain or IP to query"/>
@@ -246,12 +256,12 @@
           <Item Id="historic" Title="Historic"/>
         </DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+			<Number Id="MaxResults" Title="Max results" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetHostedDomains
 					&Domain=@Utils.UrlEncode(Model.Domain)
 					&MaxDomains=@(Model.MaxResults)
@@ -284,7 +294,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetKeywordInfo
 					&@FetchKeywords()
 				]]>
@@ -324,7 +334,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="NewAndLostBackLinks" Title="New and Lost Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-new-lost-back-links.shtml">
+  <RestConnector Id="NewAndLostBackLinks" Title="New &amp; Lost Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-new-lost-back-links.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
       <Radio Id="Mode" Title="Mode" DefaultValue="0" Required="false">
@@ -340,19 +350,24 @@
           <Item Id="historic" Title="Historic"/>
         </DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
     </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.BackLinks.Headers.TotalBackLinks"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetNewLostBackLinks
 					&item=@Utils.UrlEncode(Model.Url)
-					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 					&Mode=@(Model.Mode)
 					&Datefrom=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
 					&Dateto=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -396,12 +411,12 @@
           <Item Id="historic" Title="Historic"/>
         </DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
+			<Number Id="MaxResults" Title="Max results" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back."/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetTopPages
 					&Query=@Utils.UrlEncode(Model.Url)
 					&Count=@(Model.MaxResults)
@@ -460,23 +475,23 @@
           <Item Id="desc" Title="Descending"/>
 				</DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="20" Required="true" HelpText="Number o of results to be returned back"/>
-			<Number Id="Offset" Title="Offset" DefaultValue="0" Required="false" HelpText="row number to start returning data from for pagnation."/>
     </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.Topics.Headers.TotalResults"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetTopics
 					&item=@Utils.UrlEncode(Model.Url)
-					&Count=@(Model.MaxResults)
 					&datasource=@(Model.Datasource)
 					&SortBy=@(Model.OrderBy)
 					&SortOrder=@(Model.Direction)
-				  @if(Model.Offset != "0")
-					{
-					@: &From=@(Model.Offset)
-					}
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -504,22 +519,21 @@
           <Item Id="0" Title="Root Domains"/>
 					</DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="10" Required="true" HelpText="Number o of results to be returned back"/>
-			<Number Id="Offset" Title="Offset" DefaultValue="0" Required="false" HelpText="row number to start returning data from for pagnation."/>
     </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.Results.Headers.Matches"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=SearchByKeyword
 					&query=@Utils.UrlEncode(Model.Query)
-					&Count=@(Model.MaxResults)
-				  @if(Model.Offset != "0")
-					{
-					@: &From=@(Model.Offset)
-					}
 					&scope=@(Model.Scope)
-					
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -563,13 +577,17 @@
           <Item Id="1" Title="Descending"/>
 				</DataSource>
       </Radio>
-			<Number Id="MaxResults" Title="Max results" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back"/>
 		</Parameters>
     <Batch Parameter="Urls" Separator="\n" ItemsPerBatch="100"/>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.DataTables.Results.Headers.TotalMatchedDomains"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetRefDomains
 					&@FetchRefDomains()
 					&datasource=@(Model.Datasource)
@@ -578,7 +596,8 @@
 						@: &OrderBy1=@(Model.OrderBy)
 						@: &OrderDir1=@(Model.Direction)
 					}
-					&Count=@(Model.MaxResults)
+					&Count=@(Model.PageCursor.NextTake)
+					&From=@(Model.PageCursor.NextSkip)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -624,7 +643,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token) 
+					http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
 					&cmd=GetSubscriptionInfo
 				]]>
       </Fetch.Url>
@@ -633,21 +652,21 @@
       <JsonPath Expr="DataTables.Subscriptions.Data[0]">
         <JsonPath Expr="IndexItemInfoResUnits" Id="IndexItemInfoResUnits" Title="IndexItemInfoResUnits" Converter="Int" HelpText="Resource units that are used to lookup backlinks counts for URLs, subdomains and root domains."/>
         <JsonPath Expr="AnalysisResUnits" Id="AnalysisResUnits" Title="AnalysisResUnits" Converter="Int" HelpText="Resource units used in analysis of backlinks."/>
-        <JsonPath Expr="RetrievalResUnits" Id="RetrievalResUnits" Title="RetrievalResUnits" Converter="Int" HelpText="Resource units used when backlinks are retrieved."/>			
-      </JsonPath>				
+        <JsonPath Expr="RetrievalResUnits" Id="RetrievalResUnits" Title="RetrievalResUnits" Converter="Int" HelpText="Resource units used when backlinks are retrieved."/>
+      </JsonPath>
       <JsonPath Expr="DataTables.SubscriptionPlans.Data[*]">
         <JsonPath Expr="SubscriptionID" Id="SubscriptionID" Title="Subscription ID" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="Title" Id="Title" Title="Subscription Title" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="Created" Id="Created" Title="Subscription Created" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="Active" Id="Active" Title="Active" Converter="Int" HelpText="" Checked="false"/>
         <JsonPath Expr="ExpirationDate" Id="ExpirationDate" Title="Subscription Expiration" Converter="String" HelpText="" Checked="false"/>
-        <JsonPath Expr="MaxPeriods" Id="MaxPeriods" Title="MaxPeriods" Converter="Int" HelpText="" Checked="false"/>				
-      </JsonPath>				
+        <JsonPath Expr="MaxPeriods" Id="MaxPeriods" Title="MaxPeriods" Converter="Int" HelpText="" Checked="false"/>
+      </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="ErrorMessage"/>
     </Fail>
-  </RestConnector>	
+  </RestConnector>
 
   <RazorFunctions>
 		<![CDATA[
@@ -656,19 +675,19 @@
       string[] lines = (string[])Model.UrlsBatch;
       return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
     }
-    
+
 		string FetchKeywords()
 		{
       string[] lines = (string[])Model.KeywordsBatch;
 			return string.Join("&",lines.Select((e, i) => "item" + (i+1) + "=" + Utils.UrlEncode(e)).ToArray());
 		}
-    
+
 		string FetchRefDomains()
 		{
 			string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
 			return string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
 		}
-    
+
 		]]>
-	</RazorFunctions>	
+	</RazorFunctions>
 </Suite>
