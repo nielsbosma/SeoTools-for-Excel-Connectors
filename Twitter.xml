@@ -87,7 +87,9 @@
         <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
+						<![CDATA[
             https://twitter.com/@(Model.ScreenName)/status/@(Model.IdStr)
+						]]>
           </Compute.Expr>
           <JsonPath Expr="id_str" Id="IdStr" Converter="String"/>
           <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
@@ -115,7 +117,9 @@
       <JsonPath Expr="$.statuses.*">
         <Compute Id="UserURL" Title="User URL">
           <Compute.Expr>
+						<![CDATA[
             https://twitter.com/@(Model.ScreenName)
+						]]>
           </Compute.Expr>
           <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
         </Compute>
@@ -160,7 +164,9 @@
       <JsonPath Expr="*.">
         <Compute Id="Url" Title="UserUrl">
           <Compute.Expr>
+						<![CDATA[
             https://twitter.com/@(Model.ScreenName)
+						<![CDATA[
           </Compute.Expr>
           <JsonPath Expr="screen_name" Id="ScreenName" Converter="String"/>
         </Compute>
@@ -231,7 +237,9 @@
         <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
+						<![CDATA[
             http://twitter.com/@(Model.ScreenName)/status/@(Model.Id)
+						]]>
           </Compute.Expr>
 		  <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
         </Compute>
@@ -364,8 +372,9 @@
 
   <RestConnector Id="TweetsLookup" Title="Tweets Lookup">
 		<Parameters>
-      <Text Id="TweetId" Title="Tweet Ids" Debug.DefaultValue="791304652121894912" HelpText="Enter one or more Tweet Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="TweetIds" Title="Tweet Ids" Debug.DefaultValue="791304652121894912" HelpText="Enter one or more Tweet Ids separated by a new line" Required="true" Multiline="true"/>
 		</Parameters>
+    <Batch Parameter="TweetIds" Separator="\n" ItemsPerBatch="100"/>
     <Fetch Url="">
       <Fetch.Url>
         <![CDATA[
@@ -480,6 +489,7 @@
 		<Parameters>
       <Text Id="Usernames" Title="Usernames" Debug.DefaultValue="ChristLindgren" HelpText="Enter one or more Usernames separated by a new line" Required="true" Multiline="true"/>
 		</Parameters>
+    <Batch Parameter="Usernames" Separator="\n" ItemsPerBatch="20"/>		´
     <Fetch Url="">
       <Fetch.Url>
         <![CDATA[
@@ -595,8 +605,9 @@
           <Item Id="user_id" Title="User Ids"/>
         </DataSource>
       </Radio>
-      <Text Id="Usernames" Title="List of Users" Debug.DefaultValue="wearebuddler" HelpText="Enter up to 100 Users separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Usernames" Title="List of Users" Debug.DefaultValue="wearebuddler" HelpText="Enter usernames separated by a new line" Required="true" Multiline="true"/>
 		</Parameters>
+    <Batch Parameter="Usernames" Separator="\n" ItemsPerBatch="20"/>		´
     <Fetch Url="">
       <Fetch.Url>
         <![CDATA[
@@ -635,7 +646,8 @@
             <![CDATA[
             @{
               var temp = Regex.Replace(Model.ConnectionsInput, @"\s+", " ");
-              var connectionsstripped = temp.Substring(1,temp.Length-2);
+              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
+              var connectionsstripped = temp2.Substring(1,temp2.Length-2);
             }
             @connectionsstripped
             ]]>
@@ -699,20 +711,19 @@
 
   <RazorFunctions>
   <![CDATA[
-
   string RenderQuery(Dictionary<string,string> query) {
 	  return string.Join("&", query.OrderBy(e => e.Key).Where(e => !string.IsNullOrEmpty(e.Value)).Select(e => e.Key + "=" + Uri.EscapeDataString(e.Value)).ToArray());
   }
 
 	string FetchTweetString()
 	{
-		string[] lines = ((string)Model.TweetId).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+		string[] lines = (string[])Model.TweetIdsBatch;
 		return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
 	}
 
 	string FetchUserString()
 	{
-		string[] lines = ((string)Model.Usernames).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+		string[] lines = (string[])Model.UsernamesBatch;
 		return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
 	}
   ]]>
