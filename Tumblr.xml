@@ -32,25 +32,26 @@
     </Paging>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-      https://api.tumblr.com/v2/tagged?
-		  tag=@Utils.UrlEncode(Model.Tag)
-		  &api_key=@Model.Key
-		  &limit=@(Model.PageCursor.NextTake)
-      @if(Model.PageCursor.Page != 0)
-      {
-        @: &before=@(Model.MaxTimeStamp)
-      }
-      ]]>
+				<![CDATA[
+				https://api.tumblr.com/v2/tagged?
+				tag=@Utils.UrlEncode(Model.Tag)
+				&api_key=@Model.Key
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &before=@(Model.MaxTimeStamp)
+				}
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="response[*]">
         <JsonPath Expr="id" Id="Id" Converter="String"/>
-        <JsonPath Expr="short_url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="summary" Id="Summary" Converter="String"/>
         <JsonPath Expr="date" Id="Date" Converter="DateTime"/>
         <JsonPath Expr="type" Id="Type" Converter="String"/>
-        <JsonPath Expr="summary" Id="Summary" Converter="String"/>
+        <JsonPath Expr="note_count" Id="Notes" Converter="Int"/>
+        <JsonPath Expr="short_url" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="blog_name" Id="BlogName" Title="Blog Name" Converter="String"/>
       </JsonPath>
     </Parse>
@@ -62,27 +63,36 @@
     </Parameters>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-      https://api.tumblr.com/v2/blog/
-		  @Utils.UrlEncode(Model.BlogName)
-		  /info?
-		  &api_key=@Model.Key
-      ]]>
+				<![CDATA[
+				https://api.tumblr.com/v2/blog/
+				@Utils.UrlEncode(Model.BlogName)
+				/info?
+				&api_key=@Model.Key
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="response.blog">
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="title" Id="Title" Converter="String"/>
-        <JsonPath Expr="description" Id="Description" Converter="String"/>
+        <Compute Id="Description" Title="Description">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.DescriptionInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="description" Id="DescriptionInput" Converter="String"/>
+        </Compute>
         <JsonPath Expr="total_posts" Id="TotalPosts" Title="Total Posts" Converter="Int"/>
-        <JsonPath Expr="likes" Id="Likes" Converter="Int"/>
         <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </JsonPath>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="TimelineSearch" Title="User Blogposts">
+  <RestConnector Id="UserBlogPosts" Title="User Blogposts">
     <Parameters>
       <Text Id="BlogName" Title="BlogName" Debug.DefaultValue="allimacha" Required="true"/>
       <Text Id="TagFilter" Title="Filter by Tag" Required="false" DefaultValue=""/>
@@ -95,25 +105,25 @@
     <Paging PageSize="20"/>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-      https://api.tumblr.com/v2/blog/
-	    @Utils.UrlEncode(Model.BlogName)
-	    /posts?
-	    &api_key=@Model.Key
-	    &limit=@(Model.PageCursor.NextTake)
-      @if(Model.PageCursor.Page != 0)
-      {
-        @: &offset=@(Model.PageCursor.NextSkip)
-      }
-      @if(Model.Type != "all")
-      {
-        @: &type=@(Model.Type)
-      }
-      @if(Model.TagFilter != "")
-      {
-        @: &tag=@Utils.UrlEncode(Model.TagFilter)
-      }	
-      ]]>
+				<![CDATA[
+				https://api.tumblr.com/v2/blog/
+				@Utils.UrlEncode(Model.BlogName)
+				/posts?
+				&api_key=@Model.Key
+				&limit=@(Model.PageCursor.NextTake)
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &offset=@(Model.PageCursor.NextSkip)
+				}
+				@if(Model.Type != "all")
+				{
+					@: &type=@(Model.Type)
+				}
+				@if(Model.TagFilter != "")
+				{
+					@: &tag=@Utils.UrlEncode(Model.TagFilter)
+				}
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
