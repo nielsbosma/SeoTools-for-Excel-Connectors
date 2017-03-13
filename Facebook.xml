@@ -7,8 +7,9 @@
 
   <RestConnector Id="PagesLookup" Title="Pages Lookup">
     <Parameters>
-      <Text Id="Id" Title="Page Ids" Debug.DefaultValue="56796081303" Required="true" HelpText="Enter up to 50 page Ids separated by a new line" Multiline="true"/>
+      <Text Id="Ids" Title="Page Ids" Debug.DefaultValue="56796081303" Required="true" HelpText="Enter one or more page Ids separated by a new line" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -408,8 +409,9 @@
 
   <RestConnector Id="PostsLookup" Title="Posts Lookup">
     <Parameters>
-      <Text Id="Id" Title="Post Ids (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10154300423791304" HelpText="Enter up to 50 post Ids separated by a new line" Multiline="true" Required="true"/>
+      <Text Id="Ids" Title="Post Ids (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10154300423791304" HelpText="Enter one or more post Ids separated by a new line" Multiline="true" Required="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -448,8 +450,10 @@
 
   <RestConnector Id="CommentsLookup" Title="Comments Lookup">
     <Parameters>
-      <Text Id="Id" Title="Comment Ids (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="Enter up to 50 comment Ids separated by a new line" Multiline="true" Required="true"/>
+      <Text Id="Ids" Title="Comment Ids (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="Enterone or more comment Ids separated by a new line" Multiline="true" Required="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -666,10 +670,9 @@
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
       }
-
 			string FetchIdString()
 			{
-				string[] lines = ((string)Model.Id).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
+				string[] lines = (string[])Model.IdsBatch;
 				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
 			}
     ]]>
