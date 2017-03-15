@@ -380,6 +380,7 @@
         <![CDATA[
         https://api.twitter.com/1.1/statuses/lookup.json?
 				id=@(FetchTweetString())
+				&map=true
 				]]>
       </Fetch.Url>
       <HttpSettings>
@@ -392,11 +393,17 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$.id.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
 						<![CDATA[
-            https://www.twitter.com/@(Model.Username)/statuses/@(Model.Id)/
+						@{
+						string Cleaned = "";
+						if(Model.Username is string)
+						{
+              @: https://www.twitter.com/@(Model.Username)/statuses/@(Model.Id)/
+            }
+            @Cleaned
 						]]>
           </Compute.Expr>
           <JsonPath Expr="user.screen_name" Id="Username" Converter="String"/>
@@ -413,7 +420,13 @@
 				<Compute Id="UserUrl" Title="User URL">
           <Compute.Expr>
 						<![CDATA[
-						https://www.twitter.com/@(Model.UserNameInput)/
+						@{
+						string Cleaned = "";
+						if(Model.UserNameInput is string)
+						{
+              @: https://www.twitter.com/@(Model.UserNameInput)/
+            }
+            @Cleaned
 						]]>
           </Compute.Expr>
           <JsonPath Expr="user.screen_name" Id="UserNameInput" Converter="String"/>
@@ -432,8 +445,11 @@
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
             <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+						@{
+						string Cleaned = "";
+						if(Model.SourceInput is string)
+						{
+              Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", string.Empty);
             }
             @Cleaned
             ]]>
@@ -460,7 +476,7 @@
 				<Compute Id="ReplytoStatus" Title="Reply to Tweet">
           <Compute.Expr>
 						<![CDATA[
-						@if(Model.ReplytoStatus != "")
+						@if(Model.ReplytoStatus is string)
 						{
 							@: https://www.twitter.com/@(Model.ReplyToUserInput)/statuses/@(Model.ReplytoStatus)/
 						}
