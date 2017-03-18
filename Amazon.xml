@@ -11,9 +11,9 @@
       <Item Id="review-rank" Title="Avg. Customer Review"/>
       <Item Id="date-desc-rank" Title="Newest Arrivals"/>
     </Resource>
-  </Resources>	
-  
-  <RestConnector Id="Search" Title="Search">
+  </Resources>
+
+  <RestConnector Id="Amazon" Title="Amazon">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
       <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
@@ -21,7 +21,7 @@
         <DataSource>
           <Resource Id="Sortings"/>
         </DataSource>
-      </Select>		
+      </Select>
     </Parameters>
     <Paging PageSize="10" EvenPages="false"/>
     <Fetch>
@@ -36,14 +36,63 @@
     </Fetch>
     <Parse>
       <XPath Expr="//ul[contains(@@class,'s-result-list')]/li[descendant::span[contains(@@class,'-price')]]">
-        <XPath Id="Url" Title="URL" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
-				<XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" />	
+        <Compute Id="Url" Title="URL">
+          <Compute.Expr>
+						<![CDATA[
+						@{
+						if(Model.UrlInput.Contains("/slredirect/"))
+						{
+              @: https://www.amazon.com@(Model.UrlInput)
+            }
+						else
+						{
+							@(Model.UrlInput)
+						}
+						}
+						]]>
+          </Compute.Expr>
+					<XPath Id="UrlInput" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
+        </Compute>
+        <Compute Id="Type" Title="Type">
+          <Compute.Expr>
+						<![CDATA[
+						@{
+						if(Model.UrlInput.Contains("/slredirect/"))
+						{
+              @: Sponsored
+            }
+						else
+						{
+							@: Organic
+						}
+						}
+						]]>
+          </Compute.Expr>
+					<XPath Id="UrlInput" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
+        </Compute>
+				<XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" />
         <XPath Id="Title" Title="Title" Expr=".//h2" />
         <XPath Id="Price" Title="Price" Expr=".//span[contains(@@class,'-price')]"/>
-        <XPath Id="AverageReview" Title="Avg. Review" Expr=".//i[contains(@@class,'a-icon a-icon-star a-star')]" Converter="String" DefaultValue="n/a"/>
-        <XPath Id="Reviews" Title="Reviews" Expr=".//*/div[2]/div[3]/div[2]/div[1]/a" Converter="Int" DefaultValue="0"/>
+				<Compute Id="AverageReview" Title="Average Review" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+						@{
+						if(Model.AverageReviewInput is string)
+						{
+							@(Model.AverageReviewInput.Substring(0, Model.AverageReviewInput.IndexOf("out")))
+            }
+						else
+						{
+							@:
+						}
+						}
+
+					  ]]>
+          </Compute.Expr>
+					<XPath Id="AverageReviewInput" Expr=".//i[contains(@@class,'a-icon a-icon-star a-star')]" Converter="String" DefaultValue=""/>
+        </Compute>
       </XPath>
     </Parse>
   </RestConnector>
- 
+
 </Suite>
