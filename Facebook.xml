@@ -5,35 +5,32 @@
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.8/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri={0}"/>
 
-  <RestConnector Id="PagesLookup" Title="Pages Lookup">
+  <RestConnector Id="PageLookup" Title="Page Lookup">
     <Parameters>
-      <Text Id="Ids" Title="Page Ids" Debug.DefaultValue="56796081303" Required="true" HelpText="Enter one or more page Ids separated by a new line" Multiline="true"/>
+      <Text Id="PageId" Title="Page Ids" Debug.DefaultValue="56796081303" Required="true" HelpText=""/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
-				@(FetchIdString())
+        https://graph.facebook.com/v2.8/?id=
+				@(Model.PageId)
 				&fields=@SelectedFields()
 				&access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-      <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id" HelpText=""/>
-      <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-      <JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category" HelpText=""/>
-      <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText=""/>
-      <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins" HelpText=""/>
-      <JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count" HelpText=""/>
-      <JsonPath Title="Talking About" Id="TalkingAbout" Expr="talking_about_count" Converter="Int" Tag="talking_about_count" HelpText=""/>
-      <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText=""/>
-      <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText=""/>
-      <JsonPath Title="Page Link" Id="PageLink" Expr="link" Converter="String" Tag="link" HelpText=""/>
-      </JsonPath>
+			<JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+			<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+			<JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category" HelpText=""/>
+			<JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText=""/>
+			<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins" HelpText=""/>
+			<JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count" HelpText=""/>
+			<JsonPath Title="Talking About" Id="TalkingAbout" Expr="talking_about_count" Converter="Int" Tag="talking_about_count" HelpText=""/>
+			<JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText=""/>
+			<JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText=""/>
+			<JsonPath Title="Page Link" Id="PageLink" Expr="link" Converter="String" Tag="link" HelpText=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
@@ -407,74 +404,67 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PostsLookup" Title="Posts Lookup">
+  <RestConnector Id="PostLookup" Title="Post Lookup">
     <Parameters>
-      <Text Id="Ids" Title="Post Ids (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10154300423791304" HelpText="Enter one or more post Ids separated by a new line" Multiline="true" Required="true"/>
+      <Text Id="PostId" Title="Post Id (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10154300423791304" HelpText="" Required="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
-				@(FetchIdString())
+        https://graph.facebook.com/v2.8/?id=
+				@(Model.PostId)
 				&fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-				<JsonPath Title="Post Id" Id="PostId" Expr="$.id" Converter="String" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Message" Id="Message" Expr="$.message" Converter="String" Tag="message" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Description" Id="Description" Expr="$.description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Type" Id="Type" Expr="$.type" Converter="String" Tag="type" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
-				<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
-				<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" HelpText="" DefaultValue="0"/>
-				<JsonPath Title="Love" Id="Love" Expr="$.reactions_love.summary.total_count" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Wow" Id="Wow" Expr="$.reactions_wow.summary.total_count" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Haha" Id="Haha" Expr="$.reactions_haha.summary.total_count" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Sad" Id="Sad" Expr="$.reactions_sad.summary.total_count" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Angry" Id="Angry" Expr="$.reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Created" Id="Created" Expr="$.created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
-				<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText=""/>
-				<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText=""/>
-				<JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
-				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
-			</JsonPath>
+			<JsonPath Title="Post Id" Id="PostId" Expr="$.id" Converter="String" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Message" Id="Message" Expr="$.message" Converter="String" Tag="message" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Description" Id="Description" Expr="$.description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Type" Id="Type" Expr="$.type" Converter="String" Tag="type" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" HelpText="" DefaultValue="0"/>
+			<JsonPath Title="Comments" Id="Comments" Expr="$.comments.summary.total_count" Converter="Int" Tag="comments.summary(true)" HelpText="" DefaultValue="0"/>
+			<JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" HelpText="" DefaultValue="0"/>
+			<JsonPath Title="Love" Id="Love" Expr="$.reactions_love.summary.total_count" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Wow" Id="Wow" Expr="$.reactions_wow.summary.total_count" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Haha" Id="Haha" Expr="$.reactions_haha.summary.total_count" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Sad" Id="Sad" Expr="$.reactions_sad.summary.total_count" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Angry" Id="Angry" Expr="$.reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Created" Id="Created" Expr="$.created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+			<JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText=""/>
+			<JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText=""/>
+			<JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
+			<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="CommentsLookup" Title="Comments Lookup">
+  <RestConnector Id="CommentLookup" Title="Comment Lookup">
     <Parameters>
-      <Text Id="Ids" Title="Comment Ids (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="Enterone or more comment Ids separated by a new line" Multiline="true" Required="true"/>
+      <Text Id="CommentId" Title="Comment Id (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="" Required="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
-				@(FetchIdString())
+        https://graph.facebook.com/v2.8/?id=
+				@(Model.CommentId)
 				&fields=@SelectedFields()
 		    &access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-				<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" HelpText=""/>
-				<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
-				<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
-				<JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
-				<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
-				<JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
-				<JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
-				<JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
-      </JsonPath>
+			<JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" HelpText=""/>
+			<JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
+			<JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
+			<JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
+			<JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
+			<JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
+			<JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
+			<JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
@@ -669,11 +659,6 @@
       string SelectedFields() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
-      }
-			string FetchIdString()
-			{
-				string[] lines = (string[])Model.IdsBatch;
-				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
 			}
     ]]>
   </RazorFunctions>
