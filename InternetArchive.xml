@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="Internet Archive" Id="InternetArchive" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/InternetArchive.xml" HelpUrl="http://seotoolsforexcel.com/Internet-Archive/" HelpText="Documentation">
+<Suite Category="SEO" Title="Internet Archive" Id="InternetArchive" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/InternetArchive.xml" HelpUrl="http://seotoolsforexcel.com/Internet-Archive/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="InternetArchive" Title="Internet Archive" AvailableInSpider="true">
+  <Resources>
+    <Resource Id="MonthFilters">
+		  <Item Id="all" Title="All"/>
+			<Item Id="0" Title="January"/>
+			<Item Id="1" Title="February"/>
+			<Item Id="2" Title="March"/>
+			<Item Id="3" Title="April"/>
+			<Item Id="4" Title="May"/>
+			<Item Id="5" Title="June"/>
+			<Item Id="6" Title="July"/>
+			<Item Id="7" Title="August"/>
+			<Item Id="8" Title="September"/>
+			<Item Id="9" Title="October"/>
+			<Item Id="10" Title="November"/>
+			<Item Id="11" Title="December"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="ArchiveStatistics" Title="Archive Statistics" AvailableInSpider="true">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
     </Parameters>
@@ -24,5 +42,57 @@
       <XPath Expr="//div[@@id='error']" Tag="EmptyResult"/>
     </Fail>
   </RestConnector>
+
+  <RestConnector Id="ContentOverTime" Title="Content Over Time" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Number Id="Year" Title="Year" Required="true" DefaultValue="2016"/>
+      <Select Id="Month" Title="Filter by Month" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="MonthFilters"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+	<Fetch>
+    <Fetch.Url>
+      <![CDATA[
+      http://web.archive.org/web/@(Model.Year)0501000000*/
+			@Model.Url
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<XPath Expr="@(GetQuery())">
+				<XPath Expr="." Id="Date" Title="Dates" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss UTC yyyy" HelpText="" DefaultValue=""/>
+					<Compute Id="Url" Title="URL" DefaultValue="">
+						<Compute.Expr>
+							<![CDATA[
+							http://web.archive.org@(Model.UrlInput)
+							]]>
+						</Compute.Expr>
+						<XPath Expr="." Attribute="href" Id="UrlInput"/>
+					</Compute>
+			</XPath>
+    </Parse>
+    <Fail>
+      <XPath Expr="//div[@@id='error']" Tag="EmptyResult"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    String GetQuery()
+	  {
+		  if(Model.Month != "all")
+		  {
+			  return "//div[@id='" + Model.Year + "-" + Model.Month + "']/table//div[@class='day']/a";
+		  }
+		  else
+		  {
+			  return "//div[@class='day']/a";
+		  }
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
