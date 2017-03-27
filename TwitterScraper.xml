@@ -47,13 +47,21 @@
       <XPath Title="Likes" Id="Likes" Expr="//li[@@class='js-stat-count js-stat-favorites stat-count']//strong" Attribute="" Converter="Int" DefaultValue="0"/>
       <XPath Title="Replies" Id="Replies" Expr="//div[@@class='permalink-inner permalink-tweet-container']//span[@@class='ProfileTweet-actionCountForPresentation']" Attribute="" Converter="Int" DefaultValue="0"/>
       <XPath Title="TweetPicture" Id="TweetPicture" Expr="//div[@@class='AdaptiveMedia-photoContainer js-adaptive-photo ']" Attribute="data-image-url" Converter="String"/>
-			<XPath Title="Author" Id="Author" Expr="//span[@@class='u-linkComplex-target']" Attribute="" Converter="String"/>
+			<XPath Title="Author" Id="Author" Expr="//div[@@class='ProfileCardMini-screenname']/a/span/b" Attribute="" Converter="String"/>
       <XPath Expr="/">
         <Compute Id="AuthorUrl" Title="AuthorUrl">
           <Compute.Expr>
-            https://twitter.com/@(Model.ScreenName)
+						<![CDATA[
+						@{
+						string Cleaned = "";
+						if(Model.AuthorInput is string)
+						{
+							@: https://www.twitter.com/@(Model.AuthorInput)/
+						}
+						@Cleaned
+						]]>
           </Compute.Expr>
-          <Xpath Expr="//span[@@class='u-linkComplex-target']" Id="ScreenName" Converter="String"/>
+          <XPath Id="AuthorInput" Expr="//div[@@class='ProfileCardMini-screenname']/a/span/b" Converter="String"/>
         </Compute>
 			</XPath>
       <XPath Title="Name" Id="Name" Expr="//a[@@class='ProfileCardMini-avatar profile-picture js-tooltip']" Attribute="title" Converter="String"/>
@@ -89,7 +97,7 @@
 		  else if(Model.RequestAccountString.Contains("twitter") && !Model.RequestAccountString.StartsWith("http"))
 		  {
 			  return "https://" + Model.RequestAccountString;
-		  }			
+		  }
 		  else if(Model.RequestAccountString.Contains("@"))
 		  {
 			  return "https://www.twitter.com/" + Model.RequestAccountString.Substring(1);
