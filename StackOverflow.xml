@@ -3,7 +3,7 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="QuestionSearch" Title="Question Search" HelpUrl="http://api.stackexchange.com/docs/advanced-search">
+  <RestConnector Id="QuestionSearch" Title="Question Search" HelpText="Searches a site for any questions which fit the given criteria." HelpUrl="http://api.stackexchange.com/docs/advanced-search">
     <Parameters>
       <Text Id="Query" Title="Query (Searches all fields)" Required="false" DefaultValue="" Debug.DefaultValue="seotools"/>
       <Text Id="UrlContains" Title="Contains URL (Supports Wildcards *)" Required="false" DefaultValue="" Debug.DefaultValue=""/>
@@ -181,9 +181,9 @@
 		</Fail>
   </RestConnector>
 
-  <RestConnector Id="AnswersQuestion" Title="Answers to Question" HelpUrl="http://api.stackexchange.com/docs/answers-on-questions">
+  <RestConnector Id="AnswersQuestion" Title="Answers to Questions" HelpText="Returns answers to a maximum of 100 questions." HelpUrl="http://api.stackexchange.com/docs/answers-on-questions">
     <Parameters>
-      <Text Id="QuestionId" Title="Question Id" Required="true" DefaultValue="" Debug.DefaultValue="34819557"/>
+      <Text Id="QuestionIds" Title="Question Ids" Required="true" DefaultValue="" HelpText="" Debug.DefaultValue="34819557" Multiline="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="activity" Required="false">
         <DataSource>
           <Item Id="activity" Title="Activity"/>
@@ -203,7 +203,7 @@
 			<Fetch.Url>
 				<![CDATA[
 				http://api.stackexchange.com/2.2/questions/
-				@(Model.QuestionId)/answers?
+				@(FetchMultiString())/answers?
 				site=stackoverflow
 				&sort=@(Model.Sorting)
 				&order=@(Model.Direction)
@@ -216,6 +216,7 @@
 		<Parse>
 			<JsonPath Expr="items.*">
 				<JsonPath Expr="answer_id" Id="AnswerId" Title="Answer Id" Converter="Auto" HelpText=""/>
+				<JsonPath Expr="question_id" Id="Questionid" Title="Question Id" Converter="Auto" HelpText=""/>
 				<JsonPath Expr="link" Id="Link" Title="Link" Converter="String" HelpText=""/>
         <Compute Id="Body" Title="Body">
           <Compute.Expr>
@@ -245,9 +246,9 @@
 		</Fail>
   </RestConnector>
 
-  <RestConnector Id="CommentsQuestion" Title="Comments to Question" HelpUrl="http://api.stackexchange.com/docs/comments-on-questions">
+  <RestConnector Id="CommentsPosts" Title="Comments to Posts" HelpText="Returns comments to a maximum of 100 questions or answers." HelpUrl="http://api.stackexchange.com/docs/comments-on-questions">
     <Parameters>
-      <Text Id="QuestionId" Title="Question Id" Required="true" DefaultValue="" Debug.DefaultValue="34819557"/>
+      <Text Id="QuestionIds" Title="Question Ids" Required="true" DefaultValue="" HelpText="" Debug.DefaultValue="34819557" Multiline="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="creation" Required="false">
         <DataSource>
           <Item Id="creation" Title="Creation"/>
@@ -265,8 +266,8 @@
 		<Fetch>
 			<Fetch.Url>
 				<![CDATA[
-				http://api.stackexchange.com/2.2/questions/
-				@(Model.QuestionId)/comments?
+				http://api.stackexchange.com/2.2/post/
+				@(FetchMultiString())/comments?
 				site=stackoverflow
 				&sort=@(Model.Sorting)
 				&order=@(Model.Direction)
@@ -279,6 +280,7 @@
 		<Parse>
 			<JsonPath Expr="items.*">
 				<JsonPath Expr="comment_id" Id="CommentId" Title="Comment Id" Converter="Auto" HelpText=""/>
+				<JsonPath Expr="post_id" Id="PostId" Title="Post Id" Converter="Auto" HelpText=""/>
 				<JsonPath Expr="link" Id="Link" Title="Link" Converter="String" HelpText=""/>
         <Compute Id="Body" Title="Body">
           <Compute.Expr>
@@ -304,5 +306,16 @@
 			<JsonPath Expr="error_message"/>
 		</Fail>
   </RestConnector>
+
+  <RazorFunctions>
+		<![CDATA[
+		string FetchMultiString()
+		{
+			string[] lines = ((string)Model.QuestionIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+			return string.Join(";",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+		}
+
+		]]>
+  </RazorFunctions>
 
 </Suite>
