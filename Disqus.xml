@@ -9,7 +9,14 @@
     <Text Id="Secret" Title="API Secret" Required="true"/>
   </Settings>
 
-  <RestConnector Id="PostDetails" Title="Post Details" HelpUrl="https://disqus.com/api/docs/posts/details/">
+  <Resources>
+    <Resource Id="SortPosts">
+		 <Item Id="date" Title="Date"/>
+		 <Item Id="priority" Title="Priority"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="PostLookup" Title="Post Lookup" HelpUrl="https://disqus.com/api/docs/posts/details/">
     <Parameters>
       <Text Id="PostId" Title="Post Id" Debug.DefaultValue="2541231971" Required="true"/>
     </Parameters>
@@ -26,12 +33,25 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="response">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
         <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <Compute Id="Message" Title="Message">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.MessageInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="message" Id="MessageInput"/>
+        </Compute>
         <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
         <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
         <JsonPath Expr="numReports" Id="Reports" Title="Reports" Converter="Int"/>
         <JsonPath Expr="points" Id="Points" Title="Points" Converter="Int"/>
         <JsonPath Expr="thread" Id="ThreadId" Title="Thread Id" Converter="String"/>
+        <JsonPath Expr="forum" Id="Forum" Title="Forum" Converter="String"/>
         <JsonPath Expr="userScore" Id="UserScore" Title="User Score" Converter="Int"/>
         <JsonPath Expr="author.id" Id="UserId" Title="User Id" Converter="String"/>
         <JsonPath Expr="author.username" Id="Username" Title="Username" Converter="String"/>
@@ -42,7 +62,369 @@
         <JsonPath Expr="author.location" Id="Location" Title="Location" Converter="String"/>
         <JsonPath Expr="author.joinedAt" Id="Joined" Title="Joined" Converter="DateTime"/>
         <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ForumPosts" Title="Forum Posts" HelpUrl="https://disqus.com/api/docs/posts/list/">
+    <Parameters>
+      <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="feber" Required="true"/>
+      <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Select Id="Sorting" Title="Sort Posts by" Required="false" DefaultValue="date">
+        <DataSource>
+          <Resource Id="SortPosts"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="cursor.next"/>
+      </Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/posts/list.json?
+					forum=@(Model.ForumName)
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+					&sortType=@(Model.Sorting)
+					&order=@(Model.Direction)
+					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+					{
+							@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+							@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+					}
+					@if(Model.HasLink == true)
+					{
+						@: &filters=2
+					}
+					&limit=@(Model.PageCursor.PageSize)
+					@if(Model.PageCursor.Page != 0)
+					{
+						@: &cursor=@(Model.Cursor)
+					}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <Compute Id="Message" Title="Message">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.MessageInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="message" Id="MessageInput"/>
+        </Compute>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
+        <JsonPath Expr="numReports" Id="Reports" Title="Reports" Converter="Int"/>
+        <JsonPath Expr="points" Id="Points" Title="Points" Converter="Int"/>
+        <JsonPath Expr="thread" Id="ThreadId" Title="Thread Id" Converter="String"/>
         <JsonPath Expr="forum" Id="Forum" Title="Forum" Converter="String"/>
+        <JsonPath Expr="userScore" Id="UserScore" Title="User Score" Converter="Int"/>
+        <JsonPath Expr="author.id" Id="UserId" Title="User Id" Converter="String"/>
+        <JsonPath Expr="author.username" Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="author.name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="author.rep" Id="Reputation" Title="Reputation" Converter="Double"/>
+        <JsonPath Expr="author.reputationLabel" Id="ReputationLevel" Title="ReputationLevel" Converter="String"/>
+        <JsonPath Expr="author.profileUrl" Id="ProfileUrl" Title="Profile URL" Converter="String"/>
+        <JsonPath Expr="author.location" Id="Location" Title="Location" Converter="String"/>
+        <JsonPath Expr="author.joinedAt" Id="Joined" Title="Joined" Converter="DateTime"/>
+        <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ThreadPosts" Title="Thread Posts" HelpUrl="https://disqus.com/api/docs/posts/list/">
+    <Parameters>
+      <Text Id="ThreadId" Title="Thread Id" Debug.DefaultValue="5362095861" Required="true"/>
+      <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Select Id="Sorting" Title="Sort Posts by" Required="false" DefaultValue="date">
+        <DataSource>
+          <Resource Id="SortPosts"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="cursor.next"/>
+      </Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/posts/list.json?
+					thread=@(Model.ThreadId)
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+					&sortType=@(Model.Sorting)
+					&order=@(Model.Direction)
+					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+					{
+							@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+							@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+					}
+					@if(Model.HasLink == true)
+					{
+						@: &filters=2
+					}
+					&limit=@(Model.PageCursor.PageSize)
+					@if(Model.PageCursor.Page != 0)
+					{
+						@: &cursor=@(Model.Cursor)
+					}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <Compute Id="Message" Title="Message">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.MessageInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="message" Id="MessageInput"/>
+        </Compute>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
+        <JsonPath Expr="numReports" Id="Reports" Title="Reports" Converter="Int"/>
+        <JsonPath Expr="points" Id="Points" Title="Points" Converter="Int"/>
+        <JsonPath Expr="thread" Id="ThreadId" Title="Thread Id" Converter="String"/>
+        <JsonPath Expr="forum" Id="Forum" Title="Forum" Converter="String"/>
+        <JsonPath Expr="userScore" Id="UserScore" Title="User Score" Converter="Int"/>
+        <JsonPath Expr="author.id" Id="UserId" Title="User Id" Converter="String"/>
+        <JsonPath Expr="author.username" Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="author.name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="author.rep" Id="Reputation" Title="Reputation" Converter="Double"/>
+        <JsonPath Expr="author.reputationLabel" Id="ReputationLevel" Title="ReputationLevel" Converter="String"/>
+        <JsonPath Expr="author.profileUrl" Id="ProfileUrl" Title="Profile URL" Converter="String"/>
+        <JsonPath Expr="author.location" Id="Location" Title="Location" Converter="String"/>
+        <JsonPath Expr="author.joinedAt" Id="Joined" Title="Joined" Converter="DateTime"/>
+        <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MyPosts" Title="My Posts" HelpUrl="https://disqus.com/api/docs/users/listPosts/">
+    <Parameters>
+      <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Radio Id="Direction" Title="Sort Threads by Date" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="cursor.next"/>
+      </Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/users/listPosts.json?
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+					&order=@(Model.Direction)
+					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+					{
+							@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+							@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+					}
+					@if(Model.HasLink == true)
+					{
+						@: &filters=2
+					}
+					&limit=@(Model.PageCursor.PageSize)
+					@if(Model.PageCursor.Page != 0)
+					{
+						@: &cursor=@(Model.Cursor)
+					}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <Compute Id="Message" Title="Message">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.MessageInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="message" Id="MessageInput"/>
+        </Compute>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
+        <JsonPath Expr="numReports" Id="Reports" Title="Reports" Converter="Int"/>
+        <JsonPath Expr="points" Id="Points" Title="Points" Converter="Int"/>
+        <JsonPath Expr="thread" Id="ThreadId" Title="Thread Id" Converter="String"/>
+        <JsonPath Expr="forum" Id="Forum" Title="Forum" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="UserLookup" Title="User Lookup" HelpUrl="https://disqus.com/api/docs/users/details/">
+    <Parameters>
+      <Text Id="UserId" Title="User Id" Debug.DefaultValue="3774128" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/users/details.json?
+					user=@(Model.UserId)
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response">
+        <JsonPath Expr="id" Id="UserId" Title="User Id" Converter="String"/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="rep" Id="Reputation" Title="Reputation" Converter="Double"/>
+        <JsonPath Expr="reputationLabel" Id="ReputationLevel" Title="ReputationLevel" Converter="String"/>
+        <JsonPath Expr="numFollowers" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="numFollowing" Id="Following" Title="Following" Converter="Int"/>
+        <JsonPath Expr="numPosts" Id="Posts" Title="Posts" Converter="Int"/>
+        <JsonPath Expr="numLikesReceived" Id="LikesReceived" Title="Likes Received" Converter="Int"/>
+        <JsonPath Expr="numForumsFollowing" Id="ForumsFollowing" Title="Forums Following" Converter="Int"/>
+        <JsonPath Expr="profileUrl" Id="ProfileUrl" Title="Profile URL" Converter="String"/>
+        <JsonPath Expr="location" Id="Location" Title="Location" Converter="String"/>
+        <JsonPath Expr="joinedAt" Id="Joined" Title="Joined" Converter="DateTime"/>
+        <JsonPath Expr="avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ForumThreads" Title="Forum Threads" HelpUrl="https://disqus.com/api/docs/posts/list/">
+    <Parameters>
+      <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="feber" Required="true"/>
+      <Radio Id="Direction" Title="Sort Threads by Date" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="cursor.next"/>
+      </Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/threads/list.json?
+					forum=@(Model.ForumName)
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+					&order=@(Model.Direction)
+					&limit=@(Model.PageCursor.PageSize)
+					@if(Model.PageCursor.Page != 0)
+					{
+						@: &cursor=@(Model.Cursor)
+					}
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="clean_title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="posts" Id="Posts" Title="Posts" Converter="Int"/>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
+        <JsonPath Expr="link" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="userScore" Id="UserScore" Title="User Score" Converter="Int"/>
+        <JsonPath Expr="author" Id="AuthorId" Title="Author Id" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ThreadLookup" Title="Thread Lookup" HelpUrl="https://disqus.com/api/docs/threads/details/">
+    <Parameters>
+      <Text Id="ThreadId" Title="Thread Id" Debug.DefaultValue="5362095861" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://disqus.com/api/3.0/threads/details.json?
+					thread=@(Model.ThreadId)
+					&access_token=@(Model.Token)
+					&api_key=@(Model.Key)
+					&api_secret=@(Model.Secret)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response">
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="clean_title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="posts" Id="Posts" Title="Posts" Converter="Int"/>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="dislikes" Id="Dislikes" Title="Dislikes" Converter="Int"/>
+        <JsonPath Expr="userScore" Id="UserScore" Title="User Score" Converter="Int"/>
+        <JsonPath Expr="author" Id="AuthorId" Title="Author Id" Converter="String"/>
       </JsonPath>
     </Parse>
       <Fail>
