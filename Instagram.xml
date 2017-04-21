@@ -150,15 +150,15 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="UsernameConverter" Hidden="true">
+  <RestConnector Id="UserConverter" Title="Convert Username to Id" HelpText="">
     <Parameters>
-      <Text Id="UserInput" DefaultValue="" Required="true"/>
+      <Text Id="Username" DefaultValue="" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.instagram.com/
-				@(Model.UserInput)
+				@(Model.Username)
 				]]>
       </Fetch.Url>
     </Fetch>
@@ -272,25 +272,18 @@
 
   <RestConnector Id="UserLookup" Title="User Lookup">
     <Parameters>
-      <Text Id="UserInput" Title="Username or User Id" DefaultValue="" Required="true" Debug.DefaultValue=""/>
+      <Text Id="UserId" Title="User Id" DefaultValue="" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.instagram.com/v1/users/
-				@(UserQuery())
+        https://api.instagram.com/v1/users/@(Model.UserId)
 				?access_token=@(Model.Authenticator.Token)
 				]]>
       </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="1" RandomTo="2" IfSame="Host"/>
-      </HttpSettings>
     </Fetch>
-    <Prepare>
-      <Connector Id="UsernameConverter" Parameters="UserInput"/>
-    </Prepare>
     <Parse>
-      <JsonPath Expr="data.">
+      <JsonPath Expr="data">
 				<JsonPath Title="User Id" Id="User Id" Expr="id" Converter="String" HelpText=""/>
 				<JsonPath Title="Username" Id="Username" Expr="username" Converter="String" HelpText=""/>
 				<JsonPath Title="Followers" Id="Followers" Expr="counts.followed_by" Converter="Int" HelpText="" DefaultValue="0"/>
@@ -582,20 +575,4 @@
     </Fail>
   </RestConnector>
 
-  <RazorFunctions>
-    <![CDATA[
-    String UserQuery()
-				{
-					bool digitsOnly = Regex.IsMatch(Model.UserInput, @"^\d+$");
-					if(digitsOnly == false)
-					{
-						return Model.UserId;
-					}
-					else
-					{
-						return Model.UserInput;
-					}
-				}
-    ]]>
-  </RazorFunctions>
 </Suite>
