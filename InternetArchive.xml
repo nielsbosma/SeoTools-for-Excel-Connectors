@@ -3,67 +3,74 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Resources>
-    <Resource Id="MonthFilters">
-		  <Item Id="all" Title="All"/>
-			<Item Id="0" Title="January"/>
-			<Item Id="1" Title="February"/>
-			<Item Id="2" Title="March"/>
-			<Item Id="3" Title="April"/>
-			<Item Id="4" Title="May"/>
-			<Item Id="5" Title="June"/>
-			<Item Id="6" Title="July"/>
-			<Item Id="7" Title="August"/>
-			<Item Id="8" Title="September"/>
-			<Item Id="9" Title="October"/>
-			<Item Id="10" Title="November"/>
-			<Item Id="11" Title="December"/>
-    </Resource>
-  </Resources>
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Internet-Archive/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/Internet-Archive/" />
+  </Settings>
 
-  <RestConnector Id="ArchiveStatistics" Title="Archive Statistics" AvailableInSpider="true">
-    <Parameters>
-      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
-    </Parameters>
-	<Fetch>
-    <Fetch.Url>
-      <![CDATA[
-      http://web.archive.org/web/*/
-			@Model.Url
-      ]]>
-      </Fetch.Url>
-    </Fetch>
+  <RestConnector Id="Locations" Title="Locations" Hidden="true">
+    <Fetch Url="http://api.phantomjscloud.com/single/geo/v1/@(Model.ApiKey)/"/>
     <Parse>
-			<XPath Expr="//*/p[2]/a[1]" Id="FirstSeen" Title="First Seen" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss UTC yyyy" HelpText="" DefaultValue="#NULL!"/>
-			<XPath Expr="//*/p[2]/a[2]" Id="LastSeen" Title="Last Seen" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss UTC yyyy" HelpText="" DefaultValue="#NULL!"/>
-			<Regex Expr="&lt;strong&gt;(\d+)" Group="1" Id="ArchivedCount" Title="Archived Count" Converter="Int" HelpText="" DefaultValue="0"/>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="name" Id="Id" Title="Id"/>
+        <JsonPath Expr="instances" Id="Title" Title="Title"/>
+      </JsonPath>
     </Parse>
-    <Fail>
-      <XPath Expr="//div[@@id='error']" Tag="EmptyResult"/>
-    </Fail>
   </RestConnector>
 
-  <RestConnector Id="ContentOverTime" Title="Content Over Time" AvailableInSpider="true">
+  <RestConnector Id="ArchiveStatistics" Title="Archive Statistics">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.seotoolsforexcel.com" Required="true"/>
+      <Checkbox Id="Cache" Title="Cache" DefaultValue="true"/>
+      <Text Id="Location" Title="Location" DefaultValue="us" Required="true" Select.Connector="Locations"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.phantomjscloud.com/single/browser/v1/@(Model.ApiKey)/
+          ?requestType=text
+          &targetUrl=http://web.archive.org/web/*/@(Model.Url)
+          &loadImages=false
+          &outputAsJson=false
+          &timeout=30000
+          &geolocationstring=@Model.Location
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <Cache>@Model.Cache</Cache>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<XPath Expr="//*/span/a[1]" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="" DefaultValue="#NULL!"/>
+			<XPath Expr="//*/span/a[2]" Id="LastSeen" Title="Last Seen" Converter="DateTime" HelpText="" DefaultValue="#NULL!"/>
+			<XPath Expr="//*/strong/text()[1]" Id="ArchivedCount" Title="Archived Count" Converter="Int" HelpText="" DefaultValue="#NULL!"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ContentOverTime" Title="Content Over Time">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
       <Number Id="Year" Title="Year" Required="true" DefaultValue="2016"/>
-      <Select Id="Month" Title="Filter by Month" Required="false" DefaultValue="all">
-        <DataSource>
-          <Resource Id="MonthFilters"/>
-        </DataSource>
-      </Select>
+      <Checkbox Id="Cache" Title="Cache" DefaultValue="true"/>
+      <Text Id="Location" Title="Location" DefaultValue="us" Required="true" Select.Connector="Locations"/>
     </Parameters>
-	<Fetch>
-    <Fetch.Url>
-      <![CDATA[
-      http://web.archive.org/web/@(Model.Year)0501000000*/
-			@Model.Url
-      ]]>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.phantomjscloud.com/single/browser/v1/@(Model.ApiKey)/
+          ?requestType=text
+          &targetUrl=http://web.archive.org/web/@(Model.Year)0501000000*/@Model.Url
+          &loadImages=false
+          &outputAsJson=false
+          &timeout=30000
+          &geolocationstring=@Model.Location
+        ]]>
       </Fetch.Url>
+      <HttpSettings>
+        <Cache>@Model.Cache</Cache>
+      </HttpSettings>
     </Fetch>
     <Parse>
-			<XPath Expr="@(GetQuery())">
-				<XPath Expr="." Id="Date" Title="Dates" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss UTC yyyy" HelpText="" DefaultValue=""/>
+			<XPath Expr="//*[@@id='wb-calendar']//*/div/div/a">
 					<Compute Id="Url" Title="URL" DefaultValue="">
 						<Compute.Expr>
 							<![CDATA[
@@ -73,26 +80,7 @@
 						<XPath Expr="." Attribute="href" Id="UrlInput"/>
 					</Compute>
 			</XPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="//div[@@id='error']" Tag="EmptyResult"/>
-    </Fail>
+		</Parse>
   </RestConnector>
-
-  <RazorFunctions>
-    <![CDATA[
-    String GetQuery()
-	  {
-		  if(Model.Month != "all")
-		  {
-			  return "//div[@id='" + Model.Year + "-" + Model.Month + "']/table//div[@class='day']/a";
-		  }
-		  else
-		  {
-			  return "//div[@class='day']/a";
-		  }
-    }
-    ]]>
-  </RazorFunctions>
 
 </Suite>
