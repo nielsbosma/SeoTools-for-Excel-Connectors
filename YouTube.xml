@@ -93,12 +93,18 @@
 
   <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true"/>
+      <Text Id="ChannelInput" Title="Channel" Required="true"/>
+      <Radio Id="InputType" Title="Input Type" DefaultValue="id" Required="false">
+        <DataSource>
+          <Item Id="id" Title="Channel Id"/>
+          <Item Id="forUsername" Title="Channel Name"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://www.googleapis.com/youtube/v3/channels?id=@(Model.ChannelId)
+        https://www.googleapis.com/youtube/v3/channels?@(Model.InputType)=@(Model.ChannelInput)
 				&part=statistics,snippet
       ]]>
       </Fetch.Url>
@@ -109,6 +115,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
+      <JsonPath Title="Id" Id="Id"  Expr="$.items.[id]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Title" Identifier="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
       <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
