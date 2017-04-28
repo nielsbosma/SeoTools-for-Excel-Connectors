@@ -72,7 +72,7 @@
 
   <RazorFunctions>
     <![CDATA[
-    
+
     long BitFlagsByGroup(string group) {
       string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
       return ((ResultField[])Model.Headers)
@@ -88,14 +88,14 @@
         .Select(e => long.Parse(e.Tag))
         .Aggregate(0L, (x, y) => x | y);
     }
-    
+
     int IntervalBetweenRequests() {
       return Model.AccountType=="free" ? 10000 : 5;
     }
-    
+
    ]]>
   </RazorFunctions>
-  
+
   <RestConnector Id="Metrics" Title="Metrics" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/url-metrics" AvailableInSpider="true">
     <Parameters>
       <Text Id="Url" Title="URL(s)" DefaultValue="" Required="true"/>
@@ -112,7 +112,7 @@
         &AccessID=@(Model.AccessId)
         &Expires=@(expires)
         &Signature=@(signature)
-      ]]>  
+      ]]>
       </Fetch.Url>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
@@ -129,7 +129,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="TopPages" Title="Top Pages" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/top-pages">
+  <RestConnector Id="TopPages" Title="Top Pages" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/top-pages" HelpText="Requires Paid Moz Subscription">
     <Parameters>
       <Text Id="Subdomain" Title="Subdomain" DefaultValue="" Required="true"/>
       <Select Id="Sort" Title="Sort" DefaultValue="page_authority">
@@ -158,15 +158,15 @@
           string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
         }
         http://lsapi.seomoz.com/linkscape/top-pages/@(Utils.UrlEncode(Model.Subdomain))?
-        
+
         Cols=@BitFlags()
-        
+
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-        
+
         &Sort=@(Model.Sort)
         &Filter=@(Model.Filter)
-        
+
         &AccessID=@(Model.AccessId)
         &Expires=@(expires)
         &Signature=@(signature)
@@ -225,26 +225,26 @@
           long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
           string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
         }
-        
+
         http://lsapi.seomoz.com/linkscape/links/@(Utils.UrlEncode(Model.Url))?
-        
+
         SourceCols=@BitFlagsByGroup("Source")
         &TargetCols=@BitFlagsByGroup("Target")
         &LinkCols=@BitFlagsByGroup("Link")
-        
+
         &Scope=@(Model.Scope)
         &Sort=@(Model.Sort)
-        
+
         @(string.IsNullOrEmpty(Model.SourceDomain) ? "" : "&SourceDomain=" + Model.SourceDomain)
         @(string.IsNullOrEmpty(Model.Filter) ? "" : "&Filter=" + Model.Filter)
-      
+
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-        
+
         &AccessID=@(Model.AccessId)
         &Expires=@(expires)
         &Signature=@(signature)
-        
+
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -256,7 +256,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="*">
-       
+
         <!-- LINK: -->
         <JsonPath Expr="lnt" Title="Link/AnchorText" Id="lnt" Tag="Link:8" HelpText="The anchor text of the link, excluding markup."/>
         <JsonPath Expr="lmrp" Title="Link/MozRank Passed/Normalized" Id="lmrp" Converter="Double" Tag="Link:16" HelpText="The amount of MozRank passed by the link."/>
@@ -278,7 +278,7 @@
         <JsonPath Expr="lf" Title="Link/Via 301" Id="lf-65536" Converter="Bool" Converter.TrueIfBit="65536" Tag="Link:2" HelpText="The source page links to another URL with a 301 redirect to the target page."/>
         <!--<JsonPath Expr="lf" Title="[Flags]" Id="lf" Tag="Link:2"/>-->
         <!-- //LINK -->
-        
+
         <!-- SOURCE: -->
         <JsonPath Expr="uu" Title="Source/Canonical URL" Id="uu" Tag="Source:4" Checked="TRUE" Converter="String" HelpText="The canonical form of the URL."/>
         <JsonPath Expr="pda" Title="Source/Domain Authority" Id="pda" Tag="Source:68719476736" Checked="FALSE" Converter="Double" HelpText="A normalized 100-point score representing the likelihood of a domain to rank well in search engine results."/>
@@ -332,7 +332,7 @@
         <JsonPath Expr="ftw" Title="Source/Twitter Handle" Id="ftw" Tag="Source:134217728" Checked="FALSE" Converter="String" HelpText="Twitter handle for the page's subdomain."/>
         <JsonPath Expr="ufq" Title="Source/Subdomain" Id="ufq" Tag="Source:8" Checked="FALSE" Converter="String" HelpText="The subdomain of the URL."/>
         <!-- //SOURCE -->
-        
+
         <!-- TARGET: -->
         <JsonPath Expr="luuu" Title="Target/Canonical URL" Id="luuu" Tag="Target:4" Checked="TRUE" Converter="String" HelpText="The canonical form of the URL."/>
         <JsonPath Expr="lupda" Title="Target/Domain Authority" Id="lupda" Tag="Target:68719476736" Checked="FALSE" Converter="Double" HelpText="A normalized 100-point score representing the likelihood of a domain to rank well in search engine results."/>
@@ -394,7 +394,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/anchor-text-metrics">
+  <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/anchor-text-metrics" HelpText="Requires Paid Moz Subscription">
     <RazorFunctions>
     <![CDATA[
       string Prefix() {
@@ -402,9 +402,9 @@
                Model.Scope=="phrase_to_subdomain" ? "apf" :
                Model.Scope=="phrase_to_domain" ? "app" :
                Model.Scope=="term_to_page" ? "atu" :
-               Model.Scope=="term_to_subdomain" ? "atf" : 
-               /*term_to_domain*/ "atp"; 
-      } 
+               Model.Scope=="term_to_subdomain" ? "atf" :
+               /*term_to_domain*/ "atp";
+      }
    ]]>
     </RazorFunctions>
     <Parameters>
@@ -432,12 +432,12 @@
         }
         http://lsapi.seomoz.com/linkscape/anchor-text/@(Utils.UrlEncode(Model.Url))?
         Cols=@BitFlagsByGroup("Cols")
-        
+
         &Scope=@(Model.Scope)
-        
+
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-        
+
         &AccessID=@(Model.AccessId)
         &Expires=@(expires)
         &Signature=@(signature)
@@ -469,5 +469,5 @@
       <JsonPath Expr="error_message"/>
     </Fail>
   </RestConnector>
-  
+
 </Suite>
