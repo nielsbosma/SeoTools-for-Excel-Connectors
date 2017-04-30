@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Suite Category="Social" Title="Twitch" Id="Twitch" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitch.xml" HelpUrl="http://seotoolsforexcel.com/twitch/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/twitch/">
+    <Text Id="ClientId" Title="Client-ID" Required="true" HelpUrl="http://seotoolsforexcel.com/twitch/"/>
+  </Settings>
+
+  <RestConnector Id="ChannelsSearch" Title="Channels Search" HelpUrl="https://dev.twitch.tv/docs/v5/reference/search/" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/search/channels
+				?query=@Utils.UrlEncode(Model.Query)
+				&limit=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="channels.*">
+				<JsonPath Expr="_id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="followers" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+				<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="language" Id="Lang" Title="Lang" Converter="String" HelpText=""/>
+				<JsonPath Expr="mature" Id="Mature" Title="Mature" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="partner" Id="Partner" Title="Partner" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="updated_at" Id="Updated" Title="Updated" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="logo" Id="Logo" Title="Logo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>
