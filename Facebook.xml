@@ -995,7 +995,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="URLEngagement" Title="URL Engagement" HelpText="Engagement for external URLs">
+ <RestConnector Id="URLEngagement" Title="URL Engagement" HelpText="Engagement for single external URL">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
     </Parameters>
@@ -1012,6 +1012,29 @@
       <JsonPath Title="Shares" Id="Shares" Expr="engagement.share_count" Converter="Int"/>
       <JsonPath Title="Comments" Id="Comments" Expr="engagement.comment_count" Converter="Int"/>
       <JsonPath Title="Reactions" Id="Reactions" Expr="engagement.reaction_count" Converter="Int"/>
+    </Parse>
+  </RestConnector>	
+
+  <RestConnector Id="URLEngagementBatch" Title="URL Engagement Batch" HelpText="Engagement for multiple external URLs">
+    <Parameters>
+      <Text Id="Ids" Title="Multiple URLs (Max 50)" Required="true" Multiline="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v2.9?ids=@(FetchIdsBatch())
+				&fields=engagement
+				&access_token=@(Model.Authenticator.Token)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">				
+				<JsonPath Title="URL" Id="Url" Expr="id" Converter="String"/>		
+				<JsonPath Title="Shares" Id="Shares" Expr="engagement.share_count" Converter="Int"/>
+				<JsonPath Title="Comments" Id="Comments" Expr="engagement.comment_count" Converter="Int"/>
+				<JsonPath Title="Reactions" Id="Reactions" Expr="engagement.reaction_count" Converter="Int"/>
+			</JsonPath>
     </Parse>
   </RestConnector>
 
