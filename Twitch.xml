@@ -50,7 +50,132 @@
 			</JsonPath>
     </Parse>
     <Fail>
-      <JsonPath Expr="errors.message"/>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="GamesSearch" Title="Games Search" HelpUrl="https://dev.twitch.tv/docs/v5/reference/search/" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="starcraft" Required="true"/>
+      <Checkbox Id="LiveStatus" Title="Live Only" DefaultValue="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/search/games
+				?query=@Utils.UrlEncode(Model.Query)
+				&live=@(Model.LiveStatus)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="games.*">
+				<JsonPath Expr="_id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="popularity" Id="Popularity" Title="Popularity" Converter="Int" HelpText=""/>
+				<JsonPath Expr="box.medium" Id="Photo" Title="Photo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="StreamsSearch" Title="Streams Search" HelpUrl="https://dev.twitch.tv/docs/v5/reference/search/" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/search/streams
+				?query=@Utils.UrlEncode(Model.Query)
+				&limit=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="streams.*">
+				<JsonPath Expr="_id" Id="StreamId" Title="Stream Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.status" Id="ChannelStatus" Title="Channel Status" Converter="String" HelpText=""/>
+				<JsonPath Expr="viewers" Id="Viewers" Title="Viewers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Started" Title="Started" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="average_fps" Id="AverageFPS" Title="Avg FPS" Converter="Double" HelpText=""/>
+				<JsonPath Expr="delay" Id="Delay" Title="Delay" Converter="Double" HelpText=""/>
+				<JsonPath Expr="channel._id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.name" Id="ChannelName" Title="Channel Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.url" Id="ChannelUrl" Title="Channel URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.views" Id="ChannelViews" Title="Channel Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="channel.followers" Id="ChannelFollowers" Title="Channel Followers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="channel.language" Id="ChannelLang" Title="Channel Lang" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.mature" Id="ChannelMature" Title="Mature" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="channel.created_at" Id="ChannelCreated" Title="Channel Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="channel.logo" Id="ChannelLogo" Title="Channel Logo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ChannelFeedPosts" Title="Channel Feed Posts" HelpUrl="https://dev.twitch.tv/docs/v5/reference/channel-feed/#get-multiple-feed-posts" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="9305848" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="_cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/feed
+				/@(Model.ChannelId)/posts?
+				&limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &cursor=@(Model.NextPageToken)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="posts.*">
+				<JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="body" Id="Body" Title="Body" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="comments._total" Id="Comments" Title="Comments" Converter="Int" HelpText=""/>
+				<JsonPath Expr="share_summary.share_count" Id="Shares" Title="Shares" Converter="Int" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
     </Fail>
   </RestConnector>
 
