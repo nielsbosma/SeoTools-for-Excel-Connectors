@@ -179,4 +179,470 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="Comments" Title="Comments" HelpUrl="https://dev.twitch.tv/docs/v5/reference/channel-feed/#get-feed-comments" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="9305848" Required="true"/>
+      <Text Id="PostId" Title="Post Id" Debug.DefaultValue="1b7e2ac1-0f4d-461a-ab5f-c1fbbdafaff6" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="_cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/feed
+				/@(Model.ChannelId)/posts
+				/@(Model.PostId)/comments?
+				&limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &cursor=@(Model.NextPageToken)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="comments.*">
+				<JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="body" Id="Body" Title="Body" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="user._id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="user.bio" Id="Bio" Title="Bio" Converter="String" HelpText=""/>
+				<JsonPath Expr="user.logo" Id="Logo" Title="Logo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ChannelLookup" Title="Channel Lookup" HelpUrl="https://dev.twitch.tv/docs/v5/reference/channels/#get-channel-by-id" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="9305848" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/channels/
+				@(Model.ChannelId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="_id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+			<JsonPath Expr="views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+			<JsonPath Expr="followers" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+			<JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+			<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+			<JsonPath Expr="language" Id="Lang" Title="Lang" Converter="String" HelpText=""/>
+			<JsonPath Expr="mature" Id="Mature" Title="Mature" Converter="Bool" HelpText=""/>
+			<JsonPath Expr="partner" Id="Partner" Title="Partner" Converter="Bool" HelpText=""/>
+			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+			<JsonPath Expr="updated_at" Id="Updated" Title="Updated" Converter="DateTime" HelpText=""/>
+			<JsonPath Expr="logo" Id="Logo" Title="Logo" Converter="String" HelpText=""/>
+		</Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Followers" Title="Followers" HelpUrl="https://dev.twitch.tv/docs/v5/reference/channels/#get-channel-followers" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="9305848" Required="true"/>
+      <Radio Id="Direction" Title="Sort Results by" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="desc" Title="Newest First"/>
+          <Item Id="asc" Title="Oldest First"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/channels/
+				/@(Model.ChannelId)/follows?
+				&limit=@(Model.PageCursor.NextTake)
+				&Offset=@(Model.PageCursor.NextSkip)
+				&direction=@(Model.Direction)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="follows.*">
+				<JsonPath Expr="user._id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="FollowedAt" Title="Followed At" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="user.logo" Id="Logo" Title="Logo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ChannelVideos" Title="Videos from Channel" HelpUrl="https://dev.twitch.tv/docs/v5/reference/channels/#get-channel-videos" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="9305848" Required="true"/>
+      <Select Id="Type" Title="Broadcast Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="archive" Title="Archive"/>
+          <Item Id="highlight" Title="Highlight"/>
+          <Item Id="upload" Title="Upload"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Results by" DefaultValue="desc" Required="false">
+        <DataSource>
+          <Item Id="views" Title="Views"/>
+          <Item Id="time" Title="Newest First"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/channels
+				/@(Model.ChannelId)/videos?
+				&limit=@(Model.PageCursor.NextTake)
+				&Offset=@(Model.PageCursor.NextSkip)
+				@if(Model.Type != "all")
+				{
+					@: &broadcast_type=@(Model.Type)
+				}
+				&direction=@(Model.Direction)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="videos.*">
+				<JsonPath Expr="_id" Id="VideoId" Title="Video Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="length" Id="Length" Title="Length" Converter="Double" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="TopGames" Title="Top Games" HelpUrl="https://dev.twitch.tv/docs/v5/reference/games/#get-top-games" Hidden="false">
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/games/top?
+				limit=@(Model.PageCursor.NextTake)
+				&Offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="top.*">
+				<JsonPath Expr="game._id" Id="GameId" Title="Game Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="game.name" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="game.popularity" Id="Popularity" Title="Popularity" Converter="Int" HelpText=""/>
+				<JsonPath Expr="viewers" Id="Viewers" Title="Viewers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="channels" Id="Channels" Title="Channels" Converter="Int" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="LiveStreams" Title="Live Streams" HelpUrl="https://dev.twitch.tv/docs/v5/reference/streams/#get-live-streams" Hidden="false">
+    <Parameters>
+      <Text Id="ChannelIds" Title="Channel Ids (Optional)" Debug.DefaultValue="" Required="false" Multiline="true" HelpText="Enter one or more Channel Ids separated by a new line"/>
+      <Text Id="Game" Title="Game (Optional)" Debug.DefaultValue="" Required="false"/>
+      <Select Id="Language" Title="Language" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+					<Item Id="zh" Title="Chinese"/>
+					<Item Id="ja" Title="Japanese"/>
+					<Item Id="ko" Title="Korean"/>
+					<Item Id="es" Title="Spanish"/>
+					<Item Id="pt" Title="Portuguese"/>
+					<Item Id="de" Title="German"/>
+					<Item Id="pl" Title="Polish"/>
+					<Item Id="ru" Title="Russian"/>
+					<Item Id="fr" Title="French"/>
+					<Item Id="it" Title="Italian"/>
+					<Item Id="sv" Title="Swedish"/>
+					<Item Id="no" Title="Norwegian"/>
+					<Item Id="da" Title="Danish"/>
+					<Item Id="nl" Title="Dutch"/>
+					<Item Id="fi" Title="Finnish"/>
+					<Item Id="tr" Title="Turkish"/>
+					<Item Id="cs" Title="Czech"/>
+					<Item Id="sk" Title="Slovak"/>
+					<Item Id="hu" Title="Hungarian"/>
+        </DataSource>
+      </Select>
+      <Select Id="Type" Title="Broadcast Type" DefaultValue="all" Required="true">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="live" Title="Live"/>
+          <Item Id="playlist" Title="Playlist"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/streams?
+				broadcast_type=@(Model.Type)
+				@if(!string.IsNullOrEmpty(Model.ChannelIds))
+				{
+					@: &channel=@FetchChannelIds()
+				}
+				@if(!string.IsNullOrEmpty(Model.Game))
+				{
+					@: &game=@(Utils.UrlEncode(Model.Game))
+				}
+				@if(Model.Language != "all")
+				{
+					@: &language=@(Model.Language)
+				}
+				&limit=@(Model.PageCursor.NextTake)
+				&Offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="streams.*">
+				<JsonPath Expr="_id" Id="StreamId" Title="Stream Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="stream_type" Id="StreamType" Title="Stream Type" Converter="String" HelpText=""/>
+				<JsonPath Expr="viewers" Id="Viewers" Title="Viewers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="average_fps" Id="AverageFPS" Title="Avg FPS" Converter="Double" HelpText=""/>
+				<JsonPath Expr="channel._id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="channel.followers" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+				<JsonPath Expr="channel.status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.language" Id="Lang" Title="Lang" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.mature" Id="Mature" Title="Mature" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="channel.partner" Id="Partner" Title="Partner" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="channel.logo" Id="Logo" Title="Logo" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="VideoLookup" Title="Video Lookup" HelpUrl="https://dev.twitch.tv/docs/v5/reference/videos/#get-video" Hidden="false">
+    <Parameters>
+      <Text Id="VideoId" Title="Video Id" Debug.DefaultValue="v140020131" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/videos/
+				@(Model.VideoId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="_id" Id="VideoId" Title="Video Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+			<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
+			<JsonPath Expr="views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+			<JsonPath Expr="length" Id="Length" Title="Length" Converter="Double" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="TopVideos" Title="Top Videos" HelpUrl="https://dev.twitch.tv/docs/v5/reference/videos/#get-top-videos" Hidden="false">
+    <Parameters>
+      <Text Id="Game" Title="Game (Optional)" Debug.DefaultValue="" Required="false"/>
+      <Select Id="Type" Title="Broadcast Type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="archive" Title="Archive"/>
+          <Item Id="highlight" Title="Highlight"/>
+          <Item Id="upload" Title="Upload"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Period" Title="Period" DefaultValue="week" Required="false">
+        <DataSource>
+          <Item Id="week" Title="Week"/>
+          <Item Id="month" Title="Month"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Language" Title="Language" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+					<Item Id="zh" Title="Chinese"/>
+					<Item Id="ja" Title="Japanese"/>
+					<Item Id="ko" Title="Korean"/>
+					<Item Id="es" Title="Spanish"/>
+					<Item Id="pt" Title="Portuguese"/>
+					<Item Id="de" Title="German"/>
+					<Item Id="pl" Title="Polish"/>
+					<Item Id="ru" Title="Russian"/>
+					<Item Id="fr" Title="French"/>
+					<Item Id="it" Title="Italian"/>
+					<Item Id="sv" Title="Swedish"/>
+					<Item Id="no" Title="Norwegian"/>
+					<Item Id="da" Title="Danish"/>
+					<Item Id="nl" Title="Dutch"/>
+					<Item Id="fi" Title="Finnish"/>
+					<Item Id="tr" Title="Turkish"/>
+					<Item Id="cs" Title="Czech"/>
+					<Item Id="sk" Title="Slovak"/>
+					<Item Id="hu" Title="Hungarian"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Results by" DefaultValue="views" Required="false">
+        <DataSource>
+          <Item Id="views" Title="Views"/>
+          <Item Id="time" Title="Newest First"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="_total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept'>application/vnd.twitchtv.v5+json</Header>
+          <Header Name='Client-ID'>@(Model.ClientId)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitch.tv/kraken/videos/top?
+				period=@(Model.Period)
+				@if(Model.Type != "all")
+				{
+					@: &broadcast_type=@(Model.Type)
+				}
+				@if(!string.IsNullOrEmpty(Model.Game))
+				{
+					@: &game=@(Utils.UrlEncode(Model.Game))
+				}
+				@if(Model.Language != "all")
+				{
+					@: &language=@(Model.Language)
+				}
+				&sort=@(Model.Direction)
+				&limit=@(Model.PageCursor.NextTake)
+				&Offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="vods.*">
+				<JsonPath Expr="_id" Id="VideoId" Title="Video Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="game" Id="Game" Title="Game" Converter="String" HelpText=""/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Int" HelpText=""/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="length" Id="Length" Title="Length" Converter="Double" HelpText=""/>
+				<JsonPath Expr="channel._id" Id="ChannelId" Title="Channel Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="channel.name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+		string FetchChannelIds()
+		{
+			string[] lines = ((string)Model.ChannelIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+			return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+		}
+    ]]>
+  </RazorFunctions>
+
 </Suite>
