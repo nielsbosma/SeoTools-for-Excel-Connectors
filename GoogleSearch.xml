@@ -250,4 +250,64 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Ads" Title="Ads">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="cheap hotels" Required="true"/>
+      <Radio Id="SearchIn" Title="Search In" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="intext:" Title="Text"/>
+          <Item Id="intitle:" Title="Title"/>
+          <Item Id="inurl:" Title="URL"/>
+        </DataSource>
+      </Radio>
+      <Text Id="Domain" Title="Domain (Can't be combined with 'Search In')" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Text Id="Site" Title="Google Site" DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://@(Model.Site)/search?
+				hl=en&safe=off&q=
+				@if(Model.Query.Contains(" ") && Model.SearchIn != "all")
+				{
+					@: all@(Model.SearchIn)
+				}
+				else if(Model.SearchIn != "all")
+				{
+					@(Model.SearchIn)
+				}
+				@Utils.UrlEncode(Model.Query)
+				@if(!string.IsNullOrEmpty(Model.Domain) && Model.SearchIn == "all")
+				{
+					@: +site:@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+				}
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+					@: &tbs=cdr:1,cd_min:@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("MM/dd/yyyy")),cd_max:@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("MM/dd/yyyy"))
+				}
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
+        <RequestHeaders>
+          <Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
+          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//li[@@class='ads-ad']/h3">
+        <Xpath Expr="." Id="Title" Title="Title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[@@class='ellip ads-creative']">
+        <Xpath Expr="." Id="Description" Title="Description" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[@@class='ads-visurl']/cite">
+        <Xpath Expr="." Id="Url" Title="URL" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
 </Suite>
