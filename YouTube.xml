@@ -26,30 +26,30 @@
 
     string _RenderOperator(string op)
     {
-	    return op == "==" ? "equals" :
-		    op == "!=" ? "notEquals" :
-		    op == "=~" ? "contains" :
-		    "notContains";
+      return op == "==" ? "equals" :
+        op == "!=" ? "notEquals" :
+        op == "=~" ? "contains" :
+        "notContains";
     }
 
     string RenderFilter()
     {
-	    var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+      var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
 
-	    var filters = lines
-		    .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
-		    .Where(e => e.Success)
-		    .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}",
-			    e.Groups[1].Value.Trim(),
-			    _RenderOperator(e.Groups[2].Value.Trim()),
-			    e.Groups[3].Value.Trim()));
+      var filters = lines
+        .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+        .Where(e => e.Success)
+        .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}",
+          e.Groups[1].Value.Trim(),
+          _RenderOperator(e.Groups[2].Value.Trim()),
+          e.Groups[3].Value.Trim()));
 
-	    if(filters.Any())
-	    {
-		    return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
-	    }
+      if(filters.Any())
+      {
+        return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
+      }
 
-	    return "";
+      return "";
     }
 
    ]]>
@@ -63,8 +63,8 @@
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/v3/videos?
-				id=@(Model.VideoId)
-				&part=statistics,snippet
+        id=@(Model.VideoId)
+        &part=statistics,snippet
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -86,9 +86,9 @@
       <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String" DefaultValue=""/>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
@@ -105,7 +105,7 @@
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/v3/channels?@(Model.InputType)=@(Model.ChannelInput)
-				&part=statistics,snippet
+        &part=statistics,snippet
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -124,9 +124,9 @@
       <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="SearchVideos" Title="Videos Search">
@@ -163,9 +163,9 @@
         https://www.googleapis.com/youtube/v3/search?
         &part=snippet
         &type=video
-		    &order=@(Model.Sorting)
-		    &videoDuration=@(Model.Duration)
-		    &videoDefinition=@(Model.videoDefinition ? "high" : "any")
+        &order=@(Model.Sorting)
+        &videoDuration=@(Model.Duration)
+        &videoDefinition=@(Model.videoDefinition ? "high" : "any")
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -184,9 +184,9 @@
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-						<![CDATA[
+            <![CDATA[
             http://www.youtube.com/watch/@(Model.Id)
-						]]>
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
         </Compute>
@@ -199,9 +199,9 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="SearchChannels" Title="Channels Search">
@@ -235,15 +235,15 @@
         https://www.googleapis.com/youtube/v3/search?´
         &part=snippet
         &type=channel
-		    &order=@(Model.Sorting)
-		    &channelType=@(Model.ChannelType)
+        &order=@(Model.Sorting)
+        &channelType=@(Model.ChannelType)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
           @: &pageToken=@Model.NextPageToken
         }
-				]]>
+        ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
@@ -255,9 +255,9 @@
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-						<![CDATA[
+            <![CDATA[
             http://www.youtube.com/channel/@(Model.Id)
-						]]>
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="id.channelId" Id="Id" Converter="String"/>
         </Compute>
@@ -269,9 +269,9 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="SearchPlaylists" Title="Playlists Search">
@@ -299,7 +299,7 @@
         https://www.googleapis.com/youtube/v3/search?
         &part=snippet
         &type=playlist
-		    &order=@(Model.Sorting)
+        &order=@(Model.Sorting)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -318,9 +318,9 @@
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="Url">
           <Compute.Expr>
-						<![CDATA[
+            <![CDATA[
             http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)
-						]]>
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
         </Compute>
@@ -332,9 +332,9 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="VideosFromChannel" Title="Channel Videos">
@@ -351,7 +351,7 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
-		    order=date
+        order=date
         &part=snippet
         &channelId=@(Model.ChannelId)
         &maxResults=@(Model.PageCursor.NextTake)
@@ -371,9 +371,9 @@
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-						<![CDATA[
+            <![CDATA[
             http://www.youtube.com/watch/@(Model.Id)
-						]]>
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
         </Compute>
@@ -385,9 +385,9 @@
         <JsonPath Title="ChannelId" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/>				
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="VideosFromPlayList" Title="Playlist Videos">
@@ -423,9 +423,9 @@
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-						<![CDATA[
+            <![CDATA[
             http://www.youtube.com/watch/@(Model.Id)
-						]]>
+            ]]>
           </Compute.Expr>
           <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
         </Compute>
@@ -436,9 +436,9 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="VideoComments" Title="Video Comments">
@@ -460,10 +460,10 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/commentThreads?
-				videoId=@(Model.VideoId)
-				&part=snippet
-				&order=@(Model.Sorting)
-				&textFormat=plainText
+        videoId=@(Model.VideoId)
+        &part=snippet
+        &order=@(Model.Sorting)
+        &textFormat=plainText
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -490,9 +490,9 @@
         <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="ChannelComments" Title="Channel Comments">
@@ -514,10 +514,10 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/commentThreads?
-				channelId=@(Model.ChannelId)
-				&part=snippet
-				&order=@(Model.Sorting)
-				&textFormat=plainText
+        channelId=@(Model.ChannelId)
+        &part=snippet
+        &order=@(Model.Sorting)
+        &textFormat=plainText
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -544,9 +544,9 @@
         <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
-		<Fail>
-			<JsonPath Expr="$.error.errors[0].reason"/>
-		</Fail>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
 </Suite>
