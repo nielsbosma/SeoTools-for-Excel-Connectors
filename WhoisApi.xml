@@ -8,28 +8,44 @@
     <Text Id="Password" Required="true" Password="true"/>
   </Settings>
 
-  <RestConnector Id="Whois" Title="Whois">
+  <RestConnector Id="Whois" Title="Whois" HelpUrl="https://www.whoisxmlapi.com/whois-api-guide.php">
     <Parameters>
-      <Text Id="Domain" Required="true"/>
+      <Text Id="Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
     </Parameters>
-    <Fetch Url="http://www.whoisxmlapi.com/whoisserver/WhoisService?domainName=@(Model.Domain)&amp;username=@(Model.Username)&amp;password=@(Model.Password)&amp;outputFormat=JSON"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://www.whoisxmlapi.com/whoisserver/WhoisService?
+        domainName=@(Model.Domain)
+        &username=@(Model.Username)
+        &password=@(Model.Password)
+        &outputFormat=JSON
+        ]]>
+      </Fetch.Url>
+    </Fetch>
     <Parse>
-      <JsonPath Id="Created" Title="Created" Expr="WhoisRecord.registryData.createdDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
-      <JsonPath Id="Updated" Title="Updated" Expr="WhoisRecord.registryData.updatedDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
-      <JsonPath Id="Expired" Title="Expired" Expr="WhoisRecord.registryData.expiresDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
-      <JsonPath Id="WhoisServer" Title="Whois Server" Expr="WhoisRecord.registryData.whoisServer" Checked="false"/>
-      <JsonPath Id="domainAge" Title="Domain Age" Expr="WhoisRecord.estimatedDomainAge" Converter="Int" Checked="false"/>
-      <JsonPath Id="Registrar" Title="Registrar" Expr="WhoisRecord.registrarName" Checked="false"/>
-      <JsonPath Id="RegistrarIanaId" Title="Registrar IANA Id" Expr="WhoisRecord.registrarIANAID" Converter="Int" Checked="false"/>
-      <JsonPath Id="ContactEmail" Title="Contact Email" Expr="WhoisRecord.contactEmail" Checked="false"/>
-      <JsonPath Id="Status" Title="Status" Expr="WhoisRecord.registryData.status" Checked="false"/>
+      <JsonPath Expr="WhoisRecord">
+        <JsonPath Id="Created" Title="Created" Expr="registryData.createdDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
+        <JsonPath Id="Updated" Title="Updated" Expr="registryData.updatedDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
+        <JsonPath Id="Expires" Title="Expires" Expr="registryData.expiresDateNormalized" Converter="DateTime" Converter.SourceFormat="yyyy-MM-dd hh:mm:ss UTC"/>
+        <JsonPath Id="domainAge" Title="Domain Age" Expr="estimatedDomainAge" Converter="Int" Checked="false"/>
+        <JsonPath Id="WhoisServer" Title="Whois Server" Expr="registryData.whoisServer" Checked="false"/>
+        <JsonPath Id="Registrar" Title="Registrar" Expr="registrarName" Checked="false"/>
+        <JsonPath Id="RegistrarIanaId" Title="Registrar IANA Id" Expr="registrarIANAID" Converter="Int" Checked="false"/>
+        <JsonPath Id="RegistrantName" Title="Registrant Name" Expr="registrant.name" Checked="false"/>
+        <JsonPath Id="RegistrantOrganization" Title="Registrant Org" Expr="registrant.organization" Checked="false"/>
+        <JsonPath Id="RegistrantCountry" Title="Registrant Country" Expr="registrant.country" Checked="false"/>
+        <JsonPath Id="RegistrantCity" Title="Registrant City" Expr="registrant.city" Checked="false"/>
+        <JsonPath Id="ContactEmail" Title="Contact Email" Expr="contactEmail" Checked="false"/>
+        <JsonPath Id="Status" Title="Status" Expr="registryData.status" Checked="false"/>
+      </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="WhoisRecord.dataError"/>
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="Available" Title="Available">
+  <RestConnector Id="Available" Title="Available" HelpUrl="https://www.whoisxmlapi.com/domain-availability-api-guide.php">
     <Parameters>
       <Radio Id="Mode" Title="Mode" DefaultValue="DNS_ONLY" Required="true">
         <DataSource>
@@ -37,14 +53,44 @@
           <Item Id="DNS_AND_WHOIS" Title="DNS and Whois"/>
         </DataSource>
       </Radio>
-      <Text Id="Domain" Required="true"/>
+      <Text Id="Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
     </Parameters>
-    <Fetch Url="http://www.whoisxmlapi.com/whoisserver/WhoisService?cmd=GET_DN_AVAILABILITY&amp;getMode=@(Model.Mode)&amp;domainName=@(Model.Domain)&amp;username=@(Model.Username)&amp;password=@(Model.Password)&amp;outputFormat=JSON"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://www.whoisxmlapi.com/whoisserver/WhoisService?cmd=GET_DN_AVAILABILITY
+        &getMode=@(Model.Mode)
+        &domainName=@(Model.Domain)
+        &username=@(Model.Username)
+        &password=@(Model.Password)
+        &outputFormat=JSON
+        ]]>
+      </Fetch.Url>
+    </Fetch>
     <Parse>
       <JsonPath Expr="DomainInfo.domainAvailability" Converter="Bool" Converter.TrueIf="AVAILABLE"/>
     </Parse>
     <Fail>
       <JsonPath Expr="DomainInfo.dataError"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountBalance" Title="Account Balance" HelpUrl="https://www.whoisxmlapi.com/whois-api-guide.php">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.whoisxmlapi.com/accountServices.php?servicetype=accountbalance
+        &username=@(Model.Username)
+        &password=@(Model.Password)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//balance" Id="Balance" Title="Balance" Converter="Int"/>
+      <XPath Expr="//reserve" Id="Reserve" Title="Reserve" Converter="Int" Checked="false"/>
+    </Parse>
+    <Fail>
+      <Xpath Expr="//error"/>
     </Fail>
   </RestConnector>
 
