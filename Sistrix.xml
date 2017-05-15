@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Suite Category="SEO" Title="Sistrix" Id="Sistrix" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Sistrix.xml" HelpUrl="http://seotoolsforexcel.com/sistrix/" HelpText="Documentation">
 
-  <Author Name="William Dahlström" Url="http://heyimwill.com/" />
-
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sistrix/">
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/sistrix/" />
   </Settings>
@@ -217,8 +215,8 @@
 
   <RestConnector Id="KeywordSeo" Title="Keyword SEO" HelpUrl="https://www.sistrix.com/api/keyword/#keyword">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" DefaultValue="" Required="true" />
-      <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+      <Text Id="Keyword" Title="Keyword" DefaultValue="" Debug.DefaultValue="nyheter" Required="true" />
+      <Number Id="Num" Title="Rows" DefaultValue="10" Required="false" HelpText="Number of rows to retreive."/>
       <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
       <Resource Id="SelectCountry" />
     </Parameters>
@@ -231,6 +229,7 @@
       &date=now
       &mobile=@(Model.Smartphone ? "true" : "false")
       &country=@(Model.Country)
+      &format=json
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -240,13 +239,14 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <XPath Expr="/response/answer/result">
-        <Xpath Expr="." Attribute="position" Id="Position" Title="Position" Converter="Int" />
-        <Xpath Expr="." Attribute="domain" Id="Domain" Title="Domain" />
-      </XPath>
+      <JsonPath Expr="$.answer[0].result[*]">
+        <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int"/>
+        <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+      </JsonPath>
     </Parse>
     <Fail>
-      <XPath Expr="/response/error" Attribute="error_message" />
+      <JsonPath Expr="error.error_message"/>
     </Fail>
   </RestConnector>
 
