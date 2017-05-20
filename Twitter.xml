@@ -112,8 +112,8 @@
           </Compute.Expr>
           <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
           <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
-          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>					
-          <JsonPath Expr="text" Id="NormalText"/>						
+          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>
+          <JsonPath Expr="text" Id="NormalText"/>
         </Compute>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
@@ -275,8 +275,8 @@
           </Compute.Expr>
           <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
           <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
-          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>					
-          <JsonPath Expr="text" Id="NormalText"/>						
+          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>
+          <JsonPath Expr="text" Id="NormalText"/>
         </Compute>
         <Compute Id="Source" Title="Source">
           <Compute.Expr>
@@ -300,27 +300,32 @@
   </RestConnector>
 
   <RestConnector Id="Followers" Title="User Followers" HelpUrl="https://dev.twitter.com/rest/reference/get/followers/list">
-    <RazorFunctions>
-    <![CDATA[
-    Dictionary<string,string> GetQuery() {
-      return new Dictionary<string,string> {
-        {"screen_name", Model.ScreenName},
-        {"skip_status", "true"},
-        {"count", Model.PageCursor.NextTake.ToString()},
-        {"cursor", Model.PageCursor.Page > 0 ? Model.NextCursor : "-1"}
-      };
-    }
-    ]]>
-    </RazorFunctions>
     <Parameters>
       <Text Id="ScreenName" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="CustomCursor" Title="Custom Cursor" Debug.DefaultValue="" Required="false"/>
+
     </Parameters>
     <Paging PageSize="200">
       <Parse>
         <JsonPath Id="NextCursor" Expr="next_cursor_str"/>
       </Parse>
     </Paging>
-    <Fetch Url="https://api.twitter.com/1.1/followers/list.json?@RenderQuery(GetQuery())">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/1.1/followers/list.json?skip_status=true
+        &screen_name=@(Model.ScreenName)
+        &count=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &cursor=@(Model.NextCursor)
+        }
+        else if(Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor))
+        {
+          @: &cursor=@(Model.CustomCursor)
+        }
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <OAuth>
           <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
@@ -345,6 +350,7 @@
         <JsonPath Expr="url" Id="Url" Title="URL"/>
         <JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool"/>
       </JsonPath>
+      <JsonPath Expr="next_cursor_str" Id="NextCursor" Title="NextCursor" Converter="String" Checked="false"/>
     </Parse>
     <Fail>
       <JsonPath Expr="errors[0].message"/>
@@ -352,27 +358,31 @@
   </RestConnector>
 
   <RestConnector Id="Following" Title="User Following" HelpUrl="https://dev.twitter.com/rest/reference/get/friends/list">
-    <RazorFunctions>
-    <![CDATA[
-    Dictionary<string,string> GetQuery() {
-      return new Dictionary<string,string> {
-        {"screen_name", Model.ScreenName},
-        {"skip_status", "true"},
-        {"count", Model.PageCursor.NextTake.ToString()},
-        {"cursor", Model.PageCursor.Page > 0 ? Model.NextCursor : "-1"}
-      };
-    }
-    ]]>
-    </RazorFunctions>
     <Parameters>
       <Text Id="ScreenName" Title="User Lookup" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="CustomCursor" Title="Custom Cursor" Debug.DefaultValue="" Required="false"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
         <JsonPath Id="NextCursor" Expr="next_cursor_str"/>
       </Parse>
     </Paging>
-    <Fetch Url="https://api.twitter.com/1.1/friends/list.json?@RenderQuery(GetQuery())">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/1.1/friends/list.json?skip_status=true
+        &screen_name=@(Model.ScreenName)
+        &count=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &cursor=@(Model.NextCursor)
+        }
+        else if(Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor))
+        {
+          @: &cursor=@(Model.CustomCursor)
+        }
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <OAuth>
           <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
@@ -397,6 +407,7 @@
         <JsonPath Expr="url" Id="Url" Title="URL"/>
         <JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool"/>
       </JsonPath>
+      <JsonPath Expr="next_cursor_str" Id="NextCursor" Title="NextCursor" Converter="String" Checked="false"/>
     </Parse>
     <Fail>
       <JsonPath Expr="errors[0].message"/>
@@ -456,8 +467,8 @@
           </Compute.Expr>
           <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
           <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
-          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>					
-          <JsonPath Expr="text" Id="NormalText"/>						
+          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>
+          <JsonPath Expr="text" Id="NormalText"/>
         </Compute>
         <JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
         <JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
@@ -597,8 +608,8 @@
           </Compute.Expr>
           <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
           <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
-          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>					
-          <JsonPath Expr="text" Id="NormalText"/>						
+          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>
+          <JsonPath Expr="text" Id="NormalText"/>
         </Compute>
         <JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
         <JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
