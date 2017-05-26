@@ -79,6 +79,66 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="GroupLookup" Title="Group Lookup">
+    <Parameters>
+      <Text Id="GroupId" Title="Group Id" Debug.DefaultValue="117245591640866" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v2.8/?id=
+        @(Model.GroupId)
+        &fields=@SelectedFields()
+        &access_token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Title="Group Id" Id="GroupId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+      <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+      <JsonPath Title="Privacy" Id="Privacy" Expr="privacy" Converter="String" Tag="privacy" HelpText=""/>
+      <JsonPath Title="Members" Id="Members" Expr="members.summary.total_count" Converter="Int" Tag="members.summary(true)" HelpText=""/>
+      <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Owner" Id="Owner" Expr="owner.name" Converter="String" Tag="owner" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Email" Id="Email" Expr="email" Converter="String" Tag="email" HelpText="" DefaultValue=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="GroupLookupBatch" Title="Group Lookup Batch">
+    <Parameters>
+			<Text Id="Ids" Title="Multiple Group Ids (Max 50)" Debug.DefaultValue="117245591640866" Required="true" HelpText="" Multiline="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v2.8/?ids=
+        @(FetchIdsBatch())
+        &fields=@SelectedFields()
+        &access_token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+				<JsonPath Title="Group Id" Id="GroupId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+				<JsonPath Title="Privacy" Id="Privacy" Expr="privacy" Converter="String" Tag="privacy" HelpText=""/>
+				<JsonPath Title="Members" Id="Members" Expr="members.summary.total_count" Converter="Int" Tag="members.summary(true)" HelpText=""/>
+				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
+				<JsonPath Title="Owner" Id="Owner" Expr="owner.name" Converter="String" Tag="owner" HelpText="" DefaultValue=""/>
+				<JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
+				<JsonPath Title="Email" Id="Email" Expr="email" Converter="String" Tag="email" HelpText="" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
   <RestConnector Id="PageAlbums" Title="Page Albums">
     <Parameters>
       <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303"/>
@@ -1051,6 +1111,32 @@
     <Parse>
       <JsonPath Title="URL" Id="AvatarUrl" Expr="data.url" Converter="String"/>
     </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UnknownIdType" Title="Unknown Id Type" HelpText="Determines the type type from an unknown Id">
+    <Parameters>
+      <Text Id="Ids" Title="Multiple Ids (Max 50)" Debug.DefaultValue="" Required="true" HelpText="" Multiline="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v2.8/?ids=
+        @(FetchIdsBatch())
+				&fields=id,metadata
+				&metadata=1
+        &access_token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+				<JsonPath Title="Id" Id="Id" Expr="id" Converter="String" Tag="id" HelpText=""/>
+				<JsonPath Title="Type" Id="Type" Expr="metadata.type" Converter="String" Tag="id" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
   </RestConnector>
 
   <RazorFunctions>
