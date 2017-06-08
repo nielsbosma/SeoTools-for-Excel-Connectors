@@ -57,7 +57,7 @@
       <Fetch.Url>
         <![CDATA[
           https://graph.facebook.com/v2.8/me/adaccounts?
-          fields=name,account_id,balance
+          fields=name,account_id,balance,account_status
           &access_token=@(Model.Authenticator.Token)
           &limit=@(Model.PageCursor.NextTake)
           @if(Model.PageCursor.Page != 0)
@@ -72,6 +72,53 @@
         <JsonPath Expr="account_id" Id="AccountId" Title="Account Id" Converter="String" HelpText="ID of ad account"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the ad account"/>
         <JsonPath Expr="balance" Id="Balance" Title="Balance" Converter="Double" HelpText="Bill amount due"/>
+        <Compute Id="Category" Title="Category" Converter="String" HelpText="Status of the account">
+          <Compute.Expr>
+            <![CDATA[
+            @if(Model.StatusInput == 1)
+            {
+              @: ACTIVE
+            }
+            else if(Model.StatusInput == 2)
+            {
+              @: DISABLED
+            }
+            else if(Model.StatusInput == 3)
+            {
+              @: UNSETTLED
+            }
+            else if(Model.StatusInput == 7)
+            {
+              @: PENDING_RISK_REVIEW
+            }
+            else if(Model.StatusInput == 9)
+            {
+              @: IN_GRACE_PERIOD
+            }
+            else if(Model.StatusInput == 100)
+            {
+              @: PENDING_CLOSURE
+            }
+            else if(Model.StatusInput == 101)
+            {
+              @: CLOSED
+            }
+            else if(Model.StatusInput == 102)
+            {
+              @: PENDING_SETTLEMENT
+            }
+            else if(Model.StatusInput == 201)
+            {
+              @: ANY_ACTIVE
+            }
+            else if(Model.StatusInput == 202)
+            {
+              @: ANY_CLOSED
+            }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="account_status" Id="StatusInput" Converter="Int"/>
+        </Compute>
       </JsonPath>
     </Parse>
     <Fail>
@@ -198,6 +245,7 @@
         <JsonPath Expr="id" Id="AdsetId" Title="Adset Id" Tag="id" Converter="String" HelpText="Ad set ID"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Tag="name" Converter="String" HelpText="Name of ad set"/>
         <JsonPath Expr="effective_status" Id="Status" Title="Status" Tag="effective_status" Converter="String" HelpText="The effective status of the ad set, which can be either its own status or caused by its parent campaign."/>
+        <JsonPath Expr="daily_budget" Id="DailyBudget" Title="Daily Budget" Tag="daily_budget" Converter="Double" HelpText="The daily budget of the set defined in your account currency"/>
         <JsonPath Expr="lifetime_budget" Id="Budget" Title="Budget" Tag="lifetime_budget" Converter="Double" HelpText="The lifetime budget of the set defined in your account currency."/>
         <JsonPath Expr="budget_remaining" Id="BudgetRemaining" Title="Budget Remaining" Tag="budget_remaining" Converter="Double" HelpText="Remaining budget"/>
         <JsonPath Expr="billing_event" Id="BillingEvent" Title="Billing Event" Tag="billing_event" Converter="String" HelpText="The billing event that this adset is using"/>
