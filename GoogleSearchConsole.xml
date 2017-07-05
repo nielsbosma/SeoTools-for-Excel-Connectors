@@ -87,6 +87,7 @@
     <Parameters>
       <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
+      <Checkbox Id="TotalResults" Title="Total Results" DefaultValue="false"/>
       <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
       <Radio Id="SearchType" Title="Type" DefaultValue="web">
         <DataSource>
@@ -109,7 +110,10 @@
           {
             "startDate": "@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))",
             "endDate": "@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))",
-            "dimensions": [ @SelectedDimensions() ],
+            @if(Model.TotalResults == false)
+            {
+              @: "dimensions": [ @SelectedDimensions() ],
+            }
             "rowLimit": @(Model.RowLimit),
             "startRow": @(Model.StartRow),
             "searchType": "@(Model.SearchType)"
@@ -120,7 +124,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.rows.*">
-        <JsonPath Expr="keys[@(DimensionIndex(&quot;Date&quot;))]" Id="Date" Title="Date" Tag="Dimensions"/>
+        <JsonPath Expr="keys[@(DimensionIndex(&quot;Date&quot;))]" Id="Date" Title="Date" Tag="Dimensions" Converter="DateTime"/>
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Query&quot;))]" Id="Query" Title="Query" Tag="Dimensions"/>
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Country&quot;))]" Id="Country" Title="Country" Tag="Dimensions" Checked="false"/>
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Device&quot;))]" Id="Device" Title="Device" Tag="Dimensions" Checked="false"/>
