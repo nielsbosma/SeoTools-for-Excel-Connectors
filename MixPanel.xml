@@ -17,9 +17,9 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Events" Title="Events" HelpText="Get unique, total, or average data for a set of events over N days, weeks, or months."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#events">
+  <RestConnector Id="EventStatistics" Title="Event Statistics" HelpText="Get unique, total, or average data for a set of events over N days, weeks, or months."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#events">
     <Parameters>
-      <Text Id="Event" Title="Event" DefaultValue="" Debug.DefaultValue="Create Event" Required="true" HelpText=""/>
+      <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Select.TitleField="EventNames" Required="false" HelpText=""/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
       <Select Id="Unit" Title="Unit" Required="false" DefaultValue="day">
         <DataSource>
@@ -64,7 +64,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="TopEvents" Title="Top Events" HelpText="Get the top events for today, with their counts and the normalized percent change from yesterday."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#events">
+  <RestConnector Id="TopEventsToday" Title="Top Events Today" HelpText="Get the top events for today, with their counts and the normalized percent change from yesterday."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#events">
     <Parameters>
       <Radio Id="Type" Title="Type" DefaultValue="general" Required="true">
         <DataSource>
@@ -97,6 +97,180 @@
         <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Int" HelpText=""/>
         <JsonPath Expr="percent_change" Id="PercentChange" Title="Percent Change" Converter="Double" HelpText=""/>
       </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error"/>
+    </Fail>
+  </RestConnector>
+ 
+  <RestConnector Id="CommonEvents" Title="Common Events" HelpText=" Get a list of the most common events over the last 31 days."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#names">
+    <Parameters>
+      <Radio Id="Type" Title="Type" DefaultValue="general" Required="true">
+        <DataSource>
+          <Item Id="general" Title="General"/>
+          <Item Id="unique" Title="Unique"/>
+          <Item Id="average" Title="Average"/>
+        </DataSource>
+      </Radio>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/names
+        ?type=@(Model.Type)
+        &limit=@(Model.Limit)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;(.*?)&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Group="0"/>
+      </Regex>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="CommonEventsHidden" Hidden="True">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/names
+        ?type=general
+        &limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;(.*?)&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Group="0" Id="EventNames"/>
+      </Regex>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="EventPropertiesStatistics" Title="Event Properties Statistics" HelpText="Get unique, total, or average data for of a single event and property over days, weeks, or months."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#properties">
+    <Parameters>
+      <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Select.TitleField="EventNames" Required="false" HelpText=""/>
+      <Text Id="Property" Title="Property" Select.Connector="EventTopPropertiesHidden" Select.IdField="PropertyNames" Select.TitleField="PropertyNames" Required="false" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
+      <Select Id="Unit" Title="Unit" Required="false" DefaultValue="day">
+        <DataSource>
+          <Resource Id="Units"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Type" Title="Type" DefaultValue="general" Required="true">
+        <DataSource>
+          <Item Id="general" Title="General"/>
+          <Item Id="unique" Title="Unique"/>
+          <Item Id="average" Title="Average"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/properties?
+        name=@(Utils.UrlEncode(Model.Property))
+        &event=[%22@(Utils.UrlEncode(Model.Event))%22]
+        &type=@(Model.Type)
+        &unit=@(Model.Unit)
+        &from_date=@Model.DateInterval.StartDate.ToString("yyyy-MM-dd")
+        &to_date=@Model.DateInterval.EndDate.ToString("yyyy-MM-dd")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys(data.values.@(Model.Property))">
+        <JsonPath Expr="key" Id="Date" Title="Date" HelpText=""/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="EventTopProperties" Title="Event Top Properties" HelpText="Get the top property names for an event."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#properties">
+    <Parameters>
+      <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Select.TitleField="EventNames" Required="false" HelpText=""/>
+      <Number Id="Limit" Title="Limit" DefaultValue="10" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/properties/
+        top?event=@(Model.Event)
+        &limit=@(Model.Limit)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;(.*?)&quot;:\s\{&quot;count&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Group="0"/>
+      </Regex>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error"/>
+    </Fail>
+  </RestConnector>
+  
+  <RestConnector Id="EventTopPropertiesHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Select.TitleField="EventNames" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/properties/
+        top?event=@(Utils.UrlEncode(Model.Event))
+        &limit=10
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;(.*?)&quot;:\s\{&quot;count&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Group="0" Id="PropertyNames"/>
+      </Regex>
     </Parse>
     <Fail>
       <JsonPath Expr="error"/>
