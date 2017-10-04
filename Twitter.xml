@@ -754,9 +754,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="TweetRetweets" Title="Tweet Retweets" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/retweets/id">
+  <RestConnector Id="TweetRetweets" Title="Tweet Retweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/get-statuses-retweets-id">
     <Parameters>
-    <Text Id="TweetId" Title="Tweet ID" Debug.DefaultValue="748796791756238848" HelpText="Returns up to 100 latest retweets of a tweet." Required="true"/>
+    <Text Id="TweetId" Title="Tweet ID" Debug.DefaultValue="900341109343363072" HelpText="Returns up to 100 latest retweets of a tweet." Required="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="100"/>
     <Fetch Url="">
@@ -793,17 +793,101 @@
         </Compute>
       </JsonPath>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="user.id_str" Id="UserId" Title="Username"/>
-        <JsonPath Expr="user.screen_name" Id="Username" Title="Username"/>
-        <JsonPath Expr="user.name" Id="Name" Title="Name"/>
-        <JsonPath Expr="user.favourites_count" Id="FavouritesCount" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="user.followers_count" Id="FollowersCount" Title="Followers" Converter="Int"/>
-        <JsonPath Expr="user.friends_count" Id="FriendsCount" Title="Following" Converter="Int"/>
-        <JsonPath Expr="user.statuses_count" Id="StatusesCount" Title="Tweets" Converter="Int"/>
-        <JsonPath Expr="user.listed_count" Id="ListedCount" Title="Listed" Converter="Int"/>
-        <JsonPath Expr="user.description" Id="Description" Title="Description"/>
-        <JsonPath Expr="user.location" Id="Location" Title="Location"/>
-        <JsonPath Expr="user.verified" Id="Verified" Title="Verified" Converter="Bool"/>
+        <Compute Id="Url" Title="URL">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string Cleaned = "";
+            if(Model.Username is string)
+            {
+              @: https://www.twitter.com/@(Model.Username)/statuses/@(Model.Id)/
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="user.screen_name" Id="Username" Converter="String"/>
+          <JsonPath Expr="id_str" Id="Id" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <Compute Id="Text" Title="Text">
+          <Compute.Expr>
+            <![CDATA[
+            @if(Model.Retweeted is string)
+            {
+              @: RT @@@Model.RetweetedUsernameInput: @Model.RetweetText
+            }
+            else if(Model.NormalText is string)
+            {
+              @(Model.NormalText)
+            }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="retweeted_status.id_str" Id="Retweeted"/>
+          <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUsernameInput"/>
+          <JsonPath Expr="retweeted_status.text" Id="RetweetText"/>
+          <JsonPath Expr="text" Id="NormalText"/>
+        </Compute>
+        <Compute Id="Retweets" Title="Retweets" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[0]]>
+          </Compute.Expr>
+        </Compute>
+        <Compute Id="Likes" Title="Likes" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[0]]>
+          </Compute.Expr>
+				</Compute>
+        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
+        <JsonPath Expr="user.screen_name" Id="UserName" Title="Username" Converter="String"/>
+        <Compute Id="UserUrl" Title="User URL">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string Cleaned = "";
+            if(Model.UserNameInput is string)
+            {
+              @: https://www.twitter.com/@(Model.UserNameInput)/
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="user.screen_name" Id="UserNameInput" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
+        <JsonPath Expr="user.description" Id="Bio" Title="Bio" Converter="String"/>
+        <JsonPath Expr="user.friends_count" Id="Follows" Title="Follows" Converter="Int"/>
+        <JsonPath Expr="user.listed_count" Id="Lists" Title="Lists" Converter="Int"/>
+        <JsonPath Expr="user.statuses_count" Id="Tweets" Title="Tweets" Converter="Int"/>
+        <JsonPath Expr="user.lang" Id="Language" Title="Language" Converter="String"/>
+        <JsonPath Expr="user.favourites_count" Id="UserLikes" Title="UserLikes" Converter="Int"/>
+        <JsonPath Expr="user.created_at" Id="Registered" Title="Registered" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="user.url" Id="Website" Title="Website" Converter="String"/>
+        <JsonPath Expr="user.profile_image_url" Id="Avatar" Title="Avatar" Converter="String"/>
+        <Compute Id="Source" Title="Source">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string Cleaned = "";
+            if(Model.SourceInput is string)
+            {
+              Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", string.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="source" Id="SourceInput"/>
+        </Compute>
+        <JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="in_reply_to_status_id" Id="RepliedTweet" Title="Replied TweetId" Checked="false"/>
+        <JsonPath Expr="in_reply_to_screen_name" Id="RepliedUser" Title="Replied User" Checked="false"/>
+        <JsonPath Expr="place.full_name" Id="PlaceFullName" Title="Place Name" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="place.country" Id="PlaceCountry" Title="Place Country" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="place.bounding_box.coordinates" Id="PlaceCoordinates" Title="Place Coordinates" DefaultValue="" Checked="false"/>
       </JsonPath>
     </Parse>
     <Fail>
