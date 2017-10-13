@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite
+  Category="Translations"
+  Title="Deepl"
+  Identifier="Deepl">
+
+  <Author Name="Fede Gómez" Url="https://www.fedegomez.es/?utm_source=seotoolsforexcel"/>
+
+  <Resources>
+    <Resource Id="Languages">
+      <Item Id="auto" Title="Auto detect"/>
+      <Item Id="DE" Title="German"/>
+      <Item Id="EN" Title="English"/>
+      <Item Id="FR" Title="French"/>
+      <Item Id="ES" Title="Spanish"/>
+      <Item Id="IT" Title="Italian"/>
+      <Item Id="NL" Title="Dutch"/>
+      <Item Id="PL" Title="Polish"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Translate" Title="Translate" HelpUrl="https://www.deepl.com">
+    <Parameters>
+      <Text Id="Text" Title="Text" DefaultValue="" Required="true"/>
+      <Select Id="From" Title="From" Required="false" DefaultValue="auto">
+        <DataSource>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+      <Select Id="To" Title="To" Required="true" DefaultValue="EN">
+        <DataSource>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+
+    <Fetch Url="https://www.deepl.com/jsonrpc">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36]]></Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+          {
+            "jsonrpc": "2.0",
+            "method": "LMT_handle_jobs",
+            "params": {
+              "jobs": [{
+                "kind": "default",
+                "raw_en_sentence": "@Model.Text"
+              }],
+              "lang": {
+                "source_lang_user_selected": "@Model.From",
+                "target_lang": "@Model.To"
+              },
+              "priority": -1
+            }
+          }
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+    <Parse>
+      <JsonPath Expr="result.translations[0].beams[0].postprocessed_sentence" Converter="String" />
+    </Parse>
+  </RestConnector>
+
+</Suite>
