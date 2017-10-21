@@ -13,7 +13,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="CompanyPages" Title="Company Pages">
+  <RestConnector Id="CompanyPages" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -34,301 +34,532 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="UserSearch" Title="Users Search">
+  <RestConnector Id="FollowersHistory" Title="Followers History">
     <Parameters>
-      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="all">
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>
+      <Radio Id="Granularity" Title="Granularity" DefaultValue="day" Required="true">
         <DataSource>
-          <Resource Id="Languages"/>
+          <Item Id="day" Title="Day"/>
+          <Item Id="month" Title="Month"/>
         </DataSource>
-      </Select>
+      </Radio>     
+      <DateInterval Id="StartTime" Title="Start Time" Required="true"/>
     </Parameters>
-    <Paging PageSize="50" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/plus/v1/people?
-        query=@Utils.UrlEncode(Model.Query)
-        @if(Model.Language != "all")
-        {
-          @: &language=@(Model.Language)
-        }
-        &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        https://api.linkedin.com/v1/companies/
+        @(Model.CompanyId)/historical-follow-statistics?
+        time-granularity=@(Model.Granularity)
+        &start-timestamp=@(((DateTime)Model.StartTime.StartDate).UnixTimeStampUtc())000
+        &end-timestamp=@(((DateTime)Model.StartTime.EndDate).UnixTimeStampUtc())000
+        &format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="items[*]">
-        <JsonPath Expr="id" Id="Id" Title="User Id" Converter="String"/>
-        <JsonPath Expr="url" Id="UserUrl" Title="User URL" Converter="String"/>
-        <JsonPath Expr="displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-        <JsonPath Expr="objectType" Id="ObjectType" Title="Type" Converter="String"/>
-        <JsonPath Expr="image.url" Id="Thumbnail" Converter="String"/>
+      <JsonPath Expr="$.values.*">
+        <Compute Id="Time" Title="Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @(DateTimeOffset.FromUnixTimeMilliseconds(Model.UnixTime))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="time" Id="UnixTime" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="totalFollowerCount" Id="Followers" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="organicFollowerCount" Id="Organic" Title="Organic" Converter="Int"/>
+        <JsonPath Expr="paidFollowerCount" Id="Paid" Title="Paid" Converter="Int"/>
       </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
 
-  <RestConnector Id="ActivityURLtoId" Title="Activity URL to Id">
+  <RestConnector Id="FollowersCompanySize" Title="Followers by Company Size">
     <Parameters>
-      <Text Id="ActivityUrl" Title="Activitiy URL" Debug.DefaultValue="https://plus.google.com/111820758890749788846/posts/ctdtveW6CmK" Required="true"/>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        @(Model.ActivityUrl)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Expr="data-uid=&quot;(\w*)&quot;" Id="ActivityId" Group="1" Converter="String"/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="ActivityLookup" Title="Activity Lookup">
-    <Parameters>
-      <Text Id="Id" Title="Activity Id" Debug.DefaultValue="z13xvpixcrjnsbylq23ozndwjsrssxnqw04" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/plus/v1/activities/
-        @Utils.UrlEncode(Model.Id)
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="id" Id="Id" Converter="String"/>
-      <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-      <JsonPath Expr="published" Id="Published" Converter="Datetime"/>
-      <JsonPath Expr="title" Id="Title" Converter="String"/>
-      <Compute Id="Content" Title="Content">
-        <Compute.Expr>
-          <![CDATA[
-          @{
-            var tt = Model.ContentInput;
-            var tt2 = Regex.Replace(tt,"http", " http");
-            var Cleaned = Regex.Replace(tt2, "<.*?>", String.Empty);
-          }
-          @Cleaned
-          ]]>
-        </Compute.Expr>
-      <JsonPath Expr="object.content" Id="ContentInput" Converter="String"/>
-      </Compute>
-      <JsonPath Expr="object.objectType" Id="Type" Converter="String"/>
-      <JsonPath Expr="object.replies.totalItems" Id="Replies" Converter="Int"/>
-      <JsonPath Expr="object.plusoners.totalItems" Id="PlusOners" Converter="Int"/>
-      <JsonPath Expr="object.resharers.totalItems" Id="Reshares" Converter="Int"/>
-      <JsonPath Expr="object.attachments[0].objectType" Id="AttachmentType" Title="Attachment Type" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="object.attachments[0].url" Id="AttachmentUrl" Title="Attachment URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="updated" Id="Updated" Converter="Datetime"/>
-      <JsonPath Expr="actor.id" Id="UserId" Title="User Id" Converter="String"/>
-      <JsonPath Expr="actor.displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-      <JsonPath Expr="actor.url" Id="UserUrl" Title="User URL" Converter="String"/>
-      <JsonPath Expr="actor.image.url" Id="AvatarUrl" Title="Avatar URL" Converter="String"/>
+      <JsonPath Expr="$.followStatistics.companySizes.values.*">
+        <Compute Id="Category" Title="Employees">
+          <Compute.Expr>
+    
+           <![CDATA[
+            @{
+              string output = "";
+              string test;
+              Dictionary<string, string> values = new Dictionary<string, string>();
+              
+              values.Add("A", "Self-employed");
+              values.Add("B", "1-10");
+              values.Add("C", "11-50");
+              values.Add("D", "51-200");
+              values.Add("E", "201-500");
+              values.Add("F", "501-1000");
+              values.Add("G", "1001-5000");
+              values.Add("H", "5001-10000");
+              values.Add("I", "10000+");
+
+              if(values.TryGetValue(Model.Key, out test))
+              {
+                  output = test;
+              }
+            }
+            @output
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="entryKey" Id="Key" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="entryValue" Id="Followers" Title="Followers" Converter="Int"/>
+      </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
 
-  <RestConnector Id="UserLookup" Title="User Lookup">
+  <RestConnector Id="FollowersRegions" Title="Followers by Regions">
     <Parameters>
-      <Text Id="Id" Title="User Id" Debug.DefaultValue="101547009692517311652" Required="true"/>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/plus/v1/people/
-        @(Model.Id)
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
-        <IntervalBetweenRequests RandomFrom="100" RandomTo="200" IfSame="Host"/>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="id" Id="Id" Converter="String"/>
-      <JsonPath Expr="url" Id="UserUrl" Title="User Url" Converter="String"/>
-      <JsonPath Expr="displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-      <JsonPath Expr="name.familyName" Id="FamilyName" Title="Family Name" Converter="String"/>
-      <JsonPath Expr="name.givenName" Id="GivenName" Title="Given Name" Converter="String"/>
-      <JsonPath Expr="gender" Id="gender" Title="Gender" Converter="String"/>
-      <JsonPath Expr="circledByCount" Id="CircledByCount" Title="Followers" Converter="Int"/>
-      <JsonPath Expr="objectType" Id="ObjectType" Title="Type" Converter="String"/>
-      <JsonPath Expr="isPlusUser" Id="IsPlusUser" Title="Plus User" Converter="Bool"/>
-      <JsonPath Expr="image.url" Id="Thumbnail" Converter="String"/>
+      <JsonPath Expr="$.followStatistics.countries.values.*">
+        <JsonPath Expr="entryKey" Id="Regions" Title="Regions" Converter="String"/>
+        <JsonPath Expr="entryValue" Id="Followers" Title="Followers" Converter="Int"/>
+      </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
 
-  <RestConnector Id="UserActivities" Title="User Activities">
+  <RestConnector Id="FollowersFunctions" Title="Followers by Job Functions">
     <Parameters>
-      <Text Id="Id" Title="User Id" Debug.DefaultValue="101547009692517311652" Required="true"/>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
     </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/plus/v1/people/
-        @Utils.UrlEncode(Model.Id)
-        /activities/public?
-        &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="items[*]">
-        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-        <JsonPath Expr="published" Id="Published" Converter="Datetime"/>
-        <JsonPath Expr="title" Id="Title" Converter="String"/>
-        <Compute Id="Content" Title="Content">
+      <JsonPath Expr="$.followStatistics.functions.values.*">
+        <Compute Id="Category" Title="Job Function">
           <Compute.Expr>
             <![CDATA[
             @{
-              var tt = Model.ContentInput;
-              var tt2 = Regex.Replace(tt,"http", " http");
-              var Cleaned = Regex.Replace(tt2, "<.*?>", String.Empty);
+              string output = "";
+              string test;
+              Dictionary<string, string> values = new Dictionary<string, string>();
+              
+              values.Add("-1", "None");
+              values.Add("1", "Accounting");
+              values.Add("2", "Administrative");
+              values.Add("3", "Arts and Design");
+              values.Add("4", "Business Development");
+              values.Add("5", "Community & Social Services");
+              values.Add("6", "Consulting");
+              values.Add("7", "Education");
+              values.Add("8", "Engineering");
+              values.Add("9", "Entrepreneurship");
+              values.Add("10", "Finance");
+              values.Add("11", "Healthcare Services");
+              values.Add("12", "Human Resources");
+              values.Add("13", "Information Technology");
+              values.Add("14", "Legal");
+              values.Add("15", "Marketing");
+              values.Add("16", "Media & Communications");
+              values.Add("17", "Military & Protective Services");
+              values.Add("18", "Operations");
+              values.Add("19", "Product Management");
+              values.Add("20", "Program & Product Management");
+              values.Add("21", "Purchasing");
+              values.Add("22", "Quality Assurance");
+              values.Add("23", "Real Estate");
+              values.Add("24", "Rersearch");
+              values.Add("25", "Sales");
+              values.Add("26", "Support");
+
+              if(values.TryGetValue(Model.Key, out test))
+              {
+                  output = test;
+              }
             }
-            @Cleaned
+            @output
             ]]>
           </Compute.Expr>
-        <JsonPath Expr="object.content" Id="ContentInput" Converter="String"/>
+          <JsonPath Expr="entryKey" Id="Key" Converter="String"/>
         </Compute>
-        <JsonPath Expr="object.objectType" Id="Type" Converter="String"/>
-        <JsonPath Expr="object.replies.totalItems" Id="Replies" Converter="Int"/>
-        <JsonPath Expr="object.plusoners.totalItems" Id="PlusOners" Converter="Int"/>
-        <JsonPath Expr="object.resharers.totalItems" Id="Reshares" Converter="Int"/>
-        <JsonPath Expr="updated" Id="Updated" Converter="Datetime"/>
-        <JsonPath Expr="object.attachments[0].objectType" Id="AttachmentType" Title="Attachment Type" Converter="String"/>
-        <JsonPath Expr="object.attachments[0].displayName" Id="AttachmentName" Title="Attachment Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="object.attachments[0].url" Id="AttachmentUrl" Title="Attachment URL" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="entryValue" Id="Followers" Title="Followers" Converter="Int"/>
       </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
 
-  <RestConnector Id="ActivityPlusOnersResharers" Title="Activity PlusOners &amp; Resharers">
+  <RestConnector Id="FollowersIndustries" Title="Followers by Industries">
     <Parameters>
-      <Text Id="Id" Title="Activity Id" Debug.DefaultValue="z13txndgskq0cea0ktu4gxzbmtruvvkc1" Required="true"/>
-      <Radio Id="Collection" Title="Collection" DefaultValue="plusoners" Required="true">
-        <DataSource>
-          <Item Id="plusoners" Title="PlusOners"/>
-          <Item Id="resharers" Title="Reshares"/>
-        </DataSource>
-      </Radio>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
     </Parameters>
-    <Paging PageSize="20" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/plus/v1/activities/
-        @Utils.UrlEncode(Model.Id)
-        /people/@(Model.Collection)
-        ?maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="items[*]">
-        <JsonPath Expr="id" Id="Id" Title="User Id" Converter="String"/>
-        <JsonPath Expr="url" Id="UserUrl" Title="User URL" Converter="String"/>
-        <JsonPath Expr="displayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-        <JsonPath Expr="image.url" Id="Thumbnail" Converter="String"/>
+      <JsonPath Expr="$.followStatistics.industries.values.*">
+        <Compute Id="Category" Title="Industries">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string output = "";
+              string test;
+              Dictionary<string, string> values = new Dictionary<string, string>();
+              
+              values.Add("47", "Accounting");
+              values.Add("94", "Airlines/Aviation");
+              values.Add("120", "Alternative Dispute Resolution");
+              values.Add("125", "Alternative Medicine");
+              values.Add("127", "Animation");
+              values.Add("19", "Apparel & Fashion");
+              values.Add("50", "Architecture & Planning");
+              values.Add("111", "Arts and Crafts");
+              values.Add("53", "Automotive");
+              values.Add("52", "Aviation & Aerospace");
+              values.Add("41", "Banking");
+              values.Add("12", "Biotechnology");
+              values.Add("36", "Broadcast Media");
+              values.Add("49", "Building Materials");
+              values.Add("138", "Business Supplies and Equipment");
+              values.Add("129", "Capital Markets");
+              values.Add("54", "Chemicals");
+              values.Add("90", "Civic & Social Organization");
+              values.Add("51", "Civil Engineering");
+              values.Add("128", "Commercial Real Estate");
+              values.Add("118", "Computer & Network Security");
+              values.Add("109", "Computer Games");
+              values.Add("3", "Computer Hardware");
+              values.Add("5", "Computer Networking");
+              values.Add("4", "Computer Software");
+              values.Add("48", "Construction");
+              values.Add("24", "Consumer Electronics");
+              values.Add("25", "Consumer Goods");
+              values.Add("91", "Consumer Services");
+              values.Add("18", "Cosmetics");
+              values.Add("65", "Dairy");
+              values.Add("1", "Defense & Space");
+              values.Add("99", "Design");
+              values.Add("69", "Education Management");
+              values.Add("132", "E-Learning");
+              values.Add("112", "Electrical/Electronic Manufacturing");
+              values.Add("28", "Entertainment");
+              values.Add("86", "Environmental Services");
+              values.Add("110", "Events Services");
+              values.Add("76", "Executive Office");
+              values.Add("122", "Facilities Services");
+              values.Add("63", "Farming");
+              values.Add("43", "Financial Services");
+              values.Add("38", "Fine Art");
+              values.Add("66", "Fishery");
+              values.Add("34", "Food & Beverages");
+              values.Add("23", "Food Production");
+              values.Add("101", "Fund-Raising");
+              values.Add("26", "Furniture");
+              values.Add("29", "Gambling & Casinos");
+              values.Add("145", "Glass, Ceramics & Concrete");
+              values.Add("75", "Government Administration");
+              values.Add("148", "Government Relations");
+              values.Add("140", "Graphic Design");
+              values.Add("124", "Health, Wellness and Fitness");
+              values.Add("68", "Higher Education");
+              values.Add("14", "Hospital & Health Care");
+              values.Add("31", "Hospitality");
+              values.Add("137", "Human Resources");
+              values.Add("134", "Import and Export");
+              values.Add("88", "Individual & Family Services");
+              values.Add("147", "Industrial Automation");
+              values.Add("84", "Information Services");
+              values.Add("96", "Information Technology and Services");
+              values.Add("42", "Insurance");
+              values.Add("74", "International Affairs");
+              values.Add("141", "International Trade and Development");
+              values.Add("6", "Internet");
+              values.Add("45", "Investment Banking");
+              values.Add("46", "Investment Management");
+              values.Add("73", "Judiciary");
+              values.Add("77", "Law Enforcement");
+              values.Add("9", "Law Practice");
+              values.Add("10", "Legal Services");
+              values.Add("72", "Legislative Office");
+              values.Add("30", "Leisure, Travel & Tourism");
+              values.Add("85", "Libraries");
+              values.Add("116", "Logistics and Supply Chain");
+              values.Add("143", "Luxury Goods & Jewelry");
+              values.Add("55", "Machinery");
+              values.Add("11", "Management Consulting");
+              values.Add("95", "Maritime");
+              values.Add("97", "Market Research");
+              values.Add("80", "Marketing and Advertising");
+              values.Add("135", "Mechanical or Industrial Engineering");
+              values.Add("126", "Media Production");
+              values.Add("17", "Medical Devices");
+              values.Add("13", "Medical Practice");
+              values.Add("139", "Mental Health Care");
+              values.Add("71", "Military");
+              values.Add("56", "Mining & Metals");
+              values.Add("35", "Motion Pictures and Film");
+              values.Add("37", "Museums and Institutions");
+              values.Add("115", "Music");
+              values.Add("114", "Nanotechnology");
+              values.Add("81", "Newspapers");
+              values.Add("100", "Non-Profit Organization Management");
+              values.Add("57", "Oil & Energy");
+              values.Add("113", "Online Media");
+              values.Add("123", "Outsourcing/Offshoring");
+              values.Add("87", "Package/Freight Delivery");
+              values.Add("146", "Packaging and Containers");
+              values.Add("61", "Paper & Forest Products");
+              values.Add("39", "Performing Arts");
+              values.Add("15", "Pharmaceuticals");
+              values.Add("131", "Philanthropy");
+              values.Add("136", "Photography");
+              values.Add("117", "Plastics");
+              values.Add("107", "Political Organization");
+              values.Add("67", "Primary/Secondary Education");
+              values.Add("83", "Printing");
+              values.Add("105", "Professional Training & Coaching");
+              values.Add("102", "Program Development");
+              values.Add("79", "Public Policy");
+              values.Add("98", "Public Relations and Communications");
+              values.Add("78", "Public Safety");
+              values.Add("82", "Publishing");
+              values.Add("62", "Railroad Manufacture");
+              values.Add("64", "Ranching");
+              values.Add("44", "Real Estate");
+              values.Add("40", "Recreational Facilities and Services");
+              values.Add("89", "Religious Institutions");
+              values.Add("144", "Renewables & Environment");
+              values.Add("70", "Research");
+              values.Add("32", "Restaurants");
+              values.Add("27", "Retail");
+              values.Add("121", "Security and Investigations");
+              values.Add("7", "Semiconductors");
+              values.Add("58", "Shipbuilding");
+              values.Add("20", "Sporting Goods");
+              values.Add("33", "Sports");
+              values.Add("104", "Staffing and Recruiting");
+              values.Add("22", "Supermarkets");
+              values.Add("8", "Telecommunications");
+              values.Add("60", "Textiles");
+              values.Add("130", "Think Tanks");
+              values.Add("21", "Tobacco");
+              values.Add("108", "Translation and Localization");
+              values.Add("92", "Transportation/Trucking/Railroad");
+              values.Add("59", "Utilities");
+              values.Add("106", "Venture Capital & Private Equity");
+              values.Add("16", "Veterinary");
+              values.Add("93", "Warehousing");
+              values.Add("133", "Wholesale");
+              values.Add("142", "Wine and Spirits");
+              values.Add("119", "Wireless");
+              values.Add("103", "Writing and Editing");
+
+              if(values.TryGetValue(Model.Key, out test))
+              {
+                  output = test;
+              }
+            }
+            @output
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="entryKey" Id="Key" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="entryValue" Id="Followers" Title="Followers" Converter="Int"/>
       </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
-
-  <RestConnector Id="ActivityComments" Title="Activity Comments">
+  
+  <RestConnector Id="FollowersSeniority" Title="Followers by Seniority">
     <Parameters>
-      <Text Id="Id" Title="Activity Id" Debug.DefaultValue="z12butx4jk3rzph4f04chlah3wjjhzjw4b0" Required="true"/>
-      <Radio Id="Sorting" Title="Sorting" DefaultValue="descending" Required="true">
-        <DataSource>
-          <Item Id="descending" Title="Date Descending"/>
-          <Item Id="ascending" Title="Date Ascending"/>
-        </DataSource>
-      </Radio>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
     </Parameters>
-    <Paging PageSize="20" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/plus/v1/activities/
-        @Utils.UrlEncode(Model.Id)
-        /comments
-        ?maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="items[*]">
-        <JsonPath Expr="id" Id="Id" Title="Comment Id" Converter="String"/>
-        <JsonPath Expr="object.content" Id="Comment" Title="Comment" Converter="String"/>
-        <JsonPath Expr="plusoners.totalItems" Id="PlusOners" Title="PLusoners" Converter="Int"/>
-        <JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
-        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
-        <JsonPath Expr="selfLink" Id="CommentUrl" Title="Comment URL" Converter="String"/>
-        <JsonPath Expr="actor.id" Id="UserId" Title="User Id" Converter="String"/>
-        <JsonPath Expr="actor.displayName" Id="UserName" Title="User Name" Converter="String"/>
-        <JsonPath Expr="actor.url" Id="UserUrl" Title="User URL" Converter="String"/>
-        <JsonPath Expr="actor.image.url" Id="UserAvatar" Title="User Avatar" Converter="String"/>
+      <JsonPath Expr="$.followStatistics.seniorities.values.*">
+        <Compute Id="Category" Title="Seniority">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string output = "";
+              string test;
+              Dictionary<string, string> values = new Dictionary<string, string>();
+              
+              values.Add("1", "Unpaid");
+              values.Add("2", "Training");
+              values.Add("3", "Entry-level");
+              values.Add("4", "Senior");
+              values.Add("5", "Manager");
+              values.Add("6", "Director");
+              values.Add("7", "Vice President (VP)");
+              values.Add("8", "Chief X Officer (CxO)");
+              values.Add("9", "Partner");
+              values.Add("10", "Owner");
+
+              if(values.TryGetValue(Model.Key, out test))
+              {
+                  output = test;
+              }
+            }
+            @output
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="entryKey" Id="Key" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="entryValue" Id="Followers" Title="Followers" Converter="Int"/>
       </JsonPath>
     </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="StatusUpdatesStatistics" Title="Status Updates Statistics">
+    <Parameters>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>     
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.linkedin.com/v1/companies/@(Model.CompanyId)/company-statistics?format=json
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.statusUpdateStatistics.viewsByMonth.values.*">
+        <JsonPath Expr="date.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="date.month" Id="Month" Title="Month" Converter="Int"/>
+        <JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="likes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="shares" Id="Shares" Title="Shares" Converter="Int"/>
+        <JsonPath Expr="engagement" Id="Engagement" Title="Engagement" Converter="Double"/>        
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ImpressionsHistory" Title="Impressions History">
+    <Parameters>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>
+      <Radio Id="Granularity" Title="Granularity" DefaultValue="day" Required="true">
+        <DataSource>
+          <Item Id="day" Title="Day"/>
+          <Item Id="month" Title="Month"/>
+        </DataSource>
+      </Radio>     
+      <DateInterval Id="StartTime" Title="Start Time" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.linkedin.com/v1/companies/
+        @(Model.CompanyId)/historical-status-update-statistics?
+        time-granularity=@(Model.Granularity)
+        &start-timestamp=@(((DateTime)Model.StartTime.StartDate).UnixTimeStampUtc())000
+        &end-timestamp=@(((DateTime)Model.StartTime.EndDate).UnixTimeStampUtc())000
+        &format=json
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.values.*">
+        <Compute Id="Time" Title="Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @(DateTimeOffset.FromUnixTimeMilliseconds(Model.UnixTime))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="time" Id="UnixTime" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="impressionCount" Id="Impressions" Title="Impressions" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
   </RestConnector>
 
 </Suite>
