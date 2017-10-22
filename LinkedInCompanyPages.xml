@@ -34,6 +34,49 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="StatusUpdates" Title="Status Updates Details">
+    <Parameters>
+      <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>    
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.linkedin.com/v1/companies/
+        @(Model.CompanyId)/updates?
+        event-type=status-update
+        &format=json
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.values.*">
+        <JsonPath Expr="updateKey" Id="UpdateKey" Title="Key" Converter="String"/>
+        <Compute Id="Published" Title="Published" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @(DateTimeOffset.FromUnixTimeMilliseconds(Model.UnixTime))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="timestamp" Id="UnixTime" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="updateContent.companyStatusUpdate.share.content.title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="numLikes" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="updateComments._total" Id="Comments" Title="Comments" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="updateContent.companyStatusUpdate.share.content.description" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="updateContent.companyStatusUpdate.share.content.submittedUrl" Id="SubmittedUrl" Title="Submitted URL" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="updateContent.companyStatusUpdate.share.visibility.code" Id="Visibility" Title="Visibility" Converter="String"/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+  </RestConnector>
+
   <RestConnector Id="FollowersHistory" Title="Followers History">
     <Parameters>
       <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="3735726" Select.Connector="CompanyPages" Select.IdField="Id" Select.TitleField="Name"/>
