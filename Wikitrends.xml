@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Wikitrends" RequireVersion="7.0.0" Category="Knowledge" Id="Wikitrends" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Wikitrends.xml" HelpUrl="http://seotoolsforexcel.com/Wikitrends" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Resources>
+    <Resource Id="Languages">
+			<Item Id="afrikaans" Title="Afrikaans"/>
+			<Item Id="albanian" Title="Albanian"/>
+			<Item Id="arabic" Title="Arabic"/>
+			<Item Id="armenian" Title="Armenian"/>
+			<Item Id="azeri" Title="Azeri"/>
+			<Item Id="basque" Title="Basque"/>
+			<Item Id="belarusian" Title="Belarusian"/>
+			<Item Id="bengali" Title="Bengali"/>
+			<Item Id="bosnian" Title="Bosnian"/>
+			<Item Id="bulgarian" Title="Bulgarian"/>
+			<Item Id="cantonese" Title="Cantonese"/>
+			<Item Id="catalan" Title="Catalan"/>
+			<Item Id="cebuano" Title="Cebuano"/>
+			<Item Id="chinese" Title="Chinese"/>
+			<Item Id="croatian" Title="Croatian"/>
+			<Item Id="czech" Title="Czech"/>
+			<Item Id="danish" Title="Danish"/>
+			<Item Id="dutch" Title="Dutch"/>
+			<Item Id="egyptian arabic" Title="Egyptian Arabic"/>
+			<Item Id="english" Title="English"/>
+			<Item Id="esperanto" Title="Esperanto"/>
+			<Item Id="estonian" Title="Estonian"/>
+			<Item Id="finnish" Title="Finnish"/>
+			<Item Id="french" Title="French"/>
+			<Item Id="galician" Title="Galician"/>
+			<Item Id="georgian" Title="Georgian"/>
+			<Item Id="german" Title="German"/>
+			<Item Id="greek" Title="Greek"/>
+			<Item Id="hebrew" Title="Hebrew"/>
+			<Item Id="hindi" Title="Hindi"/>
+			<Item Id="hungarian" Title="Hungarian"/>
+			<Item Id="icelandic" Title="Icelandic"/>
+			<Item Id="indonesian" Title="Indonesian"/>
+			<Item Id="italian" Title="Italian"/>
+			<Item Id="japanese" Title="Japanese"/>
+			<Item Id="kazakh" Title="Kazakh"/>
+			<Item Id="korean" Title="Korean"/>
+			<Item Id="latvian" Title="Latvian"/>
+			<Item Id="lithuanian" Title="Lithuanian"/>
+			<Item Id="macedonian" Title="Macedonian"/>
+			<Item Id="malay" Title="Malay"/>
+			<Item Id="malayalam" Title="Malayalam"/>
+			<Item Id="marathi" Title="Marathi"/>
+			<Item Id="mongolian" Title="Mongolian"/>
+			<Item Id="norwegian" Title="Norwegian"/>
+			<Item Id="nynorsk" Title="Nynorsk"/>
+			<Item Id="persian" Title="Persian"/>
+			<Item Id="polish" Title="Polish"/>
+			<Item Id="portuguese" Title="Portuguese"/>
+			<Item Id="romanian" Title="Romanian"/>
+			<Item Id="russian" Title="Russian"/>
+			<Item Id="serbian" Title="Serbian"/>
+			<Item Id="serbo-croatian" Title="Serbo-Croatian"/>
+			<Item Id="simple english" Title="Simple English"/>
+			<Item Id="slovak" Title="Slovak"/>
+			<Item Id="slovene" Title="Slovene"/>
+			<Item Id="spanish" Title="Spanish"/>
+			<Item Id="swedish" Title="Swedish"/>
+			<Item Id="tagalog" Title="Tagalog"/>
+			<Item Id="tamil" Title="Tamil"/>
+			<Item Id="telugu" Title="Telugu"/>
+			<Item Id="thai" Title="Thai"/>
+			<Item Id="turkish" Title="Turkish"/>
+			<Item Id="ukrainian" Title="Ukrainian"/>
+			<Item Id="urdu" Title="Urdu"/>
+			<Item Id="vietnamese" Title="Vietnamese"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Trends" Title="Trends" Hidden="false">
+    <Parameters>
+      <Select Id="Language" Title="Language" Required="true" DefaultValue="english" HelpText="">
+        <DataSource>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Period" Title="Period" DefaultValue="this-week">
+        <DataSource>
+          <Item Id="today" Title="Today"/>
+          <Item Id="this-week" Title="Weekly"/>
+          <Item Id="this-month" Title="Monthly"/>
+        </DataSource>
+      </Radio>
+      <Radio Id="Direction" Title="Direction" DefaultValue="uptrends">
+        <DataSource>
+          <Item Id="uptrends" Title="Uptrends"/>
+          <Item Id="downtrends" Title="Downtrends"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://tools.wmflabs.org/wikitrends/@(Model.Language)-@(Model.Direction)-@(Model.Period).html
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//h3">
+        <XPath Expr="a" Id="Title" Title="Title" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//ol/li[*]/h3">
+				<Compute Id="Change" Title="Percentage Change" Converter="Auto">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							var Cleaned = Regex.Replace(Model.RawInput, " ", string.Empty);
+							var Output = Cleaned.Substring(1, Cleaned.Length - 3);
+						}
+						@Output
+						]]>
+					</Compute.Expr>
+					<XPath Expr="span" Id="RawInput"/>
+				</Compute>
+			</XPath>
+      <XPath Expr="//div[@@class='summary']">
+        <XPath Expr="." Id="Summary" Title="Summary" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//h3">
+        <XPath Expr="a" Id="Link" Title="Link" Attribute="href" Converter="String" HelpText=""/>
+			</XPath>
+    </Parse>
+  </RestConnector>
+	
+  <RestConnector Id="MostVisited" Title="Most Visited" Hidden="false">
+    <Parameters>
+      <Select Id="Language" Title="Language" Required="true" DefaultValue="english" HelpText="">
+        <DataSource>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Period" Title="Period" DefaultValue="this-week">
+        <DataSource>
+          <Item Id="today" Title="Today"/>
+          <Item Id="this-week" Title="Weekly"/>
+          <Item Id="this-month" Title="Monthly"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://tools.wmflabs.org/wikitrends/@(Model.Language)-most-visited-@(Model.Period).html
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//h3">
+        <XPath Expr="a" Id="Title" Title="Title" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//ol/li[*]/h3">
+				<Compute Id="Views" Title="Views" Converter="Auto">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							var Cleaned = Regex.Replace(Model.RawInput, " ", string.Empty);
+							var Output = Cleaned.Substring(1, Cleaned.Length - 7);
+						}
+						@Output
+						]]>
+					</Compute.Expr>
+					<XPath Expr="span" Id="RawInput"/>
+				</Compute>
+			</XPath>
+      <XPath Expr="//div[@@class='summary']">
+        <XPath Expr="." Id="Summary" Title="Summary" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//h3">
+        <XPath Expr="a" Id="Link" Title="Link" Attribute="href" Converter="String" HelpText=""/>
+			</XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
