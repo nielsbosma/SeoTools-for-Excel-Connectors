@@ -10,6 +10,7 @@
   <RestConnector Id="GeoNames" Title="GeoNames" HelpUrl="http://www.geonames.org/export/geonames-search.html">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true" DefaultValue="" Debug.DefaultValue="jönköping" HelpText="Search place name, country name, continent etc."/>
+      <Text Id="CountryFilter" Title="Filter by Country Codes" Required="false" DefaultValue="" Debug.DefaultValue="" HelpText="Enter one or more Country Codes (ISO-3166) separated by a comma."/>
       <Radio Id="SearchMode" Title="Search Mode" DefaultValue="default" Required="false" HelpText="Fuzzy means finding results even if the search terms are incorrectly spelled.">
         <DataSource>
           <Item Id="name" Title="Default"/>
@@ -18,8 +19,14 @@
           <Item Id="fuzzy" Title="Fuzzy"/>
         </DataSource>
       </Radio>
-      <Text Id="CountryFilter" Title="Filter by Country Codes" Required="false" DefaultValue="" Debug.DefaultValue="" HelpText="Enter one or more Country Codes (ISO-3166) separated by a comma."/>
-    </Parameters>
+      <Radio Id="Order" Title="Order by" DefaultValue="relevance" Required="false" HelpText="">
+        <DataSource>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="population" Title="Population"/>
+          <Item Id="elevation" Title="Elevation"/>
+        </DataSource>
+      </Radio>    
+		</Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="totalResultsCount"/>
@@ -32,7 +39,6 @@
       @if(Model.SearchMode != "fuzzy")
       {
         @(Utils.UrlEncode(Model.SearchMode))@: =@(Model.Query)
-
       }
       else
       {
@@ -42,6 +48,7 @@
       {
         @: &country=@(Model.CountryFilter)
       }
+      &orderby=@(Model.Order)
       &maxRows=@(Model.PageCursor.PageSize)
       &startRow=@(Model.PageCursor.NextSkip)
       &username=@(Model.Username)
