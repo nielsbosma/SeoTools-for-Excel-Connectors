@@ -191,18 +191,31 @@
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
-            http://www.youtube.com/watch/@(Model.Id)
+            @{
+              var Broadcast = Model.BroadcastInput;
+              var UrlString = "";
+              if(Broadcast == "upcoming")
+              {
+                UrlString = "upcoming";
+              }
+              else
+              {
+                UrlString = "http://www.youtube.com/watch/" + Model.Id;
+              }
+            }
+            @UrlString
             ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
+          <JsonPath Expr="snippet.liveBroadcastContent" Id="BroadcastInput" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -267,12 +280,12 @@
           </Compute.Expr>
           <JsonPath Expr="id.channelId" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.channelId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Id" Identifier="Id" Expr="id.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -330,12 +343,12 @@
           </Compute.Expr>
           <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.playlistId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Id" Identifier="Id" Expr="id.playlistId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -346,6 +359,15 @@
   <RestConnector Id="VideosFromChannel" Title="Channel Videos">
     <Parameters>
       <Text DefaultValue="" Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+        <DataSource>
+          <Item Id="date" Title="Date"/>
+          <Item Id="title" Title="Title"/>
+          <Item Id="viewCount" Title="View Count"/>
+          <Item Id="rating" Title="Rating"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Paging PageSize="50" EvenPages="False">
       <Parse>
@@ -357,9 +379,14 @@
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/search?
-        order=date
         &part=snippet
         &channelId=@(Model.ChannelId)
+        &order=@(Model.Sorting)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
+          @: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
+        }
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -378,17 +405,30 @@
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
-            http://www.youtube.com/watch/@(Model.Id)
+            @{
+              var UrlString = "";
+              if(Model.Broadcast == "upcoming")
+              {
+                UrlString = "upcoming";
+              }
+              else
+              {
+                UrlString = "http://www.youtube.com/watch/" + Model.Id;
+              }
+            }
+            @UrlString
             ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
+          <JsonPath Expr="snippet.liveBroadcastContent" Id="Broadcast" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="ChannelId" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="ChannelId" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="ChannelTitle" Identifier="ChannelTitle" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -435,11 +475,11 @@
           </Compute.Expr>
           <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue="#NULL!"/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue="#NULL!"/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue="#NULL!"/>
+        <JsonPath Title="Id" Identifier="Id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Fail>
