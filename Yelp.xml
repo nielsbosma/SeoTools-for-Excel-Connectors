@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Others" Title="Yelp" Id="Yelp" RequireVersion="6.1.10" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Yelp.xml" HelpUrl="http://seotoolsforexcel.com/Yelp/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Spotify/">
+    <Text Id="ClientId" Title="Client Id" Required="true" HelpUrl="https://www.yelp.com/developers/documentation/v3/authentication"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true" HelpUrl="https://www.yelp.com/developers/documentation/v3/authentication"/>
+  </Settings>
+
+  <RestConnector Id="GenerateToken" Title="GenerateToken" HelpUrl="https://www.yelp.com/developers/documentation/v3/authentication/" Hidden="true">
+    <Fetch>
+     <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestMethod>POST</RequestMethod>
+        <RequestForm>
+          <Param Name='grant_type'>client_credentials</Param>
+          <Param Name='client_id'>@(Model.ClientId)</Param>
+          <Param Name='client_secret'>@(Model.ClientSecret)</Param>
+        </RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.yelp.com/oauth2/token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="access_token" Id="Token" Title="Token" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_description"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="BusinessesSearch" Title="Businesses Search" HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search">
+    <Parameters>
+      <Text Id="Term" Title="Term" Debug.DefaultValue="flowers" Required="true"/>
+      <Text Id="Location" Title="Location" Debug.DefaultValue="Stockholm" Required="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="GenerateToken"/>
+    </Prepare>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.yelp.com/v3/businesses/search?
+        term=@Utils.UrlEncode(Model.Term)
+        &location=@Utils.UrlEncode(Model.Location)
+        &limit=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="businesses.*">
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="categories[0].title" Id="Category" Title="Category" Converter="String" HelpText=""/>
+        <JsonPath Expr="review_count" Id="Reviews" Title="Reviews" Converter="Int" HelpText=""/>
+        <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" HelpText=""/>
+        <JsonPath Expr="location.city" Id="City" Title="City" Converter="String" HelpText=""/>
+        <JsonPath Expr="location.country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="coordinates.latitude" Id="Latitude" Title="Latitude" Converter="Double" HelpText=""/>
+        <JsonPath Expr="coordinates.longitude" Id="Longitude" Title="Longitude" Converter="Double" HelpText=""/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>
