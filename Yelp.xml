@@ -35,13 +35,23 @@
 
   <RestConnector Id="BusinessesSearch" Title="Businesses Search" HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search">
     <Parameters>
-      <Text Id="Term" Title="Term" Debug.DefaultValue="flowers" Required="true"/>
-      <Text Id="Location" Title="Location" Debug.DefaultValue="Stockholm" Required="true"/>
+      <Text Id="Term" Title="Term" Debug.DefaultValue="mat" Required="false" HelpText="Optional. Search term (e.g. food, restaurants). If term isn’t included we search everything. The term keyword also accepts business names such as Starbucks."/>
+      <Text Id="Location" Title="Location" Debug.DefaultValue="Stockholm" Required="true" HelpText="Required. Specifies the combination of address, neighborhood, city, state or zip, optional country to be used when searching for businesses."/>
+      <Text Id="Radius" Title="Radius (meters)" Debug.DefaultValue="" Required="false" HelpText="Optional. Search radius in meters."/>
+      <Checkbox Id="HotNew" Title="Hot and New" DefaultValue="false"/>
+      <Radio Id="Sort" Title="Sort" DefaultValue="best_match" Required="false">
+        <DataSource>
+          <Item Id="best_match" Title="Best Match"/>
+          <Item Id="rating" Title="Rating"/>
+          <Item Id="review_count" Title="Reviews"/>
+          <Item Id="distance" Title="Distance"/>
+        </DataSource>
+      </Radio>
     </Parameters>
     <Prepare>
       <Connector Id="GenerateToken"/>
     </Prepare>
-    <Paging PageSize="50" EvenPages="false">
+    <Paging PageSize="50" MaxTake="1000" EvenPages="false">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="total"/>
       </Parse>
@@ -54,11 +64,59 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.yelp.com/v3/businesses/search?
-        term=@Utils.UrlEncode(Model.Term)
+        https://api.yelp.com/v3/businesses/search
+        ?term=@Utils.UrlEncode(Model.Term)
         &location=@Utils.UrlEncode(Model.Location)
+        @if(!string.IsNullOrEmpty(Model.Radius))
+        {
+          @: &radius=@Utils.UrlEncode(Model.Radius)
+        }
+        @if(Model.HotNew == true)
+        {
+          @: &attributes=hot_and_new
+        }
+        &sort_by=@(Model.Sort)
         &limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="businesses.*">
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="categories[0].title" Id="Category" Title="Category" Converter="String" HelpText=""/>
+        <JsonPath Expr="review_count" Id="Reviews" Title="Reviews" Converter="Int" HelpText=""/>
+        <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" HelpText=""/>
+        <JsonPath Expr="phone" Id="Phone" Title="Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="location.city" Id="City" Title="City" Converter="String" HelpText=""/>
+        <JsonPath Expr="location.country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="coordinates.latitude" Id="Latitude" Title="Latitude" Converter="Double" HelpText=""/>
+        <JsonPath Expr="coordinates.longitude" Id="Longitude" Title="Longitude" Converter="Double" HelpText=""/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="PhoneSearch" Title="Phone Search" HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search_phone">
+    <Parameters>
+      <Text Id="Phone" Title="Phone (Starts with + and country code)" Debug.DefaultValue="" Required="true" HelpText=""/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="GenerateToken"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.yelp.com/v3/businesses/search/phone
+        ?phone=@Utils.UrlEncode(Model.Phone)
         ]]>
       </Fetch.Url>
     </Fetch>
