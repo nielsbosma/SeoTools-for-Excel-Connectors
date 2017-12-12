@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Others" RequireVersion="6.0.0" Title="GoogleMaps" Id="GoogleMaps" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GooglePlaces.xml" HelpUrl="http://seotoolsforexcel.com/GooglePlaces/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/GooglePlaces/">
+    <Text Id="ApiKey" Title="ApiKey" Required="true" HelpUrl="http://seotoolsforexcel.com/GooglePlaces/"/>
+  </Settings>
+
+  <RestConnector Id="SearchText" Title="Search by Text">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="pizza in new york" Required="true"/>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="recent" Required="true">
+        <DataSource>
+          <Item Id="recent" Title="Recent"/>
+          <Item Id="best" Title="Best"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="20" MaxTake="20"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://maps.googleapis.com/maps/api/place/textsearch/json
+        ?query=@Model.Query
+        &key=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="formatted_address" Id="Formatted" Title="Formatted" Converter="String"/>
+        <JsonPath Expr="types[0]" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="geometry.location.lat" Id="Latitude" Title="Latitude" Converter="String"/>
+        <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
+        <JsonPath Expr="price_level" Id="PriceLevel" Title="Price Level" Converter="Double" DefaultValue=""/>
+        <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" DefaultValue=""/>
+        <Compute Id="Photo" Title="Photo" DefaultValue="">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var RightCleaned = Model.PhotoInput.Substring(0, Model.PhotoInput.IndexOf("\">"));
+              var LeftCleaned = RightCleaned.Substring(9);
+
+            }
+            @LeftCleaned
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="photos[*].html_attributions[0]" Id="PhotoInput" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
