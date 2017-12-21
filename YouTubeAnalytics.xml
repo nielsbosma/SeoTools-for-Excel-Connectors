@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="YouTube Analytics" Identifier="YouTubeAnalytics" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YouTube.xml" HelpUrl="http://seotoolsforexcel.com/youtube/" HelpText="Documentation">
+
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/yt-analytics.readonly" StayAuthenticated="true"/>
+
+  <RazorFunctions>
+    <![CDATA[
+
+    string[] _SelectedDimensions() {
+      string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+      return ((ResultField[])Model.Headers)
+        .Where(e => e.Tag == "Dimensions" && fields.Contains(e.Identifier.ToLower()))
+        .Select(e => e.Identifier)
+        .ToArray();
+    }
+
+    string SelectedDimensions() {
+      return string.Join(",",_SelectedDimensions().Select(e => "\"" + e + "\"").ToArray());
+    }
+
+    string DimensionIndex(string dimension) {
+      return Array.IndexOf(_SelectedDimensions(),dimension).ToString();
+    }
+
+    string _RenderOperator(string op)
+    {
+      return op == "==" ? "equals" :
+        op == "!=" ? "notEquals" :
+        op == "=~" ? "contains" :
+        "notContains";
+    }
+
+    string RenderFilter()
+    {
+      var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
+
+      var filters = lines
+        .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+        .Where(e => e.Success)
+        .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}",
+          e.Groups[1].Value.Trim(),
+          _RenderOperator(e.Groups[2].Value.Trim()),
+          e.Groups[3].Value.Trim()));
+
+      if(filters.Any())
+      {
+        return string.Format(",'dimensionFilterGroups': [{{'filters':[{0}]}}]",string.Join(",",filters.ToArray()));
+      }
+
+      return "";
+    }
+
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+    ]]>
+  </RazorFunctions>
+
+  <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
+    <Parameters>
+      <Text Id="VideoId" Title="Video Id" Required="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        &metrics=@SelectedFields()
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Title="Views" Identifier="Views" Expr="$.rows.[0].*" Converter="Double" Tag="views" DefaultValue=""/>
+      <JsonPath Title="Likes" Identifier="Likes" Expr="$.rows.[1].*" Converter="Double" Tag="likes" DefaultValue=""/>
+      <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.rows.[2].*" Converter="Double" Tag="dislikes" DefaultValue=""/>
+      <JsonPath Title="Comments" Identifier="Comments" Expr="$.rows.[3].*" Converter="Double" Tag="comments" DefaultValue=""/>
+      <JsonPath Title="Shares" Identifier="Shares" Expr="$.rows.[4].*" Converter="Double" Tag="shares" DefaultValue=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.message"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>
