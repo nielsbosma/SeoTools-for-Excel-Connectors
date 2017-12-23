@@ -5,19 +5,51 @@
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/yt-analytics.readonly" StayAuthenticated="true"/>
 
-  <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
-    <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="false"/>
+  <!--
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+-->
+
+  <Resources>
+    <Resource Id="SortChannels">
+     <Item Id="-views" Title="Views Descending"/>
+     <Item Id="views" Title="Views Ascending"/>
+     <Item Id="-likes" Title="Likes Descending"/>
+     <Item Id="likes" Title="Likes Ascending"/>
+     <Item Id="-dislikes" Title="Dislikes Descending"/>
+     <Item Id="dislikes" Title="Dislikes Ascending"/>
+     <Item Id="-comments" Title="Comments Descending"/>
+     <Item Id="comments" Title="Comments Ascending"/>
+     <Item Id="-shares" Title="Shares Descending"/>
+     <Item Id="shares" Title="Shares Ascending"/>
+     <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
+     <Item Id="estimatedMinutesWatched" Title="Est Min Watched Ascending"/>
+     <Item Id="-averageViewDuration" Title="Avg View Duration Descending"/>
+     <Item Id="averageViewDuration" Title="Avg View Duration Ascending"/>
+    </Resource>
+    <Resource Id="SortVideos">
+     <Item Id="-views" Title="Views Descending"/>
+     <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
+    </Resource>
+    <Resource Id="SortVideos">
+     <Item Id="-views" Title="Views Descending"/>
+     <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
+    </Resource>
+  </Resources>
+ 
+  <RestConnector Id="Channel" Title="Channel Activity">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="country==US" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/analytics/v1/reports?
         ids=channel==MINE
-        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
-        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        &dimensions=day
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        &filters=@Model.Filter
         &metrics=@SelectedFields()
         &alt=csv
       ]]>
@@ -33,16 +65,597 @@
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="subscribersGained" Title="Subscribers Gained" Tag="subscribersGained" Converter="Int" HelpText=""/>
+        <Field Id="subscribersLost" Title="Subscribers Lost" Tag="subscribersLost" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ActivityCountry" Title="Activity by Country">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="video==wjGnX2qD9B4" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortChannels"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=country
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="country" Title="Country" Converter="String" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
+        <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="subscribersGained" Title="Subscribers Gained" Tag="subscribersGained" Converter="Int" HelpText=""/>
+        <Field Id="subscribersLost" Title="Subscribers Lost" Tag="subscribersLost" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="DailyActivity" Title="Activity by Day">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="video==wjGnX2qD9B4" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortChannels"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=day
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="day" Title="Day" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
+        <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="subscribersGained" Title="Subscribers Gained" Tag="subscribersGained" Converter="Int" HelpText=""/>
+        <Field Id="subscribersLost" Title="Subscribers Lost" Tag="subscribersLost" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MonthlyActivity" Title="Activity by Month">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="video==wjGnX2qD9B4" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortChannels"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=month
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="month" Title="Day" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
+        <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="subscribersGained" Title="Subscribers Gained" Tag="subscribersGained" Converter="Int" HelpText=""/>
+        <Field Id="subscribersLost" Title="Subscribers Lost" Tag="subscribersLost" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="GenderRatio" Title="Views by Gender">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=gender
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="gender" Title="Gender" Converter="String" HelpText=""/>
+        <Field Id="viewerPercentage" Title="Percentage" Tag="viewerPercentage" Converter="Double" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AgeRatio" Title="Views by Age">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=ageGroup
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="ageGroup" Title="Gender" Converter="String" HelpText=""/>
+        <Field Id="viewerPercentage" Title="Percentage" Tag="viewerPercentage" Converter="Double" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+ 
+  <RestConnector Id="VideosLookup" Title="Videos Lookup">
+    <Parameters>
+      <Text Id="Ids" Title="Video Ids (Max 200)" Debug.DefaultValue="wjGnX2qD9B4,QO9AP3SMUBs" Required="true" Multiline="true" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+    </Parameters>
+    <Paging PageSize="200"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2016-01-01
+        &end-date=2017-01-01
+        &filters=video==@(FetchIdsBatch())
+        &dimensions=video
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="video" Title="Video" Converter="String" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
+        <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Videos" Title="Activity by Video">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortVideos"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2016-01-01
+        &end-date=2017-01-01
+        &dimensions=video
+        &max-results=@(Model.PageCursor.NextTake)
+        &sort=@(Model.Sorting)
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="video" Title="Video" Converter="String" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText=""/>
+        <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText=""/>
+        <Field Id="comments" Title="Comments" Tag="comments" Converter="Int" HelpText=""/>
+        <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+        <Field Id="averageViewDuration" Title="Avg View Duration" Tag="averageViewDuration" Converter="Int" HelpText=""/>
+        <Field Id="videosAddedToPlaylists" Title="Videos Added to Playlists" Tag="videosAddedToPlaylists" Converter="Int" HelpText=""/>
+        <Field Id="videosRemovedFromPlaylists" Title="Videos Removed from Playlists" Tag="videosRemovedFromPlaylists" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="ViewsTrafficSource" Title="Views by Traffic Source">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortVideos"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=insightTrafficSourceType
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="insightTrafficSourceType" Title="Traffic Source" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="ViewsDeviceType" Title="Views by Device">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortVideos"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=deviceType
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="deviceType" Title="Device" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+  
+  <RestConnector Id="ViewsOS" Title="Views by Operating System">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortVideos"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=operatingSystem
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="operatingSystem" Title="Operating System" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SharesService" Title="Shares by Service">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2015-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=sharingService
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="sharingService" Title="Service" Converter="Auto" HelpText=""/>
         <Field Id="shares" Title="Shares" Tag="shares" Converter="Int" HelpText=""/>
       </Csv>
     </Parse>
   </RestConnector>
+
+ 
+  <RestConnector Id="ActivityPlaybackLocation" Title="Views by Playback Location">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="video==wjGnX2qD9B4" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
+        <DataSource>
+          <Resource Id="SortChannels"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=2014-01-01
+        &end-date=2017-01-01
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filters=@Utils.UrlEncode(Model.Filter)
+        }
+        &dimensions=insightPlaybackLocationType
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &sort=@(Model.Sorting)
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="insightPlaybackLocationType" Title="Week" Converter="Auto" HelpText=""/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText=""/>
+        <Field Id="estimatedMinutesWatched" Title="Est. Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
 
   <RazorFunctions>
     <![CDATA[
       string SelectedFields() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+      string FetchIdsBatch()
+      {
+        string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(200).ToArray();
+        return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
       }
     ]]>
   </RazorFunctions>
