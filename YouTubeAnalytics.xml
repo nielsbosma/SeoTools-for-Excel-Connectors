@@ -113,7 +113,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="country" Title="Country" Converter="String" HelpText=""/>
+        <Field Id="country" Title="Country" Converter="String" HelpText="The country associated with the metrics in the report row."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText="The number of times that users indicated that they liked a video by giving it a positive rating"/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText="The number of times that users indicated that they disliked a video by giving it a negative rating."/>
@@ -170,7 +170,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="day" Title="Day" Converter="Auto" HelpText=""/>
+        <Field Id="day" Title="Day" Converter="Auto" HelpText="Each row contains data for one day."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText="The number of times that users indicated that they liked a video by giving it a positive rating"/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText="The number of times that users indicated that they disliked a video by giving it a negative rating."/>
@@ -186,7 +186,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MonthlyActivity" Title="Activity by Month" HelpText="Provides statistics related to user actions on a monthly basis.">
+  <RestConnector Id="ActivityMonth" Title="Activity by Month" HelpText="Provides statistics related to user actions on a monthly basis.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="video==wjGnX2qD9B4" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -227,7 +227,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="month" Title="Day" Converter="Auto" HelpText=""/>
+        <Field Id="month" Title="Day" Converter="Auto" HelpText="Data in the report is aggregated by calendar month."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText="The number of times that users indicated that they liked a video by giving it a positive rating"/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText="The number of times that users indicated that they disliked a video by giving it a negative rating."/>
@@ -243,7 +243,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="GenderRatio" Title="Views by Gender" HelpText="Aggregates viewing statistics based on viewers' gender.">
+  <RestConnector Id="ViewsDemographics" Title="Views by Demographics" HelpText="Aggregates viewing statistics based on viewers' age group and gender.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -260,13 +260,13 @@
         {
           @: &filters=@Utils.UrlEncode(Model.Filter)
         }
-        &dimensions=gender
+        &dimensions=@SelectedFields()
         &max-results=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
           @: &start-index=@(Model.PageCursor.NextSkip+1)
         }
-        &metrics=@SelectedFields()
+        &metrics=viewerPercentage
         &alt=csv
       ]]>
       </Fetch.Url>
@@ -278,49 +278,9 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="gender" Title="Gender" Converter="String" HelpText=""/>
-        <Field Id="viewerPercentage" Title="Percentage" Tag="viewerPercentage" Converter="Double" HelpText="The percentage of viewers who were logged in when watching the video or playlist."/>
-      </Csv>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="AgeRatio" Title="Views by Age" HelpText="Aggregates viewing statistics based on viewers' age.">
-    <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-    </Parameters>
-    <Paging PageSize="100"/>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/analytics/v1/reports?
-        ids=channel==MINE
-        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
-        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: &filters=@Utils.UrlEncode(Model.Filter)
-        }
-        &dimensions=ageGroup
-        &max-results=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &start-index=@(Model.PageCursor.NextSkip+1)
-        }
-        &metrics=@SelectedFields()
-        &alt=csv
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <Csv Separator="," HasHeader="true">
-        <Field Id="ageGroup" Title="Gender" Converter="String" HelpText=""/>
-        <Field Id="viewerPercentage" Title="Percentage" Tag="viewerPercentage" Converter="Double" HelpText="The percentage of viewers who were logged in when watching the video or playlist."/>
+        <Field Id="gender" Title="Gender" Converter="String" Tag="gender" HelpText="Identifies the gender of the logged-in users associated with the report data."/>
+        <Field Id="ageGroup" Title="Age Group" Converter="String" Tag="ageGroup" HelpText="Identifies the age group of the logged-in users associated with the report data."/>
+        <Field Id="viewerPercentage" Title="Percentage" Converter="Double" HelpText="The percentage of viewers who were logged in when watching the video or playlist."/>
       </Csv>
     </Parse>
   </RestConnector>
@@ -357,7 +317,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="video" Title="Video" Converter="String" HelpText=""/>
+        <Field Id="video" Title="Video" Converter="String" HelpText="The ID of a YouTube video."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText="The number of times that users indicated that they liked a video by giving it a positive rating"/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText="The number of times that users indicated that they disliked a video by giving it a negative rating."/>
@@ -404,7 +364,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="video" Title="Video" Converter="String" HelpText=""/>
+        <Field Id="video" Title="Video" Converter="String" HelpText="The ID of a YouTube video."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="likes" Title="Likes" Tag="likes" Converter="Int" HelpText="The number of times that users indicated that they liked a video by giving it a positive rating"/>
         <Field Id="dislikes" Title="Dislikes" Tag="dislikes" Converter="Int" HelpText="The number of times that users indicated that they disliked a video by giving it a negative rating."/>
@@ -459,14 +419,14 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="insightTrafficSourceType" Title="Traffic Source" Converter="Auto" HelpText=""/>
+        <Field Id="insightTrafficSourceType" Title="Traffic Source" Converter="Auto" HelpText="The referrer type, which describes the manner in which users reached the video."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
       </Csv>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ViewsDeviceType" Title="Views by Device" HelpText="Statistics based on devices used which viewers reached your playlist content with.">
+  <RestConnector Id="ViewsDevice" Title="Views by Device" HelpText="Statistics based on devices used which viewers reached your playlist content with.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -507,7 +467,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="deviceType" Title="Device" Converter="Auto" HelpText=""/>
+        <Field Id="deviceType" Title="Device" Converter="Auto" HelpText="Identifies the physical form factor of the device on which the view occurred."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
       </Csv>
@@ -555,7 +515,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="operatingSystem" Title="Operating System" Converter="Auto" HelpText=""/>
+        <Field Id="operatingSystem" Title="Operating System" Converter="Auto" HelpText="Identifies the software system of the device on which the view occurred."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
       </Csv>
@@ -597,7 +557,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="sharingService" Title="Service" Converter="Auto" HelpText=""/>
+        <Field Id="sharingService" Title="Service" Converter="Auto" HelpText="Identifies the service that was used to share videos."/>
         <Field Id="shares" Title="Shares" Tag="shares" Converter="Double" HelpText="The number of times that users shared a video through the Share button"/>
       </Csv>
     </Parse>
@@ -645,7 +605,7 @@
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
-        <Field Id="insightPlaybackLocationType" Title="Week" Converter="Auto" HelpText=""/>
+        <Field Id="insightPlaybackLocationType" Title="Week" Converter="Auto" HelpText="Aggregated based on the type of page or application where video playbacks occurred."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
       </Csv>
