@@ -26,9 +26,11 @@
       <Item Id="-views" Title="Views Descending"/>
       <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
     </Resource>
-    <Resource Id="SortVideos">
+    <Resource Id="SortPlaylists">
       <Item Id="-views" Title="Views Descending"/>
       <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
+      <Item Id="-playlistStarts" Title="Playlists Starts Descending"/>
+      <Item Id="-viewsPerPlaylistStart" Title="Views per Playlist Starts Descending"/>
     </Resource>
   </Resources>
 
@@ -186,7 +188,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ActivityMonth" Title="Activity by Month" HelpText="Provides statistics related to user actions on a monthly basis.">
+  <RestConnector Id="ActivityMonth" Title="Activity by Month" HelpText="The start and End-date parameters must both be set to the first day of the month.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -333,7 +335,6 @@
 
   <RestConnector Id="VideosTop" Title="Videos Top" HelpText="Lists the Channel's top videos.">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
       <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
         <DataSource>
@@ -608,6 +609,126 @@
         <Field Id="insightPlaybackLocationType" Title="Week" Converter="Auto" HelpText="Aggregated based on the type of page or application where video playbacks occurred."/>
         <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
         <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PlayListsActivity" Title="Playlists Activity" HelpText="Retrieves total playlist starts, estimated minutes watched, views, and views per playlist starts.">
+    <Parameters>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="country==US" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        &filters=isCurated==1
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: ;@Utils.UrlEncode(Model.Filter)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
+        <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
+        <Field Id="playlistStarts" Title="Playlist Starts" Tag="playlistStarts" Converter="Int" HelpText="The number of times that viewers initiated playback of a playlist."/>
+        <Field Id="viewsPerPlaylistStart" Title="Views per Playlist Start" Tag="viewsPerPlaylistStart" Converter="Double" HelpText="The average number of video views that occurred each time a playlist was initiated."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PlaylistsSpecific" Title="Playlists Specific" HelpText="Provides statistics related a list of playlists provided by the user.">
+    <Parameters>
+      <Text Id="Ids" Title="Playlist Ids (Max 200)" Debug.DefaultValue="PLveF1eCPUBjhldDk3sd0Q4GYKFPCIcBCp" Required="true" Multiline="true" HelpUrl="https://developers.google.com/youtube/analytics/v1/channel_reports"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+    </Parameters>
+    <Paging PageSize="200"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        &filters=isCurated==1;playlist==@(FetchIdsBatch())
+        &dimensions=playlist
+        &max-results=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &start-index=@(Model.PageCursor.NextSkip+1)
+        }
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="playlist" Title="Playlist" Converter="String" HelpText="The ID of a YouTube playlist."/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
+        <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
+        <Field Id="playlistStarts" Title="Playlist Starts" Tag="playlistStarts" Converter="Int" HelpText="The number of times that viewers initiated playback of a playlist."/>
+        <Field Id="viewsPerPlaylistStart" Title="Views per Playlist Start" Tag="viewsPerPlaylistStart" Converter="Double" HelpText="The average number of video views that occurred each time a playlist was initiated."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PlaylistsTop" Title="Playlists Top" HelpText="Lists the Channel's top playlists.">
+    <Parameters>
+    <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-estimatedMinutesWatched">
+        <DataSource>
+          <Resource Id="SortPlaylists"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10"/>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/analytics/v1/reports?
+        ids=channel==MINE
+        &start-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end-date=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        &filters=isCurated==1
+        &dimensions=playlist
+        &max-results=@(Model.PageCursor.NextTake)
+        &sort=@(Model.Sorting)
+        &metrics=@SelectedFields()
+        &alt=csv
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="playlist" Title="Playlist" Converter="String" HelpText="The ID of a YouTube playlist."/>
+        <Field Id="views" Title="Views" Tag="views" Converter="Int" HelpText="The number of times that a video was viewed."/>
+        <Field Id="estimatedMinutesWatched" Title="Est Min Watched" Tag="estimatedMinutesWatched" Converter="Int" HelpText="The number of minutes that users watched videos for the specified channel, content owner, video, or playlist."/>
+        <Field Id="playlistStarts" Title="Playlist Starts" Tag="playlistStarts" Converter="Int" HelpText="The number of times that viewers initiated playback of a playlist."/>
+        <Field Id="viewsPerPlaylistStart" Title="Views per Playlist Start" Tag="viewsPerPlaylistStart" Converter="Double" HelpText="The average number of video views that occurred each time a playlist was initiated."/>
       </Csv>
     </Parse>
   </RestConnector>
