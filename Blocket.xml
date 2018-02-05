@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Shopping" RequireVersion="7.0.0" Title="Blocket" Id="Blocket" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Blocket.xml" HelpUrl="http://seotoolsforexcel.com/blocket" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Resources>
+    <Resource Id="Type">
+      <Item Id="s" Title="Selling"/>
+			<Item Id="u" Title="Renting"/>
+			<Item Id="b" Title="Exchanging"/>
+			<Item Id="k" Title="Buying"/>
+			<Item Id="h" Title="Wish to rent"/>
+    </Resource>				
+  </Resources>
+
+  <RestConnector Id="SearchResults" Title="Search Results">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="motorcykel" HelpText=""/>
+      <Select Id="Type" Title="Type" Required="false" DefaultValue="s">
+        <DataSource>
+          <Resource Id="Type"/>
+        </DataSource>
+      </Select>
+      <Radio Id="SellerType" Title="Seller Type" DefaultValue="a" Required="false">
+        <DataSource>
+          <Item Id="a" Title="All"/>
+          <Item Id="p" Title="Private"/>
+          <Item Id="c" Title="Company"/>
+        </DataSource>
+      </Radio>
+      <Radio Id="Sorting" Title="Sorting" DefaultValue="0" Required="false">
+        <DataSource>
+          <Item Id="0" Title="Latest"/>
+          <Item Id="1" Title="Cheapest"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="True"/>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        https://www.blocket.se
+        /stockholm
+        ?q=@(Model.Query)
+        &cg=0&w=1
+        &st=@(Model.Type)
+        &c=&ca=11&is=1&l=0&md=th
+        &f=@(Model.SellerType)
+        @if(Model.Sorting == "1")
+        {
+          @: &sp=1
+        }
+        &o=@(Model.PageCursor.Page+1)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//h1[@@class='h5 media-heading ptxs']">
+        <XPath Expr="." Title="Title" Id="Title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//header[@@class='clearfix']">
+        <XPath Expr="time" Attribute="datetime" Title="Posted" Id="Posted" Converter="DateTime"/>
+      </XPath>
+      <XPath Expr="//p[@@itemprop='price']">
+        <XPath Expr="." Title="Price" Id="Price" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[@@class='pull-left ']/a[last()-1]">
+        <XPath Expr="." Title="Category" Id="Category" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[@@class='pull-left ']/a[last()]">
+        <XPath Expr="." Title="Location" Id="Location" Converter="String"/>
+      </XPath>
+      <XPath Expr="//h1[@@itemprop='name']">
+        <XPath Expr="a" Attribute="href" Title="Link" Id="Link" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
