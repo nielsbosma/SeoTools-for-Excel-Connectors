@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Shopping" RequireVersion="7.0.0" Title="Prisjakt" Id="Prisjakt" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/prisjakt.xml" HelpUrl="http://seotoolsforexcel.com/prisjakt" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Resources>
+    <Resource Id="Sortings">
+      <Item Id="ftg_betyg" Title="Rating"/>
+      <Item Id="ftgnamn" Title="Name"/>
+      <Item Id="antal_expert" Title="Most Products"/>
+      <Item Id="antal_produkter" Title="Most Indexed Products"/>
+      <Item Id="antal_billigast" Title="Most Cheapest Products"/>
+    </Resource>
+    <Resource Id="BeginsWiths">
+      <Item Id="all" Title="All"/>
+      <Item Id="num" Title="0-9"/>
+      <Item Id="a" Title="A"/>
+      <Item Id="b" Title="B"/>
+      <Item Id="c" Title="C"/>
+      <Item Id="d" Title="D"/>
+      <Item Id="e" Title="E"/>
+      <Item Id="f" Title="F"/>
+      <Item Id="g" Title="G"/>
+      <Item Id="h" Title="H"/>
+      <Item Id="i" Title="I"/>
+      <Item Id="j" Title="J"/>
+      <Item Id="k" Title="K"/>
+      <Item Id="l" Title="L"/>
+      <Item Id="m" Title="M"/>
+      <Item Id="n" Title="N"/>
+      <Item Id="o" Title="O"/>
+      <Item Id="p" Title="P"/>
+      <Item Id="q" Title="Q"/>
+      <Item Id="r" Title="R"/>
+      <Item Id="s" Title="S"/>
+      <Item Id="t" Title="T"/>
+      <Item Id="u" Title="U"/>
+      <Item Id="v" Title="V"/>
+      <Item Id="w" Title="W"/>
+      <Item Id="x" Title="X"/>
+      <Item Id="y" Title="Y"/>
+      <Item Id="z" Title="Z"/>
+      <Item Id="å" Title="Å"/>
+      <Item Id="ä" Title="Ä"/>
+      <Item Id="ö" Title="Ö"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Resellers" Title="Resellers">
+    <Parameters>
+      <Radio Id="Scope" Title="Scope" DefaultValue="sweden" Required="false">
+        <DataSource>
+          <Item Id="sweden" Title="Swedish Resellers"/>
+          <Item Id="all" Title="Selling to Sweden"/>
+        </DataSource>
+      </Radio>
+      <Select Id="BeginsWith" Title="Begins With" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="BeginsWiths"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="ftg_betyg">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="200"/>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        https://www.prisjakt.nu/butiksinfo.php?
+        &o=@(Model.Sorting)
+        @if(Model.Scope == "all")
+        {
+          @: &country=all
+        }
+        @if(Model.BeginsWith != "all")
+        {
+          @: &begins_with=@(Model.BeginsWith)
+        }
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &s=@(Model.PageCursor.NextTake)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//td[@@class='wr']">
+        <XPath Expr="." Title="Name" Id="Name" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[3]/img">
+        <XPath Expr="." Title="Country" Id="Country" Attribute="title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[4]/a">
+        <Compute Id="Reviews" Title="Reviews" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"\d+");
+              Match match = regex.Match(Model.ReviewInput);
+            }
+            @match.Value
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="ReviewInput" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//td[4]/a/img">
+        <Compute Id="Rating" Title="Rating" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"_(\d+)$");
+              Match match = regex.Match(Model.RatingInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="RatingInput" Attribute="class" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//td[5]/span">
+        <XPath Expr="." Title="indexed Prices" Id="IndexedPrices" Converter="Long"/>
+      </XPath>
+      <XPath Expr="//td[6]/span">
+        <XPath Expr="." Title="Total Prices" Id="TotalPrices" Converter="Long"/>
+      </XPath>
+      <XPath Expr="//td[7]/span">
+        <XPath Expr="." Title="Cheapest Prices" Id="CheapestPrices" Converter="Long"/>
+      </XPath>
+      <XPath Expr="//td[9]">
+        <Compute Id="Info" Title="Info" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+            @Model.InfoInput1 @Model.InfoInput2 @Model.InfoInput3
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="text()[1]" Id="InfoInput1" Converter="String" DefaultValue=""/>
+          <XPath Expr="text()[2]" Id="InfoInput2" Converter="String" DefaultValue=""/>
+          <XPath Expr="text()[3]" Id="InfoInput3" Converter="String" DefaultValue=""/>
+        </Compute>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
