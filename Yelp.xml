@@ -164,13 +164,14 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PhoneSearch" Title="Phone Search" HelpText="Returns a list of businesses based on the provided phone number." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search_phone">
+  <RestConnector Id="PhoneLookup" Title="Phone Lookup" HelpText="Returns a list of businesses based on the provided phone number." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search_phone">
     <Parameters>
       <Text Id="Phone" Title="Phone (Starts with + and country code)" Debug.DefaultValue="" Required="true" HelpText=""/>
     </Parameters>
     <Prepare>
       <Connector Id="GenerateToken"/>
     </Prepare>
+    <Paging PageSize="1"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -179,11 +180,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.yelp.com/v3/businesses/search/phone
-        @if(Model.Locale != "default")
-        {
-          @: &locale=@(Model.Locale)
-        }
+        https://api.yelp.com/v3/businesses/search/phone?
+        phone=@Utils.UrlEncode(Regex.Replace(Model.Phone, @"[\s-]", ""))
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -201,6 +199,7 @@
         <JsonPath Expr="coordinates.longitude" Id="Longitude" Title="Longitude" Converter="Double" HelpText="The longitude of this business."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL for business page on Yelp."/>
       </JsonPath>
+      <JsonPath Expr="total" Id="Total" Title="Total" Converter="Long" HelpText="The total number of business Yelp finds based on the search criteria."/>	 
     </Parse>
     <Fail>
       <JsonPath Expr="errors.message"/>

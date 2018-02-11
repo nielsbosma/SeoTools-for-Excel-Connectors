@@ -1,0 +1,234 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Google Calendar" Id="GoogleCalendar" Category="Social"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleCalendar.xml"
+       HelpUrl="http://seotoolsforexcel.com/googlecalendar/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/calendar.readonly" StayAuthenticated="true"/>
+
+  <Resources>
+    <Resource Id="OrderEvents">
+      <Item Id="default" Title="Default" DefaultValue="default"/>
+      <Item Id="startTime" Title="Event start time (ascending)"/>
+      <Item Id="updated" Title="Last modified (ascending)"/>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <Regex Expr="^invalid token$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="CalendarList" Title="My calendar list" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/calendarList">
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://content.googleapis.com/calendar/v3/users/me/calendarList?
+          &maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="location" Id="Location" Title="Location" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="timezone" Id="TimeZone" Title="Timezone" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="accessRole" Id="AccessRole" Title="Access Role" Converter="String" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EventsList" Title="Events list" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/list">
+    <Parameters>
+      <Text Id="CalendarId" Title="Calendar ID" Debug.DefaultValue="nba_13_%4cos+%41ngeles+%4cakers#sports@group.v.calendar.google.com" Required="true"/>
+      <Text Id="Query" Title="Only events that contain text" Required="false"/>
+      <Radio Id="SingleEvents" Title="Event Type" DefaultValue="false" Required="true" HelpText="Whether to expand recurring events into instances and only return single one-off events and instances of recurring events, but not the underlying recurring events themselves.">
+        <DataSource>
+          <Item Id="false" Title="Single and recurring"/>
+          <Item Id="true" Title="Single only"/>
+        </DataSource>
+      </Radio>
+      <Select Id="SortBy" Title="Sort by" Required="false" DefaultValue="default">
+        <DataSource>
+          <Resource Id="OrderEvents"/>
+        </DataSource>
+      </Select>
+      <Checkbox Id="ShowDeleted" Title="Include deleted events" DefaultValue="false" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/calendar/v3/calendars/
+        @Utils.UrlEncode(Model.CalendarId)
+        /events?
+        &maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+        @if(Model.SortBy!="default")
+        {
+          @: &orderBy=@Model.SortBy
+        }
+        &singleEvents=@(Model.SingleEvents)
+        &showDeleted=@(Model.ShowDeleted)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &timeMin=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00Z
+          @: &timeMax=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00Z
+        }
+        @if(!string.IsNullOrEmpty(Model.Query))
+        {
+          @: &q=@(Utils.UrlEncode(Model.Query))
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" Checked="true"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" Checked="true" DefaultValue=""/>
+        <JsonPath Expr="start.dateTime" Id="Start" Title="Start" Converter="Auto" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="end.dateTime" Id="End" Title="End" Converter="Auto" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" Checked="true"/>
+        <JsonPath Expr="htmlLink" Id="URL" Title="Event URL" Converter="String" Checked="true"/>
+        <JsonPath Expr="creator.displayName" Id="CreatorName" Title="Creator Name" Converter="String" Checked="true"/>
+        <JsonPath Expr="creator.email" Id="URL" Title="Creator email" Converter="String" Checked="true"/>
+        <JsonPath Expr="organizer.displayName" Id="OrganizerName" Title="Creator Name" Converter="String" Checked="false"/>
+        <JsonPath Expr="organizer.email" Id="OrganizerEmail" Title="Organizer Email" Converter="String" Checked="false"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EventAttendees" Title="Event attendees" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/get">
+    <Parameters>
+      <Text Id="CalendarId" Title="Calendar ID" Required="true"/>
+      <Text Id="EventId" Title="Event ID" Required="true"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/calendar/v3/calendars/
+        @Utils.UrlEncode(Model.CalendarId)
+        /events/@Model.EventId
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="attendees[*]">
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" Checked="true"/>
+        <JsonPath Expr="displayName" Id="DisplayName" Title="Display Name" Converter="String" Checked="true"/>
+        <JsonPath Expr="responseStatus" Id="ResponseStatus" Title="Response Status" Converter="String" Checked="true"/>
+        <JsonPath Expr="organizer" Id="IsOrganizer" Title="Is Organizer" Converter="Bool" DefaultValue="False" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EventInstances" Title="Event Instances" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/instances">
+    <Parameters>
+      <Text Id="CalendarId" Title="Calendar ID" Required="true"/>
+      <Text Id="EventId" Title="Event ID" Required="true"/>
+      <Checkbox Id="ShowDeleted" Title="Include deleted events" DefaultValue="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/calendar/v3/calendars/
+        @Utils.UrlEncode(Model.CalendarId)
+        /events/@Model.EventId
+        /instances?
+        showDeleted=@(Model.ShowDeleted)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &timeMin=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00Z
+          @: &timeMax=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00Z
+        }
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" Checked="true"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" Checked="true" DefaultValue=""/>
+        <JsonPath Expr="start.date" Id="Start" Title="Start" Converter="Auto" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="end.date" Id="End" Title="End" Converter="Auto" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="originalStartTime.date" Id="OriginalStartTime" Title="Original Start Time" Converter="Auto" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" Checked="true"/>
+        <JsonPath Expr="htmlLink" Id="URL" Title="Event URL" Converter="String" Checked="true"/>
+        <JsonPath Expr="creator.displayName" Id="CreatorName" Title="Creator Name" Converter="String" Checked="true"/>
+        <JsonPath Expr="creator.email" Id="URL" Title="Creator email" Converter="String" Checked="true"/>
+        <JsonPath Expr="organizer.displayName" Id="OrganizerName" Title="Creator Name" Converter="String" Checked="false"/>
+        <JsonPath Expr="organizer.email" Id="OrganizerEmail" Title="Organizer Email" Converter="String" Checked="false"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+</Suite>

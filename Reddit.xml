@@ -22,6 +22,13 @@
       <Item Id="qa" Title="QA"/>
       <Item Id="live" Title="Live"/>
     </Resource>
+
+    <Resource Id="UserCommentsSortings">
+      <Item Id="hot" Title="Hot"/>
+      <Item Id="top" Title="Top"/>
+      <Item Id="new" Title="New"/>
+      <Item Id="controversial" Title="Controversial"/>
+    </Resource>
   </Resources>
 
   <RestConnector Id="Search" Title="Search" HelpUrl="https://www.reddit.com/dev/api#GET_search">
@@ -109,7 +116,7 @@
       <Fetch.Url>
         <![CDATA[
         https://www.reddit.com/comments/
-        @(Model.ThreadId).json
+        @(Model.Username).json
         ?sort=@(Model.Sort)
         ]]>
       </Fetch.Url>
@@ -229,6 +236,50 @@
         <JsonPath Expr="score" Id="Score" Title="Score" Converter="Int" HelpText=""/>
         <JsonPath Expr="author" Id="Author" Title="Author" Converter="String" HelpText=""/>
         <JsonPath Expr="subreddit_name_prefixed" Id="SubReddit" Title="SubReddit" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="UserComments" Title="User's comments" HelpUrl="https://www.reddit.com/dev/api#GET_user_{username}_comments">
+    <Parameters>
+      <Text Id="Username" Title="Username" DefaultValue="" Required="true" Debug.DefaultValue="spez"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="new">
+        <DataSource>
+          <Resource Id="UserCommentsSortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.reddit.com/user/
+        @(Model.Username)/comments.json
+        ?sort=@(Model.Sort)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.children[*].data">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string input = Model.Created;
+            }
+            @input
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="created" Id="Created"/>
+        </Compute>
+        <JsonPath Expr="body" Id="Body" Title="Body" Converter="String" HelpText=""/>
+        <JsonPath Expr="ups" Id="Ups" Title="Ups" Converter="Int" HelpText=""/>
+        <JsonPath Expr="downs" Id="Downs" Title="Downs" Converter="Int" HelpText=""/>
+        <JsonPath Expr="score" Id="Score" Title="Score" Converter="Int" HelpText=""/>
+        <JsonPath Expr="controversiality" Id="Controversiality" Title="Controversiality" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
