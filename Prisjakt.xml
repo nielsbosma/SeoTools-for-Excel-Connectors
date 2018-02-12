@@ -11,6 +11,14 @@
       <Item Id="antal_produkter" Title="Most Indexed Products"/>
       <Item Id="antal_billigast" Title="Most Cheapest Products"/>
     </Resource>
+    <Resource Id="SortingsReviews">
+      <Item Id="date" Title="Newest"/>
+      <Item Id="date&amp;rev=1" Title="Oldest"/>
+      <Item Id="rating" Title="Highest Rating"/>
+      <Item Id="rating&amp;rev=1" Title="Lowest Rating"/>
+      <Item Id="username&amp;rev=1" Title="Username (A-Ö)"/>
+      <Item Id="username" Title="Username (Ö-A)"/>
+    </Resource>
     <Resource Id="BeginsWiths">
       <Item Id="all" Title="All"/>
       <Item Id="num" Title="0-9"/>
@@ -90,8 +98,19 @@
       <XPath Expr="//td[@@class='wr']">
         <XPath Expr="." Title="Name" Id="Name" Converter="String"/>
       </XPath>
-      <XPath Expr="//td[3]/img">
-        <XPath Expr="." Title="Country" Id="Country" Attribute="title" Converter="String"/>
+      <XPath Expr="//td[2]/h4/a">
+        <Compute Id="Id" Title="Id" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"\d+");
+              Match match = regex.Match(Model.UrlInput);
+            }
+            @match.Value
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="UrlInput" Attribute="href"/>
+        </Compute>
       </XPath>
       <XPath Expr="//td[4]/a">
         <Compute Id="Reviews" Title="Reviews" Converter="Long">
@@ -141,6 +160,155 @@
           <XPath Expr="text()[2]" Id="InfoInput2" Converter="String" DefaultValue=""/>
           <XPath Expr="text()[3]" Id="InfoInput3" Converter="String" DefaultValue=""/>
         </Compute>
+      </XPath>
+      <XPath Expr="//td[3]/img">
+        <XPath Expr="." Title="Country" Id="Country" Attribute="title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[2]/h4/a">
+        <Compute Id="Url" Title="URL" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string Url = "https://www.prisjakt.nu" + Model.UrlInput;
+            }
+            @Url
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="UrlInput" Attribute="href"/>
+        </Compute>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ResellerReviews" Title="Reseller Reviews">
+    <Parameters>
+      <Text Id="Id" Title="Reseller Id" DefaultValue="" Debug.DefaultValue="13697" Required="true"/>
+      <Radio Id="Scope" Title="Scope" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="reg" Title="From Prisjakt"/>
+          <Item Id="instore" Title="From Store"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
+        <DataSource>
+          <Resource Id="SortingsReviews"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50">
+      <Parse>
+        <Xpath Id="AvaliableRows" Expr="//span[@@itemprop='ratingCount']"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        https://www.prisjakt.nu/butiksinfo.php
+        ?f=@(Model.Id)
+        &o=@(Model.Sorting)
+        &show=@(Model.Scope)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &s=@(Model.PageCursor.NextTake)
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@itemprop='reviewBody']">
+        <XPath Expr="." Title="Text" Id="Text" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[1]/span[@@class='balloon-date']">
+        <XPath Expr="." Title="Posted" Id="Posted" Attribute="title" Converter="DateTime"/>
+      </XPath>
+      <XPath Expr="//div[@@itemprop='reviewRating']/meta[@@itemprop='ratingValue']">
+        <XPath Expr="." Title="Rating" Id="Rating" Attribute="content" Converter="Double"/>
+      </XPath>
+      <XPath Expr="//div[@@class='grade-text muted text_liten']">
+        <XPath Expr="." Title="Verdict" Id="Verdict" Converter="String"/>
+      </XPath>
+      <XPath Expr="//li[@@class='opinion-row']">
+        <XPath Expr="div/a/h4" Title="Author" Id="Author" Converter="String" DefaultValue=""/>
+      </XPath>
+      <XPath Expr="//li[@@class='opinion-row']">
+        <Compute Id="AuthorReviews" Title="Author Reviews" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"\d+");
+              Match match = regex.Match(Model.AuthorReviewsInput);
+            }
+            @match.Value
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="div/a[3]" Id="AuthorReviewsInput" DefaultValue=""/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//li[@@class='opinion-row']">
+        <XPath Expr="div/a[3]" Title="Author" Id="Author" Attribute="href" Converter="String" DefaultValue=""/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PopularProducts" Title="Most Popular Products">
+    <Parameters>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        https://www.prisjakt.nu/
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@data-index='1']//li/div/h4/a">
+        <XPath Expr="." Title="Product" Id="Product" Converter="String"/>
+      </XPath>
+      <XPath Expr="//div[@@data-index='1']//span[@@class='price']">
+        <Compute Id="Price" Title="Price" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"(.*?):");
+              Match match = regex.Match(Model.PriceInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="PriceInput" DefaultValue=""/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@data-index='1']//div[@@class='grade']/a">
+        <Compute Id="Reviews" Title="Reviews" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"(\d+)\s");
+              Match match = regex.Match(Model.ReviewInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="ReviewInput" Attribute="title" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@data-index='1']//div[@@class='grade']">
+        <Compute Id="Rating" Title="Rating" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"_(\d+)$");
+              Match match = regex.Match(Model.RatingInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="a/img" Id="RatingInput" Attribute="class" DefaultValue="" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@data-index='1']//h5/a">
+        <XPath Expr="." Id="Category" Title="Category" DefaultValue="" Converter="String"/>
       </XPath>
     </Parse>
   </RestConnector>
