@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Trello" Id="Trello" Category="Social"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trello.xml"
+       HelpUrl="http://seotoolsforexcel.com/trello/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="token" AuthUrl="https://trello.com/1/authorize/?key=09db9d177171989f1a122fd4bb40307b&amp;name=SeoTools+for+Excel&amp;redirect_uri={0}&amp;response_type=token&amp;scope=read"/>
+
+  <Resources>
+    <Resource Id="FilterBoards">
+      <Item Id="all" Title="all"/>
+      <Item Id="closed" Title="closed"/>
+      <Item Id="members" Title="members"/>
+      <Item Id="open" Title="open"/>
+      <Item Id="organization" Title="organization"/>
+      <Item Id="public" Title="public"/>
+      <Item Id="public" Title="starred"/>
+    </Resource>
+    <Resource Id="FilterMembers">
+      <Item Id="all" Title="all"/>
+      <Item Id="admins" Title="admins"/>
+      <Item Id="normal" Title="normal"/>
+      <Item Id="owners" Title="owners"/>
+    </Resource>
+    <Resource Id="FilterCards">
+      <Item Id="all" Title="all"/>
+      <Item Id="closed" Title="closed"/>
+      <Item Id="open" Title="open"/>
+      <Item Id="visible" Title="visible"/>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^invalid token$" Group="0"/>
+        <Regex Expr="^board not found$" Group="0"/>
+        <Regex Expr="^invalid id$" Group="0"/>
+        <Regex Expr="^model not found$" Group="0"/>
+        <Regex Expr="^Cannot GET .+$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Member" Title="Member" HelpUrl="https://trello.readme.io/v1.0/reference#member">
+    <Parameters>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="diskborste" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.trello.com/1/members/
+          @(Model.Username)
+          ?key=09db9d177171989f1a122fd4bb40307b
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="fullName" Id="Name" Title="Name" Converter="String" HelpText=""/>
+      <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String" HelpText=""/>
+      <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+      <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="BoardCards" Title="Cards by Board" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidtest">
+    <Parameters>
+      <Text Id="BoardId" Title="Board ID" Debug.DefaultValue="5824e427857eea92ad0a93fc" Required="true"/>
+      <Select Id="Filter" Title="Filter" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="FilterCards"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/boards/@(Model.BoardId)
+        /cards/@(Model.Filter)
+        ?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="desc" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="pos" Id="Position" Title="Position" DefaultValue="" Converter="Int"/>
+        <JsonPath Expr="due" Id="Due" Title="Due Date" Converter="Auto"/>
+        <JsonPath Expr="email" Id="Email" Title="Email" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="dateLastActivity" Id="DateLastActivity" Title="Last Activity" Converter="DateTime"/>
+        <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+        <JsonPath Expr="subscribed" Id="Subscribed" Title="I'm subscribed" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="MemberBoards" Title="Boards by Member" HelpUrl="https://trello.readme.io/v1.0/reference#membersidboards">
+    <Parameters>
+      <Text Id="UserId" Title="User ID" Debug.DefaultValue="taco" Required="true"/>
+      <Select Id="Filter" Title="Filter" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="FilterBoards"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/members/@(Model.UserId)
+        /boards?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        @if(Model.Filter != "all")
+        {
+          @: &filter=@(Model.Filter)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="BoardId" Title="Board ID" Converter="String"/>
+        <JsonPath Expr="name" Id="BoardName" Title="Name" Converter="String"/>
+        <JsonPath Expr="idOrganization" Id="OrganizationId" Title="Organization ID" Converter="String"/>
+        <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="shortUrl" Id="ShortUrl" Title="Short URL" Converter="String"/>
+        <JsonPath Expr="desc" Id="Description" Title="Description" Converter="String" Checked="false"/>
+        <JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="OrganizationBoards" Title="Boards by Organization" HelpUrl="https://trello.readme.io/v1.0/reference#organizationsidboards">
+    <Parameters>
+      <Text Id="OrganizationId" Title="Organization ID" Debug.DefaultValue="trelloinc" Required="true"/>
+      <Select Id="Filter" Title="Filter" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="FilterBoards"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/organizations/@(Model.OrganizationId)
+        /boards?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        @if(Model.Filter != "all")
+          {
+            @: &filter=@(Model.Filter)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="BoardId" Title="Board ID" Converter="String"/>
+        <JsonPath Expr="name" Id="BoardName" Title="Name" Converter="String"/>
+        <JsonPath Expr="idOrganization" Id="OrganizationId" Title="Organization ID" Converter="String"/>
+        <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="shortUrl" Id="ShortUrl" Title="Short URL" Converter="String"/>
+        <JsonPath Expr="desc" Id="Description" Title="Description" Converter="String" Checked="false"/>
+        <JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="OrganizationMembers" Title="Members by Organization" HelpUrl="https://trello.readme.io/v1.0/reference#organizationsidboards">
+    <Parameters>
+      <Text Id="OrganizationId" Title="Organization ID" Debug.DefaultValue="trelloinc" Required="true"/>
+      <Select Id="Filter" Title="Filter" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="FilterMembers"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/organizations/@(Model.OrganizationId)
+        /members?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        @if(Model.Filter != "all")
+          {
+            @: &filter=@(Model.Filter)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="MemberId" Title="Member ID" Converter="String"/>
+        <JsonPath Expr="fullName" Id="FullName" Title="Name" Converter="String"/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  maxresults
+</Suite>
