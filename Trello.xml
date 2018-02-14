@@ -184,6 +184,42 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="CardActions" Title="Actions by Card" HelpUrl="https://trello.readme.io/v1.0/reference#cardsidactions">
+    <Parameters>
+      <Text Id="CardId" Title="Card ID" Debug.DefaultValue="5824e44a2e6ff3248d338f90" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/cards/@(Model.CardId)
+        /actions
+        ?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="Action ID" Converter="String"/>
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="memberCreator.fullName" Id="FullName" Title="Name" Converter="String"/>
+        <JsonPath Expr="data.board.id" Id="BoardId" Title="Board ID" Converter="Auto"/>
+        <JsonPath Expr="data.board.name" Id="Board Name" Title="Board Name" Converter="Auto"/>
+        <JsonPath Expr="data.card.id" Id="CardId" Title="Card ID" Converter="Auto"/>
+        <JsonPath Expr="data.card.name" Id="Card Name" Title="Card Name" Converter="Auto"/>
+        <JsonPath Expr="memberCreator.username" Id="Username" Title="Username" Converter="String" Checked="false"/>
+        <JsonPath Expr="idMemberCreator" Id="IdMemberCreator" Title="Creator's Id" DefaultValue="" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="CardMembers" Title="Members by Card" HelpUrl="https://trello.readme.io/v1.0/reference#cardsidmembers">
     <Parameters>
       <Text Id="CardId" Title="Card ID"  Required="true"/>
@@ -489,6 +525,84 @@
         <JsonPath Expr="id" Id="MemberId" Title="Member ID" Converter="String"/>
         <JsonPath Expr="fullName" Id="FullName" Title="Name" Converter="String"/>
         <JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListActions" Title="Actions by List" HelpUrl="https://trello.readme.io/v1.0/reference#listsidactions">
+    <Parameters>
+      <Text Id="ListId" Title="List ID" Debug.DefaultValue="5824e4353798fd4f0cfebfaa" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/lists/@(Model.ListId)
+        /actions
+        ?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="Action ID" Converter="String"/>
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="memberCreator.fullName" Id="FullName" Title="Name" Converter="String"/>
+        <JsonPath Expr="data.board.id" Id="BoardId" Title="Board ID" Converter="Auto"/>
+        <JsonPath Expr="data.board.name" Id="Board Name" Title="Board Name" Converter="Auto"/>
+        <JsonPath Expr="data.card.id" Id="CardId" Title="Card ID" Converter="Auto"/>
+        <JsonPath Expr="data.card.name" Id="Card Name" Title="Card Name" Converter="Auto"/>
+        <JsonPath Expr="memberCreator.username" Id="Username" Title="Username" Converter="String" Checked="false"/>
+        <JsonPath Expr="idMemberCreator" Id="IdMemberCreator" Title="Creator's Id" DefaultValue="" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListCards" Title="Cards by List" HelpUrl="https://trello.readme.io/v1.0/reference#listsidcards">
+    <Parameters>
+      <Text Id="ListId" Title="List ID" Debug.DefaultValue="5824e4353798fd4f0cfebfaa" Required="true"/>
+      <Select Id="Filter" Title="Filter" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="FilterCards"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/list/@(Model.ListId)
+        /cards
+        ?key=09db9d177171989f1a122fd4bb40307b
+        &token=@(Model.Authenticator.Token)
+        &cards=@(Model.Filter)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="desc" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="pos" Id="Position" Title="Position" DefaultValue="" Converter="Int"/>
+        <JsonPath Expr="due" Id="Due" Title="Due Date" Converter="Auto"/>
+        <JsonPath Expr="email" Id="Email" Title="Email" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="dateLastActivity" Id="DateLastActivity" Title="Last Activity" Converter="DateTime"/>
+        <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+        <JsonPath Expr="subscribed" Id="Subscribed" Title="I'm subscribed" Converter="Bool"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
