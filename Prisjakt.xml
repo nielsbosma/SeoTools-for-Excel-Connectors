@@ -19,6 +19,21 @@
       <Item Id="username&amp;rev=1" Title="Username (A-Ö)"/>
       <Item Id="username" Title="Username (Ö-A)"/>
     </Resource>
+    <Resource Id="SortingsProducts">
+      <Item Id="produkt_namn" Title="Manufacturing and Product Name"/>
+      <Item Id="kategori" Title="Product Category"/>
+      <Item Id="produkt_pris_inkmoms" Title="Price"/>
+      <Item Id="own_price" Title="Store Price"/>
+      <Item Id="prod_rank" Title="Product Rank"/>
+      <Item Id="prod_rank_trend" Title="Popularity Trend"/>
+      <Item Id="produkt_betyg_antal" Title="Reviews"/>
+      <Item Id="produkt_sort_lager" Title="In Stock"/>
+      <Item Id="produkt_skapad" Title="Product Creation Date"/>
+      <Item Id="antal_priser" Title="Prices"/>
+      <Item Id="antal_recensioner" Title="Reviews"/>
+      <Item Id="antal_bilder" Title="Gallery Pictures"/>
+      <Item Id="antal_tradar" Title="Forum Threads"/>
+    </Resource>
     <Resource Id="BeginsWiths">
       <Item Id="all" Title="All"/>
       <Item Id="num" Title="0-9"/>
@@ -247,6 +262,77 @@
       </XPath>
       <XPath Expr="//li[@@class='opinion-row']">
         <XPath Expr="div/a[3]" Title="Author" Id="Author" Attribute="href" Converter="String" DefaultValue=""/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ResellerProducts" Title="Reseller Products">
+    <Parameters>
+      <Text Id="Id" Title="Reseller Id" DefaultValue="" Debug.DefaultValue="13697" Required="true"/>
+      <Text Id="Query" Title="Filter by Search Term" DefaultValue="" Debug.DefaultValue="" Required="false"/>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="prod_rank">
+        <DataSource>
+          <Resource Id="SortingsProducts"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="AvaliableRows" Expr="//span[@@itemprop='ratingCount']"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        https://www.prisjakt.nu/butiksinfo.php
+        ?f=@(Model.Id)
+        &lista=prod
+        @if(!string.IsNullOrEmpty(Model.Query))
+        {
+          @: &q=@Utils.UrlEncode(Model.Query)
+        }
+        &o=@(Model.Sorting)
+        &s=@(Model.PageCursor.Page*100)
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//td[contains(@@class,'sidebar')]//a[contains(@@href,'php?p')]">
+        <XPath Expr="." Title="Product" Id="Product" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[3]/a">
+        <XPath Expr="." Title="Category" Id="Category" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[4]/a">
+        <Compute Title="Store Price" Id="StorePrice" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"(.*?):");
+              Match match = regex.Match(Model.PriceInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="PriceInput" DefaultValue=""/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//td[5]/a">
+        <Compute Title="Lowest Price" Id="LowestPrice" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"(.*?):");
+              Match match = regex.Match(Model.PriceInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Id="PriceInput" DefaultValue=""/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//span[contains(@@class,'t_rank')]">
+        <XPath Expr="." Title="Rank" Id="Rank" Converter="Long"/>
       </XPath>
     </Parse>
   </RestConnector>
