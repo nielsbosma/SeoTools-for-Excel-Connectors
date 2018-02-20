@@ -15,7 +15,30 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListProjects" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-projects">
+  <RestConnector Id="ListProjectsHidden" Hidden="true">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.optimizely.com/v2/projects
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ProjectId" Title="Project Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+
+  <RestConnector Id="ListProjects" Title="Projects List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-projects">
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -40,6 +63,93 @@
         <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
         <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
         <JsonPath Expr="is_classic" Id="IsClassic" Title="Classic Project" Converter="Bool" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListCampaigns" Title="Campaigns List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-campaigns">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.optimizely.com/v2/campaigns?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <Compute Id="PercentExcluded" Title="Percent Excluded" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            int excluded = (int)Model.Holdback / 100;
+            @excluded
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="holdback" Id="Holdback" Converter="Int"/>
+        </Compute>
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="earliest" Id="Earliest" Title="First Activated" Converter="Auto"/>
+        <JsonPath Expr="latest" Id="Latest" Title="Last Activated" Converter="Auto"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListExperiments" Title="Experiments List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-campaigns">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments
+         ?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <Compute Id="PercentExcluded" Title="Percent Excluded" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            int excluded = (int)Model.Holdback / 100;
+            @excluded
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="holdback" Id="Holdback" Converter="Int"/>
+        </Compute>
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="earliest" Id="Earliest" Title="First Activated" Converter="Auto"/>
+        <JsonPath Expr="latest" Id="Latest" Title="Last Activated" DefaultValue="" Converter="Auto"/>
+        <JsonPath Expr="url_targeting.edit_url" Id="EditUrl" Title="URL in Editor" Converter="String" Checked="false"/>
+        <JsonPath Expr="url_targeting.conditions" Id="TargetConditions" Title="Targetting Conditions" Converter="String" Checked="false"/>
+        <JsonPath Expr="key" Id="Key" Title="Key" Converter="String" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
