@@ -1,18 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Shopping" RequireVersion="7.0.0" Title="Blocket" Id="Blocket" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Blocket.xml" HelpUrl="http://seotoolsforexcel.com/blocket" HelpText="Documentation">
+<Suite Category="Shopping &amp; Review Sites" RequireVersion="7.0.0" Title="Blocket.se" Id="Blocket" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Blocket.xml" HelpUrl="http://seotoolsforexcel.com/blocket" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Resources>
     <Resource Id="Type">
-      <Item Id="s" Title="Säljes"/>
-			<Item Id="u" Title="Uthyres"/>
-			<Item Id="b" Title="Bytes"/>
-			<Item Id="k" Title="Köpes"/>
-			<Item Id="h" Title="Önskar hyra"/>
+      <Item Id="s" Title="Selling"/>
+			<Item Id="u" Title="Renting"/>
+			<Item Id="b" Title="Exchanging"/>
+			<Item Id="k" Title="Buying"/>
+			<Item Id="h" Title="Wish to rent"/>
     </Resource>
     <Resource Id="Regions">
-      <Item Id="0" Title="Hela Sverige"/>
+      <Item Id="0" Title="Sweden"/>
       <Item Id="1" Title="Norrbotten"/>
       <Item Id="2" Title="Västerbotten"/>
       <Item Id="3" Title="Jämtland"/>
@@ -38,7 +38,7 @@
       <Item Id="23" Title="Skåne"/>
     </Resource>
     <Resource Id="Categories">
-      <Item Id="0" Title="Alla kategorier"/>
+      <Item Id="0" Title="All Categories"/>
       <Item Id="1000" Title="FORDON"/>
       <Item Id="1020" Title="Bilar"/>
       <Item Id="1040" Title="Bildelar &amp; Biltillbehör"/>
@@ -88,7 +88,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Sökresultat" Title="Sökresultat">
+  <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="motorcykel" HelpText=""/>
       <Select Id="Category" Title="Category" Required="false" DefaultValue="0">
@@ -109,14 +109,14 @@
       <Radio Id="SellerType" Title="Seller Type" DefaultValue="a" Required="false">
         <DataSource>
           <Item Id="a" Title="Alla"/>
-          <Item Id="p" Title="Privat"/>
-          <Item Id="c" Title="Företag"/>
+          <Item Id="p" Title="Private"/>
+          <Item Id="c" Title="Company"/>
         </DataSource>
       </Radio>
       <Radio Id="Sorting" Title="Sorting" DefaultValue="0" Required="false">
         <DataSource>
-          <Item Id="0" Title="Senaste"/>
-          <Item Id="1" Title="Billigaste"/>
+          <Item Id="0" Title="Latest"/>
+          <Item Id="1" Title="Cheapest"/>
         </DataSource>
       </Radio>
     </Parameters>
@@ -155,7 +155,17 @@
         <XPath Expr="time" Attribute="datetime" Title="Posted" Id="Posted" Converter="DateTime"/>
       </XPath>
       <XPath Expr="//p[@@itemprop='price']">
+        <Compute Id="Price" Title="Price" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            var PriceOutput = Regex.Replace(Model.Price, @"([^\d\s])", "");
+            }
+            @PriceOutput
+            ]]>
+          </Compute.Expr>
         <XPath Expr="." Title="Price" Id="Price" Converter="String"/>
+        </Compute>
       </XPath>
       <XPath Expr="//div[@@class='pull-left ']/a[last()-1]">
         <XPath Expr="." Title="Category" Id="Category" Converter="String"/>
@@ -172,7 +182,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Antal" Title="Antal träffar">
+  <RestConnector Id="Matches" Title="Number of Matches">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="motorcykel" HelpText=""/>
       <Select Id="Category" Title="Category" Required="false" DefaultValue="0">
@@ -192,15 +202,15 @@
       </Select>
       <Radio Id="SellerType" Title="Seller Type" DefaultValue="a" Required="false">
         <DataSource>
-          <Item Id="a" Title="Alla"/>
-          <Item Id="p" Title="Privat"/>
-          <Item Id="c" Title="Företag"/>
+          <Item Id="a" Title="All"/>
+          <Item Id="p" Title="Private"/>
+          <Item Id="c" Title="Company"/>
         </DataSource>
       </Radio>
       <Radio Id="Sorting" Title="Sorting" DefaultValue="0" Required="false">
         <DataSource>
-          <Item Id="0" Title="Senaste"/>
-          <Item Id="1" Title="Billigaste"/>
+          <Item Id="0" Title="Latest"/>
+          <Item Id="1" Title="Cheapest"/>
         </DataSource>
       </Radio>
     </Parameters>
@@ -232,7 +242,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SpecifikAnnons" Title="Specifik Annons">
+  <RestConnector Id="ItemLookup" Title="Item Lookup">
     <Parameters>
       <Text Id="Url" Title="URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.blocket.se/stockholm/Arkadspel_i_bordsmodell_med_815_spel_77747580.htm" HelpText=""/>
     </Parameters>
@@ -245,7 +255,7 @@
     </Fetch>
     <Parse>
       <XPath Expr="//ul[@@id='seller-info']/li/strong">
-        <XPath Expr="." Title="Säljare" Id="Säljare" Converter="String"/>
+        <XPath Expr="." Title="Seller" Id="Seller" Converter="String"/>
       </XPath>
       <XPath Expr="//div[@@class='col-xs-12 body']">
         <XPath Expr="." Title="Text" Id="Text" Converter="String"/>
