@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Others" Title="Optimizely" Id="Optimizely" RequireVersion="6.1.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Optimizely.xml" HelpUrl="http://seotoolsforexcel.com/optimizely/" HelpText="Documentation">
+<Suite Category="Business Intelligence" Title="Optimizely X" Id="OptimizelyX" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Optimizely.xml" HelpUrl="http://seotoolsforexcel.com/optimizely/" HelpText="Documentation">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
@@ -37,6 +37,31 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="ListExperimentsHidden" Hidden="true">
+    <Parameters>
+      <Text Id="ProjectIdFilter" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectIdFilter" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments
+         ?project_id=@(Model.ProjectIdFilter)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ExperimentListId" Title="Experiment Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="ExperimentListName" Title="Experiment Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="ListProjects" Title="Projects List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-projects">
     <Fetch>
@@ -254,6 +279,34 @@
         <JsonPath Expr="key" Id="Key" Title="Key" Converter="String" Checked="true"/>
         <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
         <JsonPath Expr="is_classic" Id="IsClassic" Title="Is Classic" Checked="False" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ExperimentResults" Title="Experiment Results" HelpUrl="https://developers.optimizely.com/x/rest/v2/#get-experiment-results">
+    <Parameters>
+      <Text Id="ProjectIdFilter" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="ExperimentId" Title="Experiment ID" DefaultValue="" Required="true" Select.Connector="ListExperimentsHidden" Select.IdField="ExperimentListId" Select.TitleField="ExperimentListName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments/
+         @(Model.ExperimentId)/results
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.metrics.*.results.*" id="Parent">
+        <JsonPath Expr="variation_id" Id="Namexx" Title="Namexx" Converter="String" />
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" />
+        <JsonPath Expr=".." Id="Pa" Title="Pa" Converter="String" />
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
