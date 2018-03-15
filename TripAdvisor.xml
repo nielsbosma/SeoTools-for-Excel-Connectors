@@ -3,9 +3,9 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="ItemReviews" Title="Things to do - Item Reviews">
+  <RestConnector Id="ItemReviews" Title="Attraction Reviews">
     <Parameters>
-      <Text Id="Url" Title="Item Page URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Attraction_Review-g189839-d6456841-Reviews-Ebba_s_House-Malmo_Skane_County.html"  HelpText="For example: https://www.tripadvisor.se/Attraction_Review-g189838-d319367-Reviews-Lund_Cathedral-Lund_Skane_County.html"/>
+      <Text Id="Url" Title="Item Page URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Attraction_Review-g189839-d229592-Reviews-Oresund_Bridge-Malmo_Skane_County.html"  HelpText="For example: https://www.tripadvisor.se/Attraction_Review-g189838-d319367-Reviews-Lund_Cathedral-Lund_Skane_County.html"/>
     </Parameters>
     <Paging PageSize="10" EvenPages="True"/>
     <Fetch>
@@ -52,11 +52,11 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="LocationItems" Title="Things to do - Location Items">
+  <RestConnector Id="HotelReviews" Title="Hotel Reviews">
     <Parameters>
-      <Text Id="Url" Title="Location Page URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Attractions-g189852-Activities-Stockholm.html#ATTRACTION_SORT_WRAPPER"  HelpText="For example: https://www.tripadvisor.se/Attractions-g189852-Activities-Stockholm.html#ATTRACTION_SORT_WRAPPER"/>
+      <Text Id="Url" Title="Item Page URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Hotel_Review-g670665-d9459715-Reviews-The_Winery_Hotel-Solna.html"  HelpText="For example: https://www.tripadvisor.se/Hotel_Review-g670665-d9459715-Reviews-The_Winery_Hotel-Solna.html"/>
     </Parameters>
-    <Paging PageSize="30" EvenPages="False"/>
+    <Paging PageSize="5" EvenPages="True"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -66,9 +66,58 @@
         }
         else
         {
-          @(EndpointItems())
+          @(EndpointReviews())
         }
       ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//*[contains(@@id,'rn')]/span[@@class='noQuotes']">
+        <XPath Expr="." Title="Title" Id="Title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//*[contains(@@id,'review_')]/div/div/div[2]/div/p">
+        <XPath Expr="." Title="Text" Id="Text" Converter="String"/>
+      </XPath>
+      <XPath Expr="//*[contains(@@id,'review_')]/div/div/span[@@class='ratingDate']">
+        <XPath Expr="." Title="Posted" Id="Posted" Converter="String"/>
+      </XPath>
+      <XPath Expr="//*[contains(@@id,'review_')]/div/div/span[contains(@@class,'bubble')]">
+				<Compute Title="Rating" Id="Rating" Converter="Double">
+        <Compute.Expr>
+          <![CDATA[
+          @{
+            var ScoreStripped = Model.RatingInput.Substring(Model.RatingInput.Length-2);
+            double ScoreDivided = Convert.ToDouble(ScoreStripped)/10;
+          }
+          @ScoreDivided
+          ]]>
+        </Compute.Expr>
+					<XPath Expr="." Id="RatingInput" Attribute="class" Converter="String"/>
+				</Compute>
+      </XPath>
+      <XPath Expr="//*[contains(@@id,'UID_')]/div[2]/div[1]">
+        <XPath Expr="." Title="Username" Id="Username" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="LocationThingsToDo" Title="Attractions in Location">
+    <Parameters>
+      <Text Id="Url" Title="Location Things to do URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Attractions-g189852-Activities-Stockholm.html#ATTRACTION_SORT_WRAPPER"  HelpText="For example: https://www.tripadvisor.se/Attractions-g189852-Activities-Stockholm.html#ATTRACTION_SORT_WRAPPER"/>
+    </Parameters>
+    <Paging PageSize="30" EvenPages="False"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          @if(Model.PageCursor.Page == 0)
+          {
+            @(Model.Url)
+          }
+          else
+          {
+            @(EndpointItems())
+          }
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -100,6 +149,69 @@
       </XPath>
       <XPath Expr="//div[@@class='listing_title ']/a[contains(@@href,'Review')]/../..//div[@@class='tag_line']">
         <XPath Expr="." Title="Categories" Id="Categories" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+ 
+  <RestConnector Id="Hotels" Title="Hotels in Location">
+    <Parameters>
+      <Text Id="Url" Title="Location Hotels URL" DefaultValue="" Required="true" Debug.DefaultValue="https://www.tripadvisor.se/Hotels-g189852-Stockholm-Hotels.html"  HelpText="For example: https://www.tripadvisor.se/Hotels-g189852-Stockholm-Hotels.html"/>
+    </Parameters>
+    <Paging PageSize="30" EvenPages="False"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.PageCursor.Page == 0)
+        {
+          @(Model.Url)
+        }
+        else
+        {
+          @(EndpointItems())
+        }
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@class='listing_title']/a[contains(@@href,'Review')]">
+        <Compute Id="Url" Title="URL" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+             https://www.tripadvisor.se@(Model.Url)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Title="Url" Id="Url" Attribute="href" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@class='listing_title']">
+          <XPath Expr="." Title="Title" Id="Title" Converter="String"/>
+      </XPath>
+      <XPath Expr="//a[@@class='review_count']">
+        <Compute Id="Ratings" Title="Ratings" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            var RatingCount = Regex.Replace(Model.Ratings, @"([^\d\s])", "");
+            }
+            @RatingCount
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Title="Ratings" Id="Ratings" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@class='info-col']/div/span[contains(@@class,'bubble_rating')]">
+        <Compute Id="Rating" Title="Rating" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var ScoreStripped = Model.RatingInput.Substring(Model.RatingInput.Length-2);
+              double ScoreDivided = Convert.ToDouble(ScoreStripped)/10;
+            }
+            @ScoreDivided
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="." Title="Ratings" Id="RatingInput" Attribute="class" Converter="String"/>
+        </Compute>
       </XPath>
     </Parse>
   </RestConnector>
