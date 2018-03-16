@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Bytbil" RequireVersion="7.0.0" Category="UnderDev" Id="Bytbil" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Bytbil.xml" HelpUrl="http://seotoolsforexcel.com/bytbil" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Resources>
+    <Resource Id="Sortings">
+      <Item Id="relevance" Title="Relevance"/>
+      <Item Id="&amp;SortParams.SortField=publishedDate" Title="Date"/>
+      <Item Id="&amp;SortParams.IsAscending=True&amp;SortParams.SortField=name" Title="Name"/>
+      <Item Id="&amp;SortParams.IsAscending=True&amp;SortParams.SortField=city" Title="City"/>
+      <Item Id="&amp;SortParams.IsAscending=True&amp;SortParams.SortField=price_value" Title="Price"/>
+      <Item Id="&amp;SortParams.IsAscending=True&amp;SortParams.SortField=milage" Title="Milage"/>
+      <Item Id="&amp;SortParams.SortField=modelYear" Title="Model Year"/>
+    </Resource>
+    <Resource Id="Types">
+      <Item Id="bil" Title="Personbil"/>
+      <Item Id="transportbil" Title="Transportbil"/>
+      <Item Id="mc" Title="Motorcykel"/>
+      <Item Id="moped" Title="Moped"/>
+      <Item Id="snoskoter" Title="Snöskoter"/>
+      <Item Id="atv" Title="ATV"/>
+      <Item Id="husbil" Title="Husbil"/>
+      <Item Id="husvagn" Title="Husvagn"/>
+      <Item Id="slapvagn" Title="Släpvagn"/>
+      </Resource>
+  </Resources>
+
+  <RestConnector Id="Search" Title="Search" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Volvo" Required="true"/>
+      <Select Id="Type" Title="Type" Required="false" DefaultValue="bil">
+        <DataSource>
+          <Resource Id="Types"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="relevance">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="24"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.bytbil.com/
+        @(Model.Type)
+        ?FreeText=@(Utils.UrlEncode(Model.Query))
+        @if(Model.Sorting != "relevance")
+        {
+          @Model.Sorting
+        }
+        &Page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//h3[@@class='uk-text-truncate car-list-header hidden-small-and-below']">
+        <XPath Expr="a" Id="Title" Title="Title" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//p[@@class='uk-text-truncate']">
+        <XPath Expr="text()[1]" Id="Year" Title="Year" Converter="Long" HelpText=""/>
+        <Compute Id="Miles" Title="Milage" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"^([\d\s]+)\w");
+              Match match = regex.Match(Model.MilesInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="text()[2]" Id="MilesInput"/>
+        </Compute>
+        <XPath Expr="text()[3]" Id="Location" Title="Location" Converter="String" HelpText="" DefaultValue=""/>
+			</XPath>
+      <XPath Expr="//h3[@@class='uk-text-truncate car-list-header hidden-small-and-below']">
+        <Compute Id="Url" Title="URL" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+             https://www.bytbil.com@(Model.LinkInput)
+            ]]>
+          </Compute.Expr>
+        <XPath Expr="a" Attribute="href" Id="LinkInput" Converter="String" HelpText=""/>
+        </Compute>
+			</XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
