@@ -24,29 +24,117 @@
       <Item Id="husvagn" Title="Husvagn"/>
       <Item Id="slapvagn" Title="Släpvagn"/>
       </Resource>
+    <Resource Id="Brands">
+      <Item Id="all" Title="All"/>
+      <Item Id="volvo" Title="Volvo"/>
+      <Item Id="volkswagen" Title="Volkswagen"/>
+      <Item Id="bmw" Title="BMW"/>
+      <Item Id="mercedes-benz" Title="Mercedes-Benz"/>
+      <Item Id="audi" Title="Audi"/>
+      <Item Id="kia" Title="Kia"/>
+      <Item Id="ford" Title="Ford"/>
+      <Item Id="peugeot" Title="Peugeot"/>
+      <Item Id="toyota" Title="Toyota"/>
+      <Item Id="nissan" Title="Nissan"/>
+      <Item Id="opel" Title="Opel"/>
+      <Item Id="hyundai" Title="Hyundai"/>
+      <Item Id="skoda" Title="Skoda"/>
+      <Item Id="citroen" Title="Citroën"/>
+      <Item Id="renault" Title="Renault"/>
+      <Item Id="mazda" Title="Mazda"/>
+      <Item Id="honda" Title="Honda"/>
+      <Item Id="seat" Title="Seat"/>
+      <Item Id="mitsubishi" Title="Mitsubishi"/>
+      <Item Id="subaru" Title="Subaru"/>
+      <Item Id="mini" Title="Mini"/>
+      <Item Id="porsche" Title="Porsche"/>
+      <Item Id="saab" Title="Saab"/>
+      <Item Id="fiat" Title="Fiat"/>
+      <Item Id="suzuki" Title="Suzuki"/>
+      <Item Id="land-rover" Title="Land Rover"/>
+      <Item Id="chevrolet" Title="Chevrolet"/>
+      <Item Id="jeep" Title="Jeep"/>
+      <Item Id="jaguar" Title="Jaguar"/>
+      <Item Id="dacia" Title="Dacia"/>
+      <Item Id="dodge" Title="Dodge"/>
+      <Item Id="alfa-romeo" Title="Alfa Romeo"/>
+    </Resource>
+    <Resource Id="Regions">
+      <Item Id="all" Title="All"/>
+      <Item Id="Blekinge+län" Title="Blekinge län"/>
+      <Item Id="Dalarnas+län" Title="Dalarnas län"/>
+      <Item Id="Gotlands+län" Title="Gotlands län"/>
+      <Item Id="Gävleborgs+län" Title="Gävleborgs län"/>
+      <Item Id="Hallands+län" Title="Hallands län"/>
+      <Item Id="Jämtlands+län" Title="Jämtlands län"/>
+      <Item Id="Jönköpings+län" Title="Jönköpings län"/>
+      <Item Id="Kalmar+län" Title="Kalmar län"/>
+      <Item Id="Kronobergs+län" Title="Kronobergs län"/>
+      <Item Id="Norrbottens+län" Title="Norrbottens län"/>
+      <Item Id="Skåne+län" Title="Skåne län"/>
+      <Item Id="Stockholms+län" Title="Stockholms län"/>
+      <Item Id="Södermanlands+län" Title="Södermanlands län"/>
+      <Item Id="Uppsala+län" Title="Uppsala län"/>
+      <Item Id="Värmlands+län" Title="Värmlands län"/>
+      <Item Id="Västerbottens+län" Title="Västerbottens län"/>
+      <Item Id="Västernorrlands+län" Title="Västernorrlands län"/>
+      <Item Id="Västmanlands+län" Title="Västmanlands län"/>
+      <Item Id="Örebro+län" Title="Örebro län"/>
+      <Item Id="Östergötlands+län" Title="Östergötlands län"/>
+    </Resource>
   </Resources>
 
   <RestConnector Id="Search" Title="Search" Hidden="false">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Volvo" Required="true"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Saab" Required="true"/>
       <Select Id="Type" Title="Type" Required="false" DefaultValue="bil">
         <DataSource>
           <Resource Id="Types"/>
         </DataSource>
       </Select>
+      <Select Id="Brand" Title="Brand" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Brands"/>
+        </DataSource>
+      </Select>
+      <Select Id="Region" Title="Region" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Regions"/>
+        </DataSource>
+      </Select>
+      <Number Id="MinPrice" Title="Min Price" DefaultValue="0" Min="0" Required="true"/>
+      <Number Id="MaxPrice" Title="Max Price" DefaultValue="400000" Required="true"/>
+      <Number Id="MinYear" Title="Min Model Year" DefaultValue="1970" Min="0" Required="true"/>
+      <Number Id="MaxYear" Title="Max Model Year" DefaultValue="2020" Required="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="relevance">
         <DataSource>
           <Resource Id="Sortings"/>
         </DataSource>
       </Select>
     </Parameters>
-    <Paging PageSize="24"/>
+    <Paging PageSize="24" EvenPages="true">
+      <Parse>
+        <XPath Id="AvaliableRows" Expr="//div[@@class='result-count-label']/span[@@class='number']" Converter="Long"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://www.bytbil.com/
         @(Model.Type)
         ?FreeText=@(Utils.UrlEncode(Model.Query))
+        @if(Model.Brand != "all")
+        {
+          @: &makes=@Model.Brand
+        }
+        @if(Model.Region != "all")
+        {
+          @: &Regions=@Model.Region
+        }
+        &PriceRange.From=@Model.MinPrice
+        &PriceRange.To=@Model.MaxPrice
+        &ModelYearRange.From=@Model.MinYear
+        &ModelYearRange.To=@Model.MaxYear
         @if(Model.Sorting != "relevance")
         {
           @Model.Sorting
@@ -58,6 +146,20 @@
     <Parse>
       <XPath Expr="//h3[@@class='uk-text-truncate car-list-header hidden-small-and-below']">
         <XPath Expr="a" Id="Title" Title="Title" Converter="String" HelpText=""/>
+			</XPath>
+      <XPath Expr="//div[@@class='uk-grid uk-position-bottom']">
+        <Compute Id="Price" Title="Price" Converter="Long" DefaultValue="0">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"^([\d\s]+)\w");
+              Match match = regex.Match(Model.PriceInput);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="div/span/span/span[@@class='car-price-main']" Id="PriceInput" DefaultValue=""/>
+        </Compute>
 			</XPath>
       <XPath Expr="//p[@@class='uk-text-truncate']">
         <XPath Expr="text()[1]" Id="Year" Title="Year" Converter="Long" HelpText=""/>
