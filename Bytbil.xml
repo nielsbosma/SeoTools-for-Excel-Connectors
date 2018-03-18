@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Bytbil" RequireVersion="7.0.0" Category="UnderDev" Id="Bytbil" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Bytbil.xml" HelpUrl="http://seotoolsforexcel.com/bytbil" HelpText="Documentation">
+<Suite Title="Bytbil.com" RequireVersion="7.0.0" Category="Shopping &amp; Review Sites" Id="Bytbil" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Bytbil.xml" HelpUrl="http://seotoolsforexcel.com/bytbil" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -84,9 +84,9 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Search" Title="Search" Hidden="false">
+  <RestConnector Id="SearchResults" Title="Search Results" Hidden="false">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Saab" Required="true"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Saab" Required="false"/>
       <Select Id="Type" Title="Type" Required="false" DefaultValue="bil">
         <DataSource>
           <Resource Id="Types"/>
@@ -102,10 +102,17 @@
           <Resource Id="Regions"/>
         </DataSource>
       </Select>
-      <Number Id="MinPrice" Title="Min Price" DefaultValue="0" Min="0" Required="true"/>
-      <Number Id="MaxPrice" Title="Max Price" DefaultValue="400000" Required="true"/>
-      <Number Id="MinYear" Title="Min Model Year" DefaultValue="1970" Min="0" Required="true"/>
-      <Number Id="MaxYear" Title="Max Model Year" DefaultValue="2020" Required="true"/>
+      <Radio Id="Gearboxes" Title="Gearbox" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="All" />
+          <Item Id="Manuell" Title="Manual" />
+          <Item Id="Automatisk" Title="Automatic" />
+        </DataSource>
+      </Radio>
+      <Text Id="MinPrice" Title="Min Price" DefaultValue="" Required="false"/>
+      <Text Id="MaxPrice" Title="Max Price" DefaultValue="" Required="false"/>
+      <Text Id="MinYear" Title="Min Model Year" DefaultValue="" Required="false"/>
+      <Text Id="MaxYear" Title="Max Model Year" DefaultValue="" Required="false"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="relevance">
         <DataSource>
           <Resource Id="Sortings"/>
@@ -131,10 +138,26 @@
         {
           @: &Regions=@Model.Region
         }
-        &PriceRange.From=@Model.MinPrice
-        &PriceRange.To=@Model.MaxPrice
-        &ModelYearRange.From=@Model.MinYear
-        &ModelYearRange.To=@Model.MaxYear
+        @if(Model.Gearboxes != "all")
+        {
+          @: &Gearboxes=@Model.Gearboxes
+        }
+        @if(!string.IsNullOrEmpty(Model.MinPrice))
+        {
+          @: &PriceRange.From=@Model.MinPrice
+        }
+        @if(!string.IsNullOrEmpty(Model.MaxPrice))
+        {
+          @: &PriceRange.To=@Model.MaxPrice
+        }
+        @if(!string.IsNullOrEmpty(Model.MinYear))
+        {
+          @: &ModelYearRange.From=@Model.MinYear
+        }
+        @if(!string.IsNullOrEmpty(Model.MaxYear))
+        {
+          @: &ModelYearRange.To=@Model.MaxYear
+        }
         @if(Model.Sorting != "relevance")
         {
           @Model.Sorting
@@ -186,6 +209,80 @@
           </Compute.Expr>
         <XPath Expr="a" Attribute="href" Id="LinkInput" Converter="String" HelpText=""/>
         </Compute>
+			</XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="NumberofResults" Title="Number of  Results" Hidden="false">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Saab" Required="false"/>
+      <Select Id="Type" Title="Type" Required="false" DefaultValue="bil">
+        <DataSource>
+          <Resource Id="Types"/>
+        </DataSource>
+      </Select>
+      <Select Id="Brand" Title="Brand" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Brands"/>
+        </DataSource>
+      </Select>
+      <Select Id="Region" Title="Region" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Regions"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Gearboxes" Title="Gearbox" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="All" />
+          <Item Id="Manuell" Title="Manual" />
+          <Item Id="Automatisk" Title="Automatic" />
+        </DataSource>
+      </Radio>
+      <Text Id="MinPrice" Title="Min Price" DefaultValue="" Required="false"/>
+      <Text Id="MaxPrice" Title="Max Price" DefaultValue="" Required="false"/>
+      <Text Id="MinYear" Title="Min Model Year" DefaultValue="" Required="false"/>
+      <Text Id="MaxYear" Title="Max Model Year" DefaultValue="" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.bytbil.com/
+        @(Model.Type)
+        ?FreeText=@(Utils.UrlEncode(Model.Query))
+        @if(Model.Brand != "all")
+        {
+          @: &makes=@Model.Brand
+        }
+        @if(Model.Region != "all")
+        {
+          @: &Regions=@Model.Region
+        }
+        @if(Model.Gearboxes != "all")
+        {
+          @: &Gearboxes=@Model.Gearboxes
+        }
+        @if(!string.IsNullOrEmpty(Model.MinPrice))
+        {
+          @: &PriceRange.From=@Model.MinPrice
+        }
+        @if(!string.IsNullOrEmpty(Model.MaxPrice))
+        {
+          @: &PriceRange.To=@Model.MaxPrice
+        }
+        @if(!string.IsNullOrEmpty(Model.MinYear))
+        {
+          @: &ModelYearRange.From=@Model.MinYear
+        }
+        @if(!string.IsNullOrEmpty(Model.MaxYear))
+        {
+          @: &ModelYearRange.To=@Model.MaxYear
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@class='result-count-label']/span[@@class='number']">
+        <XPath Expr="." Id="Count" Title="Count" Converter="Long" DefaultValue="0" HelpText=""/>
 			</XPath>
     </Parse>
   </RestConnector>
