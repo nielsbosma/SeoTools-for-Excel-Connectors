@@ -25,6 +25,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.query.search[*]">
+        <JsonPath Expr="pageid" Id="Id" Title="Id" Converter="Long" HelpText=""/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
         <Compute Id="Snippet" Title="Snippet">
           <Compute.Expr>
@@ -62,6 +63,36 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.query.searchinfo.totalhits" Id="Count" Title="Count" Converter="Int" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.info"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ArticleLookup" Title="Article Lookup" HelpText="Returns Information about a specific Article">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="244576"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://en.wikipedia.org/w/api.php?action=query
+        &prop=info
+        &pageids=@(Model.PageId)
+        &inprop=url
+        &format=json
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.query.pages.@(Model.PageId)">
+        <JsonPath Expr="title" Id="Size" Title="Size" Converter="String" HelpText=""/>
+        <JsonPath Expr="touched" Id="Touched" Title="Touched" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="pagelanguage" Id="Language" Title="Language" Converter="String" HelpText=""/>
+        <JsonPath Expr="fullurl" Id="Url" Title="URL" Converter="String" HelpText=""/>
+
+
+      </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="$.error.info"/>
