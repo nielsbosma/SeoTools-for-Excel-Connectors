@@ -348,80 +348,6 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="EventAttendings" Title="Event Attendings">
-    <Parameters>
-      <Text Id="Id" Title="Event Id" DefaultValue="" Required="true" Debug.DefaultValue="1620248291609521"/>
-    </Parameters>
-    <Paging PageSize="25" EvenPages="false">
-      <Parse>
-				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v2.8/
-        @(Model.Id)/attending?
-        fields=@SelectedFields()
-        &access_token=@(Model.Authenticator.Token)
-        &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="Id" Id="Id" Expr="id" Converter="String" HelpText=""/>
-        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-        <JsonPath Title="RSVP" Id="Rsvp" Expr="rsvp_status" Converter="String" Tag="rsvp_status" HelpText=""/>
-        <JsonPath Title="User Link" Id="Userlink" Expr="link" Converter="String" Tag="link" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="GroupMembers" Title="Group Members">
-    <Parameters>
-      <Text Id="Id" Title="Group Id" DefaultValue="" Required="true" Debug.DefaultValue="1376464755984055"/>
-    </Parameters>
-    <Paging PageSize="25" EvenPages="false">
-      <Parse>
-    <JsonPath Id="Cursor" Expr="paging.cursors.after"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v2.8/
-        @(Model.Id)/members?
-        fields=@SelectedFields()
-        &access_token=@(Model.Authenticator.Token)
-        &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="Id" Id="Id" Expr="id" Converter="String" HelpText=""/>
-        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-        <JsonPath Title="Admin" Id="Admin" Expr="administrator" Converter="Bool" Tag="administrator" HelpText=""/>
-        <JsonPath Title="User Link" Id="Userlink" Expr="link" Converter="String" Tag="link" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
   <RestConnector Id="PageFeed" Title="Page Feed">
     <Parameters>
       <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303" HelpText="The feed of posts (including status updates) and links published by this page, or by others on this page."/>
@@ -1060,58 +986,6 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="UserSearch" Title="User Search">
-    <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="smith" HelpText="Search for a person (if they allow their name to be searched for)."/>
-    </Parameters>
-    <Paging PageSize="25" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextUrl" Expr="paging.next"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v2.8/search?
-        &q=@Utils.UrlEncode(Model.Query)
-        &type=user
-        &access_token=@(Model.Authenticator.Token)
-        &fields=@SelectedFields()
-        &limit=@(Model.PageCursor.NextTake)
-        &offset=@(Model.PageCursor.NextSkip)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-        <JsonPath Title="User Id" Id="UserId" Expr="id" Converter="String" Tag="id" HelpText=""/>
-        <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Address" Id="Address" Expr="address" Converter="String" Tag="address" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Email" Id="Email" Expr="email" Converter="String" Tag="email" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Birthday" Id="Birthday" Expr="birthday" Converter="String" Tag="birthday" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Gender" Id="Gender" Expr="gender" Converter="String" Tag="gender" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Locations" Id="Locations" Expr="locations" Converter="String" Tag="locations" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Hometown" Id="Hometown" Expr="hometown" Converter="String" Tag="hometown" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Relationship Status" Id="RelationshipStatus" Expr="relationship_status" Converter="String" Tag="relationship_status" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Verified" Id="Verified" Expr="verified" Converter="String" Tag="verified" HelpText="" DefaultValue=""/>
-        <Compute Id="PageUrl" Title="Page URL">
-          <Compute.Expr>
-            <![CDATA[
-            http://www.facebook.com/@(Model.PageIdInput)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Id="PageIdInput" Expr="id" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
   <RestConnector Id="PlaceSearch" Title="Place Search">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Stureplan" Required="true" HelpText=""/>
@@ -1274,48 +1148,6 @@
     <Parse>
 			<JsonPath Title="Type" Id="Type" Expr="type" Converter="String" Tag="type" HelpText=""/>
 			<JsonPath Title="Id" Id="Id" Expr="id" Converter="String" Tag="id" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="UserLookup" Title="User Lookup">
-    <Parameters>
-      <Text Id="UserId" Title="User Id" Debug.DefaultValue="10210419495781936" Required="true" HelpText=""/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v2.8/?id=
-        @(Model.UserId)
-        &fields=@SelectedFields()
-        &access_token=@(Model.Authenticator.Token)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-      <JsonPath Title="User Id" Id="UserId" Expr="id" Converter="String" Tag="id" HelpText=""/>
-      <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Address" Id="Address" Expr="address" Converter="String" Tag="address" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Email" Id="Email" Expr="email" Converter="String" Tag="email" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Birthday" Id="Birthday" Expr="birthday" Converter="String" Tag="birthday" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Gender" Id="Gender" Expr="gender" Converter="String" Tag="gender" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Locations" Id="Locations" Expr="locations" Converter="String" Tag="locations" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Hometown" Id="Hometown" Expr="hometown" Converter="String" Tag="hometown" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Relationship Status" Id="RelationshipStatus" Expr="relationship_status" Converter="String" Tag="relationship_status" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
-      <JsonPath Title="Verified" Id="Verified" Expr="verified" Converter="String" Tag="verified" HelpText="" DefaultValue=""/>
-      <Compute Id="PageUrl" Title="Page URL">
-        <Compute.Expr>
-          <![CDATA[
-          http://www.facebook.com/@(Model.PageIdInput)
-          ]]>
-        </Compute.Expr>
-        <JsonPath Id="PageIdInput" Expr="id" Converter="String"/>
-      </Compute>
     </Parse>
     <Fail>
       <JsonPath Expr="error.message"/>
