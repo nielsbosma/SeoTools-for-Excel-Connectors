@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Alpha Vantage" Id="AlphaVantage" Category="Finance" RequireVersion="8.0.0"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AlphaVantage.xml"
+       HelpUrl="http://seotoolsforexcel.com/alphavantage" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/alphavantage/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/alphavantage"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="&quot;Error Message&quot;.+" Group="0"></Regex>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="TimeSeries" Title="Time Series" HelpText="" HelpUrl="https://www.alphavantage.co/documentation/#time-series-data">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="TIME_SERIES_DAILY">
+        <DataSource>
+          <Item Id="TIME_SERIES_INTRADAY" Title="Intraday"/>
+          <Item Id="TIME_SERIES_DAILY" Title="Daily"/>
+          <Item Id="TIME_SERIES_DAILY_ADJUSTED" Title="Daily Adjusted"/>
+          <Item Id="TIME_SERIES_WEEKLY" Title="Weekly"/>
+          <Item Id="TIME_SERIES_WEEKLY_ADJUSTED" Title="Weekly Adjusted"/>
+          <Item Id="TIME_SERIES_MONTHLY" Title="Monthly"/>
+          <Item Id="TIME_SERIES_MONTHLY_ADJUSTED" Title="Monthly adjusted"/>
+        </DataSource>
+      </Select>
+      <Select Id="Interval" Title="Function" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=@Model.Function
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &apikey=@Model.ApiKey
+        &output=csv
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="timestamp" Title="Timestamp" Tag="timestamp" Converter="String" HelpText=""/>
+        <Field Id="open" Title="open" Tag="open" Converter="String" HelpText=""/>
+        <Field Id="high" Title="high" Tag="high" Converter="String" HelpText=""/>
+        <Field Id="low" Title="low" Tag="low" Converter="String" HelpText=""/>
+        <Field Id="close" Title="close" Tag="close" Converter="String" HelpText=""/>
+        <Field Id="volume" Title="volume" Tag="volume" Converter="String" HelpText=""/>
+      </Csv>
+    </Parse>
+    <Resource Id="Fail"></Resource>
+    <Fail>
+      <JsonPath Expr="$.error"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ForeignExchange" Title="Foreign Exchange (FX)" HelpText="Realtime exchange rate for any pair of digital currency (e.g., Bitcoin) or physical currency (e.g., USD)" HelpUrl="https://www.alphavantage.co/documentation/#fx">
+    <Parameters>
+      <Text Id="FromCurrency" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="BTC"/>
+      <Text Id="ToCurrency" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="USD"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=CURRENCY_EXCHANGE_RATE
+        &from_currency=@Model.FromCurrency
+        &to_currency=@Model.ToCurrency
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Parse>
+        <Regex Title="From Currency Code" Id="FromCurrencyCode" Expr="From_Currency.Code&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+        <Regex Title="From Currency Name" Id="FromCurrencyName" Expr="From_Currency.Name&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+        <Regex Title="ToCurrencyCode" Id="ToCurrencyCode" Expr="To_Currency.Code&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+        <Regex Title="ToCurrencyName" Id="ToCurrencyName" Expr="To_Currency.Name&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+        <Regex Title="ExchangeRate" Id="ExchangeRate" Expr="Exchange.Rate&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="Double"/>
+        <Regex Title="LastRefreshed" Id="LastRefreshed" Expr="Last.Refreshed&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+        <Regex Title="TimeZone" Id="TimeZone" Expr="Time.Zone&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+      </Parse>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DigitalCurrencies" Title="Digital/Crypto Currencies" HelpText="" HelpUrl="https://www.alphavantage.co/documentation/#digital-currency">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="BTC"/>
+      <Text Id="Market" Title="Market" Required="true" DefaultValue="" Debug.DefaultValue="USD"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=DIGITAL_CURRENCY_INTRADAY
+        &symbol=@Model.Symbol
+        &market=@Model.Market
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="TechnicalIndicators" Title="Technical Indicators" HelpText="Real-time values of technical indicators for stocks" HelpUrl="https://www.alphavantage.co/documentation/#technical-indicators">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="SMA">
+        <DataSource>
+          <Item Id="SMA" Title="Simple moving average (SMA)"/>
+          <Item Id="EMA" Title="Exponential moving average (EMA)"/>
+        </DataSource>
+      </Select>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Number Id="TimePeriod" Title="Time Period" DefaultValue="60" Required="True" HelpText="Number of data points"/>
+      <Select Id="SeriesType" Title="Series Type" Required="true" DefaultValue="close" HelpText="Desired price type in the time series">
+        <DataSource>
+          <Item Id="open" Title="Open"/>
+          <Item Id="close" Title="Close"/>
+          <Item Id="high" Title="High"/>
+          <Item Id="high" Title="Low"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=@Model.Function
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &time_period=@Model.TimePeriod
+        &series_type=close
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="BatchStockQuotes" Title="Batch Stock Quotes" HelpText="Real-time multiple stock quotes" HelpUrl="https://www.alphavantage.co/documentation/#batchquotes">
+    <Parameters>
+      <Text Id="StockSymbols" Title="Stock Symbols (one per line, up to 100)" Debug.DefaultValue="AAPL" HelpText="Only show contacts belonging to the following companies (IDs)" Required="true" Multiline="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query
+        ?function=BATCH_STOCK_QUOTES
+        &symbols=@(FetchBatchStockSymbolString())
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse></Parse>
+  </RestConnector>
+
+  <RestConnector Id="SectorPerformances" Title="Sector Performances" HelpText="Realtime and historical sector performances calculated from S&amp;P500 incumbents." HelpUrl="https://www.alphavantage.co/documentation/#sector-information">
+    <Parameters>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query
+        ?function=SECTOR
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchBatchStockSymbolString()
+    {
+      string[] lines = ((string)Model.StockSymbols).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+      if (lines.Length > 0){
+        return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+      }
+      return "";
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>
