@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Zendesk" Id="Zendesk" Category="Social" RequireVersion="8.0.0"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Zendesk.xml"
+       HelpUrl="http://seotoolsforexcel.com/zendesk" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/zendesk/">
+    <Text Id="ClientId" Title="Email" Required="true" HelpUrl="http://seotoolsforexcel.com/zendesk"/>
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/zendesk"/>
+    <Text Id="Subdomain" Title="Organization Subdomain" Required="true" HelpUrl="http://seotoolsforexcel.com/zendesk"/>
+  </Settings>
+
+  <RestConnector Id="ListTickets" Title="List Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        https://@(Model.Subdomain).zendesk.com/api/v2/tickets.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tickets.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="priority" Id="Priority" Title="Priority" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="due_at" Id="DuedAt" Title="Due" Converter="Auto"/>
+        <JsonPath Expr="recipient" Id="Recipient" Title="Recipient" Converter="String"/>
+        <JsonPath Expr="requester_id" Id="RequesterId" Title="Requester ID" Converter="String"/>
+        <JsonPath Expr="submitter_id" Id="SubmitterId" Title="Submitter ID" Converter="Int"/>
+        <JsonPath Expr="assignee_id" Id="AsigneeId" Title="Assignee ID" Converter="Int"/>
+        <JsonPath Expr="organization_id" Id="OrganizationId" Title="Organization ID" Converter="Int"/>
+        <JsonPath Expr="group_id" Id="GroupId" Title="Group ID" Converter="Int"/>
+        <JsonPath Expr="collaborator_ids" Id="CollaboratorIds" Title="Collaborator IDs" Converter="String"/>
+        <JsonPath Expr="follower_ids" Id="FollowerIds" Title="Follower IDs" Converter="String"/>
+        <JsonPath Expr="forum_topic_id" Id="ForumTopicId" Title="Forum Topic ID" Converter="Auto" Checked="False"/>
+        <JsonPath Expr="problem_id" Id="ProblemId" Title="Problem ID" Converter="Auto" Checked="False"/>
+        <JsonPath Expr="has_incidents	" Id="HasIncidents" Title="Is a problem" Converter="String" Checked="False"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String"/>
+        <JsonPath Expr="satisfaction_rating	" Id="SatisfactionRating" Title="Satisfaction Rating" Converter="String"/>
+        <JsonPath Expr="is_public" Id="IsPublic" Title="Public" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="external_id" Id="ExternalId" Title="External ID" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth()
+    {
+      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + "/token:" + Model.ApiKey));
+      return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>
