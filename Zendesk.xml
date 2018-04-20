@@ -19,6 +19,12 @@
   </Resources>
 
   <RestConnector Id="ListTickets" Title="List Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -71,6 +77,12 @@
         </DataSource>
       </Select>
     </Parameters>
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -80,7 +92,16 @@
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
-        https://@(Model.Subdomain).zendesk.com/api/v2/tickets/@(Model.TicketId)/comments.json
+        <![CDATA[
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: @(Model.NextToken)
+        }
+        else
+        {
+          @: https://@(Model.Subdomain).zendesk.com/api/v2/tickets/@(Model.TicketId)/comments.json?per_page=1
+        }
+        ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
