@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="Gnip" Id="Gnip" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Gnip.xml" HelpUrl="http://seotoolsforexcel.com/gnip/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="">
+    <Text Id="Email" Title="Email" Required="true" HelpUrl=""/>
+    <Text Id="Password" Title="Password" Required="true" HelpUrl=""/>
+		<Text Id="Account" Title="Account" Required="true" HelpUrl=""/>
+    <Text Id="Label" Title="Label" Required="true" HelpUrl=""/>
+  </Settings>
+
+  <RestConnector Id="Search" Title="Search" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
+    <Parameters>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Retriever" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="500">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="$.next"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label).json
+        ?query=@(Utils.UrlEncode(Model.Query))
+
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMddHHmm"))
+            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyyMMddHHmm"))
+        }
+        &maxResults=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &next=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results.*">
+        <Compute Id="Url" Title="URL">
+          <Compute.Expr>
+            <![CDATA[
+            https://twitter.com/@(Model.ScreenName)/status/@(Model.IdStr)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="id_str" Id="IdStr" Converter="String"/>
+          <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
+        </Compute>
+       <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
+				<Compute Id="Source" Title="Source">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
+            }
+            @Cleaned
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="source" Id="SourceInput" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
+        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="user.screen_name" Id="ScreenName" Title="Username" Converter="String"/>
+        <Compute Id="UserURL" Title="User URL">
+          <Compute.Expr>
+            <![CDATA[
+            https://twitter.com/@(Model.ScreenName)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="user.name" Id="UserName" Title="Full Name" Converter="String"/>
+        <JsonPath Expr="user.location" Id="UserLocation" Title="Location" Converter="String"/>
+        <JsonPath Expr="user.description" Id="UserDescription" Title="Biography" Converter="String"/>
+        <JsonPath Expr="user.followers_count" Id="UserFollowersCount" Title="Followers" Converter="Int"/>
+        <JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
+        <JsonPath Expr="in_reply_to_status_id" Id="RepliedTweet" Title="Replied TweetId" Checked="false"/>
+        <JsonPath Expr="in_reply_to_screen_name" Id="RepliedUser" Title="Replied User" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RazorFunctions>
+    <![CDATA[
+    String CreateBasicAuth()
+    {
+      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
+      return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
