@@ -18,7 +18,41 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListTickets" Title="List Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
+  <RestConnector Id="ListGroups" Title="Groups" HelpText="List all groups" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/groups#list-groups">
+    <Parameters>
+      <Checkbox Id="Deleted" Title="Show only deleted" DefaultValue="False" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        https://@(Model.Subdomain).zendesk.com/api/v2/groups.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.groups.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="deleted" Id="IsDeleted" Title="Deleted" Converter="Bool"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
     <Paging PageSize="100" MaxTake="200000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="$.count"/>
@@ -68,7 +102,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListComments" Title="List Comments" HelpText="List comments for specific ticket" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_comments#list-comments">
+  <RestConnector Id="ListComments" Title="Ticket Comments" HelpText="List comments for specific ticket" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_comments#list-comments">
     <Parameters>
       <Text Id="TicketId" Title="Ticket ID" Debug.DefaultValue="1" Required="true"/>
       <Select Id="SortComments" Title="Sort Order" Required="false" DefaultValue="asc">
