@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Alpha Vantage" Id="AlphaVantage" Category="Finance" RequireVersion="8.0.8"
+<Suite Title="Alpha Vantage" Id="AlphaVantage" Category="Finance" RequireVersion="7.0"
        SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AlphaVantage.xml"
        HelpUrl="http://seotoolsforexcel.com/alphavantage" HelpText="Documentation">
 
@@ -114,7 +114,7 @@
     <Parameters>
       <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="BTC"/>
       <Text Id="Market" Title="Market" Required="true" DefaultValue="" Debug.DefaultValue="CNY"/>
-      <Select Id="Function" Title="Function" Required="true" DefaultValue="TIME_SERIES_DAILY">
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="DIGITAL_CURRENCY_INTRADAY">
         <DataSource>
           <Item Id="DIGITAL_CURRENCY_INTRADAY" Title="Intraday"/>
           <Item Id="DIGITAL_CURRENCY_DAILY" Title="Daily"/>
@@ -131,19 +131,62 @@
         &symbol=@Model.Symbol
         &market=@Model.Market
         &apikey=@Model.ApiKey
-        &datatype=csv
+        &datatype=json
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Csv Separator="," HasHeader="true">
-        <Field Id="timestamp" Title="Timestamp" Tag="timestamp" Converter="String" HelpText=""/>
-        <Field Id="open" Title="Open" Tag="price (@Model.Market)" Converter="Double" HelpText=""/>
-        <Field Id="high" Title="High" Tag="high" Converter="Double" HelpText=""/>
-        <Field Id="low" Title="Low" Tag="low" Converter="Double" HelpText=""/>
-        <Field Id="close" Title="Close" Tag="close" Converter="Double" HelpText=""/>
-        <Field Id="volume" Title="Volume" Tag="volume" Converter="Int" HelpText=""/>
-      </Csv>
+      <JsonPath Expr="keys($.[Time Series (Digital Currency Intraday)])">
+        <JsonPath Expr="key" Id="Date" Title="Date" Converter="DateTime"/>
+      </JsonPath>
+      <JsonPath Expr="$.[Time Series (Digital Currency Intraday).*">
+        <Compute Id="Price" Title="Price" Converter="String">
+          <Compute.Expr><![CDATA[
+              @{
+                Regex regex = new Regex(@"1a\. price \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value)
+            ]]></Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue="" />
+        </Compute>
+        <Compute Id="PriceUsd" Title="Price (USD)" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"1b\. price \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue="" Converter="Double"/>
+        </Compute>
+        <Compute Id="Volume" Title="Volume">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"2\. volume"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="MarketCap" Title="Market Cap (USD)" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"3\. market cap \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+      </JsonPath>
     </Parse>
   </RestConnector>
 
