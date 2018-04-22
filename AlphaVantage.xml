@@ -12,8 +12,7 @@
   <Resources>
     <Resource Id="Fail">
       <Fail>
-        <!--<Regex Expr="&quot;Error Message&quot;.+" Group="0"></Regex>-->
-        <Regex Expr="Error Message&quot;:.&quot;([^&quot;]+)" Group="1"></Regex>
+        <Regex Expr="Error Message&quot;:.&quot;([^&quot;]+)" Group="1"/>
       </Fail>
     </Resource>
   </Resources>
@@ -64,13 +63,13 @@
         <Field Id="volume" Title="Volume" Tag="volume" Converter="Int" HelpText=""/>
       </Csv>
     </Parse>
-    <Resource Id="Fail"></Resource>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ForeignExchange" Title="Foreign Exchange (FX)" HelpText="Realtime exchange rate for any pair of digital currency (e.g., BTC) or physical currency (e.g., USD)" HelpUrl="https://www.alphavantage.co/documentation/#fx">
     <Parameters>
       <Text Id="FromCurrency" Title="Symbol (from)" Required="true" DefaultValue="" Debug.DefaultValue="BTC" HelpText="For all supported symbols check the Documentation link below"/>
-      <Text Id="Amount" Title="Amount" Required="true" DefaultValue="1"></Text>
+      <Text Id="Amount" Title="Amount" Required="true" DefaultValue="1"/>
       <Text Id="ToCurrency" Title="Symbol (to)" Required="true" DefaultValue="" Debug.DefaultValue="USD" HelpText="For all supported symbols check the Documentation link below"/>
     </Parameters>
     <Fetch>
@@ -148,7 +147,7 @@
               }
               @(match.Groups[1].Value)
             ]]></Compute.Expr>
-          <JsonPath Expr="." Id="Inp" DefaultValue="" />
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
         </Compute>
         <Compute Id="PriceUsd" Title="Price (USD)" Converter="Double">
           <Compute.Expr>
@@ -236,21 +235,73 @@
   <!--</Fetch>-->
   <!--</RestConnector>-->
 
-  <!--<RestConnector Id="BatchStockQuotes" Title="Batch Stock Quotes" HelpText="Real-time multiple stock quotes" HelpUrl="https://www.alphavantage.co/documentation/#batchquotes">-->
-  <!--<Parameters>-->
-  <!--<Text Id="StockSymbols" Title="Stock Symbols (one per line, up to 100)" Debug.DefaultValue="AAPL" HelpText="Only show contacts belonging to the following companies (IDs)" Required="true" Multiline="true"/>-->
-  <!--</Parameters>-->
-  <!--<Fetch>-->
-  <!--<Fetch.Url>-->
-  <!--<![CDATA[-->
-  <!--https://www.alphavantage.co/query-->
-  <!--?function=BATCH_STOCK_QUOTES-->
-  <!--&symbols=@(FetchBatchStockSymbolString())-->
-  <!--&apikey=@Model.ApiKey-->
-  <!--]]>-->
-  <!--</Fetch.Url>-->
-  <!--</Fetch>-->
-  <!--</RestConnector>-->
+  <RestConnector Id="BatchStockQuotes" Title="Batch Stock Quotes" HelpText="Real-time multiple stock quotes" HelpUrl="https://www.alphavantage.co/documentation/#batchquotes">
+    <Parameters>
+      <Text Id="StockSymbols" Title="Stock Symbols (one per line, up to 100)" Debug.DefaultValue="AAPL" Required="true" Multiline="true" HelpText="For all supported symbols check the Documentation link below"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query
+        ?function=BATCH_STOCK_QUOTES
+        &symbols=@(FetchBatchStockSymbolString())
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.[Stock Quotes].*">
+        <Compute Id="Timestamp" Title="Timestamp" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"timestamp"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Symbol" Title="Symbol" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"symbol"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Price" Title="Price" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"price"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Volume" Title="Volume" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"volume"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
 
   <!--<RestConnector Id="SectorPerformances" Title="Sector Performances" HelpText="Realtime and historical sector performances calculated from S&amp;P500 incumbents." HelpUrl="https://www.alphavantage.co/documentation/#sector-information">-->
   <!--<Parameters>-->
