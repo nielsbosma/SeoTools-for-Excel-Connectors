@@ -68,8 +68,6 @@
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
       <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="100" Min="5" Max="1000" Required="false" HelpText=""/>
     </Parameters>
-    <Parameters>
-    </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -84,12 +82,100 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.bids.*" Id="Bids">
-        <JsonPath Expr="$[0]" Id="BidPrice" Title="Bid Price" Converter="Double" />
-        <JsonPath Expr="$[1]" Id="BidQty" Title="Bid Quantity" Converter="Double" />
+        <JsonPath Expr="$[0]" Id="BidPrice" Title="Bid Price" Converter="Double"/>
+        <JsonPath Expr="$[1]" Id="BidQty" Title="Bid Quantity" Converter="Double"/>
       </JsonPath>
       <JsonPath Expr="$.asks.*" Id="Asks">
-        <JsonPath Expr="$[0]" Id="AskPrice" Title="Ask Price" Converter="Double" />
-        <JsonPath Expr="$[1]" Id="AskQty" Title="Ask Qty" Converter="Double" />
+        <JsonPath Expr="$[0]" Id="AskPrice" Title="Ask Price" Converter="Double"/>
+        <JsonPath Expr="$[1]" Id="AskQty" Title="Ask Qty" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="RecentTradesList" Title="Recent Trades List" HelpText="List recently made trades for specific symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#recent-trades-list">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/trades?
+        symbol=@Model.Symbol
+        @if(Model.Limit % 5 == 0)
+        {
+          @: &limit=@Model.Limit
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*" Id="Trades">
+        <JsonPath Expr="id" Id="TradeId" Title="Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double"/>
+        <JsonPath Expr="qty" Id="Quantity" Title="Quantity" Converter="Double"/>
+        <Compute Id="Time" Title="Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="time" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="isBuyerMaker" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
+        <JsonPath Expr="isBestMatch" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="AggregateTradesList" Title="Aggregate Trades List" HelpText="List compressed, aggregate trades" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#compressedaggregate-trades-list">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/aggTrades?
+        symbol=@Model.Symbol
+        @if(Model.Limit % 5 == 0)
+        {
+          @: &limit=@Model.Limit
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*" Id="Trades">
+        <JsonPath Expr="a" Id="AggregateTradeId" Title="Aggregate Trade Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="p" Id="Price" Title="Price" Converter="Double"/>
+        <JsonPath Expr="q" Id="Quantity" Title="Quantity" Converter="Double"/>
+        <JsonPath Expr="f" Id="FirstTradeId" Title="First Trade Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="l" Id="LastTradeId" Title="Last Trade Id" Converter="Int" Checked="False"/>
+        <Compute Id="Time" Title="Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="T" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="m" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
+        <JsonPath Expr="M" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
