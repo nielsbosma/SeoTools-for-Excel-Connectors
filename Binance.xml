@@ -6,8 +6,31 @@
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/binance/">
-    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/binance"/>
+    <Text Id="ApiKey" Title="API Key" Required="false" HelpUrl="http://seotoolsforexcel.com/binance"/>
   </Settings>
+
+  <Resources>
+    <Resource Id="ApiKeyRequired">
+      <Fail>
+        <Compute>
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                @if(string.IsNullOrEmpty(Model.ApiKey)){
+                throw new Exception("API key required. Click \"Settings\" in the connector and enter your API key");
+                }
+              }
+            ]]>
+          </Compute.Expr>
+        </Compute>
+      </Fail>
+    </Resource>
+    <Resource Id="Error">
+      <Fail>
+        <JsonPath Expr="$.msg" Id="Error"/>
+      </Fail>
+    </Resource>
+  </Resources>
 
   <RestConnector Id="ExchangeInfo" Title="Exchange Info" HelpText="List all supported trading pairs" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information">
     <Fetch Url="https://api.binance.com/api/v1/exchangeInfo"/>
@@ -15,7 +38,7 @@
       <JsonPath Expr="$.symbols.*" Id="Symbol" Title="Symbol">
         <JsonPath Expr="symbol" Id="Symbol" Title="Symbol" Converter="String"/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
-        <JsonPath Expr="baseAsset" Id="BaseAsset" Title="Base Asset" Converter="String" />
+        <JsonPath Expr="baseAsset" Id="BaseAsset" Title="Base Asset" Converter="String"/>
         <JsonPath Expr="baseAssetPrecision" Id="BasePrecision" Title="Base Asset Precision" Converter="Int" Checked="False"/>
         <JsonPath Expr="quoteAsset" Id="QupteAsset" Title="Quote Asset" Converter="String"/>
         <JsonPath Expr="quotePrecision" Id="QuotePrecision" Title="Quote Precision" Converter="Int" Checked="False"/>
@@ -28,6 +51,48 @@
         <JsonPath Expr="filters.*.stepSize" Id="StepSize" Title="Step Size" Converter="Double"/>
       </JsonPath>
     </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ListSymbolsHidden" Title="ListSymbolsHidden" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information" Hidden="true">
+    <Fetch Url="https://api.binance.com/api/v1/exchangeInfo"/>
+    <Parse>
+      <JsonPath Expr="$.symbols.*" Id="Symbol" Title="Symbol">
+        <JsonPath Expr="symbol" Id="Symbol" Title="Symbol" Converter="String"/>
+        <JsonPath Expr="symbol" Id="SymbolName" Title="Symbol" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="OrderBook" Title="Order Book" HelpText="List of open orders for specified symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="100" Min="5" Max="1000" Required="false" HelpText=""/>
+    </Parameters>
+    <Parameters>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/depth?
+        symbol=@Model.Symbol
+        @if(Model.Limit % 5 == 0)
+        {
+          @: &limit=@Model.Limit
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.bids.*" Id="Bids">
+        <JsonPath Expr="$[0]" Id="BidPrice" Title="Bid Price" Converter="Double" />
+        <JsonPath Expr="$[1]" Id="BidQty" Title="Bid Quantity" Converter="Double" />
+      </JsonPath>
+      <JsonPath Expr="$.asks.*" Id="Asks">
+        <JsonPath Expr="$[0]" Id="AskPrice" Title="Ask Price" Converter="Double" />
+        <JsonPath Expr="$[1]" Id="AskQty" Title="Ask Qty" Converter="Double" />
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
   </RestConnector>
 
 </Suite>
