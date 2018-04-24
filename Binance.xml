@@ -163,7 +163,7 @@
         <Compute Id="Time" Title="Time" Converter="DateTime">
           <Compute.Expr>
             <![CDATA[
-              @{
+             @{
                 long epoch = Convert.ToInt64(Model.Inp);
                 System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
                 dtDateTime = dtDateTime.AddMilliseconds(epoch);
@@ -176,6 +176,134 @@
         </Compute>
         <JsonPath Expr="m" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
         <JsonPath Expr="M" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TwentyFourHourStatistics" Title="24 Hour price change statistics" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#compressedaggregate-trades-list">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/ticker/24hr
+        @if(!string.IsNullOrEmpty(Model.Symbol)){
+         @: ?symbol=@Model.Symbol
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="symbol" Id="symbol" Title="Symbol" Converter="String"/>
+      <JsonPath Expr="priceChange" Id="PriceChange" Title="Price Change" Converter="Double"/>
+      <JsonPath Expr="priceChangePercent" Id="PriceChangePercent" Title="Price Change Percent" Converter="Double"/>
+      <JsonPath Expr="weightedAvgPrice" Id="WeightedAvgPrice" Title="Weighted Avg Price" Converter="Double"/>
+      <JsonPath Expr="prevClosePrice" Id="PrevClosePrice" Title="Prev Close Price" Converter="Double"/>
+      <JsonPath Expr="lastPrice" Id="LastPrice" Title="Last Price" Converter="Double"/>
+      <JsonPath Expr="lastQty" Id="LastQty" Title="Last Qty" Converter="Double"/>
+      <JsonPath Expr="bidPrice" Id="BidPrice" Title="Bid Price" Converter="Double"/>
+      <JsonPath Expr="bidQty" Id="BidQty" Title="Bid Qty" Converter="Double"/>
+      <JsonPath Expr="askPrice" Id="AskPrice" Title="Ask Price" Converter="Double"/>
+      <JsonPath Expr="askQty" Id="AskQty" Title="Ask Qty" Converter="Double"/>
+      <JsonPath Expr="openPrice" Id="OpenPrice" Title="Open Price" Converter="Double"/>
+      <JsonPath Expr="highPrice" Id="HighPrice" Title="High Price" Converter="Double"/>
+      <JsonPath Expr="lowPrice" Id="LowPrice" Title="Low Price" Converter="Double"/>
+      <JsonPath Expr="volume" Id="Volume" Title="Volume" Converter="Double"/>
+      <JsonPath Expr="quoteVolume" Id="QuoteVolume" Title="Quote Volume" Converter="Double"/>
+      <JsonPath Expr="firstId" Id="FirstId" Title="First Id" Converter="Int" Checked="False"/>
+      <JsonPath Expr="lastId" Id="LastId" Title="Last Id" Converter="Int" Checked="False"/>
+      <JsonPath Expr="count" Id="Count" Title="Count" Converter="Int"/>
+      <Compute Id="OpenTime" Title="Open Time" Converter="DateTime" Checked="False">
+        <Compute.Expr>
+          <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+        </Compute.Expr>
+        <JsonPath Expr="openTime" Id="Inp" DefaultValue=""/>
+      </Compute>
+      <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
+        <Compute.Expr>
+          <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+        </Compute.Expr>
+        <JsonPath Expr="closeTime" Id="Inp" DefaultValue="" Checked="False"/>
+      </Compute>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TwentyFourHourStatisticsAll" Title="24 Hour price change statistics (all symbols)" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#compressedaggregate-trades-list">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/ticker/24hr
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*" Id="Trades">
+        <JsonPath Expr="symbol" Id="symbol" Title="Symbol" Converter="String"/>
+        <JsonPath Expr="priceChange" Id="PriceChange" Title="Price Change" Converter="Double"/>
+        <JsonPath Expr="priceChangePercent" Id="PriceChangePercent" Title="Price Change Percent" Converter="Double"/>
+        <JsonPath Expr="weightedAvgPrice" Id="WeightedAvgPrice" Title="Weighted Avg Price" Converter="Double"/>
+        <JsonPath Expr="prevClosePrice" Id="PrevClosePrice" Title="Prev Close Price" Converter="Double"/>
+        <JsonPath Expr="lastPrice" Id="LastPrice" Title="Last Price" Converter="Double"/>
+        <JsonPath Expr="lastQty" Id="LastQty" Title="Last Qty" Converter="Double"/>
+        <JsonPath Expr="bidPrice" Id="BidPrice" Title="Bid Price" Converter="Double"/>
+        <JsonPath Expr="bidQty" Id="BidQty" Title="Bid Qty" Converter="Double"/>
+        <JsonPath Expr="askPrice" Id="AskPrice" Title="Ask Price" Converter="Double"/>
+        <JsonPath Expr="askQty" Id="AskQty" Title="Ask Qty" Converter="Double"/>
+        <JsonPath Expr="openPrice" Id="OpenPrice" Title="Open Price" Converter="Double"/>
+        <JsonPath Expr="highPrice" Id="HighPrice" Title="High Price" Converter="Double"/>
+        <JsonPath Expr="lowPrice" Id="LowPrice" Title="Low Price" Converter="Double"/>
+        <JsonPath Expr="volume" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="quoteVolume" Id="QuoteVolume" Title="Quote Volume" Converter="Double"/>
+        <JsonPath Expr="firstId" Id="FirstId" Title="First Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="lastId" Id="LastId" Title="Last Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="count" Id="Count" Title="Count" Converter="Int"/>
+        <Compute Id="OpenTime" Title="Open Time" Converter="DateTime" Checked="False">
+          <Compute.Expr>
+            <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="openTime" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="closeTime" Id="Inp" DefaultValue="" Checked="False"/>
+        </Compute>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
