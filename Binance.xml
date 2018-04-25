@@ -7,6 +7,7 @@
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/binance/">
     <Text Id="ApiKey" Title="API Key" Required="false" HelpUrl="http://seotoolsforexcel.com/binance"/>
+    <Text Id="SecretKey" Title="Secret Key" Required="false" HelpUrl="http://seotoolsforexcel.com/binance"/>
   </Settings>
 
   <Resources>
@@ -203,6 +204,12 @@
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
     </Parameters>
     <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestHeaders>
+          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v1/ticker/24hr
@@ -328,14 +335,13 @@
 
   <RestConnector Id="CandlesticData" Title="Candlestick Data" HelpText="Kline/candlestick bars for a symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
       <Select Id="Interval" Title="Chart interval" Required="true" DefaultValue="1m">
         <DataSource>
           <Resource Id="Intervals"/>
         </DataSource>
       </Select>
       <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
-      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -393,4 +399,104 @@
     </Parse>
     <Resource Id="Error"/>
   </RestConnector>
+
+  <RestConnector Id="OpenOrders" Title="Open Orders (User data)" HelpText="Get all open orders" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#current-open-orders-user_data">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestHeaders>
+          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v3/openOrders?
+        @GetCompleteQueryString()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*" Id="Orders">
+        <JsonPath Expr="symbol" Id="Symbol" Title="Symbol" Converter="String"/>
+        <JsonPath Expr="orderId" Id="OrderId" Title="Order ID" Converter="Int"/>
+        <JsonPath Expr="clientOrderId" Id="ClientOrderId" Title="Client Order Id" Converter="String" Checked="false"/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double"/>
+        <JsonPath Expr="origQty" Id="origQty" Title="Original Quantity" Converter="Double"/>
+        <JsonPath Expr="executedQty" Id="ExecutedQty" Title="Executed Quantity" Converter="Double"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="timeInForce" Id="TimeInForce" Title="Time In Force" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="side" Id="Side" Title="Side" Converter="String"/>
+        <JsonPath Expr="stopPrice" Id="StopPrice" Title="Stop Price" Converter="Double"/>
+        <JsonPath Expr="icebergQty" Id="IcebergQty" Title="Iceberg Quantity" Converter="Double" Checked="False"/>
+        <Compute Id="Time" Title="Time" Converter="DateTime" >
+          <Compute.Expr>
+            <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="time" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="isWorking" Id="IsWorking" Title="Working" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string GetCompleteQueryString(){
+      string completeQuery = "";
+      string q = GetQueryString();
+      string signature = GetSignature(q);
+
+      completeQuery += q + "&signature=" + signature;
+      return completeQuery;
+    }
+
+    string GetSignature(string q)
+    {
+      string signature = GetHash(q, Model.SecretKey);
+      return signature;
+    }
+
+    string GetQueryString() {
+      string q = "";
+
+      q+= "timestamp=" + GetTimestamp().ToString();
+      if(!string.IsNullOrEmpty(Model.Symbol)){
+         q += "&symbol=" + Model.Symbol;
+      }
+      return q;
+    }
+
+    long GetTimestamp(){
+     return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    }
+
+    public static String GetHash(String text, String key)
+    {
+        ASCIIEncoding encoding = new ASCIIEncoding();
+        Byte[] textBytes = encoding.GetBytes(text);
+        Byte[] keyBytes = encoding.GetBytes(key);
+
+        Byte[] hashBytes;
+
+        using (System.Security.Cryptography.HMACSHA256 hash = new System.Security.Cryptography.HMACSHA256(keyBytes))
+            hashBytes = hash.ComputeHash(textBytes);
+
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+    }
+
+    ]]>
+  </RazorFunctions>
 </Suite>
