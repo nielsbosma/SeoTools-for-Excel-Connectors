@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Alpha Vantage" Id="AlphaVantage" Category="Finance" RequireVersion="7.0"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AlphaVantage.xml"
+       HelpUrl="http://seotoolsforexcel.com/alphavantage" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/alphavantage/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/alphavantage"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="Error Message&quot;:.&quot;([^&quot;]+)" Group="1"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="TimeSeries" Title="Stock Time Series" HelpText="Realtime and historical equity data" HelpUrl="https://www.alphavantage.co/documentation/#time-series-data">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="TIME_SERIES_DAILY">
+        <DataSource>
+          <Item Id="TIME_SERIES_INTRADAY" Title="Intraday"/>
+          <Item Id="TIME_SERIES_DAILY" Title="Daily"/>
+          <Item Id="TIME_SERIES_DAILY_ADJUSTED" Title="Daily Adjusted"/>
+          <Item Id="TIME_SERIES_WEEKLY" Title="Weekly"/>
+          <Item Id="TIME_SERIES_WEEKLY_ADJUSTED" Title="Weekly Adjusted"/>
+          <Item Id="TIME_SERIES_MONTHLY" Title="Monthly"/>
+          <Item Id="TIME_SERIES_MONTHLY_ADJUSTED" Title="Monthly adjusted"/>
+        </DataSource>
+      </Select>
+      <Select Id="Interval" Title="Function" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=@Model.Function
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &apikey=@Model.ApiKey
+        &datatype=csv
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="timestamp" Title="Timestamp" Tag="timestamp" Converter="String" HelpText=""/>
+        <Field Id="open" Title="Open" Tag="open" Converter="Double" HelpText=""/>
+        <Field Id="high" Title="High" Tag="high" Converter="Double" HelpText=""/>
+        <Field Id="low" Title="Low" Tag="low" Converter="Double" HelpText=""/>
+        <Field Id="close" Title="Close" Tag="close" Converter="Double" HelpText=""/>
+        <Field Id="volume" Title="Volume" Tag="volume" Converter="Int" HelpText=""/>
+      </Csv>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ForeignExchange" Title="Foreign Exchange (FX)" HelpText="Real-time exchange rate for any pair of digital currency (e.g., BTC) or physical currency (e.g., USD)" HelpUrl="https://www.alphavantage.co/documentation/#fx">
+    <Parameters>
+      <Text Id="FromCurrency" Title="Symbol (from)" Required="true" DefaultValue="" Debug.DefaultValue="BTC" HelpText="For all supported symbols check the Documentation link below"/>
+      <Text Id="Amount" Title="Amount" Required="true" DefaultValue="1"/>
+      <Text Id="ToCurrency" Title="Symbol (to)" Required="true" DefaultValue="" Debug.DefaultValue="USD" HelpText="For all supported symbols check the Documentation link below"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=CURRENCY_EXCHANGE_RATE
+        &from_currency=@Model.FromCurrency
+        &to_currency=@Model.ToCurrency
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Title="From Currency Code" Id="FromCurrencyCode" Expr="From_Currency.Code&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+      <Regex Title="From Currency Name" Id="FromCurrencyName" Expr="From_Currency.Name&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Checked="false" Converter="String"/>
+      <Regex Title="To Currency Code" Id="To Currency Code" Expr="To_Currency.Code&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+      <Regex Title="To Currency Name" Id="To Currency Name" Expr="To_Currency.Name&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Checked="false" Converter="String"/>
+      <Regex Title="Exchange Rate" Id="ExchangeRate" Expr="Exchange.Rate&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="Double"/>
+      <Regex Title="Last Refreshed" Id="LastRefreshed" Expr="Last.Refreshed&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+      <Regex Title="Timezone" Id="Timezone" Expr="Time.Zone&quot;.+?&quot;([^&quot;]+)&quot;" Group="1" Converter="String"/>
+      <Compute Id="Converted" Title="Converted" Converter="Double">
+        <Compute.Expr>
+          <![CDATA[
+          @{
+            Regex regex = new Regex("Exchange.Rate\".+?\"([^\"]+)\"");
+            Match match = regex.Match(Model.FetchedResult.Body);
+            string output = match.Groups[1].Value;
+            double rate = Convert.ToDouble(output);
+            double result = rate * Convert.ToDouble(Model.Amount);
+           }
+           @result
+          ]]>
+        </Compute.Expr>
+      </Compute>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="DigitalCurrencies" Title="Digital/Crypto Time Series" HelpText="Real-time intraday time series (in 5-minute intervals) for digital/crypto currencies (e.g., BTC) traded on a specific market (e.g., EUR)." HelpUrl="https://www.alphavantage.co/documentation/#digital-currency">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="BTC" HelpText="For all supported symbols check the Documentation link below"/>
+      <Text Id="Market" Title="Market" Required="true" DefaultValue="" Debug.DefaultValue="CNY" HelpText="For all supported symbols check the Documentation link below"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="DIGITAL_CURRENCY_INTRADAY">
+        <DataSource>
+          <Item Id="DIGITAL_CURRENCY_INTRADAY" Title="Intraday"/>
+          <Item Id="DIGITAL_CURRENCY_DAILY" Title="Daily"/>
+          <Item Id="DIGITAL_CURRENCY_WEEKLY" Title="Weekly"/>
+          <Item Id="DIGITAL_CURRENCY_MONTHLY" Title="Monthly"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=DIGITAL_CURRENCY_INTRADAY
+        &symbol=@Model.Symbol
+        &market=@Model.Market
+        &apikey=@Model.ApiKey
+        &datatype=json
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys($.[Time Series (Digital Currency Intraday)])">
+        <JsonPath Expr="key" Id="Date" Title="Date" Converter="DateTime"/>
+      </JsonPath>
+      <JsonPath Expr="$.[Time Series (Digital Currency Intraday).*">
+        <Compute Id="Price" Title="Price" Converter="Double">
+          <Compute.Expr><![CDATA[
+              @{
+                Regex regex = new Regex(@"1a\. price \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value)
+            ]]></Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="PriceUsd" Title="Price (USD)" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"1b\. price \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue="" Converter="String"/>
+        </Compute>
+        <Compute Id="Volume" Title="Volume" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"2\. volume"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="MarketCap" Title="Market Cap (USD)" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"3\. market cap \([A-Z]+\)"":.""([\d\.]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="BatchStockQuotes" Title="Batch Stock Quotes" HelpText="Real-time multiple stock quotes" HelpUrl="https://www.alphavantage.co/documentation/#batchquotes">
+    <Parameters>
+      <Text Id="StockSymbols" Title="Stock Symbols (one per line, up to 100)" Debug.DefaultValue="AAPL" Required="true" Multiline="true" HelpText="For all supported symbols check the Documentation link below"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query
+        ?function=BATCH_STOCK_QUOTES
+        &symbols=@(FetchBatchStockSymbolString())
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.[Stock Quotes].*">
+        <Compute Id="Timestamp" Title="Timestamp" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"timestamp"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Symbol" Title="Symbol" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"symbol"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Price" Title="Price" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"price"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+        <Compute Id="Volume" Title="Volume" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                Regex regex = new Regex(@"volume"":.""([^""]+)");
+                Match match = regex.Match(Model.Inp);
+              }
+              @(match.Groups[1].Value
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="." Id="Inp" DefaultValue=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchBatchStockSymbolString()
+    {
+      string[] lines = ((string)Model.StockSymbols).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+      if (lines.Length > 0){
+        return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+      }
+      return "";
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>
+
