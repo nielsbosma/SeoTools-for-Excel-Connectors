@@ -30,6 +30,23 @@
         <JsonPath Expr="$.msg" Id="Error"/>
       </Fail>
     </Resource>
+    <Resource Id="Intervals">
+      <Item Id="1m" Title="1 minute"/>
+      <Item Id="3m" Title="3 minutes"/>
+      <Item Id="5m" Title="5 minutes"/>
+      <Item Id="15m" Title="15 minute"/>
+      <Item Id="30m" Title="30 minute"/>
+      <Item Id="1h" Title="1 hour"/>
+      <Item Id="2h" Title="2 hours"/>
+      <Item Id="4h" Title="4 hours"/>
+      <Item Id="6h" Title="6 hours"/>
+      <Item Id="8h" Title="8 hours"/>
+      <Item Id="12h" Title="12 hours"/>
+      <Item Id="1d" Title="1 days"/>
+      <Item Id="3d" Title="3 days"/>
+      <Item Id="1w" Title="1 week"/>
+      <Item Id="1M" Title="1 month"/>
+    </Resource>
   </Resources>
 
   <RestConnector Id="ExchangeInfo" Title="Exchange Info" HelpText="List all supported trading pairs" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information">
@@ -309,4 +326,71 @@
     <Resource Id="Error"/>
   </RestConnector>
 
+  <RestConnector Id="CandlesticData" Title="Candlestick Data" HelpText="Kline/candlestick bars for a symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data">
+    <Parameters>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Select Id="Interval" Title="Chart interval" Required="true" DefaultValue="1m">
+        <DataSource>
+          <Resource Id="Intervals"/>
+        </DataSource>
+      </Select>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v1/klines?
+        symbol=@(Model.Symbol)
+        &interval=@(Model.Interval)
+        @if(Model.Limit % 5 == 0)
+        {
+          @: &limit=@Model.Limit
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*" Id="Trades">
+        <Compute Id="OpenTime" Title="Open Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="$.[0" Id="Inp" DefaultValue="" Checked="False"/>
+        </Compute>
+        <JsonPath Expr="$.[5]" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="$.[1]" Id="Open" Title="Open" Converter="Double"/>
+        <JsonPath Expr="$.[2]" Id="High" Title="High" Converter="Double"/>
+        <JsonPath Expr="$.[3]" Id="Low" Title="Low" Converter="Double"/>
+        <JsonPath Expr="$.[4]" Id="Close" Title="Close" Converter="Double"/>
+        <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+             @{
+                long epoch = Convert.ToInt64(Model.Inp);
+                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                dtDateTime = dtDateTime.AddMilliseconds(epoch);
+                string formatted = dtDateTime.ToString();
+              }
+              @(formatted)
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="$.[6]" Id="Inp" DefaultValue="" Checked="False"/>
+        </Compute>
+        <JsonPath Expr="$.[7]" Id="QuoteAssetVolume" Title="Quote Asset Volume" Converter="Double"/>
+        <JsonPath Expr="$.[8]" Id="NumberOfTrades" Title="Number of Trades" Converter="Int"/>
+        <JsonPath Expr="$.[9]" Id="TakerBuyBaseAssetVolume" Title="Taker Buy Base Asset Volume" Converter="Double"/>
+        <JsonPath Expr="$.[10]" Id="TakerBuyQuoteAssetVolume" Title="Taker Buy Quote Asset Volume" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
 </Suite>
