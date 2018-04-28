@@ -10,9 +10,51 @@
     <Text Id="Label" Title="Label" Required="true" HelpUrl=""/>
   </Settings>
 
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+    <Resource Id="Languages">
+      <Item Id="all" Title="All"/>
+      <Item Id="ar" Title="Arabic"/>
+      <Item Id="cs" Title="Czech"/>
+      <Item Id="da" Title="Danish"/>
+      <Item Id="de" Title="German"/>
+      <Item Id="en" Title="English"/>
+      <Item Id="et" Title="Estonian"/>
+      <Item Id="fi" Title="Finnish"/>
+      <Item Id="fr" Title="French"/>
+      <Item Id="nl" Title="Dutch"/>
+      <Item Id="he" Title="Hebrew"/>
+      <Item Id="hu" Title="Hungarian"/>
+      <Item Id="id" Title="Indonesian"/>
+      <Item Id="it" Title="Italian"/>
+      <Item Id="lt" Title="Lithuanian"/>
+      <Item Id="lv" Title="Latvian"/>
+      <Item Id="no" Title="Norwegian"/>
+      <Item Id="pl" Title="Polish"/>
+      <Item Id="pt" Title="Portuguese"/>
+      <Item Id="ro" Title="Romanian"/>
+      <Item Id="es" Title="Spanish"/>
+      <Item Id="ru" Title="Russian"/>
+      <Item Id="sv" Title="Swedish"/>
+    </Resource>
+  </Resources>
+
   <RestConnector Id="Search" Title="Search" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="Retriever" Required="true"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="bevakning" Required="false"/>
+      <Text Id="RetweetsOf" Title="Reweets of" DefaultValue="" Debug.DefaultValue="" Required="false"/>
+      <Select Id="Language" Title="Language" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Languages"/>
+        </DataSource>
+      </Select>
+      <Checkbox Id="HasLink" Title="Tweets with Links" DefaultValue="false"/>
+      <Checkbox Id="HasImage" Title="Tweets with Images" DefaultValue="false"/>
+      <Checkbox Id="HasVideo" Title="Tweets with Videos" DefaultValue="false"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
     </Parameters>
     <Paging PageSize="500">
@@ -31,11 +73,30 @@
         <![CDATA[
         https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label).json
         ?query=@(Utils.UrlEncode(Model.Query))
-
+        @if(!string.IsNullOrEmpty(Model.RetweetsOf))
+        {
+          @: %20retweets_of:@(Model.RetweetsOf)
+        }
+				@if(Model.Language != "all")
+				{
+					@: %20lang:@(Model.Language)
+				}
+				@if(Model.HasLink == true)
+				{
+					@: %20has:links
+				}
+				@if(Model.HasImage == true)
+				{
+					@: %20has:images
+				}
+				@if(Model.HasVideo == true)
+				{
+					@: %20has:videos
+				}
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMddHHmm"))
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyyMMddHHmm"))
+            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMdd"))0000
+            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyyMMdd"))0000
         }
         &maxResults=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
@@ -94,14 +155,6 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-
-  <Resources>
-    <Resource Id="Fail">
-      <Fail>
-        <JsonPath Expr="error.message"/>
-      </Fail>
-    </Resource>
-  </Resources>
 
   <RazorFunctions>
     <![CDATA[
