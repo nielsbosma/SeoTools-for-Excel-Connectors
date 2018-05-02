@@ -90,12 +90,18 @@
       return Model.AccountType=="free" ? 10000 : 0;
     }
 
+    string GetUrl()
+    {
+      string[] lines = ((string)Model.Url).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+      return JsonConvert.SerializeObject(lines.ToArray());
+    }
+
    ]]>
   </RazorFunctions>
 
   <RestConnector Id="Metrics" Title="Metrics" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/url-metrics" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Debug.DefaultValue="http://www.aftonbladet.se" Required="true"/>
+      <Text Id="Url" Title="URL(s)" DefaultValue="" Debug.DefaultValue="http://www.aftonbladet.se" Required="true" Multiline="true" HelpText="Enter one or more Item Ids separated by a new line"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -104,7 +110,7 @@
           long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
           string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
         }
-        http://lsapi.seomoz.com/linkscape/url-metrics/@(Utils.UrlEncode(Model.Url))?
+        http://lsapi.seomoz.com/linkscape/url-metrics/?
         Cols=@BitFlags()
         &AccessID=@(Model.AccessId)
         &Expires=@(expires)
@@ -112,14 +118,20 @@
       ]]>
       </Fetch.Url>
       <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
         <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+        <RequestBody>
+          <![CDATA[@GetUrl()]]>
+        </RequestBody>
         <RequestHeaders>
           <Header Name='User-Agent'>SeoToolsForExcel</Header>
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <Resource Id="Cols"/>
+      <JsonPath Expr="$.*">
+        <Resource Id="Cols"/>
+      </JsonPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>
