@@ -13,6 +13,7 @@
     <Resource Id="Fail">
       <Fail>
         <Regex Expr="Error Message&quot;:.&quot;([^&quot;]+)" Group="1"/>
+        <Regex Expr="Application Error"/>
       </Fail>
     </Resource>
   </Resources>
@@ -257,6 +258,94 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="TechnicalIndicators" Title="Technical Indicators" HelpText="Real-time values of technical indicators for stocks" HelpUrl="https://www.alphavantage.co/documentation/#technical-indicators">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="SMA">
+        <DataSource>
+          <Item Id="SMA" Title="SMA (Simple Moving Average)"/>
+          <Item Id="EMA" Title="EMA (Exponential Moving Average)"/>
+          <Item Id="WMA" Title="WMA (Weighted Moving Average)"/>
+          <Item Id="DEMA" Title="DEMA (Double Exponential Moving Average)"/>
+          <Item Id="TEMA" Title="TEMA (Triple Exponential Moving Average)"/>
+          <Item Id="TRIMA" Title="TRIMA (Triangular Moving Average)"/>
+          <Item Id="KAMA" Title="KAMA (Kaufman Adaptive Moving Average)"/>
+          <Item Id="MAMA" Title="MAMA (MESA Adaptive Moving Average)"/>
+          <Item Id="T3" Title="T3 (Triple Exponential Moving Average)"/>
+          <Item Id="RSI" Title="RSI (Relative Strength Index)"/>
+          <Item Id="WILLR" Title="WILLR (Williams %R)"/>
+          <Item Id="ADX" Title="ADX (Average Directional Index)"/>
+          <Item Id="ADXR" Title="ADXR (Average Directional Movement Index Rating)"/>
+          <Item Id="MOM" Title="MOM (Momentum)"/>
+          <Item Id="BOP" Title="BOP (Balance of Power)"/>
+          <Item Id="CCI" Title="CCI (Commodity Channel Index) "/>
+          <Item Id="CMO" Title="CMO (Chande Momentum Oscillator)"/>
+          <Item Id="ROC" Title="ROC (Rate Of Change)"/>
+          <Item Id="ROCR" Title="ROCR (Rate Of Change Ratio)"/>
+          <Item Id="AROONOSC" Title="AROONOSC (Aroon Oscillator)"/>
+          <Item Id="MFI" Title="MFI (Money Flow Index)"/>
+          <Item Id="TRIX" Title="TRIX (Triple Smooth Exponential Moving Average)"/>
+          <Item Id="DX" Title="DX (Directional Movement Index)"/>
+          <Item Id="MINUS_DI" Title="MINUS_DI (Minus Directional Indicator)"/>
+          <Item Id="PLUS_DI" Title="PLUS_DI (Plus Directional Indicator)"/>
+          <Item Id="MINUS_DM" Title="MINUS_DM (Minus Directional Indicator Movement)"/>
+          <Item Id="PLUS_DM" Title="PLUS_DM (Plus Directional Indicator Movement)"/>
+          <Item Id="MIDPOINT" Title="Midpoint"/>
+          <Item Id="MIDPRICE" Title="Midprice"/>
+          <Item Id="TRANGE" Title="TRANGE (True Range)"/>
+          <Item Id="ATR" Title="ATR (Average True Range)"/>
+          <Item Id="NATR" Title="NATR (Normalize Average True Range)"/>
+          <Item Id="AD" Title="AD (Chaikin A/D Line)"/>
+          <Item Id="OBV" Title="OBV (On Balance Volume)"/>
+          <Item Id="HT_TRENDLINE" Title="HT_TRENDLINE (Hilbert Transform)"/>
+          <Item Id="HT_TRENDMODE" Title="HT_TRENDMODE (Hilbert Transform, Trend vs cycle Mode)"/>
+          <Item Id="HT_DCPERIOD" Title="HT_DCPERIOD (Hilbert Transform, Dominant Cycle Period)"/>
+          <Item Id="HT_DCPHASE" Title="HT_DCPHASE (Hilbert Transform, Dominant Cycle Phase)"/>
+        </DataSource>
+      </Select>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Number Id="TimePeriod" Title="Time Period" DefaultValue="60" Required="True" HelpText="Number of data points used to calculate value"/>
+      <Select Id="SeriesType" Title="Series Type" Required="true" DefaultValue="close" HelpText="Desired price type in the time series">
+        <DataSource>
+          <Item Id="open" Title="Open"/>
+          <Item Id="close" Title="Close"/>
+          <Item Id="high" Title="High"/>
+          <Item Id="high" Title="Low"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=@Model.Function
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &time_period=@Model.TimePeriod
+        &series_type=@Model.SeriesType
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Headers" Expr="keys($.[Technical Analysis: @(GetRootIndicatorKey())])">
+        <JsonPath Expr="key" Id="Time" Converter="DateTime"/>
+        <JsonPath Expr="value.[@(GetIndicatorKey())]" Id="Value" Title="Value" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string FetchBatchStockSymbolString()
@@ -267,7 +356,28 @@
       }
       return "";
     }
+    string GetIndicatorKey(){
+      if (Model.Function == "HT_TRENDMODE"){
+        return "TRENDMODE";
+      }
+      if (Model.Function == "HT_DCPERIOD"){
+        return "DCPERIOD";
+      }
+      return GetRootIndicatorKey();
+    }
+
+    string GetRootIndicatorKey(){
+      if (Model.Function == "AD"){
+        return "Chaikin A/D";
+      }
+      if (Model.Function == "HT_TRENDMODE"){
+        return "HT_TRENDMODE";
+      }
+      if (Model.Function == "HT_DCPERIOD"){
+        return "HT_DCPERIOD";
+      }
+      return Model.Function;
+    }
     ]]>
   </RazorFunctions>
 </Suite>
-
