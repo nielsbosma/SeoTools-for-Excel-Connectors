@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Zendesk" Id="Zendesk" Category="CRM" RequireVersion="8.0.0"
+<Suite Title="Zendesk" Id="Zendesk" Category="CRM" RequireVersion="7.0.0"
        SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Zendesk.xml"
        HelpUrl="http://seotoolsforexcel.com/zendesk" HelpText="Documentation">
 
@@ -17,6 +17,83 @@
       <Item Id="desc" Title="Descending"/>
     </Resource>
   </Resources>
+
+  <RestConnector Id="ListUsersHidden" Title="Users Hidden" Hidden="True">
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        https://@(Model.Subdomain).zendesk.com/api/v2/users.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.users.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ListUsers" Title="Users" HelpText="List all users" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/users#list-users">
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        https://@(Model.Subdomain).zendesk.com/api/v2/users.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.users.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool"/>
+        <JsonPath Expr="alias" Id="Alias" Title="Alias" Converter="String"/>
+        <JsonPath Expr="chat_only" Id="ChatOnly" Title="Chat-only Agent" Converter="Bool"/>
+        <JsonPath Expr="role_type" Id="RoleType" Title="Role Type" Converter="Int"/>
+        <JsonPath Expr="details" Id="Details" Title="Details" Converter="String"/>
+        <JsonPath Expr="locale" Id="Locale" Title="Locale" Converter="String" Checked="false"/>
+        <JsonPath Expr="moderator" Id="Moderator" Title="Moderator" Converter="Bool" Checked="false"/>
+        <JsonPath Expr="notes" Id="Notes" Title="Notes" Converter="String" Checked="false"/>
+        <JsonPath Expr="organization_id" Id="OrganizationId" Title="Organization Id" Converter="Int"/>
+        <JsonPath Expr="phone" Id="Phone" Title="Phone" Converter="String"/>
+        <JsonPath Expr="role" Id="Role" Title="Role" Converter="String"/>
+        <JsonPath Expr="signature" Id="Signature" Title="Signature" Converter="String" Checked="false"/>
+        <JsonPath Expr="suspended" Id="Suspended" Title="Suspended" Converter="Bool"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String" Checked="false"/>
+        <JsonPath Expr="ticket_restriction" Id="TicketRestriction" Title="Ticket Restriction" Converter="String" Checked="false"/>
+        <JsonPath Expr="time_zone" Id="TimeZone" Title="Time Zone" Converter="String" Checked="false"/>
+        <JsonPath Expr="two_factor_auth_enabled	" Id="TwoFa" Title="2 factor Auth" Converter="Bool" Checked="false"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="last_login_at" Id="LastLogin" Title="Last Login" Converter="Auto"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
 
   <RestConnector Id="ListGroups" Title="Groups" HelpText="List all groups" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/groups#list-groups">
     <Parameters>
@@ -53,6 +130,29 @@
   </RestConnector>
 
   <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
+    <Parameters>
+      <Text Id="FilterUser" Title="Filter by user" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Select Id="SortBy" Title="Sort By" Required="true" DefaultValue="created_at">
+        <DataSource>
+          <Item Id="created_at" Title="Created"/>
+          <Item Id="updated_at" Title="Updated"/>
+          <Item Id="assignee" Title="Assignee"/>
+          <Item Id="assignee.name" Title="Assignee Name"/>
+          <Item Id="group" Title="Group"/>
+          <Item Id="id" Title="Id"/>
+          <Item Id="locale" Title="Locale"/>
+          <Item Id="requester" Title="Requester"/>
+          <Item Id="requester.name" Title="Requester Name"/>
+          <Item Id="status" Title="Status"/>
+          <Item Id="subject" Title="Subject"/>
+        </DataSource>
+      </Select>
+      <Radio Id="SortDirection" Title="Sort Direction" DefaultValue="asc">
+        <DataSource>
+          <Resource Id="SortOrder"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
     <Paging PageSize="100" MaxTake="200000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="$.count"/>
@@ -68,7 +168,11 @@
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
-        https://@(Model.Subdomain).zendesk.com/api/v2/tickets.json
+        https://@(Model.Subdomain).zendesk.com/api/v2/tickets.json?
+        @if(Model.Status != "all")
+        {
+        @: query=type:ticket%20status=@Model.Status
+        }
       </Fetch.Url>
     </Fetch>
     <Parse>
