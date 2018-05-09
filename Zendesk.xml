@@ -131,7 +131,14 @@
 
   <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
     <Parameters>
-      <Text Id="FilterUser" Title="Filter by user" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Select Id="UserFilterType" Title="User Filter Type" Required="false" DefaultValue="assigned">
+        <DataSource>
+          <Item Id="ccd" Title="CC'd"/>
+          <Item Id="assigned" Title="Assigned"/>
+          <Item Id="requested" Title="Requested"/>
+        </DataSource>
+      </Select>
       <Select Id="SortBy" Title="Sort By" Required="true" DefaultValue="created_at">
         <DataSource>
           <Item Id="created_at" Title="Created"/>
@@ -168,10 +175,13 @@
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
-        https://@(Model.Subdomain).zendesk.com/api/v2/tickets.json?
-        @if(Model.Status != "all")
+        https://@(Model.Subdomain).zendesk.com/api/v2/
+        @if(!string.IsNullOrEmpty(Model.FilterUser))
         {
-        @: query=type:ticket%20status=@Model.Status
+            @: users/@(Model.FilterUser)/tickets/@(Model.UserFilterType).json
+        }
+        else {
+         @: /tickets.json
         }
       </Fetch.Url>
     </Fetch>
