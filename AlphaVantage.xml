@@ -346,6 +346,286 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Macd" Title="Technical Indicator - MACD" HelpText="Returns moving average convergence / divergence (MACD) values" HelpUrl="https://www.alphavantage.co/documentation/#macd">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Select Id="SeriesType" Title="Series Type" Required="true" DefaultValue="close" HelpText="Desired price type in the time series">
+        <DataSource>
+          <Item Id="open" Title="Open"/>
+          <Item Id="close" Title="Close"/>
+          <Item Id="high" Title="High"/>
+          <Item Id="high" Title="Low"/>
+        </DataSource>
+      </Select>
+      <Number Id="FastPeriod" Title="Fast Period" DefaultValue="12" Required="True"/>
+      <Number Id="SlowPeriod" Title="Slow Period" DefaultValue="26" Required="True"/>
+      <Number Id="SignalPeriod" Title="Signal Period" DefaultValue="9" Required="True"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        &function=MACD
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &series_type=@Model.SeriesType
+        &fastperiod=@Model.FastPeriod
+        &slowperiod=@Model.SlowPeriod
+        &signalperiod=@Model.SignalPeriod
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Headers" Expr="keys($.[Technical Analysis: MACD])">
+        <JsonPath Expr="key" Id="Time" Converter="DateTime"/>
+        <JsonPath Expr="value.MACD" Id="Macd" Title="MACD" Converter="Double"/>
+        <JsonPath Expr="value.MACD_Signal" Id="MacdSignal" Title="MACD Signal" Converter="Double"/>
+        <JsonPath Expr="value.MACD_Hist" Id="Value" Title="MACD_Hist" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Stoch" Title="Technical Indicator - STOCH" HelpText="Returns stochastic oscillator (STOCH) values" HelpUrl="https://www.alphavantage.co/documentation/#stoch">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Number Id="FastkPeriod" Title="Fastk period" DefaultValue="5" Required="false" HelpText="Time period of the fastk moving average"/>
+      <Number Id="SlowkPeriod" Title="Slowk period" DefaultValue="3" Required="false" HelpText="Time period of the slowk moving average"/>
+      <Number Id="SlowdPeriod" Title="Slowd period" DefaultValue="3" Required="false" HelpText="Time period of the slowd moving average"/>
+      <Select Id="SlowkMatype" Title="Moving average type for slowk" Required="false" DefaultValue="0">
+        <DataSource>
+          <Item Id="0" Title="SMA (Simple Moving Average)"/>
+          <Item Id="1" Title="EMA (Exponential Moving Average)"/>
+          <Item Id="2" Title="WMA (Weighted Moving Average)"/>
+          <Item Id="3" Title="DEMA (Double Exponential Moving Average)"/>
+          <Item Id="4" Title="TEMA (Triple Exponential Moving Average)"/>
+          <Item Id="5" Title="TRIMA (Triangular Moving Average)"/>
+          <Item Id="6" Title="T3 Moving Average"/>
+          <Item Id="7" Title="KAMA (Kaufman Adaptive Moving Average)"/>
+          <Item Id="8" Title="MAMA (MESA Adaptive Moving Average)"/>
+        </DataSource>
+      </Select>
+      <Select Id="SlowdMatype" Title="Moving average type for slowd" Required="false" DefaultValue="0">
+        <DataSource>
+          <Item Id="0" Title="SMA (Simple Moving Average)"/>
+          <Item Id="1" Title="EMA (Exponential Moving Average)"/>
+          <Item Id="2" Title="WMA (Weighted Moving Average)"/>
+          <Item Id="3" Title="DEMA (Double Exponential Moving Average)"/>
+          <Item Id="4" Title="TEMA (Triple Exponential Moving Average)"/>
+          <Item Id="5" Title="TRIMA (Triangular Moving Average)"/>
+          <Item Id="6" Title="T3 Moving Average"/>
+          <Item Id="7" Title="KAMA (Kaufman Adaptive Moving Average)"/>
+          <Item Id="8" Title="MAMA (MESA Adaptive Moving Average)"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        &function=STOCH
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &fastperiod=@Model.FastkPeriod
+        &slowperiod=@Model.SlowkPeriod
+        &slowperiod=@Model.SlowdPeriod
+        @if(Model.SlowkMatype != "0")
+        {
+          @: &slowkmatype=@Model.SlowkMatype
+        }
+        @if(Model.SlowdMatype != "0")
+        {
+          @: &slowdmatype=@Model.SlowdMatype
+        }
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Headers" Expr="keys($.[Technical Analysis: STOCH])">
+        <JsonPath Expr="key" Id="Time" Converter="DateTime"/>
+        <JsonPath Expr="value.SlowK" Id="Slowk" Title="SlowK" Converter="Double"/>
+        <JsonPath Expr="value.SlowD" Id="Slowd" Title="SlowD" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Bbands" Title="Technical Indicator - BBANDS" HelpText="Returns Bollinger bands (BBANDS) values" HelpUrl="https://www.alphavantage.co/documentation/#bbands">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Select Id="SeriesType" Title="Series Type" Required="true" DefaultValue="close" HelpText="Desired price type in the time series">
+        <DataSource>
+          <Item Id="open" Title="Open"/>
+          <Item Id="close" Title="Close"/>
+          <Item Id="high" Title="High"/>
+          <Item Id="high" Title="Low"/>
+        </DataSource>
+      </Select>
+      <Number Id="TimePeriod" Title="Time Period" DefaultValue="60" Required="True" HelpText="Number of data points used to calculate value"/>
+      <Number Id="Mbdevup" Title="Standard deviation multiplier&#13;of the upper band" Required="False" />
+      <Number Id="Mbdevdn" Title="Standard deviation multiplier&#13;of the upper band" Required="False" />
+      <Select Id="Matype" Title="Moving average type" Required="false" DefaultValue="0">
+        <DataSource>
+          <Item Id="0" Title="SMA (Simple Moving Average)"/>
+          <Item Id="1" Title="EMA (Exponential Moving Average)"/>
+          <Item Id="2" Title="WMA (Weighted Moving Average)"/>
+          <Item Id="3" Title="DEMA (Double Exponential Moving Average)"/>
+          <Item Id="4" Title="TEMA (Triple Exponential Moving Average)"/>
+          <Item Id="5" Title="TRIMA (Triangular Moving Average)"/>
+          <Item Id="6" Title="T3 Moving Average"/>
+          <Item Id="7" Title="KAMA (Kaufman Adaptive Moving Average)"/>
+          <Item Id="8" Title="MAMA (MESA Adaptive Moving Average)"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        &function=BBANDS
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &series_type=@Model.SeriesType
+        &time_period=@Model.TimePeriod
+        @if(Model.Mbdevup > 0)
+        {
+          @: &nbdevup=@Model.Mbdevup
+        }
+        @if(Model.Mbdevdn > 0)
+        {
+          @: &nbdevdn=@Model.Mbdevdn
+        }
+        &matype=@Model.Matype
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Headers" Expr="keys($.[Technical Analysis: BBANDS])">
+        <JsonPath Expr="key" Id="Time" Converter="DateTime"/>
+        <JsonPath Expr="value.[Real Upper Band]" Id="Rub" Title="Real Upper Band" Converter="Double"/>
+        <JsonPath Expr="value.[Real Lower Band]" Id="Rlb" Title="Real Lower Band" Converter="Double"/>
+        <JsonPath Expr="value.[Real Middle Band]" Id="Rmb" Title="Real Middle Band" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Aroon" Title="Technical Indicator - AROON" HelpText="Returns Aroon (AROON) values" HelpUrl="https://www.alphavantage.co/documentation/#aroon">
+    <Parameters>
+      <Text Id="Symbol" Title="Symbol" Required="true" DefaultValue="" Debug.DefaultValue="AAPL"/>
+      <Select Id="Function" Title="Function" Required="true" DefaultValue="SMA">
+        <DataSource>
+          <Item Id="SMA" Title="SMA (Simple Moving Average)"/>
+          <Item Id="EMA" Title="EMA (Exponential Moving Average)"/>
+          <Item Id="WMA" Title="WMA (Weighted Moving Average)"/>
+          <Item Id="DEMA" Title="DEMA (Double Exponential Moving Average)"/>
+          <Item Id="TEMA" Title="TEMA (Triple Exponential Moving Average)"/>
+          <Item Id="TRIMA" Title="TRIMA (Triangular Moving Average)"/>
+          <Item Id="KAMA" Title="KAMA (Kaufman Adaptive Moving Average)"/>
+          <Item Id="MAMA" Title="MAMA (MESA Adaptive Moving Average)"/>
+          <Item Id="T3" Title="T3 (Triple Exponential Moving Average)"/>
+          <Item Id="RSI" Title="RSI (Relative Strength Index)"/>
+          <Item Id="WILLR" Title="WILLR (Williams %R)"/>
+          <Item Id="ADX" Title="ADX (Average Directional Index)"/>
+          <Item Id="ADXR" Title="ADXR (Average Directional Movement Index Rating)"/>
+          <Item Id="MOM" Title="MOM (Momentum)"/>
+          <Item Id="BOP" Title="BOP (Balance of Power)"/>
+          <Item Id="CCI" Title="CCI (Commodity Channel Index) "/>
+          <Item Id="CMO" Title="CMO (Chande Momentum Oscillator)"/>
+          <Item Id="ROC" Title="ROC (Rate Of Change)"/>
+          <Item Id="ROCR" Title="ROCR (Rate Of Change Ratio)"/>
+          <Item Id="AROONOSC" Title="AROONOSC (Aroon Oscillator)"/>
+          <Item Id="MFI" Title="MFI (Money Flow Index)"/>
+          <Item Id="TRIX" Title="TRIX (Triple Smooth Exponential Moving Average)"/>
+          <Item Id="DX" Title="DX (Directional Movement Index)"/>
+          <Item Id="MINUS_DI" Title="MINUS_DI (Minus Directional Indicator)"/>
+          <Item Id="PLUS_DI" Title="PLUS_DI (Plus Directional Indicator)"/>
+          <Item Id="MINUS_DM" Title="MINUS_DM (Minus Directional Indicator Movement)"/>
+          <Item Id="PLUS_DM" Title="PLUS_DM (Plus Directional Indicator Movement)"/>
+          <Item Id="MIDPOINT" Title="Midpoint"/>
+          <Item Id="MIDPRICE" Title="Midprice"/>
+          <Item Id="TRANGE" Title="TRANGE (True Range)"/>
+          <Item Id="ATR" Title="ATR (Average True Range)"/>
+          <Item Id="NATR" Title="NATR (Normalize Average True Range)"/>
+          <Item Id="AD" Title="AD (Chaikin A/D Line)"/>
+          <Item Id="OBV" Title="OBV (On Balance Volume)"/>
+          <Item Id="HT_TRENDLINE" Title="HT_TRENDLINE (Hilbert Transform)"/>
+          <Item Id="HT_TRENDMODE" Title="HT_TRENDMODE (Hilbert Transform, Trend vs cycle Mode)"/>
+          <Item Id="HT_DCPERIOD" Title="HT_DCPERIOD (Hilbert Transform, Dominant Cycle Period)"/>
+          <Item Id="HT_DCPHASE" Title="HT_DCPHASE (Hilbert Transform, Dominant Cycle Phase)"/>
+        </DataSource>
+      </Select>
+      <Select Id="Interval" Title="Interval" Required="true" DefaultValue="1min">
+        <DataSource>
+          <Item Id="1min" Title="1min"/>
+          <Item Id="5min" Title="5min"/>
+          <Item Id="15min" Title="15min"/>
+          <Item Id="30min" Title="30min"/>
+          <Item Id="60min" Title="60min"/>
+          <Item Id="daily" Title="daily"/>
+          <Item Id="weekly" Title="weekly"/>
+          <Item Id="monthly" Title="monthly"/>
+        </DataSource>
+      </Select>
+      <Number Id="TimePeriod" Title="Time Period" DefaultValue="60" Required="True" HelpText="Number of data points used to calculate value"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.alphavantage.co/query?
+        function=AROON
+        &symbol=@Model.Symbol
+        &interval=@Model.Interval
+        &time_period=@Model.TimePeriod
+        &apikey=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Headers" Expr="keys($.[Technical Analysis: AROON])">
+        <JsonPath Expr="key" Id="Time" Converter="DateTime"/>
+        <JsonPath Expr="value.[Aroon Up]" Id="AroonUp" Title="Aroon Up" Converter="Double"/>
+        <JsonPath Expr="value.[Aroon Down]" Id="AroonDown" Title="Aroon Down" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string FetchBatchStockSymbolString()
