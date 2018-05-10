@@ -270,6 +270,7 @@
         <JsonPath Expr="satisfaction_rating	" Id="SatisfactionRating" Title="Satisfaction Rating" Converter="String"/>
         <JsonPath Expr="is_public" Id="IsPublic" Title="Public" Converter="Bool" Checked="False"/>
         <JsonPath Expr="external_id" Id="ExternalId" Title="External ID" Converter="String" Checked="false"/>
+        <JsonPath Expr="via.channel" Id="Via" Title="Via" Converter="Auto" Checked="True"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -433,7 +434,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SearchTickets" Title="Search Tickets" HelpText="Search support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/search">
+  <RestConnector Id="SearchTickets" Title="Search Tickets" HelpText="Search support tickets" HelpUrl="https://support.zendesk.com/hc/en-us/articles/203663206">
     <Parameters>
       <Text Id="FilterSubject" Title="Search ticket subject" Required="false"/>
       <Text Id="FilterDescription" Title="Search ticket description" Required="false"/>
@@ -454,6 +455,39 @@
           <Item Id="incident" Title="Incident"/>
           <Item Id="problem" Title="Problem"/>
           <Item Id="ask" Title="Ask"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+      <Select Id="Priority" Title="Priority" Required="false" DefaultValue="all">
+        <DataSource>
+          <Item Id="low" Title="Low"/>
+          <Item Id="normal" Title="Normal"/>
+          <Item Id="high" Title="High"/>
+          <Item Id="urgent" Title="Urgent"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+      <Select Id="Via" Title="Via" Required="false" DefaultValue="all">
+        <DataSource>
+          <Item Id="mail" Title="Mail"/>
+          <Item Id="get_satisfaction" Title="Get Satisfaction"/>
+          <Item Id="dropbox" Title="Dropbox"/>
+          <Item Id="chat" Title="Chat"/>
+          <Item Id="twitter_dm" Title="Twitter DM"/>
+          <Item Id="twitter_fav" Title="Twitter Fav"/>
+          <Item Id="twitter_like" Title="Twitter Like"/>
+          <Item Id="twitter" Title="Twitter"/>
+          <Item Id="voicemail" Title="Voicemail"/>
+          <Item Id="phone_call_inbound" Title="Phone Call Inbound"/>
+          <Item Id="phone_call_outbound" Title="Phone Call Outbound"/>
+          <Item Id="phone" Title="Phone"/>
+          <Item Id="sms" Title="Sms"/>
+          <Item Id="api" Title="Api"/>
+          <Item Id="logmein" Title="Logmein"/>
+          <Item Id="facebook_post" Title="Facebook Post"/>
+          <Item Id="facebook_message" Title="Facebook Message"/>
+          <Item Id="facebook" Title="Facebook"/>
+          <Item Id="web" Title="Web"/>
           <Item Id="all" Title="All"/>
         </DataSource>
       </Select>
@@ -520,6 +554,14 @@
           {
             @: %20ticket_type:@(Model.TicketType)
           }
+          @if(Model.Priority != "all")
+          {
+            @: %20priority:@(Model.Priority)
+          }
+          @if(Model.Via != "all")
+          {
+            @: %20via:@(Model.Via)
+          }
         }
         ]]>
       </Fetch.Url>
@@ -551,6 +593,7 @@
         <JsonPath Expr="satisfaction_rating	" Id="SatisfactionRating" Title="Satisfaction Rating" Converter="String"/>
         <JsonPath Expr="is_public" Id="IsPublic" Title="Public" Converter="Bool" Checked="False"/>
         <JsonPath Expr="external_id" Id="ExternalId" Title="External ID" Converter="String" Checked="false"/>
+        <JsonPath Expr="via.channel" Id="Via" Title="Via" Converter="Auto" Checked="True"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -561,10 +604,6 @@
     {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + "/token:" + Model.ApiKey));
       return AuthString;
-    }
-    string GetStatus(){
-      throw new Exception (Model.Status.GetType().ToString());
-      return "a";
     }
     ]]>
   </RazorFunctions>
