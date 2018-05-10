@@ -129,6 +129,55 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="ListOrganizations" Title="Organizations" HelpText="List all organizations" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/organizations">
+    <Parameters>
+      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        https://@(Model.Subdomain).zendesk.com/api/v2/
+        @if(!string.IsNullOrEmpty(Model.FilterUser))
+        {
+        @: users/@(Model.FilterUser)/organizations.json
+        }
+        else {
+        @: organizations.json
+        }
+
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.organizations.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="external_id" Id="ExternalId" Title="External Id" Converter="String" Checked="false"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="domain_names" Id="DomainNames" Title="DomainNames" Converter="String" Checked="false"/>
+        <JsonPath Expr="Details" Id="Details" Title="Details" Checked="False" Converter="String"/>
+        <JsonPath Expr="notes" Id="Notes" Title="Notes" Checked="False" Converter="String"/>
+        <JsonPath Expr="group_id" Id="GroupId" Title="Group Id" Converter="Int"/>
+        <JsonPath Expr="shared_tickets" Id="SharedTickets" Title="Shared Tickets" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="shared_comments" Id="SharedComments" Title="Shared Comments" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
     <Parameters>
       <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
@@ -181,7 +230,7 @@
             @: users/@(Model.FilterUser)/tickets/@(Model.UserFilterType).json
         }
         else {
-         @: /tickets.json
+         @: tickets.json
         }
       </Fetch.Url>
     </Fetch>
