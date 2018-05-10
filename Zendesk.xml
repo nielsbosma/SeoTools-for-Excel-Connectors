@@ -433,12 +433,138 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="SearchTickets" Title="Search Tickets" HelpText="Search support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/search">
+    <Parameters>
+      <Text Id="FilterSubject" Title="Search ticket subject" Required="false"/>
+      <Text Id="FilterDescription" Title="Search ticket description" Required="false"/>
+      <Select Id="Status" Title="Status" Required="false" DefaultValue="all">
+        <DataSource>
+          <Item Id="new" Title="New"/>
+          <Item Id="open" Title="Open"/>
+          <Item Id="pending" Title="Pending"/>
+          <Item Id="hold" Title="Hold"/>
+          <Item Id="solved" Title="Solved"/>
+          <Item Id="closed" Title="Closed"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+      <Select Id="TicketType" Title="Ticket Type" Required="false" DefaultValue="all">
+        <DataSource>
+          <Item Id="question" Title="Question"/>
+          <Item Id="incident" Title="Incident"/>
+          <Item Id="problem" Title="Problem"/>
+          <Item Id="ask" Title="Ask"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+      <Date Id="CreatedAfter" Title="Created After" Required="false" Nullable="true" DefaultValue="1/1/2000"/>
+      <Date Id="CreatedBefore" Title="Created Before" Required="false" Nullable="true" DefaultValue="1/1/2099"/>
+      <Select Id="SortBy" Title="Sort By" Required="true" DefaultValue="created">
+        <DataSource>
+          <Item Id="created" Title="Created"/>
+          <Item Id="commented" Title="Commented"/>
+          <Item Id="priority" Title="Priority"/>
+          <Item Id="status" Title="Status"/>
+          <Item Id="ticket_type" Title="Ticket Type"/>
+        </DataSource>
+      </Select>
+      <Radio Id="SortDirection" Title="Sort Direction" DefaultValue="asc">
+        <DataSource>
+          <Resource Id="SortOrder"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: @(Model.NextToken)
+        }
+        else {
+          @: https://@(Model.Subdomain).zendesk.com/api/v2/search.json?query=type:ticket%20order_by:@(Model.SortBy)%20sort:@(Model.SortDirection)
+          @if(!Utils.IsNullDate(Model.CreatedAfter))
+          {
+            @: %20created>@Model.CreatedAfter.ToString("yyy-MM-dd")
+          }
+          @if(!Utils.IsNullDate(Model.CreatedBefore))
+          {
+            @: %20created<@Model.CreatedBefore.ToString("yyy-MM-dd")
+          }
+          @if(!string.IsNullOrEmpty(Model.FilterSubject))
+          {
+            @: %20subject:@(Model.FilterSubject)
+          }
+          @if(!string.IsNullOrEmpty(Model.FilterDescription))
+          {
+            @: %20subject:@(Model.FilterDescription)
+          }
+          @if(Model.Status != "all")
+          {
+            @: %20status:@(Model.Status)
+          }
+          @if(Model.TicketType != "all")
+          {
+            @: %20ticket_type:@(Model.TicketType)
+          }
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="Int"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="priority" Id="Priority" Title="Priority" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="due_at" Id="DuedAt" Title="Due" Converter="Auto"/>
+        <JsonPath Expr="recipient" Id="Recipient" Title="Recipient" Converter="String"/>
+        <JsonPath Expr="requester_id" Id="RequesterId" Title="Requester ID" Converter="String"/>
+        <JsonPath Expr="submitter_id" Id="SubmitterId" Title="Submitter ID" Converter="Int"/>
+        <JsonPath Expr="assignee_id" Id="AsigneeId" Title="Assignee ID" Converter="Int"/>
+        <JsonPath Expr="organization_id" Id="OrganizationId" Title="Organization ID" Converter="Int"/>
+        <JsonPath Expr="group_id" Id="GroupId" Title="Group ID" Converter="Int"/>
+        <JsonPath Expr="collaborator_ids" Id="CollaboratorIds" Title="Collaborator IDs" Converter="String"/>
+        <JsonPath Expr="follower_ids" Id="FollowerIds" Title="Follower IDs" Converter="String"/>
+        <JsonPath Expr="forum_topic_id" Id="ForumTopicId" Title="Forum Topic ID" Converter="Auto" Checked="False"/>
+        <JsonPath Expr="problem_id" Id="ProblemId" Title="Problem ID" Converter="Auto" Checked="False"/>
+        <JsonPath Expr="has_incidents	" Id="HasIncidents" Title="Is a problem" Converter="String" Checked="False"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String"/>
+        <JsonPath Expr="satisfaction_rating	" Id="SatisfactionRating" Title="Satisfaction Rating" Converter="String"/>
+        <JsonPath Expr="is_public" Id="IsPublic" Title="Public" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="external_id" Id="ExternalId" Title="External ID" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string CreateBasicAuth()
     {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + "/token:" + Model.ApiKey));
       return AuthString;
+    }
+    string GetStatus(){
+      throw new Exception (Model.Status.GetType().ToString());
+      return "a";
     }
     ]]>
   </RazorFunctions>
