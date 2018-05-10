@@ -327,6 +327,62 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="ListTicketMetrics" Title="Ticket Metrics" HelpText="List ticket metrics" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_metrics">
+    <Paging PageSize="100" MaxTake="200000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.count"/>
+        <JsonPath Id="NextToken" Expr="$.next_page"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: @(Model.NextToken)
+        }
+        else {
+          @: https://@(Model.Subdomain).zendesk.com/api/v2/ticket_metrics.json
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.ticket_metrics.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="ticket_id" Id="TicketId" Title="Ticket ID" Converter="Int"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="group_stations" Id="GroupStations" Title="Group Stations" Converter="Int"/>
+        <JsonPath Expr="assignee_stations" Id="AssigneeStations" Title="Assignee Stations" Converter="Int"/>
+        <JsonPath Expr="reopens" Id="Reopens" Title="Reopens" Converter="Int"/>
+        <JsonPath Expr="replies" Id="Replies" Title="Replies" Converter="Int"/>
+        <JsonPath Expr="assignee_updated_at" Id="AssigneeUpdatedAt" Title="Assignee Updated" Converter="Auto"/>
+        <JsonPath Expr="requester_updated_at" Id="RequesterUpdatedAt" Title="Requester Updated" Converter="DateTime"/>
+        <JsonPath Expr="status_updated_at" Id="StatusUpdatedAt" Title="Status Updated" Converter="DateTime"/>
+        <JsonPath Expr="initially_assigned_at" Id="InitiallyAssignedAt" Title="Initially Assigned" Converter="Auto"/>
+        <JsonPath Expr="assigned_at" Id="AssignedAt" Title="Last Assigned" Converter="Auto"/>
+        <JsonPath Expr="solved_at" Id="Solved_at" Title="Solved at" Converter="Auto"/>
+        <JsonPath Expr="latest_comment_added_at" Id="LatestCommentAdded At" Title="Latest Comment" Converter="DateTime"/>
+        <JsonPath Expr="first_resolution_time_in_minutes.business" Id="FirstResolutionTimeMinutes" Title="First Resolution Time(min)" Converter="Int"/>
+        <JsonPath Expr="reply_time_in_minutes.business" Id="ReplyTimeMinutes" Title="Reply Time(min)" Converter="Int"/>
+        <JsonPath Expr="full_resolution_time_in_minutes.business" Id="FullResolutionTimeMinutes" Title="Full Resolution Time(min)" Converter="Int"/>
+        <JsonPath Expr="agent_wait_time_in_minutes.business" Id="AgentWaitTimeMinutes" Title="Agent Wait Time(min)" Converter="Int"/>
+        <JsonPath Expr="requester_wait_time_in_minutes.business" Id="requester_wait_time_in_minutes" Title="Requester Wait Time(min)" Converter="Int"/>
+        <JsonPath Expr="created_at" Id="created_at" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="updated_at" Title="Updated" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="ListComments" Title="Ticket Comments" HelpText="List comments for specific ticket" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_comments#list-comments">
     <Parameters>
       <Text Id="TicketId" Title="Ticket ID" Debug.DefaultValue="1" Required="true"/>
