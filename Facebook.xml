@@ -3,7 +3,7 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.8/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri={0}"/>
+  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.12/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri={0}"/>
 
   <RestConnector Id="PageLookup" Title="Page Lookup">
     <Parameters>
@@ -12,7 +12,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?id=
+        https://graph.facebook.com/v2.12/?id=
         @(Model.PageId)
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -57,7 +57,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
+        https://graph.facebook.com/v2.12/?ids=
         @(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -182,6 +182,44 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="PlaceLookupBatch" Title="Place Lookup Batch">
+    <Parameters>
+      <Text Id="Ids" Title="Multiple Place Ids (Max 50) (Use 'PageId_PostId' Format)" Debug.DefaultValue="1408301722811369" Required="true" Multiline="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v2.12/?ids=
+        @(FetchIdsBatch())
+        &fields=@SelectedFields()
+        &access_token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+        <JsonPath Title="Location Name" Id="NameLocation" Expr="name_with_location_descriptor" Converter="String" Tag="name_with_location_descriptor" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+        <JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category" HelpText=""/>
+        <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins" HelpText=""/>
+        <JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count" HelpText=""/>
+        <JsonPath Title="Talking About" Id="TalkingAbout" Expr="talking_about_count" Converter="Int" Tag="talking_about_count" HelpText=""/>
+        <JsonPath Title="Rating" Id="Rating" Expr="overall_star_rating" Converter="Double" Tag="overall_star_rating" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Rating Count" Id="RatingCount" Expr="rating_count" Converter="Int" Tag="rating_count" HelpText="" DefaultValue="" />
+        <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Phone" Id="Phone" Expr="phone" Converter="String" Tag="phone" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Address" Id="Address" Expr="single_line_address" Converter="String" Tag="single_line_address" HelpText="" DefaultValue=""/>
+        <JsonPath Title="Location URL" Id="LocationUrl" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
   <RestConnector Id="PageAlbums" Title="Page Albums">
     <Parameters>
       <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="56796081303"/>
@@ -194,7 +232,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/
+        https://graph.facebook.com/v2.12/
         @(Model.Id)/albums?
         fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -235,7 +273,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/events?
+        https://graph.facebook.com/v2.12/events?
         id=@(Model.Id)
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
@@ -326,6 +364,18 @@
         <JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
         <JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
         <JsonPath Title="Permalink" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
+				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							Regex regex = new Regex(@"php\?u\=(.*?)&h\=");
+							Match match = regex.Match(Model.Url);
+						}
+						@System.Net.WebUtility.UrlDecode(match.Groups[1].Value)
+						]]>
+					</Compute.Expr>
+					<JsonPath Id="Url" Expr="$.attachments.data..target.url" HelpText="" DefaultValue=""/>
+				</Compute>
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
@@ -347,7 +397,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/
+        https://graph.facebook.com/v2.12/
         @(Model.Id)/videos?
         fields=@SelectedFields()
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
@@ -404,7 +454,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/
+        https://graph.facebook.com/v2.12/
         @(Model.Id)/photos?
         fields=@SelectedFields()
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
@@ -439,42 +489,6 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PostLikes" Title="Post Likes">
-    <Parameters>
-      <Text Id="Id" Title="Id (Use 'PageId_PostId' Format)" DefaultValue="" Required="true" Debug.DefaultValue="56796081303_10154300423791304" HelpText=""/>
-    </Parameters>
-    <Paging PageSize="25" EvenPages="false">
-      <Parse>
-    <JsonPath Id="Cursor" Expr="paging.cursors.after"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v2.8/
-        @(Model.Id)/likes?
-        fields=@SelectedFields()
-        &access_token=@(Model.Authenticator.Token)
-        &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="User Id" Id="UserId" Expr="id" Converter="String" HelpText=""/>
-        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
-        <JsonPath Title="User URL" Id="UserUrl" Expr="link" Converter="String" Tag="link" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
   <RestConnector Id="Comments" Title="Comments">
     <Parameters>
       <Text Id="Id" Title="Id (Post_Id, Event_Id etc)" DefaultValue="" Required="true" Debug.DefaultValue="56796081303_10154300423791304" HelpText=""/>
@@ -487,7 +501,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/
+        https://graph.facebook.com/v2.12/
         @(Model.Id)/comments?
         fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -523,7 +537,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?id=
+        https://graph.facebook.com/v2.12/?id=
         @(Model.PostId)
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -547,6 +561,18 @@
       <JsonPath Title="Author Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText=""/>
       <JsonPath Title="Author" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText=""/>
       <JsonPath Title="Permalink" Id="Permalink" Expr="$.permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
+			<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
+				<Compute.Expr>
+					<![CDATA[
+					@{
+						Regex regex = new Regex(@"php\?u\=(.*?)&h\=");
+						Match match = regex.Match(Model.Url);
+					}
+					@System.Net.WebUtility.UrlDecode(match.Groups[1].Value)
+					]]>
+				</Compute.Expr>
+				<JsonPath Id="Url" Expr="$.attachments.data..target.url" HelpText="" DefaultValue=""/>
+			</Compute>
       <JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
     </Parse>
     <Fail>
@@ -561,7 +587,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
+        https://graph.facebook.com/v2.12/?ids=
         @(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -586,6 +612,18 @@
         <JsonPath Title="Author Id" Id="AuthorId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
         <JsonPath Title="Author" Id="Author" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
         <JsonPath Title="Permalink" Id="Permalink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
+				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							Regex regex = new Regex(@"php\?u\=(.*?)&h\=");
+							Match match = regex.Match(Model.Url);
+						}
+						@System.Net.WebUtility.UrlDecode(match.Groups[1].Value)
+						]]>
+					</Compute.Expr>
+					<JsonPath Id="Url" Expr="$.attachments.data..target.url" HelpText="" DefaultValue=""/>
+				</Compute>
         <JsonPath Title="Picture URL" Id="PictureUrl" Expr="picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
@@ -601,7 +639,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?id=
+        https://graph.facebook.com/v2.12/?id=
         @(Model.CommentId)
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -614,8 +652,8 @@
       <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
       <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
       <JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
-      <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
-      <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
+      <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
+      <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
       <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
     </Parse>
     <Fail>
@@ -630,7 +668,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/?ids=
+        https://graph.facebook.com/v2.12/?ids=
         @(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
@@ -644,8 +682,8 @@
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message" HelpText=""/>
         <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count" HelpText=""/>
         <JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count" HelpText=""/>
-        <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText=""/>
-        <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText=""/>
+        <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
+        <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
@@ -666,7 +704,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.8/search?
+        https://graph.facebook.com/v2.12/search?
         &q=@Utils.UrlEncode(Model.Query)
         &type=place
         &access_token=@(Model.Authenticator.Token)
@@ -701,7 +739,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.9?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)
+        https://graph.facebook.com/v2.12?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)
         &fields=engagement
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -711,7 +749,7 @@
 			<JsonPath Title="Shares" Id="Shares" Expr="engagement.share_count" Converter="Int"/>
 			<JsonPath Title="Comments" Id="Comments" Expr="engagement.comment_count" Converter="Int"/>
 			<JsonPath Title="Reactions" Id="Reactions" Expr="engagement.reaction_count" Converter="Int"/>
-			<JsonPath Title="URL" Id="Url" Expr="id" Converter="String" Checked="false"/>			
+			<JsonPath Title="URL" Id="Url" Expr="id" Converter="String" Checked="false"/>
     </Parse>
   </RestConnector>
 
@@ -722,7 +760,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.9?ids=@(FetchIdsBatch())
+        https://graph.facebook.com/v2.12?ids=@(FetchIdsBatch())
         &fields=engagement
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -745,7 +783,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.9/@(Model.Id)/picture
+        https://graph.facebook.com/v2.12/@(Model.Id)/picture
         ?width=300&height=300&redirect=false
         &access_token=@(Model.Authenticator.Token)
         ]]>
