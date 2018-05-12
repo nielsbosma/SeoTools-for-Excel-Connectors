@@ -55,7 +55,7 @@
   <RestConnector Id="SearchMessages" Title="Search Messages" HelpText="Search recently sent messages" HelpUrl="https://mandrillapp.com/api/docs/messages.JSON.html#method=search">\
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="state:bounced OR state:spam" Required="false" HelpUrl="https://mandrill.zendesk.com/hc/en-us/articles/205583137-How-do-I-search-my-outbound-activity-in-Mandrill-" Multiline="True"/>
-      <Date Id="SentAfter" Title="Sent After" Required="false" Nullable="true" DefaultValue="1/1/2018"/>
+      <Date Id="SentAfter" Title="Sent After" Required="false" Nullable="true"/>
       <Date Id="SentBefore" Title="Sent Before" Required="false" Nullable="true" DefaultValue="2/1/2030"/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Min="1" Max="1000" Required="True"/>
     </Parameters>
@@ -108,6 +108,49 @@
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Integer"/>
         <JsonPath Expr="clicks_detail" Id="Clicks_detail" Title="Clicks_detail" Converter="String"/>
         <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="Auto" Checked="False"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="MessageInfo" Title="Message info" HelpText="Get the information for a single recently sent message" HelpUrl="https://mandrillapp.com/api/docs/messages.JSON.html#method=info">
+    <Parameters>
+      <Text Id="MessageId" Title="Message ID" Debug.DefaultValue="1f7ac75749c9479f9e7961c95d7c0dd9" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[{"key": "@(Model.ApiKey)", "id" : "@Model.MessageId"}]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/messages/info.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.">
+        <Compute Id="Date" Title="Sent" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(Model.Ts))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="ts" Id="Ts" Title="Ts" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="_id" Id="_id" Title="_id" Converter="String"/>
+        <JsonPath Expr="sender" Id="Sender" Title="Sender" Converter="String"/>
+        <JsonPath Expr="template" Id="Template" Title="Template" Converter="String"/>
+        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String"/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String"/>
+        <JsonPath Expr="opens" Id="Opens" Title="Opens" Converter="Int"/>
+        <JsonPath Expr="opens_detail" Id="Opens_detail" Title="Opens_detail" Converter="String"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="clicks_detail" Id="Clicks_detail" Title="Clicks_detail" Converter="String"/>
+        <JsonPath Expr="state" Id="State" Title="State" Converter="String"/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" Checked="False"/>
+        <JsonPath Expr="smtp_events" Id="Smtp_events" Title="Smtp_events" Converter="String" Checked="False"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
