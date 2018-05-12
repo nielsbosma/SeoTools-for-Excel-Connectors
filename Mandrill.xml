@@ -14,15 +14,14 @@
       <Item Id="asc" Title="Ascending"/>
       <Item Id="desc" Title="Descending"/>
     </Resource>
+    <Resource Id="Error">
+      <Fail>
+        <JsonPath Expr="$.message"/>
+      </Fail>
+    </Resource>
   </Resources>
 
-  <RestConnector Id="ListSenders" Title="List senders" HelpText="" HelpUrl="https://mandrillapp.com/api/docs/users.JSON.html#method=senders">
-    <Paging PageSize="100" MaxTake="200000">
-      <Parse>
-        <JsonPath Id="AvaliableRows" Expr="$.count"/>
-        <JsonPath Id="NextToken" Expr="$.next_page"/>
-      </Parse>
-    </Paging>
+  <RestConnector Id="ListSenders" Title="List senders" HelpText="Return the senders that have tried to use this account, both verified and unverified" HelpUrl="https://mandrillapp.com/api/docs/users.JSON.html#method=senders">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -31,17 +30,96 @@
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>
-        https://mandrillapp.com/api/1.0//users/senders.json
+        https://mandrillapp.com/api/1.0/users/senders.json
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
-        <JsonPath Expr="address" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="address" Id="Address" Title="Address" Converter="String"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="sent" Id="Sent" Title="Sent" Converter="Int"/>
+        <JsonPath Expr="hard_bounces" Id="HardBounces" Title="Hard Bounces" Converter="Int"/>
+        <JsonPath Expr="soft_bounces" Id="SoftBounces" Title="Soft Bounces" Converter="Int"/>
+        <JsonPath Expr="rejects" Id="Rejects" Title="Rejects" Converter="Int"/>
+        <JsonPath Expr="complaints" Id="Complaints" Title="Complaints" Converter="Int"/>
+        <JsonPath Expr="unsubs" Id="Unsubs" Title="Unsubs" Converter="Int"/>
+        <JsonPath Expr="opens" Id="Opens" Title="Opens" Converter="Int"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="unique_opens" Id="UniqueOpens" Title="Unique Opens" Converter="Int"/>
+        <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
       </JsonPath>
     </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="SearchMessages" Title="Search Messages" HelpText="Search recently sent messages" HelpUrl="https://mandrillapp.com/api/docs/messages.JSON.html#method=search">\
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="state:bounced OR state:spam" Required="false" HelpUrl="https://mandrill.zendesk.com/hc/en-us/articles/205583137-How-do-I-search-my-outbound-activity-in-Mandrill-" Multiline="True"/>
+      <Date Id="SentAfter" Title="Sent After" Required="false" Nullable="true" DefaultValue="1/1/2018"/>
+      <Date Id="SentBefore" Title="Sent Before" Required="false" Nullable="true" DefaultValue="2/1/2030"/>
+      <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Min="1" Max="1000" Required="True"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[
+{
+  "key": "@(Model.ApiKey)",
+  "limit": @(Model.MaxResults)
+  @if(!string.IsNullOrEmpty(Model.Query))
+  {
+    @: ,"query": "@(QueryString())"
+  }
+  @if(!Utils.IsNullDate(Model.SentAfter))
+  {
+  @: ,"date_from": "@Model.SentAfter.ToString("yyy-MM-dd")"
+  }
+  @if(!Utils.IsNullDate(Model.SentBefore))
+  {
+@: ,"date_to": "@Model.SentBefore.ToString("yyy-MM-dd")"
+  }
+}
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/messages/search.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <Compute Id="Date" Title="Sent" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(Model.Ts))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="ts" Id="Ts" Title="Ts" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="_id" Id="_id" Title="_id" Converter="String"/>
+        <JsonPath Expr="sender" Id="Sender" Title="Sender" Converter="String"/>
+        <JsonPath Expr="template" Id="Template" Title="Template" Converter="String"/>
+        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String"/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String" Checked="False"/>
+        <JsonPath Expr="opens" Id="Opens" Title="Opens" Converter="Integer"/>
+        <JsonPath Expr="opens_detail" Id="Opens_detail" Title="Opens_detail" Converter="String"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Integer"/>
+        <JsonPath Expr="clicks_detail" Id="Clicks_detail" Title="Clicks_detail" Converter="String"/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="Auto" Checked="False"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
   </RestConnector>
 
   <RazorFunctions>
+    <![CDATA[
+    string QueryString()
+    {
+     string[] lines = ((string)Model.Query).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+     return string.Join(" ",lines.Select((e, i) => System.Web.HttpUtility.JavaScriptStringEncode(e)).ToArray());
+    }
+    ]]>
   </RazorFunctions>
 </Suite>
