@@ -387,6 +387,101 @@
     <Resource Id="Error"/>
   </RestConnector>
 
+  <RestConnector Id="ListUrls" Title="List URLs" HelpText="Get the 100 most clicked URLs" HelpUrl="https://mandrillapp.com/api/docs/urls.JSON.html">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[{"key": "@(Model.ApiKey)"}]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/urls/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="sent" Id="Sent" Title="Send" Converter="Int"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="SearchUrls" Title="Search URLs" HelpText="Return the 100 most clicked URLs that match the search query given" HelpUrl="https://mandrillapp.com/api/docs/urls.JSON.html#method=search">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="True" HelpText="Beginning of URL to search for"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[{"key": "@(Model.ApiKey)", "q": "@(Model.Url)"}]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/urls/search.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+        <JsonPath Expr="sent" Id="Sent" Title="Send" Converter="Int"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ListUrlsHidden" Title="List URLs hidden">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[{"key": "@(Model.ApiKey)"}]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/urls/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlsTimeSeries" Title="URL Time Series" HelpText="Return the recent history (hourly stats for the last 30 days) for a url" HelpUrl="https://mandrillapp.com/api/docs/urls.JSON.html#method=time-series">
+    <Parameters>
+      <Text Id="Url" Title="Url" Required="True" Select.Connector="ListUrlsHidden" Select.IdField="Url" Select.TitleField="Url" HelpText="Exact URL to show time series for"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[{"key": "@(Model.ApiKey)", "url": "@(Model.Url)"}]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/urls/time-series.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime"/>
+        <JsonPath Expr="sent" Id="Sent" Title="Send" Converter="Int"/>
+        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
+        <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string QueryString()
