@@ -21,7 +21,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListSenders" Title="List senders" HelpText="Return the senders that have tried to use this account, both verified and unverified" HelpUrl="https://mandrillapp.com/api/docs/users.JSON.html#method=senders">
+  <RestConnector Id="ListSenders" Title="List Senders" HelpText="Return the senders that have tried to use this account, both verified and unverified" HelpUrl="https://mandrillapp.com/api/docs/users.JSON.html#method=senders">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -47,6 +47,71 @@
         <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
         <JsonPath Expr="unique_opens" Id="UniqueOpens" Title="Unique Opens" Converter="Int"/>
         <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ListSubaccounts" Title="List Subaccounts" HelpText="Get the list of subaccounts defined for the account" HelpUrl="https://mandrillapp.com/api/docs/subaccounts.JSON.html#method=list">
+    <Parameters>
+      <Text Id="Prefix" Title="Prefix" Required="false" HelpText="An optional prefix to filter the subaccounts' ids and names" HelpUrl="http://seotoolsforexcel.com/mandrill"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[
+          {
+          "key": "@(Model.ApiKey)"
+          @if(!string.IsNullOrEmpty(Model.Prefix))
+          {
+            @: ,"q": "@(Model.Prefix)"
+          }
+          }
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/subaccounts/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="custom_quota" Id="Custom_quota" Title="Custom Quota" Converter="Auto"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="reputation" Id="Reputation" Title="Reputation" Converter="Int"/>
+        <JsonPath Expr="created_at" Id="Created_at" Title="Created" Converter="String"/>
+        <JsonPath Expr="first_sent_at" Id="First_sent_at" Title="First Sent" Converter="String"/>
+        <JsonPath Expr="sent_weekly" Id="Sent_weekly" Title="Sent Weekly" Converter="Int"/>
+        <JsonPath Expr="sent_monthly" Id="Sent_monthly" Title="Sent Monthly" Converter="Int"/>
+        <JsonPath Expr="sent_total" Id="Sent_total" Title="Sent Total" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ListSubaccountsHidden" Title="List subaccounts hidden" Hidden="True">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[
+          {
+          "key": "@(Model.ApiKey)"
+          }
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/subaccounts/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -113,7 +178,7 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="MessageInfo" Title="Message info" HelpText="Get the information for a single recently sent message" HelpUrl="https://mandrillapp.com/api/docs/messages.JSON.html#method=info">
+  <RestConnector Id="MessageInfo" Title="Message Info" HelpText="Get the information for a single recently sent message" HelpUrl="https://mandrillapp.com/api/docs/messages.JSON.html#method=info">
     <Parameters>
       <Text Id="MessageId" Title="Message ID" Debug.DefaultValue="1f7ac75749c9479f9e7961c95d7c0dd9" Required="true"/>
     </Parameters>
@@ -156,38 +221,7 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="ListTags" Title="List tags" HelpText="Return all of the user-defined tag information" HelpUrl="https://mandrillapp.com/api/docs/tags.JSON.html">
-    <Fetch>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-        <RequestBody>
-          <![CDATA[{"key": "@(Model.ApiKey)"}]]>
-        </RequestBody>
-      </HttpSettings>
-      <Fetch.Url>
-        https://mandrillapp.com/api/1.0/tags/list.json
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="tag" Id="Tag" Title="Tag" Converter="String"/>
-        <JsonPath Expr="reputation" Id="Reputation" Title="Reputation" Converter="Int"/>
-        <JsonPath Expr="sent" Id="Sent" Title="Sent" Converter="Int"/>
-        <JsonPath Expr="hard_bounces" Id="Hard_bounces" Title="Hard Bounces" Converter="Int"/>
-        <JsonPath Expr="soft_bounces" Id="Soft_bounces" Title="Soft Bounces" Converter="Int"/>
-        <JsonPath Expr="rejects" Id="Rejects" Title="Rejects" Converter="Int"/>
-        <JsonPath Expr="complaints" Id="Complaints" Title="Complaints" Converter="Int"/>
-        <JsonPath Expr="unsubs" Id="Unsubs" Title="Unsubs" Converter="Int"/>
-        <JsonPath Expr="opens" Id="Opens" Title="Opens" Converter="Int"/>
-        <JsonPath Expr="clicks" Id="Clicks" Title="Clicks" Converter="Int"/>
-        <JsonPath Expr="unique_opens" Id="Unique_opens" Title="Unique Opens" Converter="Int"/>
-        <JsonPath Expr="unique_clicks" Id="Unique_clicks" Title="Unique Clicks" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Error"/>
-  </RestConnector>
-
-  <RestConnector Id="ListTagsHidden" Title="List tags hidden">
+  <RestConnector Id="ListTagsHidden" Title="List tags hidden" Hidden="True">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -265,6 +299,89 @@
         <JsonPath Expr="opens" Id="Opens" Title="Opens" Converter="Int"/>
         <JsonPath Expr="unique_opens" Id="UniqueOpens" Title="Unique Opens" Converter="Int"/>
         <JsonPath Expr="unique_clicks" Id="UniqueClicks" Title="Unique Clicks" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ListRejectsCalls" Title="List Rejects Calls" HelpText="Retrieves your email rejection blacklist." HelpUrl="https://mandrillapp.com/api/docs/rejects.JSON.html#method=list">
+    <Parameters>
+      <Text Id="Email" Title="Email" Required="false" HelpText="Receiving email"/>
+      <Checkbox Id="IncludeExpired" Title="Include Expired" DefaultValue="true" HelpText="Whether to include rejections that have already expired."/>
+      <Text Id="FilterSubacount" Title="Filter Subaccount" Select.Connector="ListSubaccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[
+          {
+            "key": "@(Model.ApiKey)",
+            "include_expired": "@(Model.IncludeExpired)"
+            @if(!string.IsNullOrEmpty(Model.Email))
+            {
+              @: ,"email": "@(Model.Email)"
+            }
+            @if(!string.IsNullOrEmpty(Model.FilterSubacount))
+            {
+              @: ,"subaccount": "@(Model.FilterSubacount)"
+            }
+          }
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/rejects/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="reason" Id="Reason" Title="Reason" Converter="String"/>
+        <JsonPath Expr="detail" Id="Detail" Title="Detail" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created_at" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="last_event_at" Id="Last_event_at" Title="Last Event" Converter="DateTime"/>
+        <JsonPath Expr="expires_at" Id="Expires_at" Title="Expires" Converter="DateTime"/>
+        <JsonPath Expr="expired" Id="Expired" Title="Expired" Converter="Bool"/>
+        <JsonPath Expr="subaccount" Id="Subaccount" Title="Subaccount" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ListWhitelist" Title="List Whitelist Entries" HelpText="Retrieves your email rejection whitelist." HelpUrl="https://mandrillapp.com/api/docs/whitelists.JSON.html#method=list">
+    <Parameters>
+      <Text Id="Email" Title="Email" Required="false" HelpText="Receiving email"/>
+      <Text Id="FilterSubacount" Title="Filter Subaccount" Select.Connector="ListSubaccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestBody>
+          <![CDATA[
+          {
+            "key": "@(Model.ApiKey)"
+            @if(!string.IsNullOrEmpty(Model.Email))
+            {
+              @: ,"email": "@(Model.Email)"
+            }
+            @if(!string.IsNullOrEmpty(Model.FilterSubacount))
+            {
+              @: ,"subaccount": "@(Model.FilterSubacount)"
+            }
+          }
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://mandrillapp.com/api/1.0/whitelists/list.json
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="detail" Id="Detail" Title="Detail" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
