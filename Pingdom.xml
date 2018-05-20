@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Webmaster" Title="Pingdom" Id="Pingdom" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AccuRanker.xml" HelpUrl="http://seotoolsforexcel.com/pingdom/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/pingdom/">
+    <Text Id="Email" Title="Email" required="true"></Text>
+    <Text Id="Password" Title="Password" required="true"></Text>
+    <Text Id="ApplicationKey" Title="Application Key" Required="true" HelpUrl="http://seotoolsforexcel.com/pingdom"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Authorization">Basic @(CreateBasicAuth())</Header>
+          <Header Name="App-Key">@(Model.ApplicationKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="ActionsList" Title="Actions List" HelpUrl="https://www.pingdom.com/resources/api/2.1#MethodGet+Actions+%28Alerts%29+List" HelpText="Returns a list of actions (alerts) that have been generated for your account.">
+    <Parameters>
+      <Select Id="Status" Title="Status" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="pending" Title="Pending"/>
+          <Item Id="Sent" Title="Sent"/>
+          <Item Id="Delivered" Title="Delivered"/>
+          <Item Id="error" Title="Error"/>
+          <Item Id="not_delivered" Title="Not Delivered"/>
+          <Item Id="no_credits" Title="No Credits"/>
+        </DataSource>
+      </Select>
+      <Select Id="Via" Title="Via" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="email" Title="Email"/>
+          <Item Id="sms" Title="SMS"/>
+          <Item Id="twitter" Title="Twitter"/>
+          <Item Id="iphone" Title="iPhone"/>
+          <Item Id="android" Title="Android"/>
+        </DataSource>
+      </Select>
+      <Date Id="From" Title="From" Required="false" Nullable="true"/>
+      <Date Id="To" Title="To" Required="false" Nullable="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Min="1" Max="300" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pingdom.com/api/2.1/actions?
+        limit=@(Model.Limit)
+        @if(Model.Status != "all")
+        {
+          @: &status=@(Model.Status)
+        }
+        @if(Model.Via != "all")
+        {
+          @: &status=@(Model.Via)
+        }
+        @if(!Utils.IsNullDate(Model.From))
+        {
+          @: &from=@(((DateTime)Model.From).UnixTimeStampUtc())
+        }
+        @if(!Utils.IsNullDate(Model.To))
+        {
+          @: &to=@(((DateTime)Model.To).UnixTimeStampUtc())
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.actions.alerts.*">
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText="Name of alerted user"/>
+        <JsonPath Expr="userid" Id="UserId" Title="User Id" Converter="String" HelpText="Identifier of alerted user"/>
+        <JsonPath Expr="checkid" Id="CheckId" Title="Check Id" Converter="String" HelpText="Identifier of check"/>
+        <Compute Id="Time" Title="Time" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+             @(DateTimeOffset.FromUnixTimeSeconds(Model.Inp))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="time" Id="Inp" Converter="Long" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="via" Id="Via" Title="Via" Converter="String" HelpText="Alert medium"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="Alert status"/>
+        <JsonPath Expr="messageshort" Id="MessageShort" Title="Short Message" Converter="String" HelpText="Short description of message"/>
+        <JsonPath Expr="messagefull" Id="MessageFull" Title="Message Full" Converter="String" HelpText="Full message body"/>
+        <JsonPath Expr="sentto" Id="SentTo" Title="Sent To" Converter="String" HelpText="Target address, phone number etc"/>
+        <JsonPath Expr="charged" Id="Charged" Title="Charged" Converter="Bool" HelpText="True if your account was charged for this message"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ChecksList" Title="Checks List" HelpUrl="https://www.pingdom.com/resources/api/2.1#MethodGet+Check+List" HelpText="Returns a list overview of all checks.">
+    <Parameters>
+      <Number Id="Limit" Title="Limit" DefaultValue="1000" Min="1" Max="25000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pingdom.com/api/2.1/checks?
+        limit=@(Model.Limit)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.checks.*">
+        <JsonPath Expr="id" Id="id" Title="Id" Converter="Int" HelpText="Check identifier"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Check name"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="Check type"/>
+        <Compute Id="LastErrorTime" Title="Last Error Time" Converter="Auto" HelpText="Timestamp of last error (if any)">
+          <Compute.Expr>
+            <![CDATA[
+             @if(Model.Inp != 0)
+              {
+                @: @(DateTimeOffset.FromUnixTimeSeconds(Model.Inp))
+              }
+              else {
+                @: 0
+              }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="lasterrortime" Id="Inp" Converter="Long" DefaultValue=""/>
+        </Compute>
+        <Compute Id="LastTestTime" Title="Last Test Time" Converter="Auto" HelpText="Timestamp of last test (if any)">
+          <Compute.Expr>
+            <![CDATA[
+             @if(Model.Inp != 0)
+              {
+                @: @(DateTimeOffset.FromUnixTimeSeconds(Model.Inp))
+              }
+              else {
+                @: 0
+              }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="lasttesttime" Id="Inp" Converter="Long" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="lastresponsetime" Id="Lastresponsetime" Title="Last Response Time" Converter="Int" HelpText="Response time (in milliseconds) of last test."/>
+        <JsonPath Expr="resolution" Id="Resolution" Title="Resolution" Converter="Int" HelpText="How often should the check be tested? (minutes)"/>
+        <JsonPath Expr="hostname" Id="Hostname" Title="Hostname" Converter="String" HelpText="Target host"/>
+        <Compute Id="Created" Title="Created" Converter="Auto" HelpText="Creating time.">
+          <Compute.Expr>
+            <![CDATA[
+             @if(Model.Inp != 0)
+              {
+                @: @(DateTimeOffset.FromUnixTimeSeconds(Model.Inp))
+              }
+              else {
+                @: 0
+              }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="created" Id="Inp" Converter="Long" DefaultValue=""/>
+        </Compute>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="(up, down, unconfirmed_down, unknown, paused)"/>
+        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="Auto" HelpText="List of tags for check" Checked="False"/>
+        <JsonPath Expr="probe_filters" Id="ProbeFilters" Title="Probe Filters" Converter="Auto" HelpText="Filters used for probe selections" Checked="False"/>
+        <JsonPath Expr="ipv6" Id="Ipv6" Title="IPV6" Converter="Bool" HelpText="Use ipv6 instead of ipv4"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Credits" Title="Credits" HelpUrl="https://www.pingdom.com/resources/api/2.1#MethodGet+Credits+List" HelpText="Returns information about remaining checks, SMS credits and SMS auto-refill status.">
+    <Parameters>
+      <Number Id="Limit" Title="Limit" DefaultValue="1000" Min="1" Max="25000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pingdom.com/api/2.1/credits
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="credits.checklimit" Id="CheckLimit" Title="Check Limit" Converter="Int" HelpText="Total number of check slots on this account"/>
+      <JsonPath Expr="credits.availablechecks" Id="AvailableChecks" Title="Available Checks" Converter="Int" HelpText="Free check slots available for new checks"/>
+      <JsonPath Expr="credits.useddefault" Id="UsedDefault" Title="Used Default" Converter="Int" HelpText="Total number of default check slots"/>
+      <JsonPath Expr="credits.usedtransaction" Id="UsedTransaction" Title="Used Transaction" Converter="Int" HelpText="Total number of transaction check slots"/>
+      <JsonPath Expr="credits.availablesms" Id="AvailableSms" Title="Available SMS" Converter="Int" HelpText="SMS credits remaining on this account"/>
+      <JsonPath Expr="credits.availablesmstests" Id="AvailableSmsTests" Title="Available SMS Tests" Converter="Int" HelpText="SMS provider tests remaining on this account"/>
+      <JsonPath Expr="credits.autofillsms" Id="AutoFillSms" Title="Auto fill SMS" Converter="Bool" HelpText="Auto fill SMS"/>
+      <JsonPath Expr="credits.autofillsms_amount" Id="AutofillSmsAmount" Title="Autofill SMS Amount" Converter="Int" HelpText="The amount of sms to purchase when autofillsms_when_left is triggered"/>
+      <JsonPath Expr="credits.autofillsms_when_left" Id="AutofillsmsWhenLeft" Title="Autofill SMS When Left" Converter="Int" HelpText="The amount of sms left that is going to trigger purchase of sms"/>
+      <JsonPath Expr="credits.max_sms_overage" Id="MaxSmOverage" Title="Max SMS Overage" Converter="Int" HelpText="The amount of overage SMSes that may be used, or null if SMS overage is not enabled."/>
+      <JsonPath Expr="credits.availablerumsites" Id="AvailableRumSites" Title="Available RUM Sites" Converter="Int" HelpText="Open RUM site slots available"/>
+      <JsonPath Expr="credits.usedrumsites" Id="UsedRumSites" Title="Used RUM Sites" Converter="Int" HelpText="Number of used RUM sites"/>
+      <JsonPath Expr="credits.maxrumfilters" Id="MaxRumFilters" Title="Max RUM Filters" Converter="Int" HelpText="Number of maximum RUM filters"/>
+      <JsonPath Expr="credits.maxrumpageviews" Id="MaxrumPageviews" Title="Max RUM Pageviews" Converter="Int" HelpText="Number of maximum pageviews per month"/>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    String CreateBasicAuth()
+    {
+      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
+      return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>
