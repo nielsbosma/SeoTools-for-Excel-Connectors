@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Webmaster" Title="Pingdom" Id="Pingdom" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AccuRanker.xml" HelpUrl="http://seotoolsforexcel.com/pingdom/" HelpText="Documentation">
+<Suite Category="Webmaster" Title="Pingdom" Id="Pingdom" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Pingdom.xml" HelpUrl="http://seotoolsforexcel.com/pingdom/" HelpText="Documentation">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
@@ -352,13 +352,28 @@
   <RestConnector Id="RawCheckResults" Title="Raw Check Results" HelpUrl="https://www.pingdom.com/resources/api/2.1#MethodGet+Raw+Check+Results">
     <Parameters>
       <Text Id="CheckId" Title="Check ID" Select.Connector="ListChecksHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Select Id="Status" Title="Status" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="down" Title="Down"/>
+          <Item Id="up" Title="Up"/>
+          <Item Id="unconfirmed" Title="Unconfirmed"/>
+          <Item Id="unknown" Title="Unknown"/>
+        </DataSource>
+      </Select>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Min="1" Max="1000" Required="false" HelpText=""/>
     </Parameters>
     <Fetch>
       <Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
         https://api.pingdom.com/api/2.1/results/
-        @Model.CheckId
+        @(Model.CheckId)?
+        limit=@(Model.Limit)
+        @if(Model.Status != "all")
+        {
+          @: &status=@(Model.Status)
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
