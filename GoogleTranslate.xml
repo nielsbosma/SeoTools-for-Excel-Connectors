@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Language" RequireVersion="6.0.0" Title="Google Translate" Id="GoogleTranslate" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleTranslate.xml" HelpUrl="http://seotoolsforexcel.com/googletranslate/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/cloud-translation" StayAuthenticated="true"/>
+
+  <RestConnector Id="Languages" Hidden="true" HelpUrl="https://cloud.google.com/translate/docs/reference/languages">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://translation.googleapis.com/language/translate/v2/languages
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+						@{
+						var dict = new Dictionary<string, string>();
+						dict.Add("target", "en");
+						var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.languages[*]">
+        <JsonPath Expr="language" Id="Language" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Detect" Title="Detect" HelpUrl="https://cloud.google.com/translate/docs/reference/detect">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://translation.googleapis.com/language/translate/v2/detect
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+						@{
+						var dict = new Dictionary<string, string>();
+						dict.Add("q", Model.Query);
+						var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.detections[*].*">
+        <JsonPath Expr="language" Id="Language" Converter="String"/>
+        <JsonPath Expr="confidence" Id="Confidence" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Translate" Title="Translate" HelpUrl="https://cloud.google.com/translate/docs/reference/translate">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="hej du grabben" Required="true"/>
+			<Text Id="Target" Title="Target" Debug.DefaultValue="en" Required="true" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
+			<Text Id="Source" Title="Source (Optional)" DefaultValue="" HelpText="Returns 'Detected Language' if omitted" Required="false" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://translation.googleapis.com/language/translate/v2
+				?target=@(Model.Target)
+				@if(!string.IsNullOrEmpty(Model.Source))
+        {
+          @: &source=@(Model.Source)
+        }
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+						@{
+						var dict = new Dictionary<string, string>();
+						dict.Add("q", Model.Query);
+						var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.translations[*]">
+        <JsonPath Expr="translatedText" Id="Result" Converter="String"/>
+        <JsonPath Expr="detectedSourceLanguage" Id="SourceLanguage" Title="Detected Language" Converter="String" DefaultValue="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
