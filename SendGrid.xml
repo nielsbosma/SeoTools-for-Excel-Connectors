@@ -1,9 +1,86 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="" Title="SendGrid" Id="SendGrid" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SendGrid.xml" HelpUrl="http://seotoolsforexcel.com/sendgrid/">
+<Suite Category="Email" Title="SendGrid" Id="SendGrid" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SendGrid.xml" HelpUrl="http://seotoolsforexcel.com/sendgrid/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sendgrid/">
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/sendgrid/"/>
   </Settings>
+
+  <Resources>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
+        </RequestHeaders>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.errors.*."/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Alerts" Title="Alerts" HelpUrl="https://sendgrid.com/docs/API_Reference/Web_API_v3/alerts.html">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sendgrid.com/v3/alerts
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Name="Id" Converter="Int"/>
+        <JsonPath Expr="email_to" Id="EmailTo" Name="Email To" Converter="String"/>
+        <JsonPath Expr="percentage" Id="Percentage" Name="Percentage" Converter="Auto"/>
+        <JsonPath Expr="type" Id="Type" Name="Type" Converter="String"/>
+        <JsonPath Expr="frequency" Id="Frequency" Name="Frequency" Converter="Auto"/>
+        <Compute Id="CreatedAt" Title="Created"  Expr="@(DateTimeOffset.FromUnixTimeSeconds((long)Model.Inp))" Converter="DateTime">
+            <JsonPath  Expr="created_at" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Id="UpdatedAt" Title="Updated"  Expr="@(DateTimeOffset.FromUnixTimeSeconds((long)Model.Inp))" Converter="DateTime">
+          <JsonPath  Expr="updated_at" Id="Inp" Converter="Long"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Blocks" Title="Blocks" HelpUrl="https://sendgrid.com/docs/API_Reference/Web_API_v3/blocks.html">
+    <Parameters>
+      <DateInterval Id="DateInterval" Title="Interval" Required="false" Nullabe="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="500" Min="1" Max="500" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sendgrid.com/v3/suppression/blocks?
+        limit=@(Model.Limit)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &start_time:@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+          @: &end_time:@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="email" Id="Email" Name="Email" Converter="String"/>
+        <JsonPath Expr="reason" Id="Reason" Name="Reason" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Name="Status" Converter="String"/>
+        <Compute Id="CreatedAt" Title="Created"  Expr="@(DateTimeOffset.FromUnixTimeSeconds((long)Model.Inp))" Converter="DateTime">
+          <JsonPath  Expr="created" Id="Inp" Converter="Long"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+
 </Suite>
