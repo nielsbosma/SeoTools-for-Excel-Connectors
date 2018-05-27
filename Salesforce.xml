@@ -24,16 +24,30 @@
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://login.salesforce.com/services/oauth2/authorize?response_type=token&amp;client_id=3MVG9TSaZ8P6zP1qYjMfc285hduryOwlrl9Uz_cMlqFmvRg7TVhR4XCuSxITU_BS.UIT0DPPSPZt2UANYCzSn&amp;redirect_uri={0}"/>
 
-  <RestConnector Id="Accounts" Title="Accounts">
+  <RestConnector Id="Accounts" Title="Accounts" HelpText="List Accounts">
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextRecordsUrl"/>
+        <JsonPath Id="AvaliableRows" Expr="totalSize"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        https://@(Model.Instance).salesforce.com/services/data/v42.0/query/?q=SELECT+
-        Id,name,BillingStreet,BillingCity,BillingState,BillingPostalCode,BillingCountry,ShippingStreet,
-        ShippingCity,ShippingState,ShippingPostalCode,Phone,Fax,AccountNumber,Website,PhotoUrl,Sic,Industry,
-        AnnualRevenue,Ownership,Description,Rating,CreatedDate,LastModifiedDate
-        +from+Account
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: https://@(Model.Instance).salesforce.com@(Model.NextToken)
+        }
+        else {
+          <text>
+          https://@(Model.Instance).salesforce.com/services/data/v42.0/query/?q=SELECT+
+          Id,name,BillingStreet,BillingCity,BillingState,BillingPostalCode,BillingCountry,ShippingStreet,
+          ShippingCity,ShippingState,ShippingPostalCode,Phone,Fax,AccountNumber,Website,PhotoUrl,Sic,Industry,
+          AnnualRevenue,Ownership,Description,Rating,CreatedDate,LastModifiedDate
+          +from+Account
+          </text>
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -71,16 +85,30 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Campaigns" Title="Campaigns">
+  <RestConnector Id="Campaigns" Title="Campaigns" HelpText="List Campaigns">
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextRecordsUrl"/>
+        <JsonPath Id="AvaliableRows" Expr="totalSize"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        https://@(Model.Instance).salesforce.com/services/data/v42.0/query/?q=SELECT+Id,Name,ParentId,Type,Status,StartDate,EndDate,
-        ExpectedRevenue,BudgetedCost,ActualCost,ExpectedResponse,NumberSent,IsActive,Description,NumberOfLeads,
-        NumberOfConvertedLeads,NumberOfContacts,NumberOfResponses,NumberOfOpportunities,
-        NumberOfWonOpportunities,AmountAllOpportunities,AmountWonOpportunities,CreatedDate,
-        LastModifiedDate+FROM+Campaign
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: https://@(Model.Instance).salesforce.com@(Model.NextToken)
+        }
+        else {
+          <text>
+          https://@(Model.Instance).salesforce.com/services/data/v42.0/query/?q=SELECT+Id,Name,ParentId,Type,Status,StartDate,EndDate,
+          ExpectedRevenue,BudgetedCost,ActualCost,ExpectedResponse,NumberSent,IsActive,Description,NumberOfLeads,
+          NumberOfConvertedLeads,NumberOfContacts,NumberOfResponses,NumberOfOpportunities,
+          NumberOfWonOpportunities,AmountAllOpportunities,AmountWonOpportunities,CreatedDate,
+          LastModifiedDate+FROM+Campaign
+          </text>
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -115,8 +143,72 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RazorFunctions>
-    <![CDATA[
-    ]]>
-  </RazorFunctions>
+  <RestConnector Id="Leads" Title="Leads" HelpText="List Leads">
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextRecordsUrl"/>
+        <JsonPath Id="AvaliableRows" Expr="totalSize"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: https://@(Model.Instance).salesforce.com@(Model.NextToken)
+        }
+        else {
+          <text>
+          https://@(Model.Instance).salesforce.com/services/data/v42.0/query/?q=SELECT+
+          Id,Name,LastName,FirstName,Salutation,Title,Company,Street,City,State,PostalCode,
+          Country,Address,Phone,MobilePhone,Fax,Email,Website,PhotoUrl,Description,LeadSource,
+          Status,Industry,Rating,AnnualRevenue,NumberOfEmployees,IsConverted,ConvertedDate,ConvertedAccountId,
+          ConvertedContactId,ConvertedOpportunityId,CreatedDate,LastModifiedDate,SystemModstamp,
+          LastActivityDate,CompanyDunsNumber,DandbCompanyId,EmailBouncedReason,EmailBouncedDate
+          +FROM+Lead
+          </text>
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.records.*">
+        <JsonPath Expr="Id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="Name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="LastName" Id="LastName" Title="Last Name" Converter="String"/>
+        <JsonPath Expr="FirstName" Id="FirstName" Title="First Name" Converter="String"/>
+        <JsonPath Expr="Salutation" Id="Salutation" Title="Salutation" Converter="String"/>
+        <JsonPath Expr="Title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="Company" Id="Company" Title="Company" Converter="String"/>
+        <JsonPath Expr="Street" Id="Street" Title="Street" Converter="String"/>
+        <JsonPath Expr="City" Id="City" Title="City" Converter="String"/>
+        <JsonPath Expr="State" Id="State" Title="State" Converter="String"/>
+        <JsonPath Expr="PostalCode" Id="PostalCode" Title="Postal Code" Converter="String"/>
+        <JsonPath Expr="Country" Id="Country" Title="Country" Converter="String"/>
+        <JsonPath Expr="Phone" Id="Phone" Title="Phone" Converter="String"/>
+        <JsonPath Expr="MobilePhone" Id="MobilePhone" Title="Mobile Phone" Converter="String"/>
+        <JsonPath Expr="Fax" Id="Fax" Title="Fax" Converter="String"/>
+        <JsonPath Expr="Email" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="Website" Id="Website" Title="Website" Converter="String"/>
+        <JsonPath Expr="PhotoUrl" Id="PhotoUrl" Title="Photo Url" Converter="String" Checked="false"/>
+        <JsonPath Expr="Description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="LeadSource" Id="LeadSource" Title="Lead Source" Converter="String"/>
+        <JsonPath Expr="Status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="Industry" Id="Industry" Title="Industry" Converter="String"/>
+        <JsonPath Expr="Rating" Id="Rating" Title="Rating" Converter="String"/>
+        <JsonPath Expr="AnnualRevenue" Id="AnnualRevenue" Title="Annual Revenue" Converter="String"/>
+        <JsonPath Expr="NumberOfEmployees" Id="NumberOfEmployees" Title="Number Of Employees" Converter="String"/>
+        <JsonPath Expr="IsConverted" Id="IsConverted" Title="Converted" Converter="Bool"/>
+        <JsonPath Expr="ConvertedDate" Id="ConvertedDate" Title="ConvertedDate" Converter="String"/>
+        <JsonPath Expr="ConvertedContactId" Id="ConvertedContactId" Title="ConvertedContactId" Converter="String"/>
+        <JsonPath Expr="CreatedDate" Id="CreatedDate" Title="CreatedDate" Converter="String"/>
+        <JsonPath Expr="LastModifiedDate" Id="LastModifiedDate" Title="LastModifiedDate" Converter="String"/>
+        <JsonPath Expr="LastActivityDate" Id="LastActivityDate" Title="LastActivityDate" Converter="String" Checked="false"/>
+        <JsonPath Expr="EmailBouncedReason" Id="EmailBouncedReason" Title="EmailBouncedReason" Converter="String" Checked="false"/>
+        <JsonPath Expr="EmailBouncedDate" Id="EmailBouncedDate" Title="EmailBouncedDate" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 </Suite>
