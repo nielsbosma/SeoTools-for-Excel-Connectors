@@ -201,9 +201,9 @@
   <RestConnector Id="MostShared" Title="Most Shared Content" HelpUrl="http://buzzsumo.com/knowledge/top-content-api/">
     <Parameters>
       <Text Id="Query" Title="Keyword/URL" Required="true"/>
-      <Select Id="ResultType" Title="Filter by social network" DefaultValue="total" Required="false">
+      <Select Id="ResultType" Title="Sort by" DefaultValue="total" Required="false">
         <DataSource>
-          <Item Id="total" Title="All"/>
+          <Item Id="total" Title="Total"/>
           <Item Id="facebook" Title="Facebook"/>
           <Item Id="twitter" Title="Twitter"/>
           <Item Id="linkedin" Title="LinkedIn"/>
@@ -236,8 +236,9 @@
       <Fetch.Url>
         <![CDATA[
         http://api.buzzsumo.com/search/articles.json?
-        q=@Utils.UrlEncode(Model.Query)
-        @if(Model.ResultType != 'all')
+        api_key=@(Model.ApiKey)
+        &q=@(Utils.UrlEncode(Model.Query))
+        @if(Model.ResultType != 'total')
         {
           @: &result_type=@(Model.ResultType)
         }
@@ -300,6 +301,91 @@
         <JsonPath Expr="total_shares" Id="TotalShares" Title="Total Shares" Converter="Int" HelpText=""/>
         <JsonPath Expr="display_title" Id="DisplayTitle" Title="Display Title" Converter="String" HelpText=""/>
       </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Influencers" Title="Influencers" HelpUrl="http://buzzsumo.com/knowledge/influencers-api/">
+    <Parameters>
+      <Text Id="Query" Title="Keyword/Topic" Required="true"/>
+      <Select Id="ResultType" Title="Sort by" DefaultValue="total" Required="false">
+        <DataSource>
+          <Item Id="relevancy" Title="Relevancy"/>
+          <Item Id="num_followers" Title="Number of followers"/>
+          <Item Id="page_authority" Title="Page Authority"/>
+          <Item Id="pagerank" Title="Pagerank"/>
+          <Item Id="retweet_ratio" Title="Retweet Ratio"/>
+          <Item Id="reply_ratio" Title="Reply Ratio"/>
+          <Item Id="avg_retweets" Title="Avg. retweets"/>
+        </DataSource>
+      </Select>
+      <Select Id="PersonTypes" Title="PersonTypes" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="blogger" Title="Bloggers"/>
+          <Item Id="influencer" Title="Influencers"/>
+          <Item Id="company" Title="Companies"/>
+          <Item Id="journalist" Title="Journalists"/>
+          <Item Id="regular" Title="Regular people"/>
+        </DataSource>
+      </Select>
+      <Text Id="Location" Title="Location" Required="false" HelpText="You can pass multiple location separated with the OR operator e.g. London OR New York OR Germany etc."/>
+      <Checkbox Id="IgnoreBroadcasters" Title="Ignore broadcasters" DefaultValue="False" HelpText=" Broadcasters are influencers who simply broadcast links or tweets and hardly reply to others."/>
+      <Checkbox Id="WithInstagram" Title="Only profiles with Instagram username" DefaultValue="False" HelpText=""/>
+      <Checkbox Id="InfluencersOnly" Title="Remove punctunation and delimiters" DefaultValue="False" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://http://api.buzzsumo.com/search/influencers.json?
+        api_key=@(Model.ApiKey)
+        &q=@Utils.UrlEncode(Model.Query)
+        @if(Model.ResultType != 'relevancy')
+        {
+          @: &result_type=@(Model.ResultType)
+        }
+        @if(!string.IsNullOrEmpty(Model.Location))
+        {
+          @: &location=@(Utils.UrlEncode(Model.Location))
+        }
+        @if(Model.PersonTypes != 'all')
+        {
+          @: &person_types=@(Model.PersonTypes)
+        }
+        @if(Model.WithInstagram == true)
+        {
+          @: &must_have_instagram_profile=true
+        }
+        @if(Model.InfluencersOnly == true)
+        {
+          @: &verified_only=true
+        }
+        @if(Model.IgnoreBroadcasters == true)
+        {
+          @: &ignore_broadcasters=true
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+      <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
+      <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+      <JsonPath Expr="num_followers" Id="NumFollowers" Title="Followers" Converter="" HelpText=""/>
+      <JsonPath Expr="num_following" Id="NumFollowing" Title="Following" Converter="Int" HelpText=""/>
+      <JsonPath Expr="pagerank" Id="Pagerank" Title="Pagerank" Converter="Int" HelpText=""/>
+      <JsonPath Expr="location" Id="Location" Title="Location" Converter="String" HelpText=""/>
+      <JsonPath Expr="reply_ratio" Id="ReplyRatio" Title="Reply Ratio" Converter="String" HelpText=""/>
+      <JsonPath Expr="retweet_ratio" Id="RetweetRatio" Title="Retweet Ratio" Converter="String" HelpText=""/>
+      <JsonPath Expr="twitter_id_str" Id="TwitterIdStr" Title="Twitter Id" Converter="String" HelpText=""/>
+      <JsonPath Expr="image" Id="Image" Title="Image" Converter="String" HelpText=""/>
+      <JsonPath Expr="url_share_ratio" Id="UrlShareRatio" Title="Url Share Ratio" Converter="Int" HelpText=""/>
+      <JsonPath Expr="url" Id="Url" Title="Url" Converter="String" HelpText=""/>
+      <JsonPath Expr="domain_authority" Id="DomainAuthority" Title="Domain Authority" Converter="Int" HelpText=""/>
+      <JsonPath Expr="page_authority" Id="PageAuthority" Title="Page Authority" Converter="Int" HelpText=""/>
+      <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String" HelpText=""/>
+      <JsonPath Expr="avg_retweets" Id="AvgRetweets" Title="Avg Retweets" Converter="Int" HelpText=""/>
+      <JsonPath Expr="instagram_username" Id="InstagramUsername" Title="Instagram Username" Converter="String" HelpText=""/>
+      <JsonPath Expr="instagram_authority" Id="InstagramAuthority" Title="Instagram Authority" Converter="Int" HelpText=""/>
     </Parse>
   </RestConnector>
 </Suite>
