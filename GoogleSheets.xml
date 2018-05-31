@@ -3,21 +3,82 @@
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/googlesheets/">
-    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/googlesheets/"/>
-  </Settings>
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly" StayAuthenticated="true"/>
 
-  <RestConnector Id="" Title="" HelpUrl="http://">
+  <Resources>
+    <Resource Id="Headers">
+      <RequestHeaders>
+        <Header Name='Authorization'>
+          <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+        </Header>
+      </RequestHeaders>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <Regex Expr="^invalid token$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="ListSheets" Title="List Sheets" HelpText="List all Google sheets on your account" HelpUrl="https://developers.google.com/sheets/api/guides/migration#list_spreadsheets_for_the_authenticated_user">
+    <Parameters>
+      <Checkbox Id="IncludeTeamDriveItems" Title="Include Team Drive items" DefaultValue="false"/>
+      <Select Id="SortBy" Title="Sort by" DefaultValue="createdTime">
+        <DataSource>
+          <Item Id="createdTime" Title="Created time"/>
+          <Item Id="folder" Title="Folder name"/>
+          <Item Id="modifiedTime" Title="Time modified"/>
+          <Item Id="modifiedByMeTime" Title="Time modified by me"/>
+          <Item Id="name" Title="Name"/>
+          <Item Id="quotaBytesUsed" Title="File size"/>
+          <Item Id="recency" Title="Recency"/>
+          <Item Id="sharedWithMeTime" Title="Time when shared with me"/>
+          <Item Id="starred" Title="Starred"/>
+          <Item Id="viewedByMeTime" Title="Time viewed by me"/>
+        </DataSource>
+      </Select>
+      <Radio Id="SortDirection" Title="Sort Direction" DefaultValue="asc">
+        <DataSource>
+          <Item Id="asc" Title="Asc"/>
+          <Item Id="desc" Title="Desc"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
     <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-          https://sheets.googleapis.com/v4/spreadsheets/spreadsheetId/values/Sheet1!A1:D5
+          https://www.googleapis.com/drive/v3/files
+          ?q=mimeType%3D'application%2Fvnd.google-apps.spreadsheet'
+          &pageSize=@(Model.PageCursor.PageSize)
+          &orderBy=@(Model.SortBy + (Model.SortDirection == "desc" ? "%20desc" : ""))
+          includeTeamDriveItems=@(Model.IncludeTeamDriveItems)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
           ]]>
       </Fetch.Url>
     </Fetch>
-
     <Parse>
-
+      <JsonPath Expr="$.files.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+      </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 </Suite>
