@@ -1,21 +1,75 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="Yandex.Metrica" Id="YandexMetrica" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Yandex.Metrica.xml" HelpUrl="http://seotoolsforexcel.com/yandex-metrica/">
+<Suite Category="SEO" Title="Yandex Metrica" Id="YandexMetrica" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Yandex.Metrica.xml" HelpUrl="http://seotoolsforexcel.com/yandex-metrica/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl=" https://oauth.yandex.com/authorize?response_type=token&amp;client_id=32cb22bd3ab948ef8d47dd2713ec62b5"/>
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl=" https://oauth.yandex.com/authorize?response_type=token&amp;client_id=32cb22bd3ab948ef8d47dd2713ec62b5"/>
 
-  <RestConnector Id="Table" Title="Table" HelpUrl="https://tech.yandex.com/metrika/doc/api2/api_v1/data-docpage/">
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="errors.*.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Tags" Title="Tags" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/counters/counters-docpage/">
     <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api-metrica.yandex.com/stat/v1/data
+        https://api-metrica.yandex.com/management/v1/counters
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="a" Id="A" Title="A"/>
+      <JsonPath Expr="$.counters.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="owner_login" Id="OwnerLogin" Title="Owner Username" Converter="String"/>
+        <JsonPath Expr="code_status" Id="CodeStatus" Title="Code Status" Converter="String" Checked="false"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="favorite" Id="Favorite" Title="Favorite" Converter="Bool"/>
+        <JsonPath Expr="hide_address" Id="Hide_address" Title="Hide Address" Converter="Bool"/>
+        <JsonPath Expr="permission" Id="Permission" Title="Permission" Converter="String"/>
+        <JsonPath Expr="create_time" Id="Create_time" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="time_zone_name" Id="TimeZoneName" Title="Timezone" Converter="String"/>
+        <JsonPath Expr="time_zone_offset" Id="TimeZoneOffset" Title="Timezone offset" Converter="Int"/>
+        <JsonPath Expr="partner_id" Id="PartnerId" Title="Partner Id" Converter="Int"/>
+        <JsonPath Expr="site" Id="Site" Title="Site" Converter="String"/>
+        <JsonPath Expr="site2.site" Id="Site2" Title="Url" Converter="String"/>
+        <JsonPath Expr="gdpr_agreement_accepted" Id="Gdpr_agreement_accepted" Title="GDPR accepted" Converter="String" Checked="false"/>
+      </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Tags" Title="TagsHidden" Hidden="true" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/counters/counters-docpage/">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api-metrica.yandex.com/management/v1/counters
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.counters.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
