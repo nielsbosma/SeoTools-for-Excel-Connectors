@@ -49,7 +49,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Tags" Title="TagsHidden" Hidden="true" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/counters/counters-docpage/">
+  <RestConnector Id="TagsHidden" Title="TagsHidden" Hidden="true" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/counters/counters-docpage/">
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -67,6 +67,243 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Goals" Title="Goals" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/goals/goals-docpage/">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Checkbox Id="ShowDeleted" Title="Include deleted goals" DefaultValue="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/counter/@(Model.Tag)/goals?
+          useDeleted=@(Model.ShowDeleted)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.goals.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="depth" Id="Depth" Title="Depth" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Filters" Title="Filters" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/filters/filters-docpage/">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/counter/@(Model.Tag)/filters
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.filters.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="attr" Id="Attribute" Title="Attribute" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="String"/>
+        <JsonPath Expr="action" Id="Action" Title="Action" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="start_ip" Id="StartIp" Title="Start IP" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="end_ip" Id="EndIp" Title="End Ip" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="with_subdomain" Id="WithSubdomains" Title="With Subdomains" Converter="Bool" HelpText="Filter with subdomains"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Actions" Title="Actions" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/operations/operations-docpage/">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/counter/@(Model.Tag)/operations
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.operations.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="attr" Id="Attribute" Title="Attribute" Converter="String"/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="String"/>
+        <JsonPath Expr="action" Id="Action" Title="Action" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Permissions" Title="Permissions" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/grants/grants-docpage/" HelpText="Returns information about permissions to manage the counter and view statistics.">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/counter/@(Model.Tag)/grants
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.grants.*">
+        <JsonPath Expr="user_login"  Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="perm" Id="Perm" Title="Permission Type" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="comment" Id="Comment" Title="Comment" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Accounts" Title="Accounts" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/accounts/accounts-docpage/" HelpText="Returns list of accounts, the representative of which is a current user.">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/accounts
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.accounts.*">
+        <JsonPath Expr="user_login"  Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Representatives" Title="Representatives" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/delegates/delegates-docpage/" HelpText="Returns a list of representatives who have been granted full access to the account of the current user.">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/delegates
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.delegates.*">
+        <JsonPath Expr="user_login"  Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="comment" Id="Comment" Title="Comment" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Clients" Title="Yandex.Direct clients" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/direct_clients/getclients-docpage/" HelpText="Returns data about Yandex.Direct clients to campaigns which are accessible to the owner of the Metrica counter.">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/clients?counters=@(Model.Tag)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.delegates.*">
+        <JsonPath Expr="user_login"  Id="Username" Title="Username" Converter="String"/>
+        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="comment" Id="Comment" Title="Comment" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="TagLabels" Title="Tag labels" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/labels/getlabels-docpage/" HelpText="Returns list of tag labels, created by user.">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/labels
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.labels.*">
+        <JsonPath Expr="id"  Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Segments" Title="Segments" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/segments/getsegmentsforcounter-docpage/" HelpText="Returns a list of segments created via the API and pertaining to the specified label.">
+    <Parameters>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api-metrica.yandex.com/management/v1/counter/@(Model.Tag)/apisegment/segments
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.segments.*">
+        <JsonPath Expr="segment_id" Id="SegmentId" Title="Segment Id" Converter="Int"/>
+        <JsonPath Expr="counter_id" Id="CounterId" Title="Counter Id" Converter="Int"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="expression" Id="Expression" Title="Expression" Converter="String"/>
+        <JsonPath Expr="segment_source" Id="SegmentSource" Title="Segment Source" Converter="String"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
