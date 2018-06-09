@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" RequireVersion="7.0.0" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/DataForSeo/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="">
+    <Text Id="Email" Title="Email" Required="true" HelpUrl=""/>
+    <Text Id="Key" Title="API Key" Required="true" HelpUrl=""/>
+  </Settings>
+
+  <RestConnector Id="Locations" Title="Locations" HelpUrl="https://docs.dataforseo.com/#list-of-locations" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/cmn_locations
+				?search_engine=google
+				&country_iso_code=se
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="loc_id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="loc_name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SearchEngines" Title="Search Engines" HelpUrl="https://docs.dataforseo.com/#list-of-search-engines" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/cmn_se
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="se_id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="se_name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SettingSerp" Title="Setting SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks">
+   <Parameters>
+      <Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="seotools" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/srp_tasks_post
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+					@{
+            var obj = new JsonArr
+            {
+                data = new Data
+                {
+                    SeoToolsPlaceHolder = new Identifier
+                    {
+                        se_id = Model.SearchEngineId,
+												loc_id = Model.LocationId,
+												key = Utils.UrlEncode(Model.Query)
+                    }
+                }
+            };
+            string strJson = JsonConvert.SerializeObject(obj);
+						}
+						@strJson
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="task_id" Id="TaskId" Title="Task Id" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ListCompletedTasks" Title="List Completed Tasks" HelpUrl="https://docs.dataforseo.com/#get-serp-completed-tasks">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/srp_tasks_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="task_id" Id="TaskId" Title="Task Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="se_id" Id="SearchEngineId" Title="Search Engine Id" Converter="Long" HelpText=""/>
+        <JsonPath Expr="loc_id" Id="LocationId" Title="Location Id" Converter="Long" HelpText=""/>
+        <JsonPath Expr="post_key" Id="Key" Title="Key" Converter="String" HelpText=""/>
+        <JsonPath Expr="results_count" Id="Results" Title="Results" Converter="Int" HelpText=""/>
+        <JsonPath Expr="result_se_check_url" Id="CheckUrl" Title="Check URL" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="GetResultsbyTaskId" Title="Get Results by Task Id" HelpUrl="https://docs.dataforseo.com/#get-serp-results-by-task_id">
+   <Parameters>
+      <Text Id="TaskId" Title="Task Id" Debug.DefaultValue="716941033" Required="true"/>
+      <Radio Id="Type" Title="Type" DefaultValue="organic">
+        <DataSource>
+          <Item Id="organic" Title="Organic" />
+          <Item Id="paid" Title="Paid" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/srp_tasks_get/@(Model.TaskId)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.@(Model.Type).*">
+        <JsonPath Expr="result_position" Id="Position" Title="Position" Converter="Long" HelpText=""/>
+        <JsonPath Expr="result_url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="result_title" Id="Title" Title="Title" Converter="String" HelpText=""/>
+        <JsonPath Expr="result_snippet" Id="Snippet" Title="Snippet" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+		public class JsonArr
+		{
+			public Data data { get; set; }
+		}
+		public class Data
+		{
+			public Identifier SeoToolsPlaceHolder { get; set; }
+		}
+		public class Identifier
+		{
+			public string se_id { get; set; }
+			public string loc_id { get; set; }
+			public string key { get; set; }
+		}
+
+    String CreateBasicAuth()
+    {
+      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Key));
+      return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
