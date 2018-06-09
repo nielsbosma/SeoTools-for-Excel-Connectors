@@ -8,8 +8,94 @@
     <Text Id="AccessToken" Title="Personal access token" Required="true" HelpUrl="http://seotoolsforexcel.com/github/"/>
   </Settings>
 
-  <!--5eb11598484dda7437656d64be7087edd9fb866c-->
+  <!--Todo: category-->
 
+  <Resources>
+    <Resource Id="Http">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Authorization">Basic @(CreateBasicAuth())</Header>
+          <Header Name="Accept">application/vnd.github.v3+json</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
 
+  <RestConnector Id="Gists" Title="Gists" HelpUrl="https://developer.github.com/v3/gists/">
+    <Parameters>
+      <Select Id="Type" Title="Gists to retrieve" DefaultValue="public" Required="true">
+        <DataSource>
+          <Item Id="public" Title="Public"/>
+          <Item Id="user" Title="User's gists"/>
+          <Item Id="mine" Title="My gists"/>
+          <Item Id="starred" Title="My starred gists"/>
+        </DataSource>
+      </Select>
+      <Text Id="Username" Title="Username" Required="False" HelpText="Only required if &quot;User's gists&quot; is selected"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.github.com/
+        @if(Model.Type == "public")
+        {
+          @: gists/public
+        }
+        else if(Model.Type == "starred")
+        {
+          @: gists/starred
+        }
+        else if(Model.Type == "mine")
+        {
+          @: gists
+        }
+        else if(Model.Type == "user")
+        {
+          if (!string.IsNullOrEmpty(Model.Username)) {
+          @: /users/@(Model.Username)/gists
+          }
+          else {
+            throw new Exception("Username is required");
+            @: gists
+          }
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String" Checked="false"/>
+        <JsonPath Expr="node_id" Id="NodeId" Title="Node Id" Converter="String" Checked="false"/>
+        <JsonPath Expr="forks_url" Id="ForksUrl" Title="Forks URL" Converter="String" Checked="false"/>
+        <JsonPath Expr="commits_url" Id="CommitsUrl" Title="Commits URL" Converter="String" Checked="false"/>
+        <JsonPath Expr="git_pull_url" Id="GitPullUrl" Title="Pull URL" Converter="String" Checked="false"/>
+        <JsonPath Expr="git_push_url" Id="GitPushUrl" Title="Push URL" Converter="String" Checked="false"/>
+        <JsonPath Expr="html_url" Id="HtmlUrl" Title="Html Url" Converter="String"/>
+        <JsonPath Expr="comments_url" Id="Comments_url" Title="Comments_url" Converter="String"/>
+        <JsonPath Expr="public" Id="Public" Title="Public" Converter="Bool"/>
+        <JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="updated_at" Id="UpdatedAt" Title="Updated" Converter="DateTime"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="comments" Id="Comments" Title="Comments" Converter="Int"/>
+        <JsonPath Expr="user" Id="User" Title="User" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth()
+    {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Username + ":" + Model.AccessToken));
+    }
+    ]]>
+  </RazorFunctions>
 </Suite>
