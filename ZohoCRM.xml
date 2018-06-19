@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="_OAuth" Title="ZohoCRM" Id="Zoho CRM" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ZohoCRM.xml" HelpUrl="http://seotoolsforexcel.com/zoho-crm/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <DefaultOAuthAuthenticator
+          StayAuthenticated="true"
+          TempCodeName="code"
+          AuthUrl="https://accounts.zoho.com/oauth/v2/auth?scope=ZohoCRM.modules.ALL&amp;client_id=1000.BL3OYTR58ABD538326HIH6UVNFEQI2&amp;response_type=code&amp;access_type=online&amp;redirect_uri={0}"
+
+          TwoStep="True"
+          TokenConnectorId="AccessToken"
+          TokenIdField="Token"
+  />
+
+  <Resources>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Authorization">Bearer @(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="AccessToken" Name="Access Token">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name="Accept">application/json</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://accounts.zoho.com/oauth/v2/token?
+        code=@(Model.TempCode)
+        &redirect_uri=http://localhost:2108/
+        &client_id=1000.BL3OYTR58ABD538326HIH6UVNFEQI2
+        &client_secret=5a43d199c1dec4b7ad151458f018bb7d6e6cbcc5eb
+        &grant_type=authorization_code
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Token" Name="Token" Expr="$.access_token"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Leads" Title="Leads">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.zohoapis.com/crm/v2/leads
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+        <JsonPath Expr="First_Name" Id="FirstName" Title="First Name" Converter="String"/>
+        <JsonPath Expr="Last_Name" Id="LastName" Title="Last Name" Converter="String"/>
+        <JsonPath Expr="Mobile" Id="Mobile" Title="Mobile" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
