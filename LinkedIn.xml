@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="_OAuth" Title="LinkedIn" Id="LinkedIn" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/LinkedIn.xml" HelpUrl="http://seotoolsforexcel.com/linkedin/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <DefaultOAuthAuthenticator
+          StayAuthenticated="true"
+          TempCodeName="code"
+          AuthUrl="https://www.linkedin.com/oauth/v2/authorization?client_id=7816u170wu2wy0&amp;response_type=code&amp;state=9a876T54F321&amp;redirect_uri={0}"
+
+          TwoStep="True"
+          TokenConnectorId="AccessToken"
+          TokenIdField="Token"
+  />
+
+  <Resources>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Authorization">Bearer @(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="AccessToken" Name="Access Token">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name="Accept">application/json</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[grant_type=authorization_code&redirect_uri=http://localhost:2108/&client_id=7816u170wu2wy0&client_secret=bmZlLLiqsF9Uz7Le&code=@(Model.TempCode)]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        https://www.linkedin.com/oauth/v2/accessToken
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Token" Name="Token" Expr="$.access_token"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MyCompanies" Title="My Companies">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.linkedin.com/v1/people/~?format=json
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
+      <JsonPath Expr="firstName" Id="FirstName" Title="First Name" Converter="String"/>
+      <JsonPath Expr="lastName" Id="LastName" Title="Last Name" Converter="String"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
