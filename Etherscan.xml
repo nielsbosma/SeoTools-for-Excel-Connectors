@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Finance" Title="Etherscan" Id="Etherscan" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Etherscan.xml" HelpUrl="http://seotoolsforexcel.com/etherscan/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/etherscan/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/etherscan/"/>
+  </Settings>
+
+  <RestConnector Id="EtherBalance" Title="Ether balance" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Retrieve Ethereum balance for an address">
+    <Parameters>
+      <Text Id="Address" Title="Addresses (one per line, 20 max)" Required="True" Multiline="true" Debug.DefaultValue="0x63a6121a7e1e29fE00Beb11F92bda892D185e91F"></Text>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.etherscan.io/api?module=account
+        &action=balance
+        &address=@(Model.Address)
+        &tag=latest
+        &apikey=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+
+    <Parse>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AllTokens" Title="Global tokens list" HelpUrl="https://etherscan.io/tokens" HelpText="Lists all ERC20 tokens, with price and volume">
+    <Paging PageSize="50" MaxTake="10000" EvenPages="false">
+      <Parse>
+        <Regex Id="AvaliableRows" IgnoreCase="true" DefaultValue="0" Converter="Int" Group="1">
+          <Regex.Expr>
+            <![CDATA[href="tokens\?p=(\d+)">Last]]>
+          </Regex.Expr>
+        </Regex>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://etherscan.io/tokens
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: ?p=@(Model.PageCursor.Page+1)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//*[@@id=&quot;ContentPlaceHolder1_divresult&quot;]/table/tbody/tr">
+        <Compute Id="Name" Title="Name">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string name = Model.FullName.Substring(0, Model.FullName.IndexOf("("));
+            }
+            @name
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[3]/h5/a" Id="FullName" Converter="String"/>
+        </Compute>
+        <Compute Id="Symbol" Title="Symbol">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex("\\((.+)\\)");
+							Match match = regex.Match(Model.FullName);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[3]/h5/a" Id="FullName" Converter="String"/>
+        </Compute>
+        <XPath Expr="./td[3]/small/font" Id="Description" Title="Description" Converter="String" Checked="false"/>
+        <Compute Id="PriceUSD" Title="Price USD" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex("[\\d\\.]+");
+							Match match = regex.Match(Model.PriceUsdLong);
+            }
+            @(match.Groups[0].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[5]/span" Id="PriceUsdLong" Converter="String"/>
+        </Compute>
+        <Compute Id="PriceBTC" Title="Price BTC" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex("([\\d\\.]+).Btc");
+							Match match = regex.Match(Model.PriceBtcLong);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[5]/font" Id="PriceBtcLong" Converter="String"/>
+        </Compute>
+        <Compute Id="PriceETH" Title="Price ETH" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex("([\\d\\.]+).Eth");
+							Match match = regex.Match(Model.PriceEthLong);
+            }
+            @(match.Groups[1].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[5]/font" Id="PriceEthLong" Converter="String"/>
+        </Compute>
+        <Compute Id="PriceChange" Title="Change Percent" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex("[\\d\\.+-]+");
+							Match match = regex.Match(Model.PriceChangeLong);
+            }
+            @(match.Groups[0].Value)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[6]/font" Id="PriceChangeLong" Converter="String"/>
+        </Compute>
+        <Compute Id="Volume" Title="Volume" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string x = Model.VolumeLong.Replace("$", "");
+              double vol = double.Parse(x);
+            }
+            @(vol)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[7]" Id="VolumeLong" Converter="String"/>
+        </Compute>
+        <Compute Id="MarketCap" Title="Market Cap" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string x = Model.MarketCapLong.Replace("$", "");
+              double mc = double.Parse(x);
+            }
+            @(mc)
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[8]" Id="MarketCapLong" Converter="String"/>
+        </Compute>
+      </XPath>
+    </Parse>
+  </RestConnector>
+</Suite>
