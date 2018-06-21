@@ -17,22 +17,43 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SimpleClassification" Title="Simple Classification">
+  <RestConnector Id="Languages" Title="Languages" Hidden="true">
+    <Parameters>
+      <Text Id="Classifier" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch Url="https://uclassify.com/browse"/>
+    <Parse>
+      <XPath Expr="//p/a[contains(@@href,'@(Model.Classifier)')]">
+        <XPath Expr="." Attribute="href" Id="LangId"/>
+        <XPath Expr="." Attribute="title" Id="Title"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SimpleClassification" Title="Simple Classification" HelpText="Leave Language Field Empty to use default Classifier">
     <Parameters>
       <Text Id="Classifier" Title="Classifier" DefaultValue="" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
+      <Text Id="Language" Title="Language" DefaultValue="" Required="false" Select.Connector="Languages" Select.IdField="LangId" Select.TitleField="Title"/>
       <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
         <DataSource>
           <Item Id="Text" Title="Text"/>
           <Item Id="Url" Title="URL"/>
         </DataSource>
       </Radio>
-      <Text Id="Input" Title="Input" DefaultValue="" Required="true"/>
+      <Text Id="Input" Title="Input" DefaultValue="jag är glad" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://api.uclassify.com/v1/
-        @(Model.Classifier.Substring(7))
+				https://api.uclassify.com/
+				@if(string.IsNullOrEmpty(Model.Language))
+				{
+					@: v1/@Model.Classifier.Substring(7)
+				}
+        else
+				{
+					@: v1/@Model.Language.Substring(7)
+				}
         /Classify
         ?readkey=@(Model.ReadApiKey)
         &text=@(Utils.UrlEncode(Model.Input))

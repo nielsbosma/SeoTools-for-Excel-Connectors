@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Instagram Graph" RequireVersion="7.0.0" Id="InstagramGraph" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/InstagramGraph.xml" HelpUrl="http://seotoolsforexcel.com/Instagram-Graph/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Instagram-Graph/">
+    <Text Id="Token" Title="Access Token" Required="true"/>
+  </Settings>
+
+  <RestConnector Id="ListBusinesses" Title="List Accounts" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/page">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/me/accounts
+				?fields=@SelectedFields()
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="instagram_business_account.id" Id="BusinessId" Title="Business Id" Tag="instagram_business_account" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Tag="name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ListBusinessesHidden" Hidden="true" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/page">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/me/accounts
+				?fields=instagram_business_account,name
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="instagram_business_account.id" Id="BusinessId" Title="Business Id" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountMedia" Title="Account Media" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/media">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+    </Parameters>
+		<Paging PageSize="50" EvenPages="false">
+			<Parse>
+				<JsonPath Id="Cursor" Expr="paging.next"/>
+			</Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/media
+				?fields=@SelectedFields()
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="MediaId" Title="Media Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="timestamp" Id="Created" Title="Created" Tag="timestamp" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="caption" Id="Caption" Title="Caption" Tag="caption" Converter="String" HelpText=""/>
+				<Compute Id="MediaType" Title="MediaType" Tag="media_type">
+					<Compute.Expr>
+						<![CDATA[
+						@Utils.Capitalize(Model.MediaTypeInput)
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="media_type" Id="MediaTypeInput" DConverter="String" DefaultValue=""/>
+				</Compute>
+        <JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="comments_count" Id="Comments" Title="Comments" Tag="comments_count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="media_url" Id="Image" Title="Image" Tag="media_url" Converter="String" HelpText=""/>
+        <JsonPath Expr="permalink" Id="Permalink" Title="Permalink" Tag="permalink" Converter="String" HelpText=""/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Tag="username" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Children" Title="Children" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/media/children">
+    <Parameters>
+      <Text Id="MediaId" Title="Media Id" DefaultValue="" Required="true" Debug.DefaultValue="17899617073160301"/>
+    </Parameters>
+		<Paging PageSize="50" EvenPages="false">
+			<Parse>
+				<JsonPath Id="Cursor" Expr="paging.next"/>
+			</Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.MediaId)/children
+				?fields=@SelectedFields()
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="MediaId" Title="Media Id" Converter="String" HelpText=""/>
+				<Compute Id="MediaType" Title="MediaType" Tag="media_type">
+					<Compute.Expr>
+						<![CDATA[
+						@Utils.Capitalize(Model.MediaTypeInput)
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="media_type" Id="MediaTypeInput" DConverter="String" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="media_url" Id="Image" Title="Image" Tag="media_url" Converter="String" HelpText=""/>
+				<JsonPath Expr="permalink" Id="Permalink" Title="Permalink" Tag="permalink" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Comments" Title="Comments" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/media/comments">
+    <Parameters>
+      <Text Id="MediaId" Title="Media Id" DefaultValue="" Required="true" Debug.DefaultValue="17902595527197367"/>
+    </Parameters>
+		<Paging PageSize="50" EvenPages="false">
+			<Parse>
+				<JsonPath Id="Cursor" Expr="paging.next"/>
+			</Parse>
+		</Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.MediaId)/comments
+				?fields=@SelectedFields()
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &after=@(Model.Cursor)
+        }
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="MediaId" Title="Media Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="timestamp" Id="Created" Title="Created" Tag="timestamp" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="text" Id="Text" Title="Text" Tag="text" Converter="String" HelpText=""/>
+        <JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="hidden" Id="Hidden" Title="Hidden" Tag="hidden" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Tag="username" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MediaInsights" Title="Media Insights" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/media/insights">
+    <Parameters>
+      <Text Id="MediaId" Title="Media Id" DefaultValue="" Required="true" Debug.DefaultValue="17902595527197367"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.MediaId)/insights
+				?metric=engagement,reach,impressions,saved
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[?(@@.name=='impressions')].values.*">
+        <JsonPath Expr="value" Id="Impressions" Title="Impressions" Converter="Int" DefaultValue="" HelpText="Total number of times the media object has been seen"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='reach')].values.*">
+        <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" DefaultValue="" HelpText="Total number of unique accounts that have seen the media object"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='engagement')].values.*">
+        <JsonPath Expr="value" Id="Engagement" Title="Engagement" Converter="Int" DefaultValue="" HelpText="Total number of likes and comments on the media object"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='saved')].values.*">
+        <JsonPath Expr="value" Id="Saved" Title="Saved" Converter="Int" DefaultValue="" HelpText="Total number of unique accounts that have saved the media object"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.error_user_msg"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsDate" Title="Account Insights by Date" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/insights
+				?metric=@SelectedFields()
+        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
+				&period=day
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[0].values.*">
+        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='impressions')].values.*">
+        <JsonPath Expr="value" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='reach')].values.*">
+        <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" Tag="reach" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='profile_views')].values.*">
+        <JsonPath Expr="value" Id="ProfileViews" Title="Profile Views" Converter="Int" Tag="profile_views" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='follower_count')].values.*">
+        <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" Tag="follower_count" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='email_contacts')].values.*">
+        <JsonPath Expr="value" Id="EmailContacts" Title="Email Contacts" Converter="Int" Tag="email_contacts" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='get_directions_clicks')].values.*">
+        <JsonPath Expr="value" Id="GetDirectionClicks" Title="Get Direction Clicks" Converter="Int" Tag="get_directions_clicks" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='phone_call_clicks')].values.*">
+        <JsonPath Expr="value" Id="PhoneCallClicks" Title="Phone Call Clicks" Converter="Int" Tag="phone_call_clicks" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='text_message_clicks')].values.*">
+        <JsonPath Expr="value" Id="TextMessageClicks" Title="Text Message Clicks" Converter="Int" Tag="text_message_clicks" HelpText=""/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='website_clicks')].values.*">
+        <JsonPath Expr="value" Id="WebsiteClicks" Title="Website Clicks" Converter="Int" Tag="website_clicks" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.error_user_msg"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsCities" Title="Account Insights by City" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights" HelpText="The cities of the Business Account's followers.">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/insights
+				?metric=audience_city
+				&period=lifetime
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys(data[*].values[*].value)">
+        <JsonPath Expr="key" Id="City" Title="City" HelpText=""/>
+        <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsCountry" Title="Account Insights by Country" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights" HelpText="The countries of the Business Account's followers.">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/insights
+				?metric=audience_country
+				&period=lifetime
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys(data[*].values[*].value)">
+        <JsonPath Expr="key" Id="Country" Title="Country" HelpText=""/>
+        <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsGenderAge" Title="Account Insights by Gender/Age" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights" HelpText="The gender and age distribution of the Business Account's followers.">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/insights
+				?metric=audience_gender_age
+				&period=lifetime
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys(data[*].values[*].value)">
+        <JsonPath Expr="key" Id="Country" Title="Country" HelpText=""/>
+        <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsLocale" Title="Account Insights by Locale" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights" HelpText="The locales by country codes of the Business Account's followers">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)/insights
+				?metric=audience_locale
+				&period=lifetime
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys(data[*].values[*].value)">
+        <JsonPath Expr="key" Id="Locale" Title="Locale" HelpText=""/>
+        <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="BusinessAccountDiscovery" Title="Business Account Discovery" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/business_discovery">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+      <Text Id="Username" Title="Username" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)
+				?fields=business_discovery.username(@(Model.Username))
+				{followers_count,media_count,biography,website,follows_count,profile_picture_url}
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.business_discovery">
+        <JsonPath Expr="id" Id="BusinessId" Title="Business Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="followers_count" Id="Followers" Title="Followers" Converter="Int" HelpText=""/>
+        <JsonPath Expr="follows_count" Id="Follows" Title="Follows" Converter="Int" HelpText=""/>
+        <JsonPath Expr="media_count" Id="Media" Title="Media" Converter="Int" HelpText=""/>
+        <JsonPath Expr="biography" Id="Bio" Title="Bio" Converter="String" HelpText=""/>
+        <JsonPath Expr="website" Id="Website" Title="Website" Converter="String" HelpText=""/>
+        <JsonPath Expr="profile_picture_url" Id="Avatar" Title="Avatar" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="BusinessMediaDiscovery" Title="Business Media Discovery" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/business_discovery">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListBusinesses" Select.IdField="BusinessId" Select.TitleField="Name"/>
+      <Text Id="Username" Title="Username" DefaultValue="" Required="true" Debug.DefaultValue="aftonbladet"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v2.12/@(Model.BusinessId)
+				?fields=business_discovery.username(@(Model.Username))
+				{media{username,media_url,comments_count,like_count,timestamp,caption,media_type}}
+        &access_token=@(Model.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.business_discovery.media.data.*">
+        <JsonPath Expr="id" Id="MediaId" Title="Media Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="timestamp" Id="Created" Title="Created" Tag="timestamp" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="caption" Id="Caption" Title="Caption" Tag="caption" Converter="String" HelpText=""/>
+				<Compute Id="MediaType" Title="MediaType" Tag="media_type">
+					<Compute.Expr>
+						<![CDATA[
+						@Utils.Capitalize(Model.MediaTypeInput)
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="media_type" Id="MediaTypeInput" DConverter="String" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="comments_count" Id="Comments" Title="Comments" Tag="comments_count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="media_url" Id="Image" Title="Image" Tag="media_url" Converter="String" HelpText=""/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Tag="username" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
