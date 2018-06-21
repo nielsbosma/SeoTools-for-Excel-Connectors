@@ -81,4 +81,37 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+
+
+  <RestConnector Id="ListRows" Title="Rows" HelpText="List all Google sheets on your account" HelpUrl="https://developers.google.com/sheets/api/guides/migration#list_spreadsheets_for_the_authenticated_user">
+    <Parameters>
+      <Text Id="SheetId" Title="Sheet ID" Required="true"/>
+    </Parameters>
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://sheets.googleapis.com/v4/spreadsheets/@(Model.SheetId)/values/Sheet1
+          ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.files.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 </Suite>
