@@ -25,15 +25,6 @@
     <Parameters>
       <Text Id="Addresses" Title="Addresses (one per line, 20 max)" Required="True" Multiline="true" Debug.DefaultValue="0x63a6121a7e1e29fE00Beb11F92bda892D185e91F"/>
     </Parameters>
-    <Paging PageSize="50" MaxTake="10000" EvenPages="false">
-      <Parse>
-        <Regex Id="NextPageToken" IgnoreCase="true" DefaultValue="0" Converter="Int" Group="1">
-          <Regex.Expr>
-            <![CDATA[href="tokens\?p=(\d+)">Next]]>
-          </Regex.Expr>
-        </Regex>
-      </Parse>
-    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -86,9 +77,9 @@
     </Parameters>
     <Paging PageSize="25" MaxTake="10000" EvenPages="false">
       <Parse>
-        <Regex Id="NextPageToken" IgnoreCase="true" DefaultValue="0" Converter="Int" Group="1">
+        <Regex Id="NextPageToken" IgnoreCase="true" DefaultValue="0" Converter="String" Group="1">
           <Regex.Expr>
-            <![CDATA[href="tokens\?p=(\d+)">Next]]>
+            <![CDATA[href="(tokenholdings.+)">Next]]>
           </Regex.Expr>
         </Regex>
       </Parse>
@@ -96,38 +87,148 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://etherscan.io/tokenholdings?
-        a=@(Model.Address)
         @if(Model.PageCursor.Page != 0)
         {
-          @: ?p=@(Model.PageCursor.Page+1)
+          @: https://etherscan.io/@Model.NextPageToken
+        }
+        else {
+        @: https://etherscan.io/tokenholdings?
+        @: a=@(Model.Address)
         }
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-
       <XPath Expr="//*[@@id=&quot;ContentPlaceHolder1_divresult&quot;]/div/table/tbody/tr" Converter="String">
         <Compute Id="Name">
           <Compute.Expr>
             <![CDATA[
             @{
-              string name = "-";
-              if (Model.WithIcon is string && Model.WithIcon.Contains("(")){
-                name = Model.WithIcon.Substring(0, Model.WithIcon.IndexOf("("));
+              string name = "";
+              if (Model.Text is string && !Model.Text.Contains("...")){
+                name = Model.Text;
               }
-              else if if (Model.WithIcon is string){
-                name = Model.WithIcon;
+              else if (Model.Title is string){
+                name = Model.Title;
+              }
+              if (name.Contains("(")){
+                name = name.Substring(0, name.IndexOf("("));
               }
             }
             @name
             ]]>
           </Compute.Expr>
-          <XPath Expr="./td[2]/div/a[1]" Id="NoIcon" Converter="String" Checked="false"/>
-          <XPath Expr="./td[2]/div/a[2]/span" Id="WithIcon" Attribute="title"  Converter="String" Checked="false"/>
+          <XPath Expr="./td[2]/div" Id="Text" Converter="String"/>
+          <XPath Expr="./td[2]/div/a/span" Id="Title" Attribute="title" Converter="String"/>
+        </Compute>
+        <Compute Id="Symbol" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string name = "";
+              if (Model.Text is string && !Model.Text.Contains("...")){
+                name = Model.Text;
+              }
+              else if (Model.Title is string){
+                name = Model.Title;
+              }
+              if (name.Contains(" ")){
+                name = name.Substring(name.IndexOf(" "));
+              }
+
+            }
+            @name
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[4]" Id="Text" Converter="String"/>
+          <XPath Expr="./td[4]/span" Attribute="title" Id="Title" Converter="String"/>
+        </Compute>
+        <Compute Id="Quantity" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string name = "";
+              double qty = 0;
+              if (Model.Text is string && !Model.Text.Contains("...")){
+                name = Model.Text;
+              }
+              else if (Model.Title is string){
+                name = Model.Title;
+              }
+              if (name.Contains(" ")){
+                name = name.Substring(0, name.IndexOf(" "));
+              }
+              if (!Double.TryParse(name, out qty)){
+                qty = 0;
+              }
+            }
+            @name
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[4]" Id="Text" Converter="String"/>
+          <XPath Expr="./td[4]/span" Attribute="title" Id="Title" Converter="String"/>
+        </Compute>
+        <Compute Id="ValueUsd" Title="Value USD" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string price = "";
+              double pricef = 0;
+              if (Model.Text is string){
+                Regex regex = new Regex(@"[\d,\.]+");
+                Match match = regex.Match(Model.Text);
+                price = match.Groups[0].Value;
+              }
+              if (!Double.TryParse(price, out pricef)){
+                pricef = 0;
+              }
+            }
+            @pricef
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[5]" Id="Text" Converter="String"/>
+        </Compute>
+        <Compute Id="ValueEth" Title="Value ETH" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string price = "";
+              double pricef = 0;
+              if (Model.Text is string){
+                Regex regex = new Regex(@"[\d,\.]+");
+                Match match = regex.Match(Model.Text);
+                price = match.Groups[0].Value;
+              }
+              if (!Double.TryParse(price, out pricef)){
+                pricef = 0;
+              }
+            }
+            @pricef
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[6]" Id="Text" Converter="String"/>
+        </Compute>
+        <Compute Id="Change" Title="Change % (24hr)" Converter="Double">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              string price = "";
+              double pricef = 0;
+              if (Model.Text is string){
+                Regex regex = new Regex(@"[\d,\.-]+");
+                Match match = regex.Match(Model.Text);
+                price = match.Groups[0].Value;
+              }
+              if (!Double.TryParse(price, out pricef)){
+                pricef = 0;
+              }
+            }
+            @pricef
+            ]]>
+          </Compute.Expr>
+          <XPath Expr="./td[7]" Id="Text" Converter="String"/>
         </Compute>
       </XPath>
-
     </Parse>
   </RestConnector>
 
