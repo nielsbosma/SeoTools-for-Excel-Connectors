@@ -45,7 +45,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SingleTokenBalance" Title="Single Token balance" HelpUrl="https://etherscan.io/apis#tokens" HelpText="Get ERC20-Token Account Balance for Token Contract Address" Hidden="True">
+  <RestConnector Id="SingleTokenBalance" Title="Single token balance" HelpUrl="https://etherscan.io/apis#tokens" HelpText="Get ERC20-Token Account Balance for Token Contract Address" Hidden="True">
     <Parameters>
       <Text Id="Address" Title="Wallet Address" Required="True"/>
       <Text Id="Search" Title="Token Name" Required="False"/>
@@ -230,11 +230,60 @@
         </Compute>
       </XPath>
     </Parse>
+    <Regex Expr="No token found" Group="0"/>
   </RestConnector>
 
-  <!--<RestConnector Id="TotalValue" Title="Total wallet value" HelpText="Total wallet value in ETH and USD">-->
+  <RestConnector Id="TotalValue" Title="Total wallet value" HelpText="Total wallet value in ETH and USD">
+    <Parameters>
+      <Text Id="Address" Name="Wallet Address" Required="True" Debug.DefaultValue="0x829BD824B016326A401d083B33D092293333A830"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[https://etherscan.io/tokenholdings?a=@(Model.Address)]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="/html/body/div[1]/div[4]/div[2]/table/tr[2]/td[1]" Id="ValueEth" Title="Value ETH" Converter="Double" />
+      <Compute Id="ValueUsd" Title="Value USD" Converter="Double">
+        <Compute.Expr>
+          <![CDATA[
+            @{
+              double x = 0;
+              Regex regex = new Regex(@"\$([\d,\.]+)");
+							Match match = regex.Match(Model.Val);
+							if (!Double.TryParse(match.Groups[1].Value, out x)){
+                x = 0;
+              }
+            }
+            @(x)
+            ]]>
+        </Compute.Expr>
+        <XPath Id="Val" Expr="/html/body/div[1]/div[4]/div[2]/table/tr[2]/td[2]"/>
+      </Compute>
+      <Compute Id="Change" Title="24hr change % (USD)" Converter="Double">
+        <Compute.Expr>
+          <![CDATA[
+            @{
+              double x = 0;
+              if (Model.Val is string){
+                Regex regex = new Regex(@"([\d\.-]+)%");
+                Match match = regex.Match(Model.Val);
 
-  <!--</RestConnector>-->
+                if (!Double.TryParse(match.Groups[1].Value, out x)){
+                  x = 0;
+                }
+              }
+            }
+            @(x)
+            ]]>
+        </Compute.Expr>
+        <XPath Id="Val" Expr="/html/body/div[1]/div[4]/div[2]/table/tr[2]/td[2]"/>
+      </Compute>
+    </Parse>
+    <Fail>
+      <Regex Expr="No token found" Group="0"/>
+    </Fail>
+  </RestConnector>
 
   <RestConnector Id="AllTokens" Title="Global tokens list" HelpUrl="https://etherscan.io/tokens" HelpText="Lists all ERC20 tokens, with price and volume">
     <!--Todo: add sorting-->
@@ -395,6 +444,38 @@
         </Compute>
       </XPath>
     </Parse>
+  </RestConnector>
+
+  <RestConnector Id="BlocksMined" Title="Blocks mined by address" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get list of Blocks Mined by Address">
+    <Parameters>
+      <Text Id="Addresses" Title="Address" Required="True" Debug.DefaultValue="0x9dd134d14d1e65f84b706d6f205cd5b1cd03a46b"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.etherscan.io/api?module=account
+        &action=getminedblocks
+        &address=@(FetchAddresses())
+        &blocktype=blocks
+        &apikey=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <Compute Id="Date">
+          <Compute.Expr>
+            <![CDATA[
+              @(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(Model.Ts))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="timeStamp" Id="Ts" Converter="Int"/>
+        </Compute>
+        <JsonPath Expr="blockNumber" Id="BlockNumber" Title="Block Number" Converter="Int"/>
+        <JsonPath Expr="blockReward" Id="BlockReward" Title="Block Reward" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
