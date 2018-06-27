@@ -267,7 +267,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Domains" Title="Domains" HelpUrl="https://developer.godaddy.com/doc/endpoint/domains#/v1/list">
+  <RestConnector Id="Domains" Title="List domains" HelpUrl="https://developer.godaddy.com/doc/endpoint/domains#/v1/list">
     <Parameters>
       <Select Id="DomainStatus" Title="Filter by domain status" DefaultValue="all" Required="false">
         <DataSource>
@@ -386,10 +386,40 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+
+  <RestConnector Id="DomainSuggestions" Title="Domain Suggestions" HelpText="Suggest alternate Domain names based on a seed Domain, a set of keywords, or the shopper's purchase history" HelpUrl="https://developer.godaddy.com/doc/endpoint/domains#/v1/suggest">
+    <Parameters>
+      <Text Id="Query" Name="Query" Required="True" Debug.DefaultValue="seo" HelpText="Domain name or set of keywords for which alternative domain names will be suggested"/>
+      <Text Id="Sources" Name="Sources" Required="True" Multiline="True" DefaultValue="CC_TLD&#13;&#10;EXTENSION&#13;&#10;KEYWORD_SPIN&#13;&#10;PREMIUM" HelpText="Sources for suggestions (don't change the entries, just remove lines you don't want)">
+      </Text>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Header"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.@(Model.Env).com/v1/domains/suggest?
+        query=@(Model.Query)
+        &sources=@(GetSources())
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
+    <![CDATA[
     public string GetDomains(){
       string[] lines = ((string)Model.Domains).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
       return JsonConvert.SerializeObject(lines);
     }
+    public string GetSources(){
+      string[] lines = ((string)Model.Sources).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(4).ToArray();
+      return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+    }
+    ]]>
   </RazorFunctions>
 </Suite>
