@@ -455,6 +455,51 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Subscriptions" Title="Subscriptions" HelpText="Retrieve a list of Subscriptions" HelpUrl="https://developer.godaddy.com/doc/endpoint/subscriptions#/v1/list">
+    <Paging PageSize="1000">
+      <Parse>
+        <JsonPath Id="NextResults" Expr="$.pagination.next"/>
+        <JsonPath Id="AvaliableRows" Expr="$.pagination.total"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Header"/>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: @(Model.NextResults)
+        }
+        else {
+          @: https://api.@(Model.Env).com/v1/subscriptions?
+          @: &limit=1000
+          @: &sort=-expiresAt
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.subscriptions.*">
+        <JsonPath Expr="billing.commitment" Id="BillingCommitment" Title="Billing Commitment" Converter="String" HelpText=""/>
+        <JsonPath Expr="billing.renewAt" Id="BillingRenewat" Title="Billing Renews" Converter="String" HelpText=""/>
+        <JsonPath Expr="billing.status" Id="BillingStatus" Title="Billing Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="cancelable" Id="Cancelable" Title="Cancelable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="createdAt" Id="Createdat" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="expiresAt" Id="Expiresat" Title="Expires" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="label" Id="Label" Title="Label" Converter="String" HelpText=""/>
+        <JsonPath Expr="launchUrl" Id="Launchurl" Title="Launch URL" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="paymentProfileId" Id="Paymentprofileid" Title="Payment Profile ID" Converter="Int" HelpText=""/>
+        <JsonPath Expr="priceLocked" Id="Pricelocked" Title="Price locked" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="product.label" Id="ProductLabel" Title="Product Label" Converter="String" HelpText=""/>
+        <JsonPath Expr="renewAuto" Id="Renewauto" Title="Auto renew" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="renewable" Id="Renewable" Title="Renewable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="subscriptionId" Id="Subscriptionid" Title="Subscription ID" Converter="String" HelpText=""/>
+        <JsonPath Expr="upgradeable" Id="Upgradeable" Title="Upgradeable" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     public string GetDomains(){
