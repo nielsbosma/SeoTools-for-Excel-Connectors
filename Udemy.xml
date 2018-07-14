@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Udemy" Id="Udemy" Category="Knowledge" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Udemy.xml" HelpUrl="http://seotoolsforexcel.com/Udemy" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Udemy/">
+    <Text Id="ClientId" Title="Client Id" Required="true" HelpUrl="http://seotoolsforexcel.com/Udemy"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true" HelpUrl="http://seotoolsforexcel.com/Udemy"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="InstructionalLevels">
+      <Item Id="all" Title="All"/>
+      <Item Id="beginner" Title="Beginner"/>
+      <Item Id="intermediate" Title="Intermediate"/>
+      <Item Id="expert" Title="Expert"/>
+    </Resource>
+    <Resource Id="Durations">
+      <Item Id="all" Title="All"/>
+      <Item Id="short" Title="Short"/>
+      <Item Id="medium" Title="Medium"/>
+      <Item Id="long" Title="Long"/>
+      <Item Id="extraLong" Title="Exrta Long"/>
+    </Resource>
+    <Resource Id="Sortings">
+      <Item Id="relevance" Title="Relevance"/>
+      <Item Id="most-reviewed" Title="Most Reviewed"/>
+      <Item Id="highest-rated" Title="Highest Rated"/>
+      <Item Id="newest" Title="Newest"/>
+      <Item Id="price-low-to-high" Title="Price Low to High"/>
+      <Item Id="price-high-to-low" Title="Price High to Low"/>
+    </Resource>
+    <Resource Id="Categories">
+      <Item Id="all" Title="All"/>
+			<Item Id="Academics" Title="Academics"/>
+			<Item Id="Business" Title="Business"/>
+			<Item Id="Design" Title="Design"/>
+			<Item Id="Development" Title="Development"/>
+			<Item Id="Health &amp; Fitness" Title="Health &amp; Fitness"/>
+			<Item Id="IT &amp; Software" Title="IT &amp; Software"/>
+			<Item Id="Language" Title="Language"/>
+			<Item Id="Lifestyle" Title="Lifestyle"/>
+			<Item Id="Marketing" Title="Marketing"/>
+			<Item Id="Music" Title="Music"/>
+			<Item Id="Office Productivity" Title="Office Productivity"/>
+			<Item Id="Personal Development" Title="Personal Development"/>
+			<Item Id="Photography" Title="Photography"/>
+			<Item Id="Teacher Training" Title="Teacher Training"/>
+			<Item Id="Test Prep" Title="Test Prep"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Courses" Title="Courses" HelpUrl="https://www.udemy.com/developers/methods/get-courses-list/" HelpText="Returns list of courses">
+    <Parameters>
+      <Text Id="Search" Title="Search" DefaultValue="" Debug.DefaultValue="" Required="false" HelpText="Filter courses by a search term."/>
+      <Text Id="Language" Title="Language (Alpha-2 language code)" DefaultValue="" Debug.DefaultValue="" Required="false" HelpText=""/>
+      <Select Id="Category" Title="Category" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Categories"/>
+        </DataSource>
+      </Select>
+      <Select Id="Duration" Title="Duration" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Durations"/>
+        </DataSource>
+      </Select>
+      <Select Id="InstructionalLevel" Title="Instructional Level" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="InstructionalLevels"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Price" Title="Price" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="price-paid" Title="Paid"/>
+          <Item Id="price-free" Title="Free"/>
+        </DataSource>
+      </Radio>
+      <Radio Id="Affiliate" Title="Affiliate Agreed" DefaultValue="all" Required="false">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="true" Title="True"/>
+          <Item Id="false" Title="False"/>
+        </DataSource>
+      </Radio>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="relevance">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="true" MaxTake="10000"/>
+    <Fetch>
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Accept'>application/json, text/plain, */*</Header>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.udemy.com/api-2.0/courses
+					?page_size=@(Model.PageCursor.NextTake)
+					&page=@(Model.PageCursor.Page+1)
+					@if(!string.IsNullOrEmpty(Model.Search))
+					{
+						@: &search=@Utils.UrlEncode(Model.Search)
+					}
+					@if(!string.IsNullOrEmpty(Model.Language))
+					{
+						@: &language=@Utils.UrlEncode(Model.Language)
+					}
+					@if(Model.Category != "all")
+					{
+						@: &category=@Utils.UrlEncode(Model.Category)
+					}
+					@if(Model.Duration != "all")
+					{
+						@: &duration=@Utils.UrlEncode(Model.Duration)
+					}
+					&instructional_level=@(Model.InstructionalLevel)
+					@if(Model.Price != "all")
+					{
+						@: &price=@(Model.Price)
+					}
+					@if(Model.Affiliate != "all")
+					{
+						@: &is_affiliate_agreed=@(Model.Affiliate)
+					}
+					&ordering=@(Model.Sorting)
+					&fields[course]=@@all
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results.*">
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="Id of the course"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the course"/>
+				<JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText="When the course was created"/>
+				<JsonPath Expr="last_update_date" Id="Updated" Title="Updated" Converter="DateTime" HelpText="When the course was last updated"/>
+				<JsonPath Expr="num_subscribers" Id="Subscribers" Title="Subscribers" Converter="Long" HelpText="Number of students enrolled in the course"/>
+				<JsonPath Expr="avg_rating" Id="Rating" Title="Rating" Converter="Double" HelpText="Average course rating"/>
+				<JsonPath Expr="num_reviews" Id="Reviews" Title="Reviews" Converter="Long" HelpText="Number of reviews for the course"/>
+				<JsonPath Expr="price" Id="Price" Title="Price" Converter="String" HelpText="How much the course costs"/>
+				<JsonPath Expr="instructional_level" Id="InstructionalLevel" Title="Instructional Level" Converter="String" HelpText="Instructional level of the course"/>
+				<JsonPath Expr="estimated_content_length" Id="EstimatedContentLength" Title="Estimated Content Length" Converter="Long" HelpText="Estimated content length"/>
+        <Compute Id="Url" Title="URL" Converter="String" HelpText="URL of the course dashboard page">
+          <Compute.Expr>
+            <![CDATA[
+             https://www.udemy.com@(Model.UrlInput)
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="url" Id="UrlInput" Converter="String"/>
+        </Compute>
+				<JsonPath Expr="is_paid" Id="IsPaid" Title="Paid" Converter="Bool" HelpText="Whether the course is paid"/>
+				<JsonPath Expr="has_certificate" Id="Certificate" Title="Certificate" Converter="Bool" HelpText="Whether the course has certificate"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="CourseLookup" Title="Course Lookup" HelpUrl="https://www.udemy.com/developers/methods/get-courses-detail/" HelpText="Returns course with specified Id">
+    <Parameters>
+      <Text Id="CourseId" Title="Course Id" DefaultValue="" Debug.DefaultValue="950390" Required="true" HelpText="The Id of the Course"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Accept'>application/json, text/plain, */*</Header>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.udemy.com/api-2.0/courses/@(Model.CourseId)
+					?fields[course]=@@all
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="Id of the course"/>
+			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the course"/>
+			<JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText="When the course was created"/>
+			<JsonPath Expr="last_update_date" Id="Updated" Title="Updated" Converter="DateTime" HelpText="When the course was last updated"/>
+			<JsonPath Expr="num_subscribers" Id="Subscribers" Title="Subscribers" Converter="Long" HelpText="Number of students enrolled in the course"/>
+			<JsonPath Expr="avg_rating" Id="Rating" Title="Rating" Converter="Double" HelpText="Average course rating"/>
+			<JsonPath Expr="num_reviews" Id="Reviews" Title="Reviews" Converter="Long" HelpText="Number of reviews for the course"/>
+			<JsonPath Expr="price" Id="Price" Title="Price" Converter="String" HelpText="How much the course costs"/>
+			<JsonPath Expr="instructional_level" Id="InstructionalLevel" Title="Instructional Level" Converter="String" HelpText="Instructional level of the course"/>
+			<JsonPath Expr="estimated_content_length" Id="EstimatedContentLength" Title="Estimated Content Length" Converter="Long" HelpText="Estimated content length"/>
+			<Compute Id="Url" Title="URL" Converter="String" HelpText="URL of the course dashboard page">
+				<Compute.Expr>
+					<![CDATA[
+					 https://www.udemy.com@(Model.UrlInput)
+					]]>
+				</Compute.Expr>
+			<JsonPath Expr="url" Id="UrlInput" Converter="String"/>
+			</Compute>
+			<JsonPath Expr="is_paid" Id="IsPaid" Title="Paid" Converter="Bool" HelpText="Whether the course is paid"/>
+			<JsonPath Expr="has_certificate" Id="Certificate" Title="Certificate" Converter="Bool" HelpText="Whether the course has certificate"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Reviews" Title="Reviews" HelpUrl="https://www.udemy.com/developers/methods/get-coursereviews-list/" HelpText="Returns list of course reviews">
+    <Parameters>
+      <Text Id="CourseId" Title="Course Id" DefaultValue="" Debug.DefaultValue="950390" Required="true" HelpText="The Id of the Course"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="true" MaxTake="10000"/>
+    <Fetch>
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Accept'>application/json, text/plain, */*</Header>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.udemy.com/api-2.0/courses/@(Model.CourseId)/reviews
+					?page_size=@(Model.PageCursor.NextTake)
+					&page=@(Model.PageCursor.Page+1)
+					&fields[course]=@@all
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results.*">
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="Id of the review"/>
+				<JsonPath Expr="content" Id="Content" Title="Content" Converter="String" HelpText="Content of the review"/>
+				<JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText="When the review was created"/>
+				<JsonPath Expr="modified" Id="Updated" Title="Updated" Converter="DateTime" HelpText="When the review was last updated"/>
+				<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String" HelpText="The author of the review"/>
+				<JsonPath Expr="user.display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText="The authors display name"/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="detail"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth()
+    {
+      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + ":" + Model.ClientSecret));
+      return AuthString;
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>

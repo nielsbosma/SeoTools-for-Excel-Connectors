@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="6.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml" HelpUrl="" HelpText="Documentation">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml" HelpUrl="" HelpText="Documentation">
 
-  <RestConnector Title="Account Lookup" Id="AccountLookup">
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <RestConnector Title="Account Lookup by Username" Id="AccountLookupUsername">
     <Parameters>
       <Text Id="Username" Title="Username" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
@@ -12,6 +14,55 @@
       <Regex Title="Posts" Id="Posts" Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Int"/>
       <Regex Id="UserId" Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;}" Converter="String" HelpText=""/>
       <Regex Title="Avatar" Id="Avatar" Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Title="Latest Posts from Account" Id="LatestPosts">
+    <Parameters>
+      <Text Id="Username" Title="Username" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+    <Fetch Url="https://www.instagram.com/@(Model.Username)"/>
+    <Parse>
+      <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Title="Post Id" Id="PostId" Group="0"/>
+				<Compute Id="PostUrl" Title="Post URL">
+					<Compute.Expr>
+						<![CDATA[
+						https://www.instagram.com/p/@(Model.PostIdInput)
+						]]>
+					</Compute.Expr>
+					<Regex Expr=".*" Group="0" Id="PostIdInput"/>
+				</Compute>
+      </Regex>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Title="Account Lookup by User Id" Id="AccountLookupUserId">
+    <Parameters>
+      <Text Id="UserId" Title="User Id" Required="true" DefaultValue="" Debug.DefaultValue="9240981"/>
+    </Parameters>
+    <Fetch Url="https://i.instagram.com/api/v1/users/@(Model.UserId)/info/"/>
+    <Parse>
+      <JsonPath Expr="user">
+				<JsonPath Title="Username" Id="Username" Expr="username" Converter="String"/>
+				<JsonPath Title="User Id" Id="UserId" Expr="pk" Converter="String"/>
+				<JsonPath Title="Followers" Id="Followers" Expr="follower_count" Converter="Long"/>
+				<JsonPath Title="Follows" Id="Follows" Expr="following_count" Converter="Long"/>
+				<JsonPath Title="Posts" Id="Posts" Expr="media_count" Converter="Long"/>
+				<JsonPath Title="Tagged" Id="Tagged" Expr="usertags_count" Converter="Long"/>
+				<Compute Id="UserUrl" Title="User URL">
+					<Compute.Expr>
+						<![CDATA[
+						https://www.instagram.com/@(Model.Username)
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="username" Id="Username" Converter="String"/>
+				</Compute>
+				<JsonPath Title="Full Name" Id="FullName" Expr="full_name" Converter="String"/>
+				<JsonPath Title="Avatar" Id="Avatar" Expr="profile_pic_url" Converter="String"/>
+				<JsonPath Title="Bio" Id="Bio" Expr="biography" Converter="String"/>
+				<JsonPath Title="External URL" Id="ExternalUrl" Expr="external_url" Converter="String"/>
+		</JsonPath>
     </Parse>
   </RestConnector>
 
@@ -36,7 +87,7 @@
     </Parameters>
     <Fetch Url="https://api.instagram.com/oembed/?url=@(Model.Url)"/>
     <Parse>
-      <JsonPath Title="PostId" Id="PostId" Expr="media_id" Converter="String"/>
+      <JsonPath Title="Post Id" Id="PostId" Expr="media_id" Converter="String"/>
       <Regex Title="Created" Id="Created" Expr="datetime=\\&quot;(.*?)\\&quot;" Group="1" Converter="DateTime"/>
       <JsonPath Title="Text" Id="Text" Expr="title" Converter="String"/>
       <JsonPath Title="Author Id" Id="AuthorId" Expr="author_id" Converter="String"/>
