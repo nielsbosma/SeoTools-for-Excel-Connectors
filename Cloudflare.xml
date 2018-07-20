@@ -35,9 +35,96 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Name="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Name="Name"></JsonPath>
-        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Name="2FA Enabled"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
+        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"></JsonPath>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountsHidden" Title="Accounts Hidden" Hidden="True" HelpUrl="https://api.cloudflare.com/#accounts-list-accounts">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
+        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountMembers" Title="Account Members" HelpUrl="https://api.cloudflare.com/#account-members-list-members">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts/@(Model.AccountId)/members
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="code" Id="Code" Title="Code" Checked="false"/>
+        <JsonPath Expr="user.id" Id="UserId" Title="User Id"/>
+        <JsonPath Expr="user.email" Id="UserEmail" Title="User Email"/>
+        <JsonPath Expr="user.first_name" Id="FirstName" Title="First Name"/>
+        <JsonPath Expr="user.last_name" Id="LastName" Title="Last Name"/>
+        <JsonPath Expr="user.two_factor_authentication_enabled" Id="2fa" Title="2FA" HelpText="Two-factor authentication enabled"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountRoles" Title="Account Roles" HelpUrl="https://api.cloudflare.com/#account-roles-list-roles">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts/@(Model.AccountId)/roles
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Code" Title="Code" Checked="false"/>
+        <JsonPath Expr="description" Id="Description" Title="Description"/>
+        <JsonPath Expr="permissions.analytics.read" Id="AnalyticsR" Title="Analytics R"/>
+        <JsonPath Expr="permissions.analytics.edit" Id="AnalyticsE" Title="Analytics E"/>
+        <JsonPath Expr="permissions.billing.read" Id="BillingR" Title="Billing R"/>
+        <JsonPath Expr="permissions.billing.edit" Id="BillingE" Title="Billing E"/>
+        <JsonPath Expr="permissions.cache_purge.read" Id="CachePurgeR" Title="Cache purge R"/>
+        <JsonPath Expr="permissions.cache_purge.edit" Id="CachePurgeE" Title="Cache purge E"/>
+        <JsonPath Expr="permissions.dns.read" Id="DnsR" Title="DNS R"/>
+        <JsonPath Expr="permissions.dns.edit" Id="DnsE" Title="DNS E"/>
+        <JsonPath Expr="permissions.dns_records.read" Id="DnsRecordsR" Title="DNS records R"/>
+        <JsonPath Expr="permissions.dns_records.edit" Id="DnsRecordsE" Title="DNS records E"/>
+        <JsonPath Expr="permissions.lb.read" Id="Lbread" Title="lbR"/>
+        <JsonPath Expr="permissions.lb.edit" Id="Lbedit" Title="lbE"/>
+        <JsonPath Expr="permissions.logs.read" Id="LogsRead" Title="Logs R"/>
+        <JsonPath Expr="permissions.logs.edit" Id="LogsEdit" Title="Logs E"/>
+        <JsonPath Expr="permissions.organization.read" Id="OrganizationR" Title="Organization R"/>
+        <JsonPath Expr="permissions.organization.edit" Id="OrganizationE" Title="Organization E"/>
+        <JsonPath Expr="permissions.ssl.read" Id="SslR" Title="SSL R"/>
+        <JsonPath Expr="permissions.ssl.edit" Id="SslE" Title="SSL E"/>
+        <JsonPath Expr="permissions.waf.read" Id="WafR" Title="WAF R"/>
+        <JsonPath Expr="permissions.waf.edit" Id="WafE" Title="WAF E"/>
+        <JsonPath Expr="permissions.zones.read" Id="ZonesR" Title="Zones R"/>
+        <JsonPath Expr="permissions.zones.edit" Id="ZonesE" Title="Zones E"/>
+        <JsonPath Expr="permissions.zone_settings.read" Id="ZoneSettingsR" Title="Zone settings R"/>
+        <JsonPath Expr="permissions.zone_settings.edit" Id="ZoneSettingsE" Title="Zone settings E"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -96,9 +183,12 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Name="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Name="Name"></JsonPath>
-        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Name="2FA Enabled"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <JsonPath Expr="owner.id" Id="OwnerId" Title="Owner Id"/>
+        <JsonPath Expr="owner.email" Id="OwnerEmail" Title="Owner Email"/>
+
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"></JsonPath>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -115,17 +205,73 @@
         <![CDATA[
         https://api.cloudflare.com/client/v4/zones?
         per_page=50
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &page=@(Model.PageCursor.Page)
-        }
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Name="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Name="Name"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
+        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DnsRecords" Title="DNS records for a zone" HelpUrl="https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records" HelpText="List, search, sort, and filter a zones' DNS records.">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_records
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="content" Id="Content" Title="Content" Converter="String" HelpText=""/>
+        <JsonPath Expr="proxiable" Id="Proxiable" Title="Proxiable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time-to-live"/>
+        <JsonPath Expr="locked" Id="Locked" Title="Locked" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="zone_id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone_name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created On" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DnsAnalytics" Title="DNS analytics for a zone" HelpUrl="https://api.cloudflare.com/#dns-analytics-table" HelpText="Retrieves a list of summarised aggregate metrics over a given time period.">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_analytics/report
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="content" Id="Content" Title="Content" Converter="String" HelpText=""/>
+        <JsonPath Expr="proxiable" Id="Proxiable" Title="Proxiable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time-to-live"/>
+        <JsonPath Expr="locked" Id="Locked" Title="Locked" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="zone_id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone_name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created On" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
       </JsonPath>
     </Parse>
   </RestConnector>
