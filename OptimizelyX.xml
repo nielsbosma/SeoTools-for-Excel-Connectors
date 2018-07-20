@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Business Intelligence" Title="Optimizely X" Id="OptimizelyX" RequireVersion="8.0.15" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/OptimizelyX.xml" HelpUrl="http://seotoolsforexcel.com/optimizely-x/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/optimizely-x/">
+    <Text Id="APIKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/optimizely-x/"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="ListProjectsHidden" Hidden="true">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.optimizely.com/v2/projects
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ProjectId" Title="Project Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListExperimentsHidden" Hidden="true">
+    <Parameters>
+      <Text Id="ProjectIdFilter" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectIdFilter" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments
+         ?project_id=@(Model.ProjectIdFilter)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="ExperimentListId" Title="Experiment Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="name" Id="ExperimentListName" Title="Experiment Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListProjects" Title="Projects List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-projects">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.optimizely.com/v2/projects
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="confidence_threshold" Id="ConfidenceThreshold" Title="Confidence Threshold" Converter="Int"/>
+        <JsonPath Expr="platform" Id="Platform" Title="Platform" Converter="String"/>
+        <JsonPath Expr="account_id" Id="AccountId" Title="Account ID" Converter="String"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="is_classic" Id="IsClassic" Title="Classic Project" Converter="Bool" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListCampaigns" Title="Campaigns List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-campaigns">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.optimizely.com/v2/campaigns?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <Compute Id="PercentExcluded" Title="Percent Excluded" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            int excluded = (int)Model.Holdback / 100;
+            @excluded
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="holdback" Id="Holdback" Converter="Int"/>
+        </Compute>
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="earliest" Id="Earliest" Title="First Activated" Converter="Auto"/>
+        <JsonPath Expr="latest" Id="Latest" Title="Last Activated" Converter="Auto"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListExperiments" Title="Experiments List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-campaigns">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments
+         ?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <Compute Id="PercentExcluded" Title="Percent Excluded" Converter="Int">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            int excluded = (int)Model.Holdback / 100;
+            @excluded
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="holdback" Id="Holdback" Converter="Int"/>
+        </Compute>
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="earliest" Id="Earliest" Title="First Activated" Converter="Auto"/>
+        <JsonPath Expr="latest" Id="Latest" Title="Last Activated" DefaultValue="" Converter="Auto"/>
+        <JsonPath Expr="url_targeting.edit_url" Id="EditUrl" Title="URL in Editor" Converter="String" Checked="false"/>
+        <JsonPath Expr="url_targeting.conditions" Id="TargetConditions" Title="Targetting Conditions" Converter="String" Checked="false"/>
+        <JsonPath Expr="key" Id="Key" Title="Key" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListAudiences" Title="Audiences List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#list-audiences">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/audiences
+         ?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="segmentation" Id="Segmentation" Title="Available for Segmentation" Checked="false" Converter="Bool"/>
+        <JsonPath Expr="is_classic" Id="IsClassic" Title="Is Classic Audience" Checked="false" Converter="Bool"/>
+        <JsonPath Expr="conditions" Id="Conditions" Title="Conditions" Checked="false" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListPages" Title="Pages List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#pages">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/audiences
+         ?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="String"/>
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="edit_url" Id="EditUrl" Title="URL" Converter="String"/>
+        <JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="page_type" Id="PageType" Title="Page Type" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="category" Id="Category" Title="Category" Converter="String"/>
+        <JsonPath Expr="last_modified" Id="LastModified" Title="Last Modified" Converter="Auto"/>
+        <JsonPath Expr="key" Id="Key" Title="Key" Converter="String" Checked="true"/>
+        <JsonPath Expr="conditions" Id="Conditions" Title="Conditions" Checked="false" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListEvents" Title="Events List" HelpUrl="https://developers.optimizely.com/x/rest/v2/#events">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/events
+         ?project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project ID" Converter="Int"/>
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="Int"/>
+        <JsonPath Expr="page_id" Id="PageId" Title="Page ID" Converter="Int"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" DefaultValue="" Converter="String"/>
+        <JsonPath Expr="category" Id="Category" Title="Category" Converter="Int"/>
+        <JsonPath Expr="event_type" Id="EventType" Title="Event Type" Converter="String"/>
+        <JsonPath Expr="key" Id="Key" Title="Key" Converter="String" Checked="true"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="Auto"/>
+        <JsonPath Expr="is_classic" Id="IsClassic" Title="Is Classic" Checked="False" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ExperimentResults" Title="Experiment Results" HelpUrl="https://developers.optimizely.com/x/rest/v2/#get-experiment-results">
+    <Parameters>
+      <Text Id="ProjectIdFilter" Title="Project ID" DefaultValue="" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="ExperimentId" Title="Experiment ID" DefaultValue="" Required="true" Select.Connector="ListExperimentsHidden" Select.IdField="ExperimentListId" Select.TitleField="ExperimentListName"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.APIKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://api.optimizely.com/v2/experiments/
+         @(Model.ExperimentId)/results
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <XPath Expr="//results/*">
+          <XPath Expr="../../name" Title="Metric name" Id="MetricName" Converter="String" />
+          <XPath Expr="../../field" Title="Metric field" Id="MetricField" Converter="Auto" />
+          <XPath Expr="../../aggregator" Title="Metric aggregator" Id="MetricAggregator" Converter="String" />
+          <XPath Expr="name" Title="Variation Name" Id="VariationName" Converter="String" />
+          <XPath Expr="variation_id" Title="Variation ID" Id="Variation" Converter="String" />
+          <XPath Expr="is_baseline" Title="Is Baseline" Id="IsBaseline" Converter="Bool" />
+          <XPath Expr="level" Title="Level" Id="Level" Converter="String" />
+          <XPath Expr="rate" Title="Rate" Id="Rate" Converter="String" />
+          <XPath Expr="samples" Title="Samples" Id="Samples" Converter="int" />
+          <XPath Expr="value" Title="Value" Id="Value" Converter="String" />
+          <XPath Expr="variance" Title="Variance" Id="Variance" Converter="String" />
+          <XPath Expr="lift/is_significant" Title="Lift is Significant" Id="IsSignificant" Converter="Auto" />
+          <XPath Expr="lift/lift_status" Title="Lift Status" Id="LiftStatus" Converter="Auto" />
+          <XPath Expr="lift/significance" Title="Lift Significance" Id="LiftSignificance" Converter="Auto" />
+          <XPath Expr="lift/value" Title="Lift Value" Id="LiftValue" Converter="Auto" />
+          <XPath Expr="lift/visitors_remaining" Title="Visitors Remaining" Id="VisitorsRemaining" Converter="Auto" />
+          <XPath Expr="../../scope" Title="Metric Scope" Id="MetricScope" checked="False" Converter="String" />
+          <XPath Expr="../../winning_direction" Title="Metric Winning Direction" Id="WinningDirection" checked="False" Converter="String" />
+        </XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+</Suite>
