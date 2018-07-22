@@ -216,6 +216,28 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="ZoneSettings" Title="Zone settings" HelpUrl="https://api.cloudflare.com/#zone-settings-get-all-zone-settings" HelpText="Available settings for your user in relation to a zone">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/settings
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="String" HelpText=""/>
+        <JsonPath Expr="editable" Id="Editable" Title="Editable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="DnsRecords" Title="DNS records for a zone" HelpUrl="https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records" HelpText="List, search, sort, and filter a zones' DNS records.">
     <Parameters>
       <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
@@ -246,35 +268,55 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="DnsAnalytics" Title="DNS analytics for a zone" HelpUrl="https://api.cloudflare.com/#dns-analytics-table" HelpText="Retrieves a list of summarised aggregate metrics over a given time period.">
-    <Parameters>
-      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
-    </Parameters>
+  <RestConnector Id="BillingHistory" Title="Billing history" HelpUrl="https://api.cloudflare.com/#user-billing-history-billing-history-details" HelpText="Access your billing history object">
     <Fetch>
       <Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_analytics/report
+        https://api.cloudflare.com/client/v4/user/billing/history
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Title="Id"/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-        <JsonPath Expr="content" Id="Content" Title="Content" Converter="String" HelpText=""/>
-        <JsonPath Expr="proxiable" Id="Proxiable" Title="Proxiable" Converter="Bool" HelpText=""/>
-        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText=""/>
-        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time-to-live"/>
-        <JsonPath Expr="locked" Id="Locked" Title="Locked" Converter="Bool" HelpText=""/>
-        <JsonPath Expr="zone_id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
-        <JsonPath Expr="zone_name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
-        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created On" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="id" Id="Id" Converter="String" Title="Id"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="action" Id="Action" Title="Action" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="occurred_at" Id="OccurredAt" Title="Occurred At" Converter="DateTime"/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double"/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String"/>
+        <JsonPath Expr="zone.name" Id="Zone" Title="Zone" Converter="String"/>
       </JsonPath>
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="UserSubscriptions" Title="User subscriptions" HelpUrl="https://api.cloudflare.com/#user-subscription-get-user-subscriptions" HelpText="Lists all user's subscriptions">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/user/subscriptions
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="state" Id="State" Title="State" Converter="String" HelpText=""/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone.id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone.name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" HelpText=""/>
+        <JsonPath Expr="rate_plan.id" Id="RatePlanId" Title="Rate Plan Id" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="rate_plan.public_name" Id="RatePlanPublicName" Title="Rate Plan Public Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.currency" Id="RatePlanCurrency" Title="Rate Plan Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.scope" Id="RatePlanScope" Title="Rate Plan Scope" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.externally_managed" Id="RatePlanExternallyManaged" Title="Externally Managed" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="current_period_end" Id="CurrentPeriodEnd" Title="Current Period End" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="current_period_start" Id="CurrentPeriodStart" Title="Current Period Start" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
 
 </Suite>
