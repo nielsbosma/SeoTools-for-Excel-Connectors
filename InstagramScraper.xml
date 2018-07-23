@@ -12,7 +12,7 @@
       <Regex Title="Followers" Id="Followers" Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int"/>
       <Regex Title="Follows" Id="Follows" Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int"/>
       <Regex Title="Posts" Id="Posts" Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Int"/>
-      <Regex Id="UserId" Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;}" Converter="String" HelpText=""/>
+      <Regex Title="User Id" Id="UserId" Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;}" Group="1" Converter="String" HelpText=""/>
       <Regex Title="Avatar" Id="Avatar" Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
     </Parse>
   </RestConnector>
@@ -33,6 +33,28 @@
 					</Compute.Expr>
 					<Regex Expr=".*" Group="0" Id="PostIdInput"/>
 				</Compute>
+      </Regex>
+			<Regex Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter.SourceFormat="Unix" >
+        <Regex Expr=".*" Title="Created" Id="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
+      </Regex>
+			<Regex Expr="typename&quot;:&quot;(\w+)" Group="1" Converter="String">
+				<Compute Id="Type" Title="Type" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@Regex.Replace(Model.TypeInput, "Graph", "")
+						]]>
+					</Compute.Expr>
+					<Regex Expr=".*" Group="0" Id="TypeInput"/>
+				</Compute>
+      </Regex>
+			<Regex Expr="edge_liked_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int" DefaultValue="">
+        <Regex Expr=".*" Title="Likes" Id="Likes" Group="0" Converter="Long"/>
+      </Regex>
+			<Regex Expr="edge_media_to_comment&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Long" DefaultValue="">
+        <Regex Expr=".*" Title="Comments" Id="Comments" Group="0" Converter="Long"/>
+      </Regex>
+			<Regex Expr="display_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="">
+        <Regex Expr=".*" Title="Image URL" Id="ImageUrl" Group="0" Converter="String"/>
       </Regex>
     </Parse>
   </RestConnector>
@@ -76,8 +98,8 @@
       <Regex Title="Likes" Id="Likes" Expr="media_preview_like&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Int"/>
       <Regex Title="Comments" Id="Comments" Expr="media_to_comment&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Int"/>
       <Regex Title="Video Views" Id="VideoViews" Expr="&quot;video_view_count&quot;:(\d+)" Group="1" Converter="Long" HelpText="" DefaultValue=""/>
-      <Regex Title="Image Url" Id="ImageUrl" Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
-      <Xpath Title="UserId" Id="User Id" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String"/>
+      <Regex Title="Image URL" Id="ImageUrl" Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
+      <Xpath Title="User Id" Id="UserId" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String"/>
     </Parse>
   </RestConnector>
 
@@ -92,8 +114,8 @@
       <JsonPath Title="Text" Id="Text" Expr="title" Converter="String"/>
       <JsonPath Title="Author Id" Id="AuthorId" Expr="author_id" Converter="String"/>
       <JsonPath Title="Thumbnail" Id="Thumbnail" Expr="thumbnail_url" Converter="String"/>
-      <JsonPath Title="Author" Id="Author" Expr="author_name" Converter="String"/>
-      <JsonPath Title="Author URL" Id="AuthorUrl" Expr="author_url" Converter="String"/>
+      <JsonPath Title="User" Id="Author" Expr="author_name" Converter="String"/>
+      <JsonPath Title="User URL" Id="AuthorUrl" Expr="author_url" Converter="String"/>
     </Parse>
   </RestConnector>
 
