@@ -35,9 +35,9 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
-        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -53,8 +53,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -188,7 +188,7 @@
         <JsonPath Expr="owner.id" Id="OwnerId" Title="Owner Id"/>
         <JsonPath Expr="owner.email" Id="OwnerEmail" Title="Owner Email"/>
 
-        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"></JsonPath>
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -210,8 +210,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.result.*">
-        <JsonPath Expr="id" Id="Id" Title="Id"></JsonPath>
-        <JsonPath Expr="name" Id="Name" Title="Name"></JsonPath>
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
       </JsonPath>
     </Parse>
   </RestConnector>
@@ -238,7 +238,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="DnsRecords" Title="DNS records for a zone" HelpUrl="https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records" HelpText="List, search, sort, and filter a zones' DNS records.">
+  <RestConnector Id="LoadBalancers" Title="Load Balancers" HelpUrl="https://api.cloudflare.com/#load-balancers-list-load-balancers" HelpText="List configured load balancers">
     <Parameters>
       <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
     </Parameters>
@@ -246,7 +246,81 @@
       <Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_records
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/load_balancers
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The DNS hostname to associate with your Load Balancer"/>
+        <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time to live (TTL) of the DNS entry for the IP address returned by this load balancer."/>
+        <JsonPath Expr="fallback_pool" Id="FallbackPool" Title="Fallback Pool" Converter="String" HelpText="The pool ID to use when all other pools are detected as unhealthy."/>
+        <JsonPath Expr="default_pools" Id="DefaultPools" Title="Default Pools" Converter="String" HelpText="A list of pool IDs ordered by their failover priority."/>
+        <JsonPath Expr="region_pools" Id="RegionPools" Title="Region Pools" Converter="String" HelpText="A mapping of region/country codes to a list of pool IDs (ordered by their failover priority) for the given region."/>
+        <JsonPath Expr="pop_pools" Id="PopPools" Title="Pop Pools" Converter="String" HelpText="(Enterprise only): A mapping of Cloudflare PoP identifiers to a list of pool IDs (ordered by their failover priority) for the PoP (datacenter)"/>
+        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText="Whether the hostname should be gray clouded (false) or orange clouded (true)."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DnsRecords" Title="DNS records for a zone" HelpUrl="https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records" HelpText="List, search, sort, and filter a zones' DNS records.">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Select Id="RecordType" Title="Record Type">
+        <DataSource>
+          <Item Id="all" Title="all"/>
+          <Item Id="A" Title="A"/>
+          <Item Id="AAAA" Title="AAAA"/>
+          <Item Id="CNAME" Title="CNAME"/>
+          <Item Id="TXT" Title="TXT"/>
+          <Item Id="SRV" Title="SRV"/>
+          <Item Id="LOC" Title="LOC"/>
+          <Item Id="MX" Title="MX"/>
+          <Item Id="NS" Title="NS"/>
+          <Item Id="SPF" Title="SPF"/>
+          <Item Id="CERT" Title="CERT"/>
+          <Item Id="DNSKEY" Title="DNSKEY"/>
+          <Item Id="DS" Title="DS"/>
+          <Item Id="NAPTR" Title="NAPTR"/>
+          <Item Id="SMIMEA" Title="SMIMEA"/>
+          <Item Id="SSHFP" Title="SSHFP"/>
+          <Item Id="TLSA" Title="TLSA"/>
+          <Item Id="URI" Title="URI"/>
+        </DataSource>
+      </Select>
+      <Text Id="Name" Title="Name" Required="false" HelpText="DNS record name" />
+      <Text Id="Content" Title="Content" Required="false" HelpText="DNS record content"/>
+      <Radio Id="Match" Title="Match" DefaultValue="all" Required="true" HelpText="Whether to match all search requirements or at least one (any)">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="any" Title="Any"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_records?
+        per_page=100
+        &match=@(Model.Match)
+        @if(Model.RecordType != "all")
+        {
+          @: &type=@(Model.RecordType)
+        }
+        @if(!string.IsNullOrEmpty(Model.Name))
+        {
+          @: &name=@Utils.UrlEncode(Model.Name)
+        }
+        @if(!string.IsNullOrEmpty(Model.Content))
+        {
+          @: &content=@Utils.UrlEncode(Model.Content)
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
