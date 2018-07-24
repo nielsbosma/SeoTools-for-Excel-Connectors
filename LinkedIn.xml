@@ -3,21 +3,25 @@
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <DefaultOAuthAuthenticator
+  <DefaultTwoStepOAuthAuthenticator
           StayAuthenticated="true"
-          TempCodeName="code"
           AuthUrl="https://www.linkedin.com/oauth/v2/authorization?client_id=7816u170wu2wy0&amp;response_type=code&amp;state=9a876T54F321&amp;redirect_uri={0}"
-
-          TwoStep="True"
-          TokenConnectorId="AccessToken"
-          TokenIdField="Token"
+          AuthCodeName="code" 
+          AccessTokenConnectorId="AccessToken"
   />
+
+  <!--
+  TODO:
+  client_id and secret needs to be in settings
+  state=>randomized 
+  Test to remove the redirect_url in the second step
+  -->
 
   <Resources>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name="Authorization">Bearer @(Model.Token)</Header>
+          <Header Name="Authorization">Bearer @(Model.AccessToken)</Header>
         </RequestHeaders>
       </HttpSettings>
     </Resource>
@@ -28,7 +32,10 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="AccessToken" Name="Access Token">
+  <RestConnector Id="AccessToken" Hidden="true">
+    <Parameters>
+      <Text Id="AuthCode"/>
+    </Parameters>
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -37,7 +44,7 @@
           <Header Name="Accept">application/json</Header>
         </RequestHeaders>
         <RequestBody>
-          <![CDATA[grant_type=authorization_code&redirect_uri=http://localhost:2108/&client_id=7816u170wu2wy0&client_secret=bmZlLLiqsF9Uz7Le&code=@(Model.TempCode)]]>
+          <![CDATA[grant_type=authorization_code&redirect_uri=http://localhost:2108/&client_id=7816u170wu2wy0&client_secret=bmZlLLiqsF9Uz7Le&code=@(Model.AuthCode)]]>
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>
