@@ -6,6 +6,7 @@
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/cloudflare/">
     <Text Id="EmailAddress" Title="Email" Required="true" HelpUrl="http://seotoolsforexcel.com/cloudflare/"/>
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/cloudflare/"/>
+    <Text Id="CaKey" Title="Origin CA Key" Required="false" HelpUrl="http://seotoolsforexcel.com/cloudflare/" HelpText="Required for some endpoints"/>
   </Settings>
 
   <Resources>
@@ -19,7 +20,22 @@
     </Resource>
     <Resource Id="Error">
       <Fail>
-        <JsonPath Expr="$.messages.*" Id="Error"/>
+        <JsonPath Expr="$.errors.*" Id="Error"/>
+      </Fail>
+    </Resource>
+    <Resource Id="ApiKeyRequired">
+      <Fail>
+        <Compute>
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                @if(string.IsNullOrEmpty(Model.ApiKey) || string.IsNullOrEmpty(Model.CaKey)){
+                throw new Exception("Origin CA key required. Click \"Settings\" in the connector and enter your Origin CA key");
+                }
+              }
+            ]]>
+          </Compute.Expr>
+        </Compute>
       </Fail>
     </Resource>
   </Resources>
@@ -159,7 +175,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Zones" Title="Zones" HelpUrl="https://api.cloudflare.com/#zone-list-zones">
+  <RestConnector Id="Zones" Title="Zones" HelpUrl="https://api.cloudflare.com/#zone-list-zones" HelpText="List, search, sort, and filter your zones">
     <Parameters>
       <Text Id="Name" Title="Filter by domain" Required="false"/>
       <Select Id="Type" Title="Status" DefaultValue="active" Required="false">
@@ -472,4 +488,49 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="CloudflareIps" Title="Cloudflare IP details" HelpUrl="https://api.cloudflare.com/#cloudflare-ips-cloudflare-ip-details" HelpText="Get Cloudflare IPs">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>https://api.cloudflare.com/client/v4/ips</Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result/*">
+        <XPath Expr="." Id="Id" Title="Id" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Certificates" Title="Cloudflare CA certificates" HelpUrl="https://api.cloudflare.com/#cloudflare-ca-list-certificates" HelpText="List all existing Cloudflare-issued Certificates for a given zone. Note: this ">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="X-Auth-User-Service-Key">@(Model.CaKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/certificates?
+        zone_id=@(Model.ZoneId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="certificate" Id="Certificate" Title="Certificate" Converter="String" HelpText=""/>
+        <JsonPath Expr="hostnames" Id="Hostnames" Title="Hostnames" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="expires_on" Id="ExpiresOn" Title="Expires On" Converter="" HelpText=""/>
+        <JsonPath Expr="request_type" Id="RequestType" Title="Request Type" Converter="" HelpText=""/>
+        <JsonPath Expr="requested_validity" Id="RequestedValidity" Title="Requested Validity" Converter="" HelpText=""/>
+        <JsonPath Expr="csr" Id="Csr" Title="Csr" Converter="" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.errors.*.message"/>
+    </Fail>
+    <Resource Id="ApiKeyRequired"/>
+  </RestConnector>
 </Suite>
