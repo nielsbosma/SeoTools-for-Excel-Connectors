@@ -1,27 +1,33 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="_OAuth" Title="LinkedIn" Id="LinkedIn" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/LinkedIn.xml" HelpUrl="http://seotoolsforexcel.com/linkedin/">
+<Suite Category="_OAuth" Title="LinkedIn2" Id="LinkedIn" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/LinkedIn.xml" HelpUrl="http://seotoolsforexcel.com/linkedin/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
   <DefaultTwoStepOAuthAuthenticator
           StayAuthenticated="true"
-          AuthUrl="https://www.linkedin.com/oauth/v2/authorization?client_id=7816u170wu2wy0&amp;response_type=code&amp;state=9a876T54F321&amp;redirect_uri={0}"
+          AuthUrl="https://www.linkedin.com/oauth/v2/authorization?client_id=@(Model.ClientId)&amp;response_type=code&amp;state=@(Utils.NewGuid())&amp;redirect_uri=@(Model.RedirectUri)"
           AuthCodeName="code" 
           AccessTokenConnectorId="AccessToken"
   />
 
+  <Settings HelpUrl="http://seotoolsforexcel.com/linkedin/" HelpText="What's this?">
+    <Text Id="ClientId" Title="Client ID" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+  </Settings>
+
   <!--
   TODO:
-  client_id and secret needs to be in settings
-  state=>randomized 
-  Test to remove the redirect_url in the second step
+  Settings -> Cancel is not workings & mouse. 
+  Test functions
+  Error handle
+  Testing out all the others
   -->
 
   <Resources>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name="Authorization">Bearer @(Model.AccessToken)</Header>
+          <Header Name="Authorization">Bearer @(Model.Authenticator.AccessToken)</Header>
         </RequestHeaders>
       </HttpSettings>
     </Resource>
@@ -35,6 +41,7 @@
   <RestConnector Id="AccessToken" Hidden="true">
     <Parameters>
       <Text Id="AuthCode"/>
+      <Text Id="RedirectUri"/>
     </Parameters>
     <Fetch>
       <HttpSettings>
@@ -44,7 +51,7 @@
           <Header Name="Accept">application/json</Header>
         </RequestHeaders>
         <RequestBody>
-          <![CDATA[grant_type=authorization_code&redirect_uri=http://localhost:2108/&client_id=7816u170wu2wy0&client_secret=bmZlLLiqsF9Uz7Le&code=@(Model.AuthCode)]]>
+          <![CDATA[grant_type=authorization_code&client_id=@(Model.ClientId)&client_secret=@(Model.ClientSecret)&code=@(Model.AuthCode)&redirect_uri=@(Utils.UrlEncode(Model.RedirectUri))]]>
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>
