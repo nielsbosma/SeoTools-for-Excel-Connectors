@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Webmaster" Title="Cloudflare" Id="Cloudflare" RequireVersion="8.0.15" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Cloudflare.xml" HelpUrl="http://seotoolsforexcel.com/cloudflare/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/cloudflare/">
+    <Text Id="EmailAddress" Title="Email" Required="true" HelpUrl="http://seotoolsforexcel.com/cloudflare/"/>
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/cloudflare/"/>
+    <Text Id="CaKey" Title="Origin CA Key" Required="false" HelpUrl="http://seotoolsforexcel.com/cloudflare/" HelpText="Required for some endpoints"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="X-Auth-Email">@(Model.EmailAddress)</Header>
+          <Header Name="X-Auth-Key">@(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Error">
+      <Fail>
+        <JsonPath Expr="$.errors.*" Id="Error"/>
+      </Fail>
+    </Resource>
+    <Resource Id="ApiKeyRequired">
+      <Fail>
+        <Compute>
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                @if(string.IsNullOrEmpty(Model.ApiKey) || string.IsNullOrEmpty(Model.CaKey)){
+                throw new Exception("Origin CA key required. Click \"Settings\" in the connector and enter your Origin CA key");
+                }
+              }
+            ]]>
+          </Compute.Expr>
+        </Compute>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Accounts" Title="Accounts" HelpUrl="https://api.cloudflare.com/#accounts-list-accounts" HelpText="List all accounts you have ownership or verified access to">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountsHidden" Title="Accounts Hidden" Hidden="True" HelpUrl="https://api.cloudflare.com/#accounts-list-accounts">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountMembers" Title="Account Members" HelpUrl="https://api.cloudflare.com/#account-members-list-members" HelpText="List all members of an account">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts/@(Model.AccountId)/members?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="code" Id="Code" Title="Code" Checked="false"/>
+        <JsonPath Expr="user.id" Id="UserId" Title="User Id"/>
+        <JsonPath Expr="user.email" Id="UserEmail" Title="User Email"/>
+        <JsonPath Expr="user.first_name" Id="FirstName" Title="First Name"/>
+        <JsonPath Expr="user.last_name" Id="LastName" Title="Last Name"/>
+        <JsonPath Expr="user.two_factor_authentication_enabled" Id="2fa" Title="2FA" HelpText="Two-factor authentication enabled"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountRoles" Title="Account Roles" HelpUrl="https://api.cloudflare.com/#account-roles-list-roles" HelpText="Get all available roles for an account">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/accounts/@(Model.AccountId)/roles?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Code" Title="Code" Checked="false"/>
+        <JsonPath Expr="description" Id="Description" Title="Description"/>
+        <JsonPath Expr="permissions.analytics.read" Id="AnalyticsR" Title="Analytics R"/>
+        <JsonPath Expr="permissions.analytics.edit" Id="AnalyticsE" Title="Analytics E"/>
+        <JsonPath Expr="permissions.billing.read" Id="BillingR" Title="Billing R"/>
+        <JsonPath Expr="permissions.billing.edit" Id="BillingE" Title="Billing E"/>
+        <JsonPath Expr="permissions.cache_purge.read" Id="CachePurgeR" Title="Cache purge R"/>
+        <JsonPath Expr="permissions.cache_purge.edit" Id="CachePurgeE" Title="Cache purge E"/>
+        <JsonPath Expr="permissions.dns.read" Id="DnsR" Title="DNS R"/>
+        <JsonPath Expr="permissions.dns.edit" Id="DnsE" Title="DNS E"/>
+        <JsonPath Expr="permissions.dns_records.read" Id="DnsRecordsR" Title="DNS records R"/>
+        <JsonPath Expr="permissions.dns_records.edit" Id="DnsRecordsE" Title="DNS records E"/>
+        <JsonPath Expr="permissions.lb.read" Id="Lbread" Title="lbR"/>
+        <JsonPath Expr="permissions.lb.edit" Id="Lbedit" Title="lbE"/>
+        <JsonPath Expr="permissions.logs.read" Id="LogsRead" Title="Logs R"/>
+        <JsonPath Expr="permissions.logs.edit" Id="LogsEdit" Title="Logs E"/>
+        <JsonPath Expr="permissions.organization.read" Id="OrganizationR" Title="Organization R"/>
+        <JsonPath Expr="permissions.organization.edit" Id="OrganizationE" Title="Organization E"/>
+        <JsonPath Expr="permissions.ssl.read" Id="SslR" Title="SSL R"/>
+        <JsonPath Expr="permissions.ssl.edit" Id="SslE" Title="SSL E"/>
+        <JsonPath Expr="permissions.waf.read" Id="WafR" Title="WAF R"/>
+        <JsonPath Expr="permissions.waf.edit" Id="WafE" Title="WAF E"/>
+        <JsonPath Expr="permissions.zones.read" Id="ZonesR" Title="Zones R"/>
+        <JsonPath Expr="permissions.zones.edit" Id="ZonesE" Title="Zones E"/>
+        <JsonPath Expr="permissions.zone_settings.read" Id="ZoneSettingsR" Title="Zone settings R"/>
+        <JsonPath Expr="permissions.zone_settings.edit" Id="ZoneSettingsE" Title="Zone settings E"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Zones" Title="Zones" HelpUrl="https://api.cloudflare.com/#zone-list-zones" HelpText="List, search, sort, and filter your zones">
+    <Parameters>
+      <Text Id="Name" Title="Filter by domain" Required="false"/>
+      <Select Id="Type" Title="Status" DefaultValue="active" Required="false">
+        <DataSource>
+          <Item Id="active" Title="Active"/>
+          <Item Id="pending" Title="Pending"/>
+          <Item Id="initializing" Title="Initializing"/>
+          <Item Id="moved" Title="Moved"/>
+          <Item Id="deleted" Title="Deleted"/>
+          <Item Id="deactivated" Title="Deactivated"/>
+          <Item Id="read only" Title="Read only"/>
+        </DataSource>
+      </Select>
+      <Select Id="Order" Title="Order by" DefaultValue="name">
+        <DataSource>
+          <Item Id="name" Title="Name"/>
+          <Item Id="status" Title="Status"/>
+          <Item Id="email" Title="Email"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Direction" DefaultValue="asc" Required="true">
+        <DataSource>
+          <Item Id="asc" Title="Ascending"/>
+          <Item Id="desc" Title="Descending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="true">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@(Model.PageCursor.Page)
+        }
+        &order=@(Model.Order)
+        &direction=@(Model.Direction)
+        @if(!string.IsNullOrEmpty(Model.Name))
+        {
+          @: &name=@Utils.UrlEncode(Model.Name)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <JsonPath Expr="owner.id" Id="OwnerId" Title="Owner Id"/>
+        <JsonPath Expr="owner.email" Id="OwnerEmail" Title="Owner Email"/>
+
+        <JsonPath Expr="settings.enforce_twofactor" Id="TwoFactor" Title="2FA Enabled"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ZonesHidden" Title="Zones Hidden" Hidden="True">
+    <Paging PageSize="50" EvenPages="true">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones?
+        per_page=50
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ZoneSettings" Title="Zone settings" HelpUrl="https://api.cloudflare.com/#zone-settings-get-all-zone-settings" HelpText="Available settings for your user in relation to a zone">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/settings?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="String" HelpText=""/>
+        <JsonPath Expr="editable" Id="Editable" Title="Editable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="LoadBalancers" Title="Load Balancers" HelpUrl="https://api.cloudflare.com/#load-balancers-list-load-balancers" HelpText="List configured load balancers">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/load_balancers?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The DNS hostname to associate with your Load Balancer"/>
+        <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time to live (TTL) of the DNS entry for the IP address returned by this load balancer."/>
+        <JsonPath Expr="fallback_pool" Id="FallbackPool" Title="Fallback Pool" Converter="String" HelpText="The pool ID to use when all other pools are detected as unhealthy."/>
+        <JsonPath Expr="default_pools" Id="DefaultPools" Title="Default Pools" Converter="String" HelpText="A list of pool IDs ordered by their failover priority."/>
+        <JsonPath Expr="region_pools" Id="RegionPools" Title="Region Pools" Converter="String" HelpText="A mapping of region/country codes to a list of pool IDs (ordered by their failover priority) for the given region."/>
+        <JsonPath Expr="pop_pools" Id="PopPools" Title="Pop Pools" Converter="String" HelpText="(Enterprise only): A mapping of Cloudflare PoP identifiers to a list of pool IDs (ordered by their failover priority) for the PoP (datacenter)"/>
+        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText="Whether the hostname should be gray clouded (false) or orange clouded (true)."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="DnsRecords" Title="DNS records for a zone" HelpUrl="https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records" HelpText="List, search, sort, and filter a zones' DNS records.">
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Select Id="RecordType" Title="Record Type">
+        <DataSource>
+          <Item Id="all" Title="all"/>
+          <Item Id="A" Title="A"/>
+          <Item Id="AAAA" Title="AAAA"/>
+          <Item Id="CNAME" Title="CNAME"/>
+          <Item Id="TXT" Title="TXT"/>
+          <Item Id="SRV" Title="SRV"/>
+          <Item Id="LOC" Title="LOC"/>
+          <Item Id="MX" Title="MX"/>
+          <Item Id="NS" Title="NS"/>
+          <Item Id="SPF" Title="SPF"/>
+          <Item Id="CERT" Title="CERT"/>
+          <Item Id="DNSKEY" Title="DNSKEY"/>
+          <Item Id="DS" Title="DS"/>
+          <Item Id="NAPTR" Title="NAPTR"/>
+          <Item Id="SMIMEA" Title="SMIMEA"/>
+          <Item Id="SSHFP" Title="SSHFP"/>
+          <Item Id="TLSA" Title="TLSA"/>
+          <Item Id="URI" Title="URI"/>
+        </DataSource>
+      </Select>
+      <Text Id="Name" Title="Name" Required="false" HelpText="DNS record name" />
+      <Text Id="Content" Title="Content" Required="false" HelpText="DNS record content"/>
+      <Radio Id="Match" Title="Match" DefaultValue="all" Required="true" HelpText="Whether to match all search requirements or at least one (any)">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="any" Title="Any"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/zones/@(Model.ZoneId)/dns_records?
+        per_page=100
+        &match=@(Model.Match)
+        @if(Model.RecordType != "all")
+        {
+          @: &type=@(Model.RecordType)
+        }
+        @if(!string.IsNullOrEmpty(Model.Name))
+        {
+          @: &name=@Utils.UrlEncode(Model.Name)
+        }
+        @if(!string.IsNullOrEmpty(Model.Content))
+        {
+          @: &content=@Utils.UrlEncode(Model.Content)
+        }
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="content" Id="Content" Title="Content" Converter="String" HelpText=""/>
+        <JsonPath Expr="proxiable" Id="Proxiable" Title="Proxiable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="proxied" Id="Proxied" Title="Proxied" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="ttl" Id="Ttl" Title="Ttl" Converter="Int" HelpText="Time-to-live"/>
+        <JsonPath Expr="locked" Id="Locked" Title="Locked" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="zone_id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone_name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="created_on" Id="CreatedOn" Title="Created On" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="modified_on" Id="ModifiedOn" Title="Modified On" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="BillingHistory" Title="Billing history" HelpUrl="https://api.cloudflare.com/#user-billing-history-billing-history-details" HelpText="Access your billing history object">
+    <Paging PageSize="50">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/user/billing/history?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Converter="String" Title="Id"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="action" Id="Action" Title="Action" Converter="String"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+        <JsonPath Expr="occurred_at" Id="OccurredAt" Title="Occurred At" Converter="DateTime"/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double"/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String"/>
+        <JsonPath Expr="zone.name" Id="Zone" Title="Zone" Converter="String"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserSubscriptions" Title="User subscriptions" HelpUrl="https://api.cloudflare.com/#user-subscription-get-user-subscriptions" HelpText="Lists all user's subscriptions">
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.result_info.total_count"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/user/subscriptions?
+        per_page=50
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &page=@Model.PageCursor.Page
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="state" Id="State" Title="State" Converter="String" HelpText=""/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone.id" Id="ZoneId" Title="Zone Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="zone.name" Id="ZoneName" Title="Zone Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="frequency" Id="Frequency" Title="Frequency" HelpText=""/>
+        <JsonPath Expr="rate_plan.id" Id="RatePlanId" Title="Rate Plan Id" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="rate_plan.public_name" Id="RatePlanPublicName" Title="Rate Plan Public Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.currency" Id="RatePlanCurrency" Title="Rate Plan Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.scope" Id="RatePlanScope" Title="Rate Plan Scope" Converter="String" HelpText=""/>
+        <JsonPath Expr="rate_plan.externally_managed" Id="RatePlanExternallyManaged" Title="Externally Managed" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="current_period_end" Id="CurrentPeriodEnd" Title="Current Period End" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="current_period_start" Id="CurrentPeriodStart" Title="Current Period Start" Converter="DateTime" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="CloudflareIps" Title="Cloudflare IP details" HelpUrl="https://api.cloudflare.com/#cloudflare-ips-cloudflare-ip-details" HelpText="Get Cloudflare IPs">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>https://api.cloudflare.com/client/v4/ips</Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result/*">
+        <XPath Expr="." Id="Id" Title="Id" Converter="String"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Certificates" Title="Cloudflare CA certificates" HelpUrl="https://api.cloudflare.com/#cloudflare-ca-list-certificates" HelpText="List all existing Cloudflare-issued Certificates for a given zone. Note: this ">
+    <Parameters>
+      <Text Id="ZoneId" Title="Zone Id" Select.Connector="ZonesHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="X-Auth-User-Service-Key">@(Model.CaKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.cloudflare.com/client/v4/certificates?
+        zone_id=@(Model.ZoneId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.result.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="certificate" Id="Certificate" Title="Certificate" Converter="String" HelpText=""/>
+        <JsonPath Expr="hostnames" Id="Hostnames" Title="Hostnames" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="expires_on" Id="ExpiresOn" Title="Expires On" Converter="" HelpText=""/>
+        <JsonPath Expr="request_type" Id="RequestType" Title="Request Type" Converter="" HelpText=""/>
+        <JsonPath Expr="requested_validity" Id="RequestedValidity" Title="Requested Validity" Converter="" HelpText=""/>
+        <JsonPath Expr="csr" Id="Csr" Title="Csr" Converter="" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="ApiKeyRequired"/>
+    <Fail>
+      <JsonPath Expr="$.errors.*.message"/>
+    </Fail>
+  </RestConnector>
+</Suite>
