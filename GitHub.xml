@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="_OAuth" Title="GitHub" Id="GitHub" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GitHub.xml" HelpUrl="http://seotoolsforexcel.com/github/">
+<Suite Category="_2StepOAuth" Title="GitHub" Id="GitHub" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GitHub.xml" HelpUrl="http://seotoolsforexcel.com/github/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <DefaultOAuthAuthenticator
-          StayAuthenticated="true"
-          TempCodeName="code"
-          AuthUrl="https://github.com/login/oauth/authorize?client_id=5d97ded3f7c763c17a19&amp;redirect_uri={0}&amp;scope=repo%20read:user"
+  <Settings HelpUrl="http://seotoolsforexcel.com/linkedin/" HelpText="What's this?">
+    <Text Id="ClientId" Title="Client ID" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+  </Settings>
 
-          TwoStep="True"
-          TokenConnectorId="AccessToken"
-          TokenIdField="Token"
+  <DefaultTwoStepOAuthAuthenticator
+        StayAuthenticated="true"
+        AuthUrl="https://github.com/login/oauth/authorize?client_id=@(Model.ClientId)&amp;redirect_uri=@(Model.RedirectUri)&amp;scope=repo%20read:user"
+        AuthCodeName="code"
+        AccessTokenConnectorId="AccessToken"
   />
 
   <Resources>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name="Authorization">token @(Model.Token)</Header>
+          <Header Name="Authorization">token @(Model.Authenticator.AccessToken)</Header>
           <Header Name="Accept">application/vnd.github.v3+json</Header>
         </RequestHeaders>
       </HttpSettings>
@@ -29,7 +31,11 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="AccessToken" Name="Access Token">
+  <RestConnector Id="AccessToken" Hidden="true">
+    <Parameters>
+      <Text Id="AuthCode"/>
+      <Text Id="RedirectUri"/>
+    </Parameters>
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -38,7 +44,7 @@
           <Header Name="Accept">application/json</Header>
         </RequestHeaders>
         <RequestBody>
-          <![CDATA[client_id=5d97ded3f7c763c17a19&client_secret=ac06255a5f4b771a64d1c4bebdf61f1616b2bcfa&code=@(Model.TempCode)]]>
+          <![CDATA[client_id=@(Model.ClientId)&client_secret=@(Model.ClientSecret)&code=@(Model.AuthCode)]]>
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>

@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="_OAuth" Title="ZohoCRM" Id="Zoho CRM" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ZohoCRM.xml" HelpUrl="http://seotoolsforexcel.com/zoho-crm/">
+<Suite Category="_2StepOAuth" Title="ZohoCRM" Id="Zoho CRM" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ZohoCRM.xml" HelpUrl="http://seotoolsforexcel.com/zoho-crm/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <DefaultOAuthAuthenticator
-          StayAuthenticated="true"
-          TempCodeName="code"
-          AuthUrl="https://accounts.zoho.com/oauth/v2/auth?scope=ZohoCRM.modules.ALL&amp;client_id=1000.BL3OYTR58ABD538326HIH6UVNFEQI2&amp;response_type=code&amp;access_type=online&amp;redirect_uri={0}"
-
-          TwoStep="True"
-          TokenConnectorId="AccessToken"
-          TokenIdField="Token"
+  <DefaultTwoStepOAuthAuthenticator
+    StayAuthenticated="true"
+    AuthUrl="https://accounts.zoho.com/oauth/v2/auth?scope=ZohoCRM.modules.ALL&amp;client_id=@(Model.ClientId)&amp;response_type=code&amp;access_type=online&amp;redirect_uri=@(Model.RedirectUri)"
+    AuthCodeName="code" 
+    AccessTokenConnectorId="AccessToken"
   />
+
+  <Settings HelpUrl="http://seotoolsforexcel.com/zoho-crm/" HelpText="What's this?">
+    <Text Id="ClientId" Title="Client ID" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+  </Settings>
 
   <Resources>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name="Authorization">Bearer @(Model.Token)</Header>
+          <Header Name="Authorization">Bearer @(Model.Authenticator.AccessToken)</Header>
         </RequestHeaders>
       </HttpSettings>
     </Resource>
@@ -28,7 +30,11 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="AccessToken" Name="Access Token">
+  <RestConnector Id="AccessToken" Hidden="true">
+    <Parameters>
+      <Text Id="AuthCode"/>
+      <Text Id="RedirectUri"/>
+    </Parameters>
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -40,10 +46,10 @@
       <Fetch.Url>
         <![CDATA[
         https://accounts.zoho.com/oauth/v2/token?
-        code=@(Model.TempCode)
-        &redirect_uri=http://localhost:2108/
-        &client_id=1000.BL3OYTR58ABD538326HIH6UVNFEQI2
-        &client_secret=5a43d199c1dec4b7ad151458f018bb7d6e6cbcc5eb
+        code=@(Model.AuthCode)
+        &redirect_uri=@(Model.RedirectUri)
+        &client_id=@(Model.ClientId)
+        &client_secret=@(Model.ClientSecret)
         &grant_type=authorization_code
         ]]>
       </Fetch.Url>
