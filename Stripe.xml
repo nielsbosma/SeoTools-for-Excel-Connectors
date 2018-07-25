@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Finance" Title="Stripe" Id="Stripe" RequireVersion="8.0.15" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Stripe.xml" HelpUrl="http://seotoolsforexcel.com/stripe/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/stripe/">
+    <Text Id="SecretKey" Title="Secret Key" Required="true" HelpUrl="http://seotoolsforexcel.com/stripe/"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="TxTypes">
+      <Item Id="all" Title="All"/>
+      <Item Id="charge" Title="Charge"/>
+      <Item Id="refund" Title="Refund"/>
+      <Item Id="adjustment" Title="Adjustment"/>
+      <Item Id="application_fee" Title="Application Fee"/>
+      <Item Id="application_fee_refund" Title="Application Fee Refund"/>
+      <Item Id="transfer" Title="Transfer"/>
+      <Item Id="payment" Title="Payment"/>
+      <Item Id="payout" Title="vayout"/>
+      <Item Id="payout_failure" Title="Payout Failure"/>
+      <Item Id="stripe_fee" Title="Stripe Fee"/>
+      <Item Id="network_cost" Title="Network Cost"/>
+    </Resource>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <RequestContentType>application/json</RequestContentType>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Error">
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="BalanceHistory" Title="Balance History" HelpUrl="https://stripe.com/docs/api#balance_history">
+    <Parameters>
+      <Select Id="TxType" Title="Transaction Type" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="TxTypes"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/balance/history?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(Model.TxType != "all")
+        {
+          @: &type=@(Model.TxType)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="object" Id="Object" Title="Object" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <Compute Id="AvailableOn" Title="Available On" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @(DateTimeOffset.FromUnixTimeSeconds(Model.Available))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="available_on" Id="Available" Converter="Long"/>
+        </Compute>
+        <Compute Id="Created" Title="Created" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @(DateTimeOffset.FromUnixTimeSeconds(Model.CreatedOn))
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="created" Id="CreatedOn" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="exchange_rate" Id="ExchangeRate" Title="Exchange Rate" Converter="Double" HelpText=""/>
+        <JsonPath Expr="fee" Id="Fee" Title="Fee" Converter="Double" HelpText=""/>
+        <JsonPath Expr="net" Id="Net" Title="Net" Converter="Double" HelpText=""/>
+        <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth()
+    {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.SecretKey));
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
