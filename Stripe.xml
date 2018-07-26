@@ -71,30 +71,140 @@
     <Parse>
       <JsonPath Expr="$.data.*">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
-        <JsonPath Expr="object" Id="Object" Title="Object" Converter="String" HelpText=""/>
         <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
         <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
-        <Compute Id="AvailableOn" Title="Available On" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeSeconds(Model.Available))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="available_on" Id="Available" Converter="Long"/>
-        </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeSeconds(Model.CreatedOn))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="created" Id="CreatedOn" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="available_on" Id="AvailableOn" Title="Available On" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
         <JsonPath Expr="exchange_rate" Id="ExchangeRate" Title="Exchange Rate" Converter="Double" HelpText=""/>
         <JsonPath Expr="fee" Id="Fee" Title="Fee" Converter="Double" HelpText=""/>
         <JsonPath Expr="net" Id="Net" Title="Net" Converter="Double" HelpText=""/>
         <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Customers" Title="Customers" HelpUrl="https://stripe.com/docs/api#list_customers">
+    <Parameters>
+      <Text Id="Email" Title="Filter by email" HelpText="A filter on the list based on the customer’s email field"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/customers?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Email))
+        {
+          @: &email=@Utils.UrlEncode(Model.Email)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="account_balance" Id="AccountBalance" Title="Account Balance" Converter="Double" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="default_source" Id="DefaultSource" Title="Default Source" Converter="String" HelpText=""/>
+        <JsonPath Expr="delinquent" Id="Delinquent" Title="Delinquent" Converter="bool" HelpText=""/>
+        <JsonPath Expr="discount" Id="Discount" Title="Discount" Converter="Auto" HelpText=""/>
+        <JsonPath Expr="invoice_prefix" Id="InvoicePrefix" Title="Invoice Prefix" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="shipping" Id="Shipping" Title="Shipping" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="CustomersHidden" Title="CustomersHidden" Hidden="True" HelpUrl="https://stripe.com/docs/api#list_customers">
+    <Paging PageSize="1">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/customers?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Email))
+        {
+          @: &email=@Utils.UrlEncode(Model.Email)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Charges" Title="Charges" HelpUrl="https://stripe.com/docs/api#list_charges">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+      <Select Id="TxType" Title="Transaction Type" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="TxTypes"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/charges?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(Model.TxType != "all")
+        {
+          @: &type=@(Model.TxType)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="available_on" Id="AvailableOn" Title="Available On" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="exchange_rate" Id="ExchangeRate" Title="Exchange Rate" Converter="Double" HelpText=""/>
+        <JsonPath Expr="fee" Id="Fee" Title="Fee" Converter="Double" HelpText=""/>
+        <JsonPath Expr="net" Id="Net" Title="Net" Converter="Double" HelpText=""/>
+        <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
       </JsonPath>
