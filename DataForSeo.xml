@@ -54,11 +54,11 @@
     </Parse>
   </RestConnector>
   
-  <RestConnector Id="SettingSerp" Title="Setting SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks">
+  <RestConnector Id="SerpInit" Hidden="true">
    <Parameters>
-      <Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="seotools" Required="true"/>
+      <Text Id="SearchEngineId"/>
+      <Text Id="LocationId"/>
+      <Text Id="Query"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -72,37 +72,39 @@
         <RequestHeaders>
           <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
         </RequestHeaders>
+        <!-- todo: handle \" encoding -->
         <RequestBody>
           <![CDATA[
-					@{
-            var obj = new JsonArr
+          {
+            "data":
             {
-                data = new Data
-                {
-                    SeoToolsPlaceHolder = new Identifier
-                    {
-                        se_id = Model.SearchEngineId,
-												loc_id = Model.LocationId,
-												key = Utils.UrlEncode(Model.Query)
-                    }
-                }
-            };
-            string strJson = JsonConvert.SerializeObject(obj);
-						}
-						@strJson
+              "@(Utils.NewGuid())": {
+                "se_id":"@(Model.SearchEngineId)",
+                "loc_id":"@(Model.LocationId)",
+                "key":"@(Model.Query)"
+              }
+            }
+          }
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.results.*">
-        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
-        <JsonPath Expr="task_id" Id="TaskId" Title="Task Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="task_id" Id="TaskId"/>
       </JsonPath>
     </Parse>
   </RestConnector>
-
-  <RestConnector Id="ListCompletedTasks" Title="List Completed Tasks" HelpUrl="https://docs.dataforseo.com/#get-serp-completed-tasks">
+  
+  <RestConnector Id="SerpCheck" Hidden="false">
+    <Parameters>
+      <Text Id="SearchEngineId" Debug.DefaultValue="2893"/>
+      <Text Id="LocationId" Debug.DefaultValue="2752"/>
+      <Text Id="Query" Debug.DefaultValue="seotools"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Query"/>
+    </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -116,28 +118,30 @@
         </RequestHeaders>
       </HttpSettings>
     </Fetch>
+    <!-- todo: use regexp -->
     <Parse>
-      <JsonPath Expr="$.results.*">
-        <JsonPath Expr="task_id" Id="TaskId" Title="Task Id" Converter="String" HelpText=""/>
-        <JsonPath Expr="se_id" Id="SearchEngineId" Title="Search Engine Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="loc_id" Id="LocationId" Title="Location Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="post_key" Id="Key" Title="Key" Converter="String" HelpText=""/>
-        <JsonPath Expr="results_count" Id="Results" Title="Results" Converter="Int" HelpText=""/>
-        <JsonPath Expr="result_se_check_url" Id="CheckUrl" Title="Check URL" Converter="String" HelpText=""/>
-      </JsonPath>
+      <Xpath Expr="//*[text()='@(Model.TaskId)']" Id="TaskId"/>
     </Parse>
+    <Fail>
+      <XPath Expr="//*[text()='@(Model.TaskId)']" Fail.If="IsEmpty" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="10"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="GetResultsbyTaskId" Title="Get Results by Task Id" HelpUrl="https://docs.dataforseo.com/#get-serp-results-by-task_id">
+  <RestConnector Id="Serp" Title="SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks">
    <Parameters>
-      <Text Id="TaskId" Title="Task Id" Debug.DefaultValue="716941033" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="organic">
+     <Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
+     <Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+     <Text Id="Query" Title="Query" Debug.DefaultValue="seotools" Required="true"/>
+     <Radio Id="Type" Title="Type" DefaultValue="organic">
         <DataSource>
           <Item Id="organic" Title="Organic" />
           <Item Id="paid" Title="Paid" />
         </DataSource>
       </Radio>
     </Parameters>
+    <Prepare>
+      <Connector Id="SerpCheck" Parameters="SearchEngineId,LocationId,Query"/>
+    </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -158,27 +162,13 @@
         <JsonPath Expr="result_title" Id="Title" Title="Title" Converter="String" HelpText=""/>
         <JsonPath Expr="result_snippet" Id="Snippet" Title="Snippet" Converter="String" HelpText=""/>
       </JsonPath>
+      <!-- show all -->
     </Parse>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-		public class JsonArr
-		{
-			public Data data { get; set; }
-		}
-		public class Data
-		{
-			public Identifier SeoToolsPlaceHolder { get; set; }
-		}
-		public class Identifier
-		{
-			public string se_id { get; set; }
-			public string loc_id { get; set; }
-			public string key { get; set; }
-		}
-
-    String CreateBasicAuth()
+    string CreateBasicAuth()
     {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Key));
       return AuthString;
