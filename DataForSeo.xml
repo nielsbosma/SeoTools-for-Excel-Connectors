@@ -72,7 +72,6 @@
         <RequestHeaders>
           <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
         </RequestHeaders>
-        <!-- todo: handle \" encoding -->
         <RequestBody>
           <![CDATA[
           {
@@ -81,7 +80,8 @@
               "@(Utils.NewGuid())": {
                 "se_id":"@(Model.SearchEngineId)",
                 "loc_id":"@(Model.LocationId)",
-                "key":"@(Model.Query)"
+                "key":"@(Model.Query.Replace("\"","\\\""))",
+                "priority":2
               }
             }
           }
@@ -95,52 +95,15 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-  
-  <RestConnector Id="SerpCheck" Hidden="false">
-    <Parameters>
-      <Text Id="SearchEngineId" Debug.DefaultValue="2893"/>
-      <Text Id="LocationId" Debug.DefaultValue="2752"/>
-      <Text Id="Query" Debug.DefaultValue="seotools"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Query"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/srp_tasks_get
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <!-- todo: use regexp -->
-    <Parse>
-      <Xpath Expr="//*[text()='@(Model.TaskId)']" Id="TaskId"/>
-    </Parse>
-    <Fail>
-      <XPath Expr="//*[text()='@(Model.TaskId)']" Fail.If="IsEmpty" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="10"/>
-    </Fail>
-  </RestConnector>
 
   <RestConnector Id="Serp" Title="SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks">
    <Parameters>
      <Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
      <Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-     <Text Id="Query" Title="Query" Debug.DefaultValue="seotools" Required="true"/>
-     <Radio Id="Type" Title="Type" DefaultValue="organic">
-        <DataSource>
-          <Item Id="organic" Title="Organic" />
-          <Item Id="paid" Title="Paid" />
-        </DataSource>
-      </Radio>
+     <Text Id="Query" Title="Query" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
     </Parameters>
     <Prepare>
-      <Connector Id="SerpCheck" Parameters="SearchEngineId,LocationId,Query"/>
+      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Query"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
@@ -156,14 +119,24 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results.@(Model.Type).*">
-        <JsonPath Expr="result_position" Id="Position" Title="Position" Converter="Long" HelpText=""/>
-        <JsonPath Expr="result_url" Id="Url" Title="URL" Converter="String" HelpText=""/>
-        <JsonPath Expr="result_title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-        <JsonPath Expr="result_snippet" Id="Snippet" Title="Snippet" Converter="String" HelpText=""/>
+      <JsonPath Expr="$.results.organic.*">
+        <JsonPath Expr="result_position" Id="OrganicPosition" Title="Organic Position" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="result_url" Id="OrganicUrl" Title="Organic URL" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="result_title" Id="OrganicTitle" Title="Organic Title" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="result_snippet" Id="OrganicSnippet" Title="Organic Snippet" Converter="String" HelpText="" Checked="true"/>
       </JsonPath>
-      <!-- show all -->
+      <JsonPath Expr="$.results.paid.*">
+        <JsonPath Expr="result_position" Id="PaidPosition" Title="Paid Position" Converter="Long" HelpText="" Checked="false"/>
+        <JsonPath Expr="result_url" Id="PaidUrl" Title="Paid URL" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="result_title" Id="PaidTitle" Title="Paid Title" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="result_snippet" Id="PaidSnippet" Title="Paid Snippet" Converter="String" HelpText="" Checked="false"/>
+      </JsonPath>
     </Parse>
+    <Fail>
+      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
+      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="results_count" Fail.If="IsEqual" Fail.ComparedTo="0" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+    </Fail>
   </RestConnector>
 
   <RazorFunctions>
