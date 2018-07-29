@@ -22,6 +22,13 @@
       <Item Id="stripe_fee" Title="Stripe Fee"/>
       <Item Id="network_cost" Title="Network Cost"/>
     </Resource>
+    <Resource Id="ChargeSources">
+      <Item Id="all" Title="All"/>
+      <Item Id="alipay_account" Title="Alipay Account"/>
+      <Item Id="bank_account" Title="Bank Account"/>
+      <Item Id="bitcoin_receiver" Title="Bitcoin"/>
+      <Item Id="Card" Title="Card"/>
+    </Resource>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
@@ -165,11 +172,11 @@
   <RestConnector Id="Charges" Title="Charges" HelpUrl="https://stripe.com/docs/api#list_charges">
     <Parameters>
       <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
-      <Select Id="TxType" Title="Transaction Type" Required="false" DefaultValue="all">
-        <DataSource>
-          <Resource Id="TxTypes"/>
-        </DataSource>
-      </Select>
+      <!--<Select Id="Source" Title="Charge Source" Required="false" DefaultValue="all">-->
+        <!--<DataSource>-->
+          <!--<Resource Id="ChargeSources"/>-->
+        <!--</DataSource>-->
+      <!--</Select>-->
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -185,10 +192,6 @@
         @if(Model.PageCursor.Page != 0)
         {
           @: &starting_after=@Model.NextPageToken
-        }
-        @if(Model.TxType != "all")
-        {
-          @: &type=@(Model.TxType)
         }
         ]]>
       </Fetch.Url>
@@ -207,6 +210,70 @@
         <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Disputes" Title="Disputes" HelpUrl="https://stripe.com/docs/api#list_disputes">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/disputes?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="is_charge_refundable" Id="IsChargeRefundable" Title="Charge is Refundable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.due_by" Id="EvidenceDetailsDueBy" Title="Evidence Due By" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="evidence_details.has_evidence" Id="EvidenceDetailsHasEvidence" Title="Has Evidence" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.past_due" Id="EvidenceDetailsPastDue" Title="Evidence Past Due" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.submission_count" Id="EvidenceDetailsSubmissionCount" Title="Evidence Details Submission Count" Converter="" HelpText=""/>
+        <JsonPath Expr="evidence.access_activity_log" Id="EvidenceAccessActivityLog" Title="Access Activity Log" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.billing_address" Id="EvidenceBillingAddress" Title="Billing Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_policy" Id="EvidenceCancellationPolicy" Title="Cancellation Policy" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_policy_disclosure" Id="EvidenceCancellationPolicyDisclosure" Title="Cancellation Policy Disclosure" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_rebuttal" Id="EvidenceCancellationRebuttal" Title="ECancellation Rebuttal" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_communication" Id="EvidenceCustomerCommunication" Title="Customer Communication" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_email_address" Id="EvidenceCustomerEmailAddress" Title="Customer Email Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_name" Id="EvidenceCustomerName" Title="Customer Name" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_purchase_ip" Id="EvidenceCustomerPurchaseIp" Title="Customer Purchase Ip" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_signature" Id="EvidenceCustomerSignature" Title="Customer Signature" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_documentation" Id="EvidenceDuplicateChargeDocumentation" Title="Duplicate Charge Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_explanation" Id="EvidenceDuplicateChargeExplanation" Title="Duplicate Charge Explanation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_id" Id="EvidenceDuplicateChargeId" Title="Duplicate Charge Id" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.product_description" Id="EvidenceProductDescription" Title="Product Description" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.receipt" Id="EvidenceReceipt" Title="Receipt" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_policy" Id="EvidenceRefundPolicy" Title="Refund Policy" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_policy_disclosure" Id="EvidenceRefundPolicyDisclosure" Title="Refund Policy Disclosure" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_refusal_explanation" Id="EvidenceRefundRefusalExplanation" Title="Refund Refusal Explanation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.service_date" Id="EvidenceServiceDate" Title="Service Date" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.service_documentation" Id="EvidenceServiceDocumentation" Title="Service Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_address" Id="EvidenceShippingAddress" Title="Shipping Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_carrier" Id="EvidenceShippingCarrier" Title="EShipping Carrier" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_date" Id="EvidenceShippingDate" Title="Shipping Date" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_documentation" Id="EvidenceShippingDocumentation" Title="Shipping Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_tracking_number" Id="EvidenceShippingTrackingNumber" Title="Shipping Tracking Number" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.uncategorized_file" Id="EvidenceUncategorizedFile" Title="Uncategorized File" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.uncategorized_text" Id="EvidenceUncategorizedText" Title="Uncategorized Text" Converter="String" Checked="false" HelpText=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
