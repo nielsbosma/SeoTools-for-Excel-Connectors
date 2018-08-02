@@ -17,6 +17,7 @@
       <Fail>
         <Regex Expr="^Not Found$" Group="0"/>
         <Regex Expr="^invalid token$" Group="0"/>
+        <Regex Expr="The requested UR.+server" Group="0"/>
         <JsonPath Expr="error.message"/>
       </Fail>
     </Resource>
@@ -82,10 +83,36 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="ListSheetsHidden" Hidden="True" HelpUrl="https://developers.google.com/sheets/api/guides/migration#list_spreadsheets_for_the_authenticated_user">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/drive/v3/files
+          ?q=mimeType%3D'application%2Fvnd.google-apps.spreadsheet'
+          &pageSize=1000
+          ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.files.*">
+        <JsonPath Expr="id" Id="Id" Title="Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="Cells" Title="Cells" HelpText="Insert cells from a Google Sheet" HelpUrl="https://developers.google.com/sheets/api/guides/migration#list_spreadsheets_for_the_authenticated_user">
     <Parameters>
-      <Text Id="SheetId" Title="Sheet ID" Required="true"/>
+      <Text Id="SheetId" Title="Sheet ID" Select.Connector="ListSheetsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true" HelpText=""/>
+      <Text Id="Range" Title="Range" Required="true" DefaultValue="Sheet1!A1:Z1000"/>
     </Parameters>
     <Paging PageSize="1000" EvenPages="false">
       <Parse>
@@ -102,7 +129,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-         https://sheets.googleapis.com/v4/spreadsheets/@(Model.SheetId)/values/Sheet1
+         https://sheets.googleapis.com/v4/spreadsheets/@(Model.SheetId)/values/@(Model.Range)
           ]]>
       </Fetch.Url>
     </Fetch>
