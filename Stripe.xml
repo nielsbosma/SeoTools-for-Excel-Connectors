@@ -29,6 +29,16 @@
       <Item Id="bitcoin_receiver" Title="Bitcoin"/>
       <Item Id="Card" Title="Card"/>
     </Resource>
+    <Resource Id="ActiveValues">
+      <Item Id="all" Title="All"/>
+      <Item Id="true" Title="Active"/>
+      <Item Id="false" Title="Inactive"/>
+    </Resource>
+    <Resource Id="ProductTypes">
+      <Item Id="all" Title="All"/>
+      <Item Id="good" Title="Good"/>
+      <Item Id="service" Title="Service"/>
+    </Resource>
     <Resource Id="Headers">
       <HttpSettings>
         <RequestHeaders>
@@ -160,9 +170,9 @@
     <Parameters>
       <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
       <!--<Select Id="Source" Title="Charge Source" Required="false" DefaultValue="all">-->
-        <!--<DataSource>-->
-          <!--<Resource Id="ChargeSources"/>-->
-        <!--</DataSource>-->
+      <!--<DataSource>-->
+      <!--<Resource Id="ChargeSources"/>-->
+      <!--</DataSource>-->
       <!--</Select>-->
     </Parameters>
     <Paging PageSize="100">
@@ -340,7 +350,16 @@
 
   <RestConnector Id="Products" Title="Products" HelpUrl="https://stripe.com/docs/api/curl#list_products" HelpText="Returns a list of your products.">
     <Parameters>
-      <Checkbox Id="Active" Title="Only return active products" DefaultValue="False" HelpText=""/>
+      <Select Id="Active" Title="Only return active products" DefaultValue="False" HelpText="">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+      <Select Id="Type" Title="Filter by product type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Resource Id="ProductTypes"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -357,6 +376,14 @@
         {
           @: &starting_after=@Model.NextPageToken
         }
+        @if(@Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(@Model.Type != "all")
+        {
+          @: &type=@(Model.Type)
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -364,17 +391,37 @@
       <JsonPath Expr="$.data.*">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
         <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
-        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="caption" Id="Caption" Title="Caption" Converter="String" HelpText=""/>
         <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
         <JsonPath Expr="deactivate_on" Id="DeactivateOn" Title="Deactivate On" Converter="String" HelpText=""/>
         <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" HelpText="" Checked="false"/>
         <JsonPath Expr="shippable" Id="Shippable" Title="Shippable" Converter="Bool" HelpText=""/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
         <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
         <JsonPath Expr="url" Id="Url" Title="Url" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ProductsHidden" Title="ProductsHidden" Hidden="true" HelpUrl="https://stripe.com/docs/api/curl#list_products">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/products?
+        limit=100
+        &type=service
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -626,6 +673,64 @@
         <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
         <JsonPath Expr="subscription" Id="Subscription" Title="Subscription" Converter="String" HelpText=""/>
         <JsonPath Expr="unit_amount" Id="UnitAmount" Title="Unit Amount" Converter="Int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Plans" Title="Plans" HelpUrl="https://stripe.com/docs/api/curl#list_plans" HelpText="Returns a list of your plans">
+    <Parameters>
+      <Text Id="Product" Title="Filter by product" Select.Connector="ProductsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText="Only products of type 'service' can be used"/>
+      <Select Id="Active" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/plans?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(@Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(!string.IsNullOrEmpty(Model.Product))
+        {
+          @: &product=@(Model.Product)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="aggregate_usage" Id="AggregateUsage" Title="Aggregate Usage" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="billing_scheme" Id="BillingScheme" Title="Billing Scheme" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="interval" Id="Interval" Title="Interval" Converter="String" HelpText=""/>
+        <JsonPath Expr="interval_count" Id="IntervalCount" Title="Interval Count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="nickname" Id="Nickname" Title="Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="tiers" Id="Tiers" Title="Tiers" Converter="String" HelpText=""/>
+        <JsonPath Expr="tiers_mode" Id="TiersMode" Title="Tiers Mode" Converter="String" HelpText=""/>
+        <JsonPath Expr="transform_usage" Id="TransformUsage" Title="Transform Usage" Converter="String" HelpText=""/>
+        <JsonPath Expr="trial_period_days" Id="TrialPeriodDays" Title="Trial Period Days" Converter="Auto" HelpText=""/>
+        <JsonPath Expr="usage_type" Id="UsageType" Title="Usage Type" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
