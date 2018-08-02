@@ -736,6 +736,98 @@
     <Resource Id="Error"/>
   </RestConnector>
 
+  <RestConnector Id="PlansHidden" Title="Plans Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_plans">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/plans
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="nickname" Id="Nickname" Title="Nickname" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Subscriptions" Title="Subscriptions" HelpUrl="https://stripe.com/docs/api/curl#list_subscriptions" HelpText="Returns a list of subscriptions">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false"/>
+      <Text Id="Plan" Title="Filter by plan" Select.Connector="PlansHidden" Select.IdField="Id" Select.TitleField="Nickname" Required="false"/>
+      <Select Id="Status" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Item Id="default" Title="default"/>
+          <Item Id="all" Title="All"/>
+          <Item Id="active" Title="Active"/>
+          <Item Id="trialing" Title="Trialing"/>
+          <Item Id="past_due" Title="Past Due"/>
+          <Item Id="unpaid" Title="Unpaid"/>
+          <Item Id="canceled" Title="Canceled"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscriptions?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &product=@(Model.Customer)
+        }
+        @if(!string.IsNullOrEmpty(Model.Plan))
+        {
+          @: &product=@(Model.Plan)
+        }
+        @if(@Model.Status != "default")
+        {
+          @: &status=@(Model.Status)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="application_fee_percent" Id="ApplicationFeePercent" Title="Application Fee Percent" Converter="Double" HelpText=""/>
+        <JsonPath Expr="billing" Id="Billing" Title="Billing" Converter="String" HelpText=""/>
+        <JsonPath Expr="billing_cycle_anchor" Id="BillingCycleAnchor" Title="Billing Cycle Anchor" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="cancel_at_period_end" Id="CancelAtPeriodEnd" Title="Cancel At Period End" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="canceled_at" Id="CanceledAt" Title="Canceled At" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="current_period_end" Id="CurrentPeriodEnd" Title="Current Period End" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="current_period_start" Id="CurrentPeriodStart" Title="Current Period Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="days_until_due" Id="DaysUntilDue" Title="Days Until Due" Converter="Int" HelpText=""/>
+        <JsonPath Expr="ended_at" Id="EndedAt" Title="Ended At" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="start" Id="Start" Title="Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="tax_percent" Id="TaxPercent" Title="Tax Percent" Converter="Double" HelpText=""/>
+        <JsonPath Expr="trial_end" Id="TrialEnd" Title="Trial End" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="trial_start" Id="TrialStart" Title="Trial Start" Converter="DateTime" Converter.SourceFormat="Unix"  HelpText=""/>
+        <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.product" Id="PlanProduct" Title="Plan Product" Converter="String" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string CreateBasicAuth()
