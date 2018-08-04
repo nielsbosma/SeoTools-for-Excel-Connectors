@@ -1256,6 +1256,15 @@
   <RestConnector Id="Orders" Title="Orders" HelpUrl="https://stripe.com/docs/api/curl#list_orders" HelpText="Returns a list of your orders.">
     <Parameters>
       <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+      <Select Id="Status" Title="Filter by status">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="created" Title="Created"/>
+          <Item Id="paid" Title="Paid"/>
+          <Item Id="fulfilled" Title="Fulfilled"/>
+          <Item Id="refunded" Title="Refunded"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -1274,7 +1283,11 @@
         }
         @if(!string.IsNullOrEmpty(Model.Customer))
         {
-          @: &customer=@Utils.UrlEncode(Model.Customer)
+          @: &customer=@(Model.Customer)
+        }
+        @if(Model.Status != "all")
+        {
+          @: &status=@(Model.Status)
         }
         ]]>
       </Fetch.Url>
@@ -1314,9 +1327,154 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <!--Authorizations-->
-  <!--Cardholders - invite only -->
-  <!--Issued cards - invite only -->
+  <RestConnector Id="OrdersHidden" Title="Orders Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_orders">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/orders?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = Model.Created + "-" + Model.Amount + "-" + Model.Email;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+          <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+          <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Returns" Title="Returns" HelpUrl="https://stripe.com/docs/api/curl#list_order_returns" HelpText="Returns a list of your order returns.">
+    <Parameters>
+      <Text Id="Order" Title="Filter by order" Select.Connector="OrdersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Select Id="Status" Title="Filter by status">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="created" Title="Created"/>
+          <Item Id="paid" Title="Paid"/>
+          <Item Id="fulfilled" Title="Fulfilled"/>
+          <Item Id="refunded" Title="Refunded"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/order_returns?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Order))
+        {
+          @: &order=@(Model.Order)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Double" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="image" Id="Image" Title="Image" Converter="String" HelpText=""/>
+        <JsonPath Expr="inventory" Id="Inventory" Title="Inventory" Converter="String" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" HelpText=""/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Skus" Title="SKUs" HelpUrl="https://stripe.com/docs/api/curl#list_skus" HelpText="Returns a list of your SKUs.">
+    <Parameters>
+      <Select Id="Active" Title="Filter by status">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+      <Select Id="InStock" Title="Filter by availability">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="true" Title="In stock"/>
+          <Item Id="false" Title="Out of stock"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/skus?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Order))
+        {
+          @: &order=@(Model.Order)
+        }
+        @if(Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(Model.InStock != "all")
+        {
+          @: &in_stock=@(Model.InStock)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="image" Id="Image" Title="Image" Converter="String" HelpText=""/>
+        <JsonPath Expr="inventory.quantity" Id="InventoryQuantity" Title="Inventory Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="inventory.type" Id="InventoryType" Title="Inventory Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="inventory.value" Id="InventoryValue" Title="Inventory Value" Converter="Int" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
