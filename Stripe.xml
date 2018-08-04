@@ -1035,6 +1035,36 @@
     <Resource Id="Error"/>
   </RestConnector>
 
+  <RestConnector Id="ConnectedAccountsHidden" Title="ConnectedAccounts Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_accounts">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/accounts?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = "" + Model.Email + " - " Model.BusinessName;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+          <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
   <RestConnector Id="ApplicationFees" Title="Application Fees" HelpUrl="https://stripe.com/docs/api/curl#list_application_fees" HelpText="Returns a list of application fees you’ve previously collected.">
     <Paging PageSize="100">
       <Parse>
@@ -1108,6 +1138,185 @@
     </Parse>
     <Resource Id="Error"/>
   </RestConnector>
+
+  <RestConnector Id="Transfers" Title="Transfers" HelpUrl="https://stripe.com/docs/api/curl#list_transfers" HelpText="Returns a list of existing transfers sent to connected accounts.">
+    <Parameters>
+      <Text Id="Destination" Title="Filter by account Id" Select.Connector="ConnectedAccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Destination))
+        {
+          @: &destination=@(Model.Destination)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="amount_reversed" Id="AmountReversed" Title="Amount Reversed" Converter="Double" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="destination" Id="Destination" Title="Destination" Converter="String" HelpText=""/>
+        <JsonPath Expr="destination_payment" Id="DestinationPayment" Title="Destination Payment" Converter="String" HelpText=""/>
+        <JsonPath Expr="reversed" Id="Reversed" Title="Reversed" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="source_transaction" Id="SourceTransaction" Title="Source Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="source_type" Id="SourceType" Title="Source Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="transfer_group" Id="TransferGroup" Title="Transfer Group" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TransfersHidden" Title="Transfers Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_transfers">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string created = Model.Created ?? "";
+                string title = created + "-" Model.Destination + "-" + Model.Description;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+          <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+          <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+          <JsonPath Expr="destination" Id="Destination" Title="Destination" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TransferReversals" Title="Transfer Reversals" HelpUrl="https://stripe.com/docs/api/curl#list_transfer_reversals" HelpText="List of the reversals belonging to a specific transfer.">
+    <Parameters>
+      <Text Id="Transfer" Title="Filter by account Id" Select.Connector="TransfersHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers/@(Model.Transfer)/reversals?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="transfer" Id="Transfer" Title="Transfer" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Orders" Title="Orders" HelpUrl="https://stripe.com/docs/api/curl#list_orders" HelpText="Returns a list of your orders.">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/orders?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &customer=@Utils.UrlEncode(Model.Customer)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="amount_returned" Id="AmountReturned" Title="Amount Returned" Converter="Double" HelpText=""/>
+        <JsonPath Expr="application" Id="Application" Title="Application" Converter="String" HelpText=""/>
+        <JsonPath Expr="application_fee" Id="ApplicationFee" Title="Application Fee" Converter="Double" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge" Converter="Double" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="selected_shipping_method" Id="SelectedShippingMethod" Title="Shipping Method" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.city" Id="ShippingAddressCity" Title="City" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.country" Id="ShippingAddressCountry" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.line1" Id="ShippingAddressLine1" Title="Address Line1" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.line2" Id="ShippingAddressLine2" Title="Address Line2" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.postal_code" Id="ShippingAddressPostalCode" Title="Postal Code" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.state" Id="ShippingAddressState" Title="State" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.carrier" Id="ShippingCarrier" Title="Shipping Carrier" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.name" Id="ShippingName" Title="Shipping Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.phone" Id="ShippingPhone" Title="Shipping Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.tracking_number" Id="ShippingTrackingNumber" Title="Tracking Number" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping_methods" Id="ShippingMethods" Title="Shipping Methods" Converter="String" HelpText="" Checked="False"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="status_transitions.canceled" Id="StatusTransitionsCanceled" Title="Canceled" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.fulfiled" Id="StatusTransitionsFulfiled" Title="Fulfiled" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.paid" Id="StatusTransitionsPaid" Title="Paid" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.returned" Id="StatusTransitionsReturned" Title="Returned" Converter="null" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <!--Authorizations-->
+  <!--Cardholders - invite only -->
+  <!--Issued cards - invite only -->
 
   <RazorFunctions>
     <![CDATA[
