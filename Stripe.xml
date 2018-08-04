@@ -828,6 +828,287 @@
     <Resource Id="Error"/>
   </RestConnector>
 
+  <RestConnector Id="SubscriptionsHidden" Title="SubscriptionsHidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_subscriptions">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscriptions?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = "" + Model.PlanId + " - " Model.PlanNickname;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+          <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="SubscriptionItems" Title="Subscription Items" HelpUrl="https://stripe.com/docs/api/curl#list_subscription_items" HelpText="Returns a list of your subscription items for a given subscription.">
+    <Parameters>
+      <Text Id="Subscription" Title="Subscription Id" Select.Connector="SubscriptionsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Select Id="Status" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Item Id="default" Title="default"/>
+          <Item Id="all" Title="All"/>
+          <Item Id="active" Title="Active"/>
+          <Item Id="trialing" Title="Trialing"/>
+          <Item Id="past_due" Title="Past Due"/>
+          <Item Id="unpaid" Title="Unpaid"/>
+          <Item Id="canceled" Title="Canceled"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscription_items?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        &subscription=@(Model.Subscription)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="ApplicationFeePercent" Title="Application Fee Percent" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.product" Id="PlanProduct" Title="Plan Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="subscription" Id="Subscription" Title="Subscription" Converter="String" HelpText=""/>
+
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountDetails" Title="Account Details" HelpUrl="https://stripe.com/docs/api/curl#retrieve_account" HelpText="Retrieves the details of the account.">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/account
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_url" Id="BusinessUrl" Title="Business Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="charges_enabled" Id="ChargesEnabled" Title="Charges Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="default_currency" Id="DefaultCurrency" Title="Default Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="details_submitted" Id="DetailsSubmitted" Title="Details Submitted" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="debit_negative_balances" Id="DebitNegativeBalances" Title="Debit Negative Balances" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.avs_failure" Id="DeclineChargeOnAvsFailure" Title="Decline Charge On AVS Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.cvc_failure" Id="DeclineChargeOnCvcFailure" Title="Decline Charge On CVC Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="payout_schedule.delay_days" Id="PayoutScheduleDelayDays" Title="Payout Schedule Delay Days" Converter="Int" HelpText=""/>
+        <JsonPath Expr="payout_schedule.interval" Id="PayoutScheduleInterval" Title="Payout Schedule Interval" Converter="String" HelpText=""/>
+        <JsonPath Expr="payout_statement_descriptor" Id="PayoutStatementDescriptor" Title="Payout Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="payouts_enabled" Id="PayoutsEnabled" Title="Payouts Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="product_description" Id="ProductDescription" Title="Product Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="statement_descriptor" Id="StatementDescriptor" Title="Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_email" Id="SupportEmail" Title="Support Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_phone" Id="SupportPhone" Title="Support Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="legal_entity.type" Id="LegalEntityType" Title="Legal Entity Type" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_name" Id="LegalEntityBusinessName" Title="Legal Entity Business Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_tax_id_provided" Id="LegalEntityBusinessTaxIdProvided" Title="Legal Entity Business Tax Id Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.first_name" Id="LegalEntityFirstName" Title="Legal Entity First Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.last_name" Id="LegalEntityLastName" Title="Legal Entity Last Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.city" Id="LegalEntityAddressCity" Title="Legal Entity Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.country" Id="LegalEntityAddressCountry" Title="Legal Entity Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line1" Id="LegalEntityAddressLine1" Title="Legal Entity Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line2" Id="LegalEntityAddressLine2" Title="Legal Entity Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.postal_code" Id="LegalEntityAddressPostalCode" Title="Legal Entity Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.state" Id="LegalEntityAddressState" Title="Legal Entity Address State" Converter="nString" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.city" Id="LegalEntityPersonalAddressCity" Title="Legal Entity Personal Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.country" Id="LegalEntityPersonalAddressCountry" Title="Legal Entity Personal Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line1" Id="LegalEntityPersonalAddressLine1" Title="Legal Entity Personal Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line2" Id="LegalEntityPersonalAddressLine2" Title="Legal Entity Personal Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.postal_code" Id="LegalEntityPersonalAddressPostalCode" Title="Legal Entity Personal Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.state" Id="LegalEntityPersonalAddressState" Title="Legal Entity Personal Address State" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_id_number_provided" Id="LegalEntityPersonalIdNumberProvided" Title="Legal Entity Personal Id Number Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.ssn_last_4_provided" Id="LegalEntitySsnLast4Provided" Title="Legal Entity Ssn Last 4 Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.verification.status" Id="LegalEntityVerificationStatus" Title="Legal Entity Verification Status" Converter="String" Checked="False"/>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ConnectedAccounts" Title="Connected Accounts" HelpUrl="https://stripe.com/docs/api/curl#list_accounts" HelpText="Returns a list of accounts connected to your platform via Connect. If you’re not a platform, the list is empty.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/accounts?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_url" Id="BusinessUrl" Title="Business Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="charges_enabled" Id="ChargesEnabled" Title="Charges Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="default_currency" Id="DefaultCurrency" Title="Default Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="details_submitted" Id="DetailsSubmitted" Title="Details Submitted" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="debit_negative_balances" Id="DebitNegativeBalances" Title="Debit Negative Balances" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.avs_failure" Id="DeclineChargeOnAvsFailure" Title="Decline Charge On AVS Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.cvc_failure" Id="DeclineChargeOnCvcFailure" Title="Decline Charge On CVC Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="payout_schedule.delay_days" Id="PayoutScheduleDelayDays" Title="Payout Schedule Delay Days" Converter="Int" HelpText=""/>
+        <JsonPath Expr="payout_schedule.interval" Id="PayoutScheduleInterval" Title="Payout Schedule Interval" Converter="String" HelpText=""/>
+        <JsonPath Expr="payout_statement_descriptor" Id="PayoutStatementDescriptor" Title="Payout Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="payouts_enabled" Id="PayoutsEnabled" Title="Payouts Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="product_description" Id="ProductDescription" Title="Product Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="statement_descriptor" Id="StatementDescriptor" Title="Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_email" Id="SupportEmail" Title="Support Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_phone" Id="SupportPhone" Title="Support Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="legal_entity.type" Id="LegalEntityType" Title="Legal Entity Type" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_name" Id="LegalEntityBusinessName" Title="Legal Entity Business Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_tax_id_provided" Id="LegalEntityBusinessTaxIdProvided" Title="Legal Entity Business Tax Id Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.first_name" Id="LegalEntityFirstName" Title="Legal Entity First Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.last_name" Id="LegalEntityLastName" Title="Legal Entity Last Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.city" Id="LegalEntityAddressCity" Title="Legal Entity Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.country" Id="LegalEntityAddressCountry" Title="Legal Entity Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line1" Id="LegalEntityAddressLine1" Title="Legal Entity Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line2" Id="LegalEntityAddressLine2" Title="Legal Entity Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.postal_code" Id="LegalEntityAddressPostalCode" Title="Legal Entity Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.state" Id="LegalEntityAddressState" Title="Legal Entity Address State" Converter="nString" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.city" Id="LegalEntityPersonalAddressCity" Title="Legal Entity Personal Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.country" Id="LegalEntityPersonalAddressCountry" Title="Legal Entity Personal Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line1" Id="LegalEntityPersonalAddressLine1" Title="Legal Entity Personal Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line2" Id="LegalEntityPersonalAddressLine2" Title="Legal Entity Personal Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.postal_code" Id="LegalEntityPersonalAddressPostalCode" Title="Legal Entity Personal Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.state" Id="LegalEntityPersonalAddressState" Title="Legal Entity Personal Address State" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_id_number_provided" Id="LegalEntityPersonalIdNumberProvided" Title="Legal Entity Personal Id Number Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.ssn_last_4_provided" Id="LegalEntitySsnLast4Provided" Title="Legal Entity Ssn Last 4 Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.verification.status" Id="LegalEntityVerificationStatus" Title="Legal Entity Verification Status" Converter="String" Checked="False"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ApplicationFees" Title="Application Fees" HelpUrl="https://stripe.com/docs/api/curl#list_application_fees" HelpText="Returns a list of application fees you’ve previously collected.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/application_fees?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="account" Id="Account" Title="Account" Converter="String" HelpText=""/>
+        <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+        <JsonPath Expr="amount_refunded" Id="AmountRefunded" Title="Amount Refunded" Converter="Double" HelpText=""/>
+        <JsonPath Expr="application" Id="Application" Title="Application" Converter="String" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="DateTime" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="originating_transaction" Id="OriginatingTransaction" Title="Originating Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="refunded" Id="Refunded" Title="Refunded" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Recipients" Title="Recipients" HelpUrl="https://stripe.com/docs/api/curl#list_recipients" HelpText="Returns a list of your recipients.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/recipients?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active_account" Id="ActiveAccount" Title="Active Account" Converter="String" HelpText=""/>
+        <JsonPath Expr="cards.data" Id="CardsData" Title="Cards" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="default_card" Id="DefaultCard" Title="Default Card" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="migrated_to" Id="MigratedTo" Title="Migrated To" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string CreateBasicAuth()
