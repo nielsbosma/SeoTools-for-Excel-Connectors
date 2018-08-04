@@ -3,10 +3,7 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Spotify/">
-    <Text Id="ClientId" Title="Client Id" Required="true" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/"/>
-    <Text Id="ClientSecret" Title="Client Secret" Required="true" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/"/>
-  </Settings>
+  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://accounts.spotify.com/authorize?client_id=3d6357b55f7a4d3880320880bee775b2&amp;response_type=token&amp;redirect_uri={0}&amp;scope=playlist-modify-public"/>
 
   <Resources>
     <Resource Id="CountryCodes">
@@ -266,32 +263,6 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="GenerateToken" Title="GenerateToken" HelpUrl="https://developer.spotify.com/web-api/authorization-guide/" Hidden="true">
-    <Fetch>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <RequestBody>
-          <![CDATA[grant_type=client_credentials]]>
-        </RequestBody>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://accounts.spotify.com/api/token
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="access_token" Id="Token" Title="Token" Converter="String" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error_description"/>
-    </Fail>
-  </RestConnector>
-
   <RestConnector Id="ArtistSearch" Title="Artist Search" HelpUrl="https://developer.spotify.com/web-api/search-item/">
     <Parameters>
       <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
@@ -304,9 +275,6 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Paging PageSize="50" EvenPages="false" MaxTake="100000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="artists.total"/>
@@ -315,7 +283,7 @@
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -402,9 +370,6 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Paging PageSize="50" EvenPages="false" MaxTake="100000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="albums.total"/>
@@ -413,7 +378,7 @@
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -511,9 +476,6 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Paging PageSize="50" EvenPages="false" MaxTake="100000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="tracks.total"/>
@@ -522,7 +484,7 @@
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -614,9 +576,6 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Paging PageSize="50" EvenPages="false" MaxTake="100000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="playlists.total"/>
@@ -625,7 +584,7 @@
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -667,13 +626,10 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -723,13 +679,10 @@
     <Parameters>
       <Text Id="TrackId" Title="Track Id" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="" Required="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -767,13 +720,10 @@
     <Parameters>
       <Text Id="TrackIds" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter one or more Track Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -808,13 +758,10 @@
     <Parameters>
       <Text Id="UserId" Title="User Id" Debug.DefaultValue="diskborste" HelpText="" Required="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -849,13 +796,10 @@
         <JsonPath Id="AvaliableRows" Expr="playlists.total"/>
       </Parse>
     </Paging>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -894,13 +838,10 @@
         <JsonPath Id="AvaliableRows" Expr="total"/>
       </Parse>
     </Paging>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -936,13 +877,10 @@
         <JsonPath Id="AvaliableRows" Expr="total"/>
       </Parse>
     </Paging>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -982,13 +920,10 @@
       <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="6dZGF7wrG6oqwNaWZWBBWQ" HelpText="" Required="true"/>
       <Text Id="UserIds" Title="User Ids to Check" Debug.DefaultValue="ericbaffoy" HelpText="Enter up to 5 User Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1014,13 +949,10 @@
     <Parameters>
       <Text Id="ArtistIds" Title="Artist Ids" Debug.DefaultValue="18Zv2g2vUcEGqJf6WnjfXN" HelpText="Enter up to 50 Artist Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1084,13 +1016,10 @@
         <JsonPath Id="AvaliableRows" Expr="total"/>
       </Parse>
     </Paging>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1144,13 +1073,10 @@
     <Parameters>
       <Text Id="ArtistId" Title="Artist Id" Debug.DefaultValue="7dGJo4pcD2V6oG8kP0tJRR" HelpText="" Required="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1195,13 +1121,10 @@
     <Parameters>
       <Text Id="AlbumIds" Title="Album Ids" Debug.DefaultValue="0yCqicy5tGkPiB6gUZCRy4" HelpText="Enter up to 50 Album Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1252,13 +1175,10 @@
         <JsonPath Id="AvaliableRows" Expr="total"/>
       </Parse>
     </Paging>
-    <Prepare>
-      <Connector Id="GenerateToken"/>
-    </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer  @(Model.Token)</Header>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -1283,13 +1203,38 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="PlaylistAddTrack" Title="Playlist Add Track" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/add-tracks-to-playlist/">
+    <Parameters>
+      <Text Id="UserId" Title="User Id" Debug.DefaultValue="diskborste" HelpText="" Required="true"/>
+      <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="53J3DTDlQYgOA0cmTo8X7p" HelpText="" Required="true"/>
+      <Text Id="TrackId" Title="Track Id" Debug.DefaultValue="4VuS959DSpr82t3qBqCrWG" HelpText="" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.spotify.com/v1/users/
+        @(Model.UserId)/playlists/
+        @(Model.PlaylistId)/tracks
+				?uris=spotify:track:@(Model.TrackId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="snapshot_id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
-    String CreateBasicAuth()
-    {
-      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + ":" + Model.ClientSecret));
-      return AuthString;
-    }
     string FetchTrackIdString()
     {
       string[] lines = ((string)Model.TrackIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
