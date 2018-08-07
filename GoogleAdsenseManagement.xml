@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Id="GoogleAdsenseManagement" Title="Google Adsense Management" Category="Ads"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleAdsenseManagement.xml"
+       HelpUrl="http://seotoolsforexcel.com/google-adsense-management/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/adsense.readonly" StayAuthenticated="true"/>
+
+  <Resources>
+
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <Regex Expr="^invalid token$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Accounts" Title="Accounts" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/list">
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts?
+          &maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="location" Id="Location" Title="Location" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="timezone" Id="TimeZone" Title="Timezone" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
+        <JsonPath Expr="accessRole" Id="AccessRole" Title="Access Role" Converter="String" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
