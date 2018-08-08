@@ -19,7 +19,7 @@
   </Resources>
 
   <RestConnector Id="Accounts" Title="Accounts" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/list">
-    <Paging PageSize="1000" EvenPages="false">
+    <Paging PageSize="10000" EvenPages="false">
       <Parse>
         <JsonPath Id="NextToken" Expr="pageToken"/>
       </Parse>
@@ -35,7 +35,7 @@
       <Fetch.Url>
         <![CDATA[
           https://www.googleapis.com/adsense/v1.4/accounts?
-          &maxResults=@(Model.PageCursor.NextTake)
+          maxResults=@(Model.PageCursor.NextTake)
           @if(Model.PageCursor.Page != 0)
           {
             @: &pageToken=@(Model.NextToken)
@@ -45,11 +45,178 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="items.*">
-        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" HelpText="" Checked="true"/>
-        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" HelpText="" Checked="true"/>
-        <JsonPath Expr="location" Id="Location" Title="Location" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
-        <JsonPath Expr="timezone" Id="TimeZone" Title="Timezone" Converter="String" HelpText="" DefaultValue="" Checked="true"/>
-        <JsonPath Expr="accessRole" Id="AccessRole" Title="Access Role" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this account.	"/>
+        <Compute  Id="CreationTime" Title="Creation Time"  Converter="DateTime" HelpText="Timestamp of last test (if any)">
+          <Compute.Expr>
+            <![CDATA[
+             @if(Model.Inp != 0)
+              {
+                @: @(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))
+              }
+              else {
+                @: 0
+              }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="creation_time" Id="Inp" Converter="Long" DefaultValue="0"/>
+        </Compute>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this account."/>
+        <JsonPath Expr="premium" Id="Premium" Title="Premium" Converter="Boolean" HelpText="Whether this account is premium."/>
+        <JsonPath Expr="subAccounts" Id="Subaccounts" Title="Subaccounts" Converter="String" Checked="False" HelpText="Sub accounts of the this account."/>
+        <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText="AdSense timezone of this account."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountsHidden" Hidden="True" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/list">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts?
+          maxResults=10000
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this account.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this account."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdClients" Title="Ad Clients" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adclients/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" />
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad client."/>
+        <JsonPath Expr="arcOptIn" Id="ArcOptin" Title="ARC Optin" Converter="Boolean" HelpText="Whether this ad client is opted in to ARC.	"/>
+        <JsonPath Expr="productCode" Id="ProductCode" Title="Product Code" Converter="String" HelpText="This ad client's product code, which corresponds to the PRODUCT_CODE report dimension."/>
+        <JsonPath Expr="supportsReporting" Id="SupportsReporting" Title="Supports Reporting" Converter="Bool" HelpText="Whether this ad client supports being reported on."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdClientsHidden" Hidden="True" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adclients/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" />
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients?
+          maxResults=10000
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad client."/>
+        <JsonPath Expr="productCode" Id="ProductCode" Title="Product Code" Converter="String" HelpText="This ad client's product code, which corresponds to the PRODUCT_CODE report dimension."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdUnits" Title="Ad Units" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adunits/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name" />
+      <Text Id="AdClient" Title="Ad Client Id" Required="true" Select.Connector="AdClientsHidden" Select.IdField="Id" Select.TitleField="ProductCode" />
+      <Checkbox Id="IncludeInactive" Title="Include Inactive" DefaultValue="true" HelpText="Whether to include inactive ad units."/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients/@(Model.AdClient)/adunits?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+          &includeInactive=@(Model.IncludeInactive)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad unit. This should be considered an opaque identifier; it is not safe to rely on it being in any particular format."/>
+        <JsonPath Expr="code" Id="Code" Title="Code" Converter="String" HelpText="Identity code of this ad unit, not necessarily unique across ad clients."/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this ad unit."/>
+        <JsonPath Expr="savedStyleId" Id="Savedstyleid" Title="Saved Style Id" Converter="String" Checked="false" HelpText="ID of the saved ad style which holds this ad unit's style information."/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="Status of this ad unit."/>
+        <JsonPath Expr="contentAdsSettings.size" Id="ContentadssettingsSize" Title="Size" Converter="string" HelpText="Size of this ad unit.	"/>
+        <JsonPath Expr="contentAdsSettings.type" Id="ContentadssettingsType" Title="Type" Converter="string" HelpText="Type of this ad unit.	"/>
+        <JsonPath Expr="contentAdsSettings.backupOption.color" Id="ContentadssettingsBackupoptionColor" Title="Backup Option Color" Checked="false" Converter="string" HelpText="Color to use when type is set to COLOR.	"/>
+        <JsonPath Expr="contentAdsSettings.backupOption.type" Id="ContentadssettingsBackupoptionType" Title="Backup Option Type" Converter="string" HelpText="Type of the backup option. "/>
+        <JsonPath Expr="contentAdsSettings.backupOption.url" Id="ContentadssettingsBackupoptionUrl" Title="Backup Option Url" Checked="false" Converter="string" HelpText="URL to use when type is set to URL.	"/>
+        <JsonPath Expr="customStyle.colors.background" Id="CustomstyleColorsBackground" Title="Custom Style Background" Converter="String" Checked="false" HelpText="The color of the ad background.	"/>
+        <JsonPath Expr="customStyle.colors.border" Id="CustomstyleColorsBorder" Title="Custom Style Border" Converter="String" Checked="false" HelpText="The color of the ad border.	"/>
+        <JsonPath Expr="customStyle.colors.text" Id="CustomstyleColorsText" Title="Custom Style Text" Converter="String" Checked="false" HelpText="The color of the ad text.	"/>
+        <JsonPath Expr="customStyle.colors.title" Id="CustomstyleColorsTitle" Title="Custom Style Title" Converter="String" Checked="false" HelpText="The color of the ad title.	"/>
+        <JsonPath Expr="customStyle.colors.url" Id="CustomstyleColorsUrl" Title="Custom Style Url" Converter="String" Checked="false" HelpText="The color of the ad url.	"/>
+        <JsonPath Expr="customStyle.corners" Id="CustomstyleCorners" Title="Custom Style Corners" Converter="String" Checked="false" HelpText="The style of the corners in the ad. "/>
+        <JsonPath Expr="customStyle.font.family" Id="CustomstyleFontFamily" Title="Custom Style Font Family" Converter="String" Checked="false" HelpText="The family of the font. "/>
+        <JsonPath Expr="customStyle.font.size" Id="CustomstyleFontSize" Title="Custom Style Font Size" Converter="String" Checked="false" HelpText="The size of the font. "/>
+        <JsonPath Expr="customStyle.kind" Id="CustomstyleKind" Title="Custom Style Kind" Converter="String" Checked="false" HelpText="Kind this is, in this case adsense#adStyle.	"/>
+        <JsonPath Expr="feedAdsSettings.adPosition" Id="FeedadssettingsAdposition" Title="Feed Ad Position" Converter="String" Checked="false" HelpText="The position of the ads relative to the feed entries. "/>
+        <JsonPath Expr="feedAdsSettings.frequency" Id="FeedadssettingsFrequency" Title="Feed Ad Frequency" Converter="Int" Checked="false" HelpText="The frequency at which ads should appear in the feed (i.e. every N entries).	"/>
+        <JsonPath Expr="feedAdsSettings.minimumWordCount" Id="FeedadssettingsMinimumwordcount" Title="Feed Ad Minimum Word Count" Converter="Int" Checked="false" HelpText="The minimum length an entry should be in order to have attached ads.	"/>
+        <JsonPath Expr="feedAdsSettings.type" Id="FeedadssettingsType" Title="Feed Ad Type" Converter="String" Checked="false" HelpText="The type of ads which should appear.	"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
