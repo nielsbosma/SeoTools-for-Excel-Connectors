@@ -42,7 +42,7 @@
 
   <RestConnector Id="Detect" Title="Detect" HelpUrl="https://cloud.google.com/translate/docs/reference/detect">
     <Parameters>
-      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto" Required="true" Multiline="true" HelpText="Enter one or more Texts separated by a new line"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -54,14 +54,7 @@
         <RequestMethod>POST</RequestMethod>
         <RequestContentType>application/json; charset=utf-8</RequestContentType>
         <RequestBody>
-					<![CDATA[
-						@{
-						var dict = new Dictionary<string, string>();
-						dict.Add("q", Model.Query);
-						var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
-						}
-						@output
-					]]>
+					@(GetJson())
 				</RequestBody>
       </HttpSettings>
     </Fetch>
@@ -201,7 +194,7 @@
 
   <RestConnector Id="Translate" Title="Translate" HelpUrl="https://cloud.google.com/translate/docs/reference/translate">
     <Parameters>
-      <Text Id="Query" Title="Search" Debug.DefaultValue="hej du grabben" Required="true"/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto" Required="true" Multiline="true" HelpText="Enter one or more Texts separated by a new line"/>
 			<Text Id="Target" Title="Target" Debug.DefaultValue="en" Required="true" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
 			<Text Id="Source" Title="Source (Optional)" DefaultValue="" HelpText="Returns 'Detected Language' if omitted" Required="false" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
     </Parameters>
@@ -221,14 +214,7 @@
         <RequestMethod>POST</RequestMethod>
         <RequestContentType>application/json; charset=utf-8</RequestContentType>
         <RequestBody>
-					<![CDATA[
-						@{
-						var dict = new Dictionary<string, string>();
-						dict.Add("q", Model.Query);
-						var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
-						}
-						@output
-					]]>
+					@(GetJson())
 				</RequestBody>
       </HttpSettings>
     </Fetch>
@@ -365,5 +351,25 @@
       <JsonPath Expr="error.message"/>
     </Fail>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    public string GetJson(){
+
+			var dict = new Dictionary<string, string>();
+
+			string[] lines = ((string)Model.Text).Trim().Split('\n').Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+
+      string json = "{\r\n";
+			for (int i = 0; i < lines.Length; i++){
+			 string ending = (i < (lines.Length -1) ? "," : "");
+			 json += "\"q\" : \"" + Regex.Replace(lines[i], "<.*?>", String.Empty) + "\"" + ending + "\r\n";
+			}
+			json += "}";
+
+			return json;
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
