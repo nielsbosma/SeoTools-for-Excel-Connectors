@@ -67,7 +67,7 @@
         <Regex Expr="^Not Found$" Group="0"/>
         <Regex Expr="^invalid token$" Group="0"/>
         <JsonPath Expr="error.message"/>
-        <JsonPath Expr="warnings"/>
+        <!--<JsonPath Expr="warnings"/>-->
       </Fail>
     </Resource>
   </Resources>
@@ -483,7 +483,7 @@
     <Parameters>
       <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-      <Text Id="Metrics" Title="Metrics (one per line)" Debug.DefaultValue="CLICKS" Multiline="true" Required="true" HelpText="The numeric columns to include in the report." HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
+      <Text Id="Metrics" Title="Metrics (one per line)" Debug.DefaultValue="CLICKS&#13;&#10;IMPRESSIONS&#13;&#10;EARNINGS" Multiline="true" Required="true" HelpText="The numeric columns to include in the report." HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
       <Text Id="Dimensions" Title="Dimensions (one per line)" Debug.DefaultValue="MONTH" Multiline="true" Required="true" HelpText="The dimensions on which to base the report" HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
       <Select Id="Currency" Title="Currency" DefaultValue="default">
         <DataSource>
@@ -526,7 +526,18 @@
     <Parse>
       <Table DefaultConverter="Auto">
         <JsonPath Id='Headers' Expr="$.headers.*">
-          <JsonPath Expr="name"/>
+          <Compute Id="Name">
+            <Compute.Expr>
+              <![CDATA[
+              @{
+              string name = (Model.Inp is string) ? Model.Inp : "";
+              System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo("en-US", false).TextInfo;
+              name = textInfo.ToTitleCase(name.ToLower());
+              @name
+              ]]>
+            </Compute.Expr>
+            <JsonPath Expr="name" Id="Inp"/>
+          </Compute>
         </JsonPath>
         <JsonPath Id='Cells' Expr='$.rows.*.*'>
           <JsonPath Expr="."/>
@@ -536,11 +547,126 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <!--Reports-->
+  <RestConnector Id="SavedReports" Title="Saved Reports" HelpUrl="https://www.googleapis.com/adsense/v1.4/accounts/accountId/reports/saved">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/saved?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this saved report.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="This saved report's name.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
-  <!--Generate saved report-->
+  <RestConnector Id="SavedReportsHidden" Hidden="true" HelpUrl="https://www.googleapis.com/adsense/v1.4/accounts/accountId/reports/saved">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/saved?
+          maxResults=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this saved report.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="This saved report's name.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="GenerateSavedReport" Title="Generate a Saved Report" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/reports/saved/generate">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="SavedReport" Title="Saved Report Id" Required="true" Select.Connector="SavedReportsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="50000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/@(Model.SavedReport)?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="Auto">
+        <JsonPath Id='Headers' Expr="$.headers.*">
+          <Compute Id="Name">
+            <Compute.Expr>
+              <![CDATA[
+              @{
+              string name = (Model.Inp is string) ? Model.Inp : "";
+              System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo("en-US", false).TextInfo;
+              name = textInfo.ToTitleCase(name.ToLower());
+              @name
+              ]]>
+            </Compute.Expr>
+            <JsonPath Expr="name" Id="Inp"/>
+          </Compute>
+        </JsonPath>
+        <JsonPath Id='Cells' Expr='$.rows.*.*'>
+          <JsonPath Expr="."/>
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <!--  Adunits custom channels-->
+
   <RazorFunctions>
   <![CDATA[
   string GetParams(String data, string paramName)
