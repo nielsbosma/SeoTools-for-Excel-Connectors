@@ -22,7 +22,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="CalendarList" Title="My calendar list" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/calendarList">
+  <RestConnector Id="Calendars" Title="My calendars" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/calendarList">
     <Paging PageSize="100" EvenPages="false">
       <Parse>
         <JsonPath Id="NextToken" Expr="nextPageToken"/>
@@ -59,9 +59,34 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="EventsList" Title="Events list" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/list">
+  <RestConnector Id="CalendarsHidden" Title="My calendars hidden" Hidden="True" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/calendarList">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://content.googleapis.com/calendar/v3/users/me/calendarList?
+          &maxResults=250
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Events" Title="Events" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/list">
     <Parameters>
-      <Text Id="CalendarId" Title="Calendar ID" Debug.DefaultValue="nba_13_%4cos+%41ngeles+%4cakers#sports@group.v.calendar.google.com" Required="true"/>
+      <Text Id="CalendarId" Title="Calendar ID" Debug.DefaultValue="nba_13_%4cos+%41ngeles+%4cakers#sports@group.v.calendar.google.com" Required="true" Select.Connector="CalendarsHidden" Select.IdField="Id" Select.TitleField="Summary"/>
       <Text Id="Query" Title="Only events that contain text" Required="false"/>
       <Radio Id="SingleEvents" Title="Event Type" DefaultValue="false" Required="true" HelpText="Whether to expand recurring events into instances and only return single one-off events and instances of recurring events, but not the underlying recurring events themselves.">
         <DataSource>
@@ -136,10 +161,39 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="EventsHidden" Title="Events Hidden" Hidden="True" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/list">
+    <Parameters>
+      <Text Id="CalendarId" Title="Calendar ID" Required="true" Select.Connector="CalendarsHidden" Select.IdField="Id" Select.TitleField="Summary"/>
+    </Parameters>
+     <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/calendar/v3/calendars/
+        @Utils.UrlEncode(Model.CalendarId)
+        /events?
+        &maxResults=2500
+        &orderBy=updated
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items[*]">
+        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="summary" Id="Summary" Title="Summary" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="EventAttendees" Title="Event attendees" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/get">
     <Parameters>
-      <Text Id="CalendarId" Title="Calendar ID" Required="true"/>
-      <Text Id="EventId" Title="Event ID" Required="true"/>
+      <Text Id="CalendarId" Title="Calendar ID" Required="true" Select.Connector="CalendarsHidden" Select.IdField="Id" Select.TitleField="Summary"/>
+      <Text Id="EventId" Title="Event ID" Required="true" Select.Connector="EventsHidden" Select.IdField="Id" Select.TitleField="Summary" />
     </Parameters>
     <Paging PageSize="200" EvenPages="false">
       <Parse>
@@ -177,8 +231,8 @@
 
   <RestConnector Id="EventInstances" Title="Event Instances" HelpUrl="https://developers.google.com/google-apps/calendar/v3/reference/events/instances">
     <Parameters>
-      <Text Id="CalendarId" Title="Calendar ID" Required="true"/>
-      <Text Id="EventId" Title="Event ID" Required="true"/>
+      <Text Id="CalendarId" Title="Calendar ID" Required="true" Select.Connector="CalendarsHidden" Select.IdField="Id" Select.TitleField="Summary"/>
+      <Text Id="EventId" Title="Event ID" Required="true" Select.Connector="EventsHidden" Select.IdField="Id" Select.TitleField="Summary" />
       <Checkbox Id="ShowDeleted" Title="Include deleted events" DefaultValue="false"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
