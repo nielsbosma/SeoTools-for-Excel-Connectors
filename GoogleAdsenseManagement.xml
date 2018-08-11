@@ -8,12 +8,66 @@
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/adsense.readonly" StayAuthenticated="true"/>
 
   <Resources>
-
+    <Resource Id="Currencies">
+      <Item Id="default" Title="Default"/>
+      <Item Id="AED" Title="United Arab Emirates Dirham"/>
+      <Item Id="ARS" Title="Argentine Peso"/>
+      <Item Id="AUD" Title="Australian Dollar"/>
+      <Item Id="BGN" Title="Bulgarian Lev"/>
+      <Item Id="BND" Title="Brunei Dollar"/>
+      <Item Id="BOB" Title="Bolivian Boliviano"/>
+      <Item Id="BRL" Title="Brazilian Real"/>
+      <Item Id="CAD" Title="Canadian Dollar"/>
+      <Item Id="CHF" Title="Swiss Franc"/>
+      <Item Id="CLP" Title="Chilean Peso"/>
+      <Item Id="CNY" Title="Chinese Yuan Renminbi"/>
+      <Item Id="COP" Title="Colombian Peso"/>
+      <Item Id="CZK" Title="Czech Republic Koruna"/>
+      <Item Id="DKK" Title="Danish Krone"/>
+      <Item Id="EGP" Title="Egyptian Pound"/>
+      <Item Id="EUR" Title="Euro"/>
+      <Item Id="FJD" Title="Fijian Dollar"/>
+      <Item Id="GBP" Title="British Pound Sterling"/>
+      <Item Id="HKD" Title="Hong Kong Dollar"/>
+      <Item Id="HRK" Title="Croatian Kuna"/>
+      <Item Id="HUF" Title="Hungarian Forint"/>
+      <Item Id="IDR" Title="Indonesian Rupiah"/>
+      <Item Id="ILS" Title="Israeli New Sheqel"/>
+      <Item Id="INR" Title="Indian Rupee"/>
+      <Item Id="JPY" Title="Japanese Yen"/>
+      <Item Id="KES" Title="Kenyan Shilling"/>
+      <Item Id="KRW" Title="South Korean Won"/>
+      <Item Id="LTL" Title="Lithuanian Litas"/>
+      <Item Id="MAD" Title="Moroccan Dirham"/>
+      <Item Id="MXN" Title="Mexican Peso"/>
+      <Item Id="MYR" Title="Malaysian Ringgit"/>
+      <Item Id="NOK" Title="Norwegian Krone"/>
+      <Item Id="NZD" Title="New Zealand Dollar"/>
+      <Item Id="PEN" Title="Peruvian Nuevo Sol"/>
+      <Item Id="PHP" Title="Philippine Peso"/>
+      <Item Id="PKR" Title="Pakistani Rupee"/>
+      <Item Id="PLN" Title="Polish Zloty"/>
+      <Item Id="RON" Title="Romanian Leu"/>
+      <Item Id="RSD" Title="Serbian Dinar"/>
+      <Item Id="RUB" Title="Russian Ruble"/>
+      <Item Id="SAR" Title="Saudi Riyal"/>
+      <Item Id="SEK" Title="Swedish Krona"/>
+      <Item Id="SGD" Title="Singapore Dollar"/>
+      <Item Id="THB" Title="Thai Baht"/>
+      <Item Id="TRY" Title="Turkish Lira"/>
+      <Item Id="TWD" Title="New Taiwan Dollar"/>
+      <Item Id="UAH" Title="Ukrainian Hryvnia"/>
+      <Item Id="USD" Title="US Dollar"/>
+      <Item Id="VEF" Title="Venezuelan Bolí­var Fuerte"/>
+      <Item Id="VND" Title="Vietnamese Dong"/>
+      <Item Id="ZAR" Title="South African Rand"/>
+    </Resource>
     <Resource Id="Fail">
       <Fail>
         <Regex Expr="^Not Found$" Group="0"/>
         <Regex Expr="^invalid token$" Group="0"/>
         <JsonPath Expr="error.message"/>
+        <JsonPath Expr="warnings"/>
       </Fail>
     </Resource>
   </Resources>
@@ -425,13 +479,75 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <!--Reports-->
+  <RestConnector Id="GenerateReport" Title="Generate a Report" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/reports/generate">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+      <Text Id="Metrics" Title="Metrics (one per line)" Debug.DefaultValue="CLICKS" Multiline="true" Required="true" HelpText="The numeric columns to include in the report." HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
+      <Text Id="Dimensions" Title="Dimensions (one per line)" Debug.DefaultValue="MONTH" Multiline="true" Required="true" HelpText="The dimensions on which to base the report" HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
+      <Select Id="Currency" Title="Currency" DefaultValue="default">
+        <DataSource>
+          <Resource Id="Currencies"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+          &startDate=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+          &endDate=@Model.DateInterval.EndDate.ToString("yyyy-MM-dd")
+          @if(Model.Currency != "default")
+          {
+            @: &currency=@(Model.Currency)
+          }
+          &dimension=@(GetParams(Model.Dimensions, "dimension"))
+          &metric=@(GetParams(Model.Metrics, "metric"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="Auto">
+        <JsonPath Id='Headers' Expr="$.headers.*">
+          <JsonPath Expr="name"/>
+        </JsonPath>
+        <JsonPath Id='Cells' Expr='$.rows.*.*'>
+          <JsonPath Expr="."/>
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
-  <!--Saved reports-->
+  <!--Reports-->
 
   <!--Generate saved report-->
 
-
   <!--  Adunits custom channels-->
-
+  <RazorFunctions>
+  <![CDATA[
+  string GetParams(String data, string paramName)
+  {
+    string[] lines = ((string)data).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    return string.Join("&" + paramName + "=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+  }
+  ]]>
+</RazorFunctions>
 </Suite>
