@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Entertainment" Title="Trakt" Id="Trakt" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trakt.xml" HelpUrl="http://seotoolsforexcel.com/trakt/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://trakt.tv/oauth/authorize?client_id=47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5&amp;redirect_uri={0}&amp;response_type=token"/>
+
+  <RestConnector Id="WatchedMovies" Title="My Watched Movies" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+          <Header Name='trakt-api-key'>47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5</Header>
+          <Header Name='trakt-api-version'>2</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/sync/watched/movies
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="plays" Id="Plays" Title="Plays" Converter="Int"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="Id"/>
+        <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="last_watched_at" Id="LastWatched" Title="Last Watched" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="WatchedShows" Title="My Watched Shows" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+          <Header Name='trakt-api-key'>47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5</Header>
+          <Header Name='trakt-api-version'>2</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/sync/watched/shows
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="show.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="show.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="plays" Id="Plays" Title="Plays" Converter="Int"/>
+        <JsonPath Expr="show.ids.trakt" Id="TraktId" Title="Id" Converter="Int"/>
+        <JsonPath Expr="show.ids.imdb" Id="ImdbId" Title="Id"/>
+        <JsonPath Expr="show.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
+        <JsonPath Expr="show.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="last_watched_at" Id="LastWatched" Title="Last Watched" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Movies" Title="Global Movie Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/movies/trending/get-the-most-anticipated-movies">
+    <Parameters>
+      <Select Id="Type" Title="Type" DefaultValue="trending" Required="true">
+        <DataSource>
+          <Item Id="trending" Title="Trending"/>
+          <!--<Item Id="popular" Title="Popular"/>-->
+          <Item Id="played" Title="Most Played"/>
+          <Item Id="watched" Title="Most Watched (unique users)"/>
+          <Item Id="collected" Title="Most Collected"/>
+          <Item Id="anticipated" Title="Most Anticipated"/>
+          <Item Id="boxoffice" Title="Box Office"/>
+        </DataSource>
+      </Select>
+      <Select Id="TimePeriod" Title="Time Period" DefaultValue="weekly" Required="false">
+        <DataSource>
+          <Item Id="weekly" Title="Weekly"/>
+          <Item Id="monthly" Title="Monthly"/>
+          <Item Id="yearly" Title="Yearly"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+          <Header Name='trakt-api-key'>47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5</Header>
+          <Header Name='trakt-api-version'>2</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        @if(Model.Type == "trending" || Model.Type == "popular" || Model.Type == "anticipated"|| Model.Type == "boxoffice")
+        {
+          @: https://api.trakt.tv/movies/@(Model.Type)
+        }
+        else {
+          @: https://api.trakt.tv/movies/@(Model.Type)/@(Model.TimePeriod)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="Id"/>
+        <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
