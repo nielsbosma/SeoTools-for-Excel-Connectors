@@ -3,7 +3,7 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://accounts.spotify.com/authorize?client_id=3d6357b55f7a4d3880320880bee775b2&amp;response_type=token&amp;redirect_uri={0}&amp;scope=playlist-modify-public"/>
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://accounts.spotify.com/authorize?client_id=3d6357b55f7a4d3880320880bee775b2&amp;response_type=token&amp;redirect_uri={0}&amp;scope=playlist-modify-public"/>
 
   <Resources>
     <Resource Id="CountryCodes">
@@ -617,6 +617,40 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="PlaylistLookup" Title="Playlist Lookup" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlist/">
+    <Parameters>
+      <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="2vmCX31v4V3XX931C2CZv9" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer  @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.spotify.com/v1/playlists/@(Model.PlaylistId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+			<JsonPath Expr="tracks.total" Id="Tracks" Title="Tracks" Converter="Int" HelpText=""/>
+			<JsonPath Expr="followers.total" Id="Followers" Title="Followers" Converter="Long" HelpText=""/>
+			<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+			<JsonPath Expr="collaborative" Id="Collaborative" Title="Collaborative" Converter="Boolean" HelpText=""/>
+			<JsonPath Expr="owner.id" Id="OwnerId" Title="Owner Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="owner.display_name" Id="OwnerName" Title="Owner Name" Converter="String" HelpText=""/>
+			<JsonPath Expr="external_urls.spotify" Id="PlaylistLink" Title="Playlist Link" Converter="String" HelpText=""/>
+			<JsonPath Expr="owner.external_urls.spotify" Id="OwnerLink" Title="Owner Link" Converter="String" HelpText=""/>
+			<JsonPath Expr="images[0].url" Id="Image" Title="Image" Converter="String" HelpText="" DefaultValue=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="errors.message"/>
+    </Fail>
+  </RestConnector>
+
   <RestConnector Id="TracksLookup" Title="Tracks Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-tracks/">
     <Parameters>
       <Text Id="TrackIds" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter up to 50 Track Ids separated by a new line" Required="true" Multiline="true"/>
@@ -850,6 +884,7 @@
         @(Model.UserId)/playlists?
         limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
+				&fields=followers
         ]]>
       </Fetch.Url>
     </Fetch>
