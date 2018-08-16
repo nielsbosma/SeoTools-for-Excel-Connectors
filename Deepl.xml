@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Suite Category="Language" Title="Deepl" Identifier="Deepl" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Deepl.xml" HelpText="Documentation">
 
-  <Author Name="Fede Gómez" Url="https://www.fedegomez.es/?utm_source=seotoolsforexcel"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/deepl/">
+    <Text Id="AuthKey" Title="Auth Key" Required="true" HelpUrl="http://seotoolsforexcel.com/deepl"/>
+  </Settings>
 
   <Resources>
     <Resource Id="Languages">
@@ -16,62 +20,60 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Deepl" Title="Deepl" HelpUrl="https://www.deepl.com">
+  <RestConnector Id="Translate" Title="Translate" HelpUrl="https://www.deepl.com/api.html">
     <Parameters>
-      <Text Id="Text" Title="Text" DefaultValue="" Required="true"/>
-      <Select Id="From" Title="From" Required="false" DefaultValue="auto">
+      <Text Id="Text" Title="Text" DefaultValue="" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto." Required="true"/>
+      <Select Id="Source" Title="Source Language" Required="false" DefaultValue="auto">
         <DataSource>
           <Resource Id="Languages"/>
         </DataSource>
       </Select>
-      <Select Id="To" Title="To" Required="true" DefaultValue="EN">
+      <Select Id="Target" Title="Target Language" Required="true" DefaultValue="EN">
         <DataSource>
           <Resource Id="Languages"/>
         </DataSource>
       </Select>
     </Parameters>
-    <Fetch Url="https://www.deepl.com/jsonrpc">
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36]]></Header>
-        </RequestHeaders>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestBody>
-          {
-            "jsonrpc": "2.0",
-            "method": "LMT_handle_jobs",
-            "params": {
-              "jobs": [{
-                "kind": "default",
-                "raw_en_sentence": "@RemoveQuotes()"
-              }],
-              "lang": {
-                "source_lang_user_selected": "@Model.From",
-                "target_lang": "@Model.To"
-              },
-              "priority": -1
-            }
-          }
-        </RequestBody>
-      </HttpSettings>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.deepl.com/v1/translate
+				?auth_key=@(Model.AuthKey)
+				&text=@(Utils.UrlEncode(Model.Text))
+				&target_lang=@(Model.Target)
+				@if(Model.Source != "auto")
+				{
+					@: &source_lang=@(Model.Source)
+				}
+
+        ]]>
+      </Fetch.Url>
     </Fetch>
     <Fail>
-      <JsonPath Expr="error.message"/>
+      <JsonPath Expr="message"/>
     </Fail>
     <Parse>
-      <JsonPath Expr="result.translations[0].beams[0].postprocessed_sentence" Converter="String"/>
+      <JsonPath Expr="translations[0].text" Id="Result" Name="Result" Converter="String"/>
+      <JsonPath Expr="translations[0].detected_source_language" Id="DetectedLanguage" Name="Detected Language" Converter="String"/>
     </Parse>
   </RestConnector>
 
-  <RazorFunctions>
-    <![CDATA[
-			string RemoveQuotes()
-			{
-				string TextInput = Regex.Replace(Model.Text, @"""", @"\u0022");
-				return TextInput;
-			}
-    ]]>
-  </RazorFunctions>
+  <RestConnector Id="AccountLimit" Title="Account Limit" HelpUrl="https://www.deepl.com/api.html">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.deepl.com/v1/usage
+				?auth_key=@(Model.AuthKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+    <Parse>
+      <JsonPath Expr="character_count" Id="Used" Name="Used" Converter="Long"/>
+      <JsonPath Expr="character_limit" Id="Total" Name="Total" Converter="Long"/>
+    </Parse>
+  </RestConnector>
 
 </Suite>
