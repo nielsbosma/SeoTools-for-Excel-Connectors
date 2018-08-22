@@ -19,7 +19,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="WatchedMovies" Title="My Watched Movies" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched">
+  <RestConnector Id="WatchedMovies" Title="My Watched Movies" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) movies in the specified time period">
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -50,7 +50,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="WatchedShows" Title="My Watched Shows" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched">
+  <RestConnector Id="WatchedShows" Title="My Watched Shows" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) shows in the specified time period">
     <Fetch>
       <Resource Id="Http"/>
       <Fetch.Url>
@@ -121,7 +121,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Ratings" Title="My Ratings" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-ratings/get-ratings">
+  <RestConnector Id="Ratings" Title="My Ratings" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-ratings/get-ratings" HelpText="Get a user's ratings filtered by type">
     <Parameters>
       <Select Id="Type" DefaultValue="all">
         <DataSource Id="Types">
@@ -174,7 +174,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Watchlist" Title="My Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watchlist/get-watchlist">
+  <RestConnector Id="Watchlist" Title="My Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
     <Paging PageSize="100" EvenPages="false"/>
     <Parameters>
       <Select Id="Type" DefaultValue="all">
@@ -206,6 +206,78 @@
         <JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
         <JsonPath Expr="*.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
       </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserWatchlist" Title="User's Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/users/watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
+    <Paging PageSize="100" EvenPages="false"/>
+    <Parameters>
+      <Text Id="User" Title="Username" Required="True"/>
+      <Select Id="Type" DefaultValue="all">
+        <DataSource Id="Types">
+          <Item Id="movies" Title="Movies"/>
+          <Item Id="shows" Title="Shows"/>
+          <Item Id="seasons" Title="Seasons"/>
+          <Item Id="episodes" Title="Episodes"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/users/@(Model.User)/watchlist/@(Model.Type)/?
+        limit=10
+        &page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="type" Id="Type" Title="Type"/>
+        <JsonPath Expr="listed_at" Id="Listed At" Title="Listed At" Converter="DateTime"/>
+        <JsonPath Expr="*.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="*.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+        <JsonPath Expr="*.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserStats" Title="User's Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/users/stats" HelpText="Returns stats about the movies, shows, and episodes a user has watched, collected, and rated.">
+    <Parameters>
+      <Text Id="User" Title="Username" Required="True"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/users/@(Model.User)/stats
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="movies.plays" Id="MoviesPlays" Title="Movies Played" Converter="Int"/>
+      <JsonPath Expr="movies.watched" Id="MoviesWatched" Title="Movies Watched" Converter="Int"/>
+      <JsonPath Expr="movies.minutes" Id="MoviesMinutes" Title="Movies Minutes" Converter="Int"/>
+      <JsonPath Expr="movies.collected" Id="MoviesCollected" Title="Movies Collected" Converter="Int"/>
+      <JsonPath Expr="movies.ratings" Id="MoviesRatings" Title="Movies Ratings" Converter="Int"/>
+      <JsonPath Expr="movies.comments" Id="MoviesComments" Title="Movies Comments" Converter="Int"/>
+      <JsonPath Expr="shows.watched" Id="ShowsWatched" Title="Shows Watched" Converter="Int"/>
+      <JsonPath Expr="shows.collected" Id="ShowsCollected" Title="Shows Collected" Converter="Int"/>
+      <JsonPath Expr="shows.ratings" Id="ShowsRatings" Title="Shows Ratings" Converter="Int"/>
+      <JsonPath Expr="shows.comments" Id="ShowsComments" Title="Shows Comments" Converter="Int"/>
+      <JsonPath Expr="episodes.plays" Id="EpisodesPlays" Title="Episodess Played" Converter="Int"/>
+      <JsonPath Expr="episodes.watched" Id="EpisodesWatched" Title="Episodes Watched" Converter="Int"/>
+      <JsonPath Expr="episodes.minutes" Id="EpisodesMinutes" Title="Episodes Minutes" Converter="Int"/>
+      <JsonPath Expr="episodes.collected" Id="EpisodesCollected" Title="Episodes Collected" Converter="Int"/>
+      <JsonPath Expr="episodes.ratings" Id="EpisodesRatings" Title="Episodes Ratings" Converter="Int"/>
+      <JsonPath Expr="episodes.comments" Id="EpisodesComments" Title="Episodes Comments" Converter="Int"/>
+      <JsonPath Expr="network.friends" Id="NetworkFriends" Title="Friends" Converter="Int"/>
+      <JsonPath Expr="network.followers" Id="NetworkFollowers" Title="Followers" Converter="Int"/>
+      <JsonPath Expr="network.following" Id="NetworkFollowing" Title="Following" Converter="Int"/>
+      <JsonPath Expr="ratings.total" Id="RatingsTotal" Title="Total Ratings" Converter="Int"/>
     </Parse>
   </RestConnector>
 
