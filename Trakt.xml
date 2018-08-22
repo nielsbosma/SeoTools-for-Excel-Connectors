@@ -174,4 +174,39 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Watchlist" Title="My Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watchlist/get-watchlist">
+    <Paging PageSize="100" EvenPages="false"/>
+    <Parameters>
+      <Select Id="Type" DefaultValue="all">
+        <DataSource Id="Types">
+          <Item Id="movies" Title="Movies"/>
+          <Item Id="shows" Title="Shows"/>
+          <Item Id="seasons" Title="Seasons"/>
+          <Item Id="episodes" Title="Episodes"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/sync/watchlist/@(Model.Type)/?
+        limit=10
+        &page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="type" Id="Type" Title="Type"/>
+        <JsonPath Expr="listed_at" Id="Listed At" Title="Listed At" Converter="DateTime"/>
+        <JsonPath Expr="*.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="*.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+        <JsonPath Expr="*.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
 </Suite>
