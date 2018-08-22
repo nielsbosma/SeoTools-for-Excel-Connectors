@@ -5,6 +5,20 @@
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://trakt.tv/oauth/authorize?client_id=47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5&amp;redirect_uri={0}&amp;response_type=token"/>
 
+  <Resources>
+    <Resource Id="Http">
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+          <Header Name='trakt-api-key'>47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5</Header>
+          <Header Name='trakt-api-version'>2</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+  </Resources>
+
   <RestConnector Id="WatchedMovies" Title="My Watched Movies" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched">
     <Fetch>
       <HttpSettings>
@@ -67,7 +81,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Movies" Title="Global Movie Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/movies/trending/get-the-most-anticipated-movies">
+  <RestConnector Id="MovieStats" Title="Global Movie Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/movies/trending/get-the-most-anticipated-movies">
     <Parameters>
       <Select Id="Type" Title="Type" DefaultValue="trending" Required="true">
         <DataSource>
@@ -119,6 +133,59 @@
         <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="Id"/>
         <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
         <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Ratings" Title="My Ratings" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-ratings/get-ratings">
+    <Parameters>
+      <Select Id="Type" DefaultValue="all">
+        <DataSource Id="Types">
+          <Item Id="movies" Title="Movies"/>
+          <Item Id="shows" Title="Shows"/>
+          <Item Id="seasons" Title="Seasons"/>
+          <Item Id="episodes" Title="Episodes"/>
+          <Item Id="all" Title="All"/>
+        </DataSource>
+      </Select>
+      <Select Id="Rating" DefaultValue="all">
+        <DataSource Id="Ratings">
+          <!--multiselect-->
+          <Item Id="all" Title="all"/>
+          <Item Id="1" Title="1"/>
+          <Item Id="2" Title="2"/>
+          <Item Id="3" Title="3"/>
+          <Item Id="4" Title="4"/>
+          <Item Id="5" Title="5"/>
+          <Item Id="6" Title="6"/>
+          <Item Id="7" Title="7"/>
+          <Item Id="8" Title="8"/>
+          <Item Id="9" Title="9"/>
+          <Item Id="10" Title="10"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/sync/ratings/@(Model.Type)/
+        @if(Model.Rating != "all")
+        {
+          @: @(Model.Rating)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="type" Id="Type" Title="Type"/>
+        <JsonPath Expr="rated_at" Id="Rated At" Title="Rated At" Converter="DateTime"/>
+        <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Int"/>
+        <JsonPath Expr="*.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="*.year" Id="Year" Title="Year" Converter="Int"/>
+        <!--compute imdb link-->
+        <JsonPath Expr="*.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
       </JsonPath>
     </Parse>
   </RestConnector>
