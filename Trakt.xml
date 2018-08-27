@@ -41,8 +41,8 @@
         <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
         <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int"/>
         <JsonPath Expr="plays" Id="Plays" Title="Plays" Converter="Int"/>
-        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Id" Converter="Int"/>
-        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="Id"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
         <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
         <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
         <JsonPath Expr="last_watched_at" Id="LastWatched" Title="Last Watched" Converter="DateTime"/>
@@ -113,8 +113,8 @@
       <JsonPath Expr="$.*">
         <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
         <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int"/>
-        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Id" Converter="Int"/>
-        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="Id"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
         <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
         <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
       </JsonPath>
@@ -192,7 +192,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/sync/watchlist/@(Model.Type)/?
-        limit=10
+        limit=100
         &page=@(Model.PageCursor.Page+1)
         ]]>
       </Fetch.Url>
@@ -278,6 +278,174 @@
       <JsonPath Expr="network.followers" Id="NetworkFollowers" Title="Followers" Converter="Int"/>
       <JsonPath Expr="network.following" Id="NetworkFollowing" Title="Following" Converter="Int"/>
       <JsonPath Expr="ratings.total" Id="RatingsTotal" Title="Total Ratings" Converter="Int"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SearchMovies" Title="Search" HelpUrl="https://trakt.docs.apiary.io/#reference/search/get-text-query-results" HelpText="Search all text fields that a media object contains (i.e. title, overview, etc). ">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="tron" Required="True"/>
+      <Select Id="Type" Title="Type" DefaultValue="movie,show" Required="true">
+        <DataSource>
+          <Item Id="movie,show" Title="Movies and Shows"/>
+          <Item Id="show" Title="Shows"/>
+          <Item Id="movie" Title="Movies"/>
+        </DataSource>
+      </Select>
+      <Select Id="Field" Type="Search field" DefaultValue="all" Required="false">
+        <!--MultiSelect-->
+        <DataSource Id="Fields">
+          <Item Id="all" Title="all"/>
+          <Item Id="title" Title="Title"/>
+          <Item Id="overview" Title="Overview"/>
+          <Item Id="people" Title="People"/>
+          <Item Id="translations" Title="Translations"/>
+          <Item Id="aliases" Title="Aliases"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/search/movie,show?query=@(Model.Query)
+        @if(Model.Field != "all")
+        {
+          @: &fields=@(Model.Field)
+        }
+        &limit=100
+        &page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="$.[movie,show].title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="$.[movie,show].year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="score" Id="Score" Title="Score" Converter="Double"/>
+        <JsonPath Expr="$.[movie,show].ids.imdb" Id="ImdbId" Title="IMDB Id" Converter="String"/>
+        <JsonPath Expr="$.[movie,show].ids.slug" Id="Slug" Title="Slug" Converter="String"/>
+        <JsonPath Expr="$.[movie,show].ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="String" Checked="false"/>
+        <JsonPath Expr="$.[movie,show].ids.trakt" Id="TraktId" Title="Trakt Id" Converter="String" Checked="false"/>
+        <JsonPath Expr="$.[movie,show].ids.tvdb" Id="Id" Title="TVDB Id" Converter="String" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ShowReleases" Title="Show Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
+    <Parameters>
+      <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
+      <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/calendars/all/shows/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="show.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="show.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="episode.season" Id="Season" Title="Season" Converter="Int"/>
+        <JsonPath Expr="episode.number" Id="EpisodeNumber" Title="Episode Number" Converter="Int"/>
+        <JsonPath Expr="episode.title" Id="EpisodeTitle" Title="Episode Title" Converter="String"/>
+        <JsonPath Expr="show.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="show.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+        <JsonPath Expr="show.ids.tvdb" Id="TvdbId" Title="TVDB Id" Checked="false"/>
+        <JsonPath Expr="show.ids.tmdb" Id="TmdbId" Title="TMDB Id" Checked="false"/>
+        <JsonPath Expr="show.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
+        <JsonPath Expr="show.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="first_aired" Id="FirstAired" Title="First Aired" Converter="DateTime" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MyShowReleases" Title="My Show Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
+    <Parameters>
+      <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
+      <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/calendars/my/shows/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="show.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="show.year" Id="Year" Title="Year" Converter="Int"/>
+        <JsonPath Expr="episode.season" Id="Season" Title="Season" Converter="Int"/>
+        <JsonPath Expr="episode.number" Id="EpisodeNumber" Title="Episode Number" Converter="Int"/>
+        <JsonPath Expr="episode.title" Id="EpisodeTitle" Title="Episode Title" Converter="String"/>
+        <JsonPath Expr="show.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="show.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+        <JsonPath Expr="show.ids.tvdb" Id="TvdbId" Title="TVDB Id" Checked="false"/>
+        <JsonPath Expr="show.ids.tmdb" Id="TmdbId" Title="TMDB Id" Checked="false"/>
+        <JsonPath Expr="show.ids.slug" Id="Slug" Title="Slug" Checked="False"/>
+        <JsonPath Expr="show.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+        <JsonPath Expr="first_aired" Id="FirstAired" Title="First Aired" Converter="DateTime" Checked="false"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MovieReleases" Title="Movie Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
+    <Parameters>
+      <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
+      <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/calendars/all/movies/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="released" Id="Released" Title="Released" Converter="DateTime"/>
+        <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int" Checked="false"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Checked="false"/>
+        <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="false"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MyMovieReleases" Title="My Movie Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
+    <Parameters>
+      <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
+      <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Http"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trakt.tv/calendars/my/movies/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="movie.title" Id="Title" Title="Title"/>
+        <JsonPath Expr="released" Id="Released" Title="Released" Converter="DateTime"/>
+        <JsonPath Expr="movie.year" Id="Year" Title="Year" Converter="Int" Checked="false"/>
+        <JsonPath Expr="movie.ids.trakt" Id="TraktId" Title="Trakt Id" Converter="Int"/>
+        <JsonPath Expr="movie.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Checked="false"/>
+        <JsonPath Expr="movie.ids.slug" Id="Slug" Title="Slug" Checked="false"/>
+        <JsonPath Expr="movie.ids.tmdb" Id="TmdbId" Title="TMDB Id" Converter="Int" Checked="False"/>
+      </JsonPath>
     </Parse>
   </RestConnector>
 
