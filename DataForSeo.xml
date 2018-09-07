@@ -8,6 +8,33 @@
     <Text Id="Key" Title="API Key" Required="true" HelpUrl=""/>
   </Settings>
 
+  <Resources>
+    <Resource Id="Depths">
+      <Item Id="1" Title="8 keywords"/>
+      <Item Id="2" Title="72 keywords"/>
+      <Item Id="3" Title="584 keywords"/>
+      <Item Id="4" Title="4680 keywords"/>
+    </Resource>
+    <Resource Id="SortKeywords">
+      <Item Id="search_volume" Title="Volume"/>
+      <Item Id="competition" Title="Competition"/>
+      <Item Id="cpc" Title="CPC"/>
+    </Resource>
+    <Resource Id="SortRankedKeywords">
+      <Item Id="position" Title="Position"/>
+      <Item Id="resunts_count" Title="Results"/>
+      <Item Id="etv" Title="ETV"/>
+      <Item Id="traffic_cost" Title="Traffic Cost"/>
+      <Item Id="competition" Title="Competition"/>
+      <Item Id="search_volume" Title="Volume"/>
+    </Resource>
+    <Resource Id="SortPages">
+      <Item Id="organic_count" Title="Organic Count"/>
+      <Item Id="paid_count" Title="Paid Count"/>
+      <Item Id="etv" Title="ETV"/>
+    </Resource>
+  </Resources>
+
   <RestConnector Id="Locations" Title="Locations" HelpUrl="https://docs.dataforseo.com/#list-of-locations" Hidden="true">
     <Fetch>
       <Fetch.Url>
@@ -32,6 +59,28 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Categories" Title="Categories" HelpUrl="https://docs.dataforseo.com/#list-of-locations" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://developers.google.com/adwords/api/docs/appendix/productsservices.csv
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="Criterion ID" Title="Id" Converter="String" HelpText=""/>
+        <Field Id="Category" Title="Name" Converter="String" HelpText=""/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="SearchEngines" Title="Search Engines" HelpUrl="https://docs.dataforseo.com/#list-of-search-engines" Hidden="true">
     <Fetch>
       <Fetch.Url>
@@ -53,12 +102,12 @@
       </JsonPath>
     </Parse>
   </RestConnector>
-  
+
   <RestConnector Id="SerpInit" Hidden="true">
-   <Parameters>
+		<Parameters>
       <Text Id="SearchEngineId"/>
       <Text Id="LocationId"/>
-      <Text Id="Query"/>
+      <Text Id="Keyword"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -80,7 +129,7 @@
               "@(Utils.NewGuid())": {
                 "se_id":"@(Model.SearchEngineId)",
                 "loc_id":"@(Model.LocationId)",
-                "key":"@(Model.Query.Replace("\"","\\\""))",
+                "key":"@(Model.Keyword.Replace("\"","\\\""))",
                 "priority":2
               }
             }
@@ -96,14 +145,14 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Serp" Title="SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks">
-   <Parameters>
-     <Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
-     <Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-     <Text Id="Query" Title="Query" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+  <RestConnector Id="Serp" Title="SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
+		<Parameters>
+			<Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
     </Parameters>
     <Prepare>
-      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Query"/>
+      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Keyword"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
@@ -139,12 +188,964 @@
     </Fail>
   </RestConnector>
 
+  <RestConnector Id="SearchVolume" Title="Search Volume" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search statistics for one or more keywords">
+		<Parameters>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_sv_batch
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "keys":@(CreateArr())
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SearchVolumeMonthly" Title="Search Volume Monthly" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search volume trends for the last year.">
+		<Parameters>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_sv
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "key":"@Utils.UrlEncode(Model.Keyword)",
+								"language":"sv"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results[0].ms.*">
+        <JsonPath Expr="year" Id="Year" Title="Year" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="month" Id="Month" Title="Month" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="count" Id="Count" Title="Count" Converter="Long" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsDomain" Title="Keywords for Domain" HelpUrl="https://docs.dataforseo.com/#live-data48" HelpText="Receive keyword statistics for one domain.">
+		<Parameters>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="se" Required="false"/>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_for_domain/@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Absolute))
+				@if(!string.IsNullOrEmpty(Model.Country))
+        {
+          @: /@(Model.Country)
+        }
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsKeywords" Title="Keywords for Keywords" HelpUrl="https://docs.dataforseo.com/#live-data53" HelpText="Receive keyword suggestions for one or more keywords.">
+		<Parameters>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_for_keywords
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "keys":@(CreateArr())
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsCategories" Title="Keywords for Categories" HelpUrl="https://docs.dataforseo.com/#live-data58" HelpText="Receive keyword for one product category.">
+		<Parameters>
+			<Text Id="CategoryId" Title="Category Id" DefaultValue="" Required="true" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Criterion ID" Select.TitleField="Category"/>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_for_category
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "category_id":@(Model.CategoryId)
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AdsTrafficKeywords" Title="Ads Traffic for Keywords" HelpUrl="https://docs.dataforseo.com/#live-data63" HelpText="Receive Ads stats for daily impressions, CPC and clicks estimation.">
+		<Parameters>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true" HelpText=""/>
+      <Radio Id="Match" Title="Match" DefaultValue="exact">
+        <DataSource>
+          <Item Id="exact" Title="Exact" />
+          <Item Id="broad" Title="Broad" />
+          <Item Id="phrase" Title="Phrase" />
+        </DataSource>
+      </Radio>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_ad_traffic_by_keywords
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "keys":@(CreateArr()),
+								"bid":@(Model.Bid),
+								"match":"@(Model.Match)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results[0].*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_min" Id="CPCMin" Title="CPC Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_max" Id="CPCMax" Title="CPC Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_average" Id="CPCAvg" Title="CPC Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_min" Id="DailyImpressionsMin" Title="Daily Impressions Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_max" Id="DailyImpressionsMax" Title="Daily Impressions Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_average" Id="DailyImpressionsAvg" Title="Daily Impressions Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_min" Id="DailyClicksMin" Title="Daily Clicks Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_max" Id="DailyClicksMax" Title="Daily Clicks Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_average" Id="DailyClicksAvg" Title="Daily Clicks Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_min" Id="DailyCostMin" Title="Daily Cost Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_max" Id="DailyCostMax" Title="Daily Cost Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AdsTrafficPlatforms" Title="Ads Traffic by Platforms" HelpUrl="https://docs.dataforseo.com/#live-data68" HelpText="Receive Ads stats based on one platform.">
+		<Parameters>
+			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true" HelpText=""/>
+      <Radio Id="Match" Title="Match" DefaultValue="exact">
+        <DataSource>
+          <Item Id="exact" Title="Exact" />
+          <Item Id="broad" Title="Broad" />
+          <Item Id="phrase" Title="Phrase" />
+        </DataSource>
+      </Radio>
+      <Radio Id="Platform" Title="Platform" DefaultValue="desktop">
+        <DataSource>
+          <Item Id="desktop" Title="Desktop" />
+          <Item Id="mobile" Title="Mobile" />
+          <Item Id="tablet" Title="Tablet" />
+        </DataSource>
+      </Radio>
+		</Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_ad_traffic_by_platforms
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "loc_id":"@(Model.LocationId)",
+                "keys":["@Utils.UrlEncode(Model.Keyword)"],
+								"bid":@(Model.Bid),
+								"match":"@(Model.Match)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results[0].@(Model.Platform)">
+        <JsonPath Expr="keys[0]" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_min" Id="CPCMin" Title="CPC Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_max" Id="CPCMax" Title="CPC Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc_average" Id="CPCAvg" Title="CPC Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_min" Id="DailyImpressionsMin" Title="Daily Impressions Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_max" Id="DailyImpressionsMax" Title="Daily Impressions Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_impressions_average" Id="DailyImpressionsAvg" Title="Daily Impressions Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_min" Id="DailyClicksMin" Title="Daily Clicks Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_max" Id="DailyClicksMax" Title="Daily Clicks Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_clicks_average" Id="DailyClicksAvg" Title="Daily Clicks Avg" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_min" Id="DailyCostMin" Title="Daily Cost Min" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_max" Id="DailyCostMax" Title="Daily Cost Max" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="RelatedKeywords" Title="Related Keywords" HelpUrl="https://docs.dataforseo.com/#get-related-keywords" HelpText="Get keywords that are related to a keyword you are going to provide.">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
+			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
+      <Select Id="Depth" Title="Depth" Required="true" DefaultValue="2">
+        <DataSource>
+          <Resource Id="Depths"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
+        <DataSource>
+          <Resource Id="SortKeywords"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending" />
+          <Item Id="asc" Title="Ascending" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_finder_related_keywords_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "country_code":"@(Model.Country)",
+								"language":"@(Model.Language)",
+                "keyword":"@Utils.UrlEncode(Model.Keyword)",
+								"depth":"@(Model.Depth)",
+								"limit":"@(Model.PageCursor.NextTake)",
+								"offset":"@(Model.PageCursor.NextSkip)",
+								"orderby":"@(Model.Sort),@(Model.Direction)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results..related.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SimilarKeywords" Title="Similar Keywords" HelpUrl="https://docs.dataforseo.com/#get-similar-keywords" HelpText="Receive similar terms for a keyword.">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
+			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
+      <Select Id="Depth" Title="Depth" Required="true" DefaultValue="2">
+        <DataSource>
+          <Resource Id="Depths"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
+        <DataSource>
+          <Resource Id="SortKeywords"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending" />
+          <Item Id="asc" Title="Ascending" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_finder_similar_keywords_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "country_code":"@(Model.Country)",
+								"language":"@(Model.Language)",
+                "keyword":"@Utils.UrlEncode(Model.Keyword)",
+								"depth":"@(Model.Depth)",
+								"limit":"@(Model.PageCursor.NextTake)",
+								"offset":"@(Model.PageCursor.NextSkip)",
+								"orderby":"@(Model.Sort),@(Model.Direction)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results..similar.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="RankedKeywords" Title="Ranked Keywords" HelpUrl="https://docs.dataforseo.com/#get-ranked-keywords" HelpText="Get keywords for which a website is ranked.">
+		<Parameters>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
+			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="position">
+        <DataSource>
+          <Resource Id="SortRankedKeywords"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending" />
+          <Item Id="asc" Title="Ascending" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_finder_ranked_keywords_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
+                "country_code":"@(Model.Country)",
+								"language":"@(Model.Language)",
+								"limit":"@(Model.PageCursor.NextTake)",
+								"offset":"@(Model.PageCursor.NextSkip)",
+								"orderby":"@(Model.Sort),@(Model.Direction)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results..ranked.*">
+        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="traffic_cost" Id="TrafficCost" Title="Traffic Cost" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="" Checked="true"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="exact_domain" Id="ExactDomain" Title="Exact Domain" Converter="String" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="RelevantPages" Title="Relevant Pages" HelpUrl="https://docs.dataforseo.com/#get-relevant-pages" HelpText="Get SERP metrics for relevant pages of a website based on a specific location.">
+		<Parameters>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
+			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
+      <Radio Id="Type" Title="Type" DefaultValue="organic">
+        <DataSource>
+          <Item Id="organic" Title="Organic" />
+          <Item Id="paid" Title="Paid" />
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
+        <DataSource>
+          <Resource Id="SortPages"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending" />
+          <Item Id="asc" Title="Ascending" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_finder_relevant_pages_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
+                "country_code":"@(Model.Country)",
+								"language":"@(Model.Language)",
+                "keyword":"@Utils.UrlEncode(Model.Domain)",
+								"type":"@(Model.Type)",
+								"limit":"@(Model.PageCursor.NextTake)",
+								"offset":"@(Model.PageCursor.NextSkip)",
+								"orderby":"@(Model.Sort),@(Model.Direction)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results..relevant_pages.*">
+        <JsonPath Expr="page_address" Id="Page" Title="Page" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="organic_count" Id="OrganicCount" Title="Organic Count" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_count" Id="PaidCount" Title="Paid Count" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos1" Id="Pos1" Title="Position 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos2_3" Id="Pos1" Title="Position 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos4_10" Id="Pos410" Title="Position 4-10" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos11_20" Id="Pos1120" Title="Position 11-20" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos21_30" Id="Pos2130" Title="Position 21-30" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos31_40" Id="Pos3140" Title="Position 31-40" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos41_50" Id="Pos4150" Title="Position 41-50" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos51_60" Id="Pos5160" Title="Position 51-60" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos61_70" Id="Pos6170" Title="Position 61-70" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos71_80" Id="Pos7180" Title="Position 71-80" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos81_90" Id="Pos8190" Title="Position 81-90" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos91_100" Id="Pos91100" Title="Position 91-100" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos1" Id="PaidPos1" Title="PaidPosition 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos2_3" Id="PaidPos23" Title="PaidPosition 2-3" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos4_10" Id="PaidPos410" Title="PaidPosition 4-10" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos11_20" Id="PaidPos1120" Title="PaidPosition 11-20" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos21_100" Id="PaidPos21100" Title="PaidPosition 21-100" Converter="Long" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="Subdomains" Title="Subdomains" HelpUrl="https://docs.dataforseo.com/#get-subdomains" HelpText="Get SERP data for subdomains of a website based on a specific location.">
+		<Parameters>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
+			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
+      <Radio Id="Type" Title="Type" DefaultValue="organic">
+        <DataSource>
+          <Item Id="organic" Title="Organic" />
+          <Item Id="paid" Title="Paid" />
+        </DataSource>
+      </Radio>
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
+        <DataSource>
+          <Resource Id="SortPages"/>
+        </DataSource>
+      </Select>
+      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending" />
+          <Item Id="asc" Title="Ascending" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/kwrd_finder_subdomains_get
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
+                "country_code":"@(Model.Country)",
+								"language":"@(Model.Language)",
+                "keyword":"@Utils.UrlEncode(Model.Domain)",
+								"type":"@(Model.Type)",
+								"limit":"@(Model.PageCursor.NextTake)",
+								"offset":"@(Model.PageCursor.NextSkip)",
+								"orderby":"@(Model.Sort),@(Model.Direction)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results..subdomains.*">
+        <JsonPath Expr="exact_domain" Id="ExactDomain" Title="Exact Domain" Converter="String" HelpText="" Checked="true"/>
+        <JsonPath Expr="organic_count" Id="OrganicCount" Title="Organic Count" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_count" Id="PaidCount" Title="Paid Count" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos1" Id="Pos1" Title="Position 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos2_3" Id="Pos1" Title="Position 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos4_10" Id="Pos410" Title="Position 4-10" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos11_20" Id="Pos1120" Title="Position 11-20" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos21_30" Id="Pos2130" Title="Position 21-30" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos31_40" Id="Pos3140" Title="Position 31-40" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos41_50" Id="Pos4150" Title="Position 41-50" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos51_60" Id="Pos5160" Title="Position 51-60" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos61_70" Id="Pos6170" Title="Position 61-70" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos71_80" Id="Pos7180" Title="Position 71-80" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos81_90" Id="Pos8190" Title="Position 81-90" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="pos91_100" Id="Pos91100" Title="Position 91-100" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos1" Id="PaidPos1" Title="PaidPosition 1" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos2_3" Id="PaidPos23" Title="PaidPosition 2-3" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos4_10" Id="PaidPos410" Title="PaidPosition 4-10" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos11_20" Id="PaidPos1120" Title="PaidPosition 11-20" Converter="Long" HelpText="" Checked="true"/>
+        <JsonPath Expr="paid_pos21_100" Id="PaidPos21100" Title="PaidPosition 21-100" Converter="Long" HelpText="" Checked="true"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="OnPageInit" Hidden="true" HelpUrl="https://docs.dataforseo.com/#setting-tasks">
+		<Parameters>
+      <Text Id="Site"/>
+      <Text Id="MaxPages"/>
+      <Text Id="MaxDepth"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/op_tasks_post
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "site":"@(Model.Site)",
+                "crawl_max_pages":"@(Model.MaxPages)",
+								"crawl_max_depth":"@(Model.MaxDepth)"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="task_id" Id="TaskId"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="OnPageInitVis" Hidden="false" HelpUrl="https://docs.dataforseo.com/#setting-tasks">
+		<Parameters>
+      <Text Id="Site"/>
+      <Text Id="MaxPages"/>
+      <Text Id="MaxDepth"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/op_tasks_post
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestBody>
+          <![CDATA[
+          {
+            "data":
+            {
+              "@(Utils.NewGuid())": {
+                "site":"seotoolsforexcel.com",
+                "crawl_max_pages":"5",
+								"crawl_max_depth":"0"
+              }
+            }
+          }
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results.*">
+        <JsonPath Expr="task_id" Id="TaskId"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="OnPageSummary" Title="OnPage Summary" HelpUrl="https://docs.dataforseo.com/#get-task-result-summary" HelpText="Get the overall information of a website.">
+		<Parameters>
+			<Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+			<Number Id="MaxPages" Title="Max Pages" DefaultValue="20" Debug.DefaultValue="4" Required="true"/>
+			<Number Id="MaxDepth" Title="Max Depth" DefaultValue="0" Debug.DefaultValue="0" Required="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="OnPageInit" Parameters="Site,MaxPages,MaxDepth"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/op_tasks_get/@(Model.TaskId)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="auto">
+        <JsonPath Id="Headers" Expr="keys($.results[0].summary[0])">
+					<Compute Id="Headers" Title="Headers">
+						<Compute.Expr>
+							<![CDATA[
+							@{
+								string Cleaned = "";
+								string Cleaned2 = "";
+								if(Model.KeyInput is string)
+								{
+									Cleaned = Regex.Replace(Model.KeyInput, "_", " ");
+									Cleaned2 = Utils.Capitalize(Cleaned);
+								}
+							}
+							@Cleaned2
+							]]>
+						</Compute.Expr>
+						<JsonPath Expr="key" Id="KeyInput"/>
+					</Compute>
+        </JsonPath>
+        <JsonPath Id="Cells" Expr="keys($.results[0].summary[0])">
+          <JsonPath Expr="value" />
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
+      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="$.results[0].status" Fail.If="IsEqual" Fail.ComparedTo="in_queue" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+      <JsonPath Expr="$.results[0].pages" Fail.If="IsEqual" Fail.ComparedTo="[]" Fail.Action="Message" Fail.Message="No Results '{0}.'"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="OnPagePages" Title="OnPage Pages" HelpUrl="https://docs.dataforseo.com/#get-pages" HelpText="Retrieve structured data for each page of a website that has been scanned.">
+		<Parameters>
+			<Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+			<Number Id="MaxPages" Title="Max Pages" DefaultValue="20" Debug.DefaultValue="4" Required="true"/>
+			<Number Id="MaxDepth" Title="Max Depth" DefaultValue="0" Debug.DefaultValue="0" Required="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="OnPageInit" Parameters="Site,MaxPages,MaxDepth"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v2/op_tasks_get_pages/@(Model.TaskId)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="auto">
+        <JsonPath Id="Headers" Expr="keys($.results[0].pages[0)">
+					<Compute Id="Headers" Title="Headers">
+						<Compute.Expr>
+							<![CDATA[
+							@{
+								string Cleaned = "";
+								string Cleaned2 = "";
+								if(Model.KeyInput is string)
+								{
+									Cleaned = Regex.Replace(Model.KeyInput, "_", " ");
+									Cleaned2 = Utils.Capitalize(Cleaned);
+								}
+							}
+							@Cleaned2
+							]]>
+						</Compute.Expr>
+						<JsonPath Expr="key" Id="KeyInput"/>
+					</Compute>
+        </JsonPath>
+        <JsonPath Id="Cells" Expr="keys($.results[0].pages[*])">
+          <JsonPath Expr="value" />
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
+      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
+      <JsonPath Expr="$.results[0].status" Fail.If="IsEqual" Fail.ComparedTo="in_queue" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+    </Fail>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string CreateBasicAuth()
     {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Key));
       return AuthString;
+    }
+
+    string CreateArr(){
+      string[] lines = ((string)Model.Keyword).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(2100).ToArray();
+      return JsonConvert.SerializeObject(lines);
     }
     ]]>
   </RazorFunctions>
