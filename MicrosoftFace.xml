@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Image Recognition" Title="Microsoft Face" Id="MicrosoftFace" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/MicrosoftFace.xml" HelpUrl="http://seotoolsforexcel.com/ms-face/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/ms-face/">
+    <Text Id="Key" Title="Key" Required="true" HelpUrl="http://seotoolsforexcel.com/ms-face/"/>
+    <Select Id="Location" Title="Location" DefaultValue="westus" HelpUrl="http://seotoolsforexcel.com/ms-face/">
+      <DataSource>
+			<Item Id="westus" Title="West US"/>
+			<Item Id="westus2" Title="West US 2"/>
+			<Item Id="eastus" Title="East US"/>
+			<Item Id="eastus2" Title="East US 2"/>
+			<Item Id="westcentralus" Title="West Central US"/>
+			<Item Id="southcentralus" Title="South Central US"/>
+			<Item Id="westeurope" Title="West Europe"/>
+			<Item Id="northeurope" Title="North Europe"/>
+			<Item Id="southeastasia" Title="Southeast Asia"/>
+			<Item Id="eastasia" Title="East Asia"/>
+			<Item Id="australiaeast" Title="Australia East"/>
+			<Item Id="brazilsouth" Title="Brazil South"/>
+			<Item Id="canadacentral" Title="Canada Central"/>
+			<Item Id="centralindia" Title="Central India"/>
+			<Item Id="uksouth" Title="UK South"/>
+			<Item Id="japaneast" Title="Japan East"/>
+      </DataSource>
+    </Select>
+    <Select Id="AccountType" Title="Account type" DefaultValue="free">
+      <DataSource>
+        <Item Id="free" Title="Free (1 request every 3 seconds)"/>
+        <Item Id="paid" Title="Paid (10 requests per second)"/>
+      </DataSource>
+    </Select>
+  </Settings>
+
+  <RestConnector Id="Attributes" Title="Attributes" HelpText="Detect human faces in an image and returns attributes." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/563879b61984550e40cbbe8d/operations/563879b61984550f30395238">
+    <Parameters>
+      <Text Id="Image" Title="Image URL" Debug.DefaultValue="https://pbs.twimg.com/profile_images/874276197357596672/kUuht00m_400x400.jpg" Required="true" HelpText=""/>
+      <Checkbox Id="Multi" Title="Return Multiple Results" DefaultValue="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"url": "@(Model.Image)"
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/face/v1.0/detect
+				?returnFaceId=true
+				&returnFaceLandmarks=false
+				&returnFaceAttributes=age,gender,emotion,smile
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$[@(Getquery())]">
+				<JsonPath Expr="faceId" Id="FaceId" Title="Face Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="faceAttributes.gender" Id="Gender" Title="Gender" Converter="String" HelpText=""/>
+				<JsonPath Expr="faceAttributes.age" Id="Age" Title="Age" Converter="Long" HelpText=""/>
+				<JsonPath Expr="faceAttributes.smile" Id="Smile" Title="Smile" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.anger" Id="Anger" Title="Anger" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.contempt" Id="Contempt" Title="Contempt" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.disgust" Id="Disgust" Title="Disgust" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.fear" Id="Fear" Title="Fear" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.happiness" Id="Happiness" Title="Happiness" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.neutral" Id="Neutral" Title="Neutral" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.sadness" Id="Sadness" Title="Sadness" Converter="Double" HelpText=""/>
+				<JsonPath Expr="faceAttributes.emotion.surprise" Id="Surprise" Title="Surprise" Converter="Double" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Grouping" Title="Grouping" HelpText="Divide candidate faces into groups based on face similarity." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/563879b61984550e40cbbe8d/operations/563879b61984550f30395236">
+    <Parameters>
+      <Text Id="Ids" Title="Image Ids" Debug.DefaultValue="c93c7c7d-5350-4f5f-8205-8fa51f44d2ff" Multiline="true" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+				<![CDATA[
+					{
+						"faceIds":@(GetJson())
+					}
+				]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/face/v1.0/group
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.groups.*">
+        <Compute Id="Groups" Title="Groups">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.GroupsInput, @"\s+", "");
+              var temp2 = temp.Substring(1,temp.Length-2);
+              var final = temp2.Replace("\"", string.Empty);
+            }
+            @final
+            ]]>
+          </Compute.Expr>
+				<JsonPath Expr="." Id="GroupsInput" Converter="String"/>
+        </Compute>
+			</JsonPath>
+			<JsonPath Expr="$.messyGroup.*">
+        <Compute Id="Messy" Title="Messy">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MessyInput, @"\s+", "");
+              var temp2 = temp.Substring(1,temp.Length-2);
+              var final = temp2.Replace("\"", string.Empty);
+            }
+            @final
+            ]]>
+          </Compute.Expr>
+				<JsonPath Expr="." Id="MessyInput" Converter="String"/>
+        </Compute>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="FindSimilar" Title="Find Similar" HelpText="Compare one Face Id against a group of Face Ids and find similar" HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/563879b61984550e40cbbe8d/operations/563879b61984550f30395237">
+    <Parameters>
+      <Text Id="FaceId" Title="Face Id" Debug.DefaultValue="c93c7c7d-5350-4f5f-8205-8fa51f44d2ff" Required="true" HelpText=""/>
+      <Text Id="Ids" Title="Image Ids" Debug.DefaultValue="a5bd81e7-9fc7-494d-a935-45cc0b599314" Multiline="true" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+				<![CDATA[
+					{
+						"faceId":"@(Model.FaceId)",
+						"faceIds":@(GetJson())
+					}
+				]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/face/v1.0/findsimilars
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.*">
+				<JsonPath Expr="faceId" Id="FaceId" Title="Face Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="confidence" Id="Confidence" Title="Confidence" Converter="Double" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Verify" Title="Verify" HelpText="Verify whether two faces belong to the same person" HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/563879b61984550e40cbbe8d/operations/563879b61984550f3039523a">
+    <Parameters>
+      <Text Id="FaceId1" Title="Face Id One" Debug.DefaultValue="c93c7c7d-5350-4f5f-8205-8fa51f44d2ff" Required="true" HelpText=""/>
+      <Text Id="FaceId2" Title="Face Id Two" Debug.DefaultValue="a5bd81e7-9fc7-494d-a935-45cc0b599314" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"faceId1": "@(Model.FaceId1)",
+						"faceId2": "@(Model.FaceId2)"
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/face/v1.0/verify
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="isIdentical" Id="Identical" Title="Identical" Converter="Bool" HelpText=""/>
+			<JsonPath Expr="confidence" Id="Confidence" Title="Confidence" Converter="Double" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    public string GetJson(){
+      string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(1000).ToArray();
+      return JsonConvert.SerializeObject(lines);
+    }
+
+		string Getquery()
+		{
+			if(Model.Multi == true)
+			{
+				return "*";
+			}
+			else
+			{
+				return "0";
+			}
+		}
+
+		int IntervalBetweenRequests() {
+      return Model.AccountType=="free" ? 10000 : 0;
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
