@@ -1,0 +1,677 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Id="GoogleAdsenseManagement" Title="Google Adsense" Category="Ads"
+       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleAdsense.xml"
+       HelpUrl="http://seotoolsforexcel.com/google-adsense/" HelpText="Documentation">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/adsense.readonly" StayAuthenticated="true"/>
+
+  <Resources>
+    <Resource Id="Currencies">
+      <Item Id="default" Title="Default"/>
+      <Item Id="AED" Title="United Arab Emirates Dirham"/>
+      <Item Id="ARS" Title="Argentine Peso"/>
+      <Item Id="AUD" Title="Australian Dollar"/>
+      <Item Id="BGN" Title="Bulgarian Lev"/>
+      <Item Id="BND" Title="Brunei Dollar"/>
+      <Item Id="BOB" Title="Bolivian Boliviano"/>
+      <Item Id="BRL" Title="Brazilian Real"/>
+      <Item Id="CAD" Title="Canadian Dollar"/>
+      <Item Id="CHF" Title="Swiss Franc"/>
+      <Item Id="CLP" Title="Chilean Peso"/>
+      <Item Id="CNY" Title="Chinese Yuan Renminbi"/>
+      <Item Id="COP" Title="Colombian Peso"/>
+      <Item Id="CZK" Title="Czech Republic Koruna"/>
+      <Item Id="DKK" Title="Danish Krone"/>
+      <Item Id="EGP" Title="Egyptian Pound"/>
+      <Item Id="EUR" Title="Euro"/>
+      <Item Id="FJD" Title="Fijian Dollar"/>
+      <Item Id="GBP" Title="British Pound Sterling"/>
+      <Item Id="HKD" Title="Hong Kong Dollar"/>
+      <Item Id="HRK" Title="Croatian Kuna"/>
+      <Item Id="HUF" Title="Hungarian Forint"/>
+      <Item Id="IDR" Title="Indonesian Rupiah"/>
+      <Item Id="ILS" Title="Israeli New Sheqel"/>
+      <Item Id="INR" Title="Indian Rupee"/>
+      <Item Id="JPY" Title="Japanese Yen"/>
+      <Item Id="KES" Title="Kenyan Shilling"/>
+      <Item Id="KRW" Title="South Korean Won"/>
+      <Item Id="LTL" Title="Lithuanian Litas"/>
+      <Item Id="MAD" Title="Moroccan Dirham"/>
+      <Item Id="MXN" Title="Mexican Peso"/>
+      <Item Id="MYR" Title="Malaysian Ringgit"/>
+      <Item Id="NOK" Title="Norwegian Krone"/>
+      <Item Id="NZD" Title="New Zealand Dollar"/>
+      <Item Id="PEN" Title="Peruvian Nuevo Sol"/>
+      <Item Id="PHP" Title="Philippine Peso"/>
+      <Item Id="PKR" Title="Pakistani Rupee"/>
+      <Item Id="PLN" Title="Polish Zloty"/>
+      <Item Id="RON" Title="Romanian Leu"/>
+      <Item Id="RSD" Title="Serbian Dinar"/>
+      <Item Id="RUB" Title="Russian Ruble"/>
+      <Item Id="SAR" Title="Saudi Riyal"/>
+      <Item Id="SEK" Title="Swedish Krona"/>
+      <Item Id="SGD" Title="Singapore Dollar"/>
+      <Item Id="THB" Title="Thai Baht"/>
+      <Item Id="TRY" Title="Turkish Lira"/>
+      <Item Id="TWD" Title="New Taiwan Dollar"/>
+      <Item Id="UAH" Title="Ukrainian Hryvnia"/>
+      <Item Id="USD" Title="US Dollar"/>
+      <Item Id="VEF" Title="Venezuelan Bolí­var Fuerte"/>
+      <Item Id="VND" Title="Vietnamese Dong"/>
+      <Item Id="ZAR" Title="South African Rand"/>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <Regex Expr="^Not Found$" Group="0"/>
+        <Regex Expr="^invalid token$" Group="0"/>
+        <JsonPath Expr="error.message"/>
+        <!--<JsonPath Expr="warnings"/>-->
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Accounts" Title="Accounts" HelpText="List all accounts available to this AdSense account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/list">
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this account.	"/>
+        <Compute Id="CreationTime" Title="Creation Time" Converter="DateTime" HelpText="Timestamp of last test (if any)">
+          <Compute.Expr>
+            <![CDATA[
+             @if(Model.Inp != 0)
+              {
+                @: @(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))
+              }
+              else {
+                @: 0
+              }
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="creation_time" Id="Inp" Converter="Long" DefaultValue="0"/>
+        </Compute>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this account."/>
+        <JsonPath Expr="premium" Id="Premium" Title="Premium" Converter="Boolean" HelpText="Whether this account is premium."/>
+        <JsonPath Expr="subAccounts" Id="Subaccounts" Title="Subaccounts" Converter="String" Checked="False" HelpText="Sub accounts of the this account."/>
+        <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText="AdSense timezone of this account."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountsHidden" Hidden="True" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/list">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts?
+          maxResults=10000
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this account.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this account."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdClients" Title="Ad Clients" HelpText="List all ad clients in the specified account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adclients/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad client."/>
+        <JsonPath Expr="arcOptIn" Id="ArcOptin" Title="ARC Optin" Converter="Boolean" HelpText="Whether this ad client is opted in to ARC.	"/>
+        <JsonPath Expr="productCode" Id="ProductCode" Title="Product Code" Converter="String" HelpText="This ad client's product code, which corresponds to the PRODUCT_CODE report dimension."/>
+        <JsonPath Expr="supportsReporting" Id="SupportsReporting" Title="Supports Reporting" Converter="Bool" HelpText="Whether this ad client supports being reported on."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdClientsHidden" Hidden="True" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adclients/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients?
+          maxResults=10000
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad client."/>
+        <JsonPath Expr="productCode" Id="ProductCode" Title="Product Code" Converter="String" HelpText="This ad client's product code, which corresponds to the PRODUCT_CODE report dimension."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdUnits" Title="Ad Units" HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adunits/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AdClient" Title="Ad Client Id" Required="true" Select.Connector="AdClientsHidden" Select.IdField="Id" Select.TitleField="ProductCode"/>
+      <Checkbox Id="IncludeInactive" Title="Include Inactive" DefaultValue="true" HelpText="Whether to include inactive ad units."/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients/@(Model.AdClient)/adunits?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+          &includeInactive=@(Model.IncludeInactive)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this ad unit. This should be considered an opaque identifier; it is not safe to rely on it being in any particular format."/>
+        <JsonPath Expr="code" Id="Code" Title="Code" Converter="String" HelpText="Identity code of this ad unit, not necessarily unique across ad clients."/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this ad unit."/>
+        <JsonPath Expr="savedStyleId" Id="Savedstyleid" Title="Saved Style Id" Converter="String" Checked="false" HelpText="ID of the saved ad style which holds this ad unit's style information."/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="Status of this ad unit."/>
+        <JsonPath Expr="contentAdsSettings.size" Id="ContentadssettingsSize" Title="Size" Converter="string" HelpText="Size of this ad unit.	"/>
+        <JsonPath Expr="contentAdsSettings.type" Id="ContentadssettingsType" Title="Type" Converter="string" HelpText="Type of this ad unit.	"/>
+        <JsonPath Expr="contentAdsSettings.backupOption.color" Id="ContentadssettingsBackupoptionColor" Title="Backup Option Color" Checked="false" Converter="string" HelpText="Color to use when type is set to COLOR.	"/>
+        <JsonPath Expr="contentAdsSettings.backupOption.type" Id="ContentadssettingsBackupoptionType" Title="Backup Option Type" Converter="string" HelpText="Type of the backup option. "/>
+        <JsonPath Expr="contentAdsSettings.backupOption.url" Id="ContentadssettingsBackupoptionUrl" Title="Backup Option Url" Checked="false" Converter="string" HelpText="URL to use when type is set to URL.	"/>
+        <JsonPath Expr="customStyle.colors.background" Id="CustomstyleColorsBackground" Title="Custom Style Background" Converter="String" Checked="false" HelpText="The color of the ad background.	"/>
+        <JsonPath Expr="customStyle.colors.border" Id="CustomstyleColorsBorder" Title="Custom Style Border" Converter="String" Checked="false" HelpText="The color of the ad border.	"/>
+        <JsonPath Expr="customStyle.colors.text" Id="CustomstyleColorsText" Title="Custom Style Text" Converter="String" Checked="false" HelpText="The color of the ad text.	"/>
+        <JsonPath Expr="customStyle.colors.title" Id="CustomstyleColorsTitle" Title="Custom Style Title" Converter="String" Checked="false" HelpText="The color of the ad title.	"/>
+        <JsonPath Expr="customStyle.colors.url" Id="CustomstyleColorsUrl" Title="Custom Style Url" Converter="String" Checked="false" HelpText="The color of the ad url.	"/>
+        <JsonPath Expr="customStyle.corners" Id="CustomstyleCorners" Title="Custom Style Corners" Converter="String" Checked="false" HelpText="The style of the corners in the ad. "/>
+        <JsonPath Expr="customStyle.font.family" Id="CustomstyleFontFamily" Title="Custom Style Font Family" Converter="String" Checked="false" HelpText="The family of the font. "/>
+        <JsonPath Expr="customStyle.font.size" Id="CustomstyleFontSize" Title="Custom Style Font Size" Converter="String" Checked="false" HelpText="The size of the font. "/>
+        <JsonPath Expr="customStyle.kind" Id="CustomstyleKind" Title="Custom Style Kind" Converter="String" Checked="false" HelpText="Kind this is, in this case adsense#adStyle.	"/>
+        <JsonPath Expr="feedAdsSettings.adPosition" Id="FeedadssettingsAdposition" Title="Feed Ad Position" Converter="String" Checked="false" HelpText="The position of the ads relative to the feed entries. "/>
+        <JsonPath Expr="feedAdsSettings.frequency" Id="FeedadssettingsFrequency" Title="Feed Ad Frequency" Converter="Int" Checked="false" HelpText="The frequency at which ads should appear in the feed (i.e. every N entries).	"/>
+        <JsonPath Expr="feedAdsSettings.minimumWordCount" Id="FeedadssettingsMinimumwordcount" Title="Feed Ad Minimum Word Count" Converter="Int" Checked="false" HelpText="The minimum length an entry should be in order to have attached ads.	"/>
+        <JsonPath Expr="feedAdsSettings.type" Id="FeedadssettingsType" Title="Feed Ad Type" Converter="String" Checked="false" HelpText="The type of ads which should appear.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Alerts" Title="Alerts" HelpText="List all ad units in the specified ad client for the specified account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/adclients/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/alerts?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this alert."/>
+        <JsonPath Expr="severity" Id="Severity" Title="Severity" Converter="String" HelpText="Severity of this alert. "/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="Type of this alert. "/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" HelpText="The localized alert message.	"/>
+        <JsonPath Expr="isDismissible" Id="IsDismissible" Title="Dismissible" Converter="Bool" HelpText="Whether this alert can be dismissed.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CustomChannelsByAccount" Title="Custom Channels By Account" HelpText="List all custom channels which the specified ad unit belongs to." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/customchannels/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AdClient" Title="Ad Client Id" Required="true" Select.Connector="AdClientsHidden" Select.IdField="Id" Select.TitleField="ProductCode"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients/@(Model.AdClient)/customchannels?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="code" Id="Code" Title="Code" Converter="String" HelpText="Code of this custom channel, not necessarily unique across ad clients.	"/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this custom channel. This should be considered an opaque identifier; it is not safe to rely on it being in any particular format.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this custom channel.	"/>
+        <JsonPath Expr="targetingInfo.adsAppearOn" Id="TargetinginfoAdsappearon" Title="Targetinginfo Adsappearon" Converter="String" HelpText="The name used to describe this channel externally.	"/>
+        <JsonPath Expr="targetingInfo.description" Id="TargetinginfoDescription" Title="Targetinginfo Description" Converter="String" HelpText="The external description of the channel.	"/>
+        <JsonPath Expr="targetingInfo.location" Id="TargetinginfoLocation" Title="Targetinginfo Location" Converter="String" HelpText="The locations in which ads appear."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Payments" Title="Payments" HelpText="List the payments for the specified AdSense account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/payments/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/payments?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="ItemsId" Title="Id" Converter="String" HelpText="Unique identifier of this Payment.	"/>
+        <JsonPath Expr="paymentDate" Id="ItemsPaymentdate" Title="Date" Converter="String" HelpText="The date this payment was/will be credited to the user, or none if the payment threshold has not been met.	"/>
+        <JsonPath Expr="paymentAmount" Id="ItemsPaymentamount" Title="Amount" Converter="String" HelpText="The amount to be paid.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SavedAdStyles" Title="Saved Ad Styles" HelpText="List all saved ad styles in the specified account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/savedadstyles/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/savedadstyles?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this saved ad style. "/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The user selected name of this SavedAdStyle."/>
+        <JsonPath Expr="adStyle.colors.background" Id="AdstyleColorsBackground" Title="Background Color" Converter="String" HelpText="The color of the ad background.	"/>
+        <JsonPath Expr="adStyle.colors.border" Id="AdstyleColorsBorder" Title="Adstyle Colors Border" Converter="String" HelpText="The color of the ad border.	"/>
+        <JsonPath Expr="adStyle.colors.text" Id="AdstyleColorsText" Title="Text Color" Converter="String" HelpText="The color of the ad text.	"/>
+        <JsonPath Expr="adStyle.colors.title" Id="AdstyleColorsTitle" Title="Title Color" Converter="String" HelpText="The color of the ad title.	"/>
+        <JsonPath Expr="adStyle.colors.url" Id="AdstyleColorsUrl" Title="Url Color" Converter="String" HelpText="The color of the ad url.	"/>
+        <JsonPath Expr="adStyle.corners" Id="AdstyleCorners" Title="Corners Color" Converter="String" HelpText="The style of the corners in the ad. "/>
+        <JsonPath Expr="adStyle.font.family" Id="AdstyleFontFamily" Title="Font Family" Converter="String" HelpText="The family of the font. "/>
+        <JsonPath Expr="adStyle.font.size" Id="AdstyleFontSize" Title="Font Size" Converter="String" HelpText="The size of the font. "/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlChannels" Title="URL Channels" HelpText="List all URL channels in the specified ad client for the specified account." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/urlchannels/list">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AdClient" Title="Ad Client Id" Required="true" Select.Connector="AdClientsHidden" Select.IdField="Id" Select.TitleField="ProductCode"/>
+    </Parameters>
+    <Paging PageSize="10000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+           https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/adclients/@(Model.AdClient)/urlchannels?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this URL channel. This should be considered an opaque identifier; it is not safe to rely on it being in any particular format.	"/>
+        <JsonPath Expr="urlPattern" Id="Urlpattern" Title="Url Pattern" Converter="String" HelpText="URL Pattern of this URL channel."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="GenerateReport" Title="Generate a Report" HelpText="Generate an AdSense report based on the report request sent in the query parameters." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/reports/generate">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+      <Text Id="Metrics" Title="Metrics (one per line)" Debug.DefaultValue="CLICKS&#13;&#10;IMPRESSIONS&#13;&#10;EARNINGS" Multiline="true" Required="true" HelpText="The numeric columns to include in the report." HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
+      <Text Id="Dimensions" Title="Dimensions (one per line)" Debug.DefaultValue="MONTH" Multiline="true" Required="true" HelpText="The dimensions on which to base the report" HelpUrl="https://developers.google.com/adsense/management/metrics-dimensions"/>
+      <Select Id="Currency" Title="Currency" DefaultValue="default">
+        <DataSource>
+          <Resource Id="Currencies"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+          &startDate=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+          &endDate=@Model.DateInterval.EndDate.ToString("yyyy-MM-dd")
+          @if(Model.Currency != "default")
+          {
+            @: &currency=@(Model.Currency)
+          }
+          &dimension=@(GetParams(Model.Dimensions, "dimension"))
+          &metric=@(GetParams(Model.Metrics, "metric"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="Auto">
+        <JsonPath Id='Headers' Expr="$.headers.*">
+          <Compute Id="Name">
+            <Compute.Expr>
+              <![CDATA[
+              @{
+              string name = (Model.Inp is string) ? Model.Inp : "";
+              System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo("en-US", false).TextInfo;
+              name = textInfo.ToTitleCase(name.ToLower());
+              @name
+              ]]>
+            </Compute.Expr>
+            <JsonPath Expr="name" Id="Inp"/>
+          </Compute>
+        </JsonPath>
+        <JsonPath Id='Cells' Expr='$.rows.*.*'>
+          <JsonPath Expr="."/>
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SavedReports" Title="Saved Reports" HelpText="List all saved reports in the specified AdSense account." HelpUrl="https://www.googleapis.com/adsense/v1.4/accounts/accountId/reports/saved">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/saved?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this saved report.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="This saved report's name.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SavedReportsHidden" Hidden="true" HelpUrl="https://www.googleapis.com/adsense/v1.4/accounts/accountId/reports/saved">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/saved?
+          maxResults=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="items.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Unique identifier of this saved report.	"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="This saved report's name.	"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="GenerateSavedReport" Title="Generate a Saved Report" HelpText="Generate an AdSense report based on the saved report ID sent in the query parameters." HelpUrl="https://developers.google.com/adsense/management/v1.4/reference/accounts/reports/saved/generate">
+    <Parameters>
+      <Text Id="Account" Title="Account Id" Required="true" Select.Connector="AccountsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="SavedReport" Title="Saved Report Id" Required="true" Select.Connector="SavedReportsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Paging PageSize="50000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="pageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.googleapis.com/adsense/v1.4/accounts/@(Model.Account)/reports/@(Model.SavedReport)?
+          maxResults=@(Model.PageCursor.NextTake)
+          @if(Model.PageCursor.Page != 0)
+          {
+            @: &pageToken=@(Model.NextToken)
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="Auto">
+        <JsonPath Id='Headers' Expr="$.headers.*">
+          <Compute Id="Name">
+            <Compute.Expr>
+              <![CDATA[
+              @{
+              string name = (Model.Inp is string) ? Model.Inp : "";
+              System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo("en-US", false).TextInfo;
+              name = textInfo.ToTitleCase(name.ToLower());
+              @name
+              ]]>
+            </Compute.Expr>
+            <JsonPath Expr="name" Id="Inp"/>
+          </Compute>
+        </JsonPath>
+        <JsonPath Id='Cells' Expr='$.rows.*.*'>
+          <JsonPath Expr="."/>
+        </JsonPath>
+      </Table>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+  <![CDATA[
+  string GetParams(String data, string paramName)
+  {
+    string[] lines = ((string)data).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    return string.Join("&" + paramName + "=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+  }
+  ]]>
+</RazorFunctions>
+</Suite>

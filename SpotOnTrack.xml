@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Entertainment" RequireVersion="7.0.0" Title="Spot On Track" Id="SpotOnTrack" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SpotOnTrack.xml" HelpUrl="http://seotoolsforexcel.com/spotontrack" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+ <Resources>
+    <Resource Id="Countries">
+			<Item Id="global" Title="Global"/>
+			<Item Id="ad" Title="Andorra"/>
+			<Item Id="ar" Title="Argentina"/>
+			<Item Id="au" Title="Australia"/>
+			<Item Id="at" Title="Austria"/>
+			<Item Id="be" Title="Belgium"/>
+			<Item Id="bo" Title="Bolivia"/>
+			<Item Id="br" Title="Brazil"/>
+			<Item Id="bg" Title="Bulgaria"/>
+			<Item Id="ca" Title="Canada"/>
+			<Item Id="cl" Title="Chile"/>
+			<Item Id="co" Title="Colombia"/>
+			<Item Id="cr" Title="Costa Rica"/>
+			<Item Id="cy" Title="Cyprus"/>
+			<Item Id="cz" Title="Czech Republic"/>
+			<Item Id="dk" Title="Denmark"/>
+			<Item Id="do" Title="Dominican Republic"/>
+			<Item Id="ec" Title="Ecuador"/>
+			<Item Id="sv" Title="El Salvador"/>
+			<Item Id="ee" Title="Estonia"/>
+			<Item Id="fi" Title="Finland"/>
+			<Item Id="fr" Title="France"/>
+			<Item Id="de" Title="Germany"/>
+			<Item Id="gr" Title="Greece"/>
+			<Item Id="gt" Title="Guatemala"/>
+			<Item Id="hn" Title="Honduras"/>
+			<Item Id="hu" Title="Hungary"/>
+			<Item Id="is" Title="Iceland"/>
+			<Item Id="id" Title="Indonesia"/>
+			<Item Id="ie" Title="Ireland"/>
+			<Item Id="il" Title="Israel"/>
+			<Item Id="it" Title="Italy"/>
+			<Item Id="jp" Title="Japan"/>
+			<Item Id="lv" Title="Latvia"/>
+			<Item Id="lt" Title="Lithuania"/>
+			<Item Id="lu" Title="Luxembourg"/>
+			<Item Id="my" Title="Malaysia"/>
+			<Item Id="mt" Title="Malta"/>
+			<Item Id="mx" Title="Mexico"/>
+			<Item Id="mc" Title="Monaco"/>
+			<Item Id="nl" Title="Netherlands"/>
+			<Item Id="nz" Title="New Zealand"/>
+			<Item Id="ni" Title="Nicaragua"/>
+			<Item Id="no" Title="Norway"/>
+			<Item Id="pa" Title="Panama"/>
+			<Item Id="py" Title="Paraguay"/>
+			<Item Id="pe" Title="Peru"/>
+			<Item Id="ph" Title="Philippines"/>
+			<Item Id="pl" Title="Poland"/>
+			<Item Id="pt" Title="Portugal"/>
+			<Item Id="ro" Title="Romania"/>
+			<Item Id="sg" Title="Singapore"/>
+			<Item Id="sk" Title="Slovakia"/>
+			<Item Id="es" Title="Spain"/>
+			<Item Id="se" Title="Sweden"/>
+			<Item Id="ch" Title="Switzerland"/>
+			<Item Id="th" Title="Thailand"/>
+			<Item Id="tr" Title="Turkey"/>
+			<Item Id="gb" Title="United Kingdom"/>
+			<Item Id="uy" Title="Uruguay"/>
+			<Item Id="us" Title="United States"/>
+			<Item Id="tw" Title="Taiwan"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="DailyCharts" Title="Daily Charts">
+    <Parameters>
+      <Select Id="Country" Title="Country" Required="false" DefaultValue="global">
+        <DataSource>
+          <Resource Id="Countries"/>
+        </DataSource>
+      </Select>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="false"/>
+      <Radio Id="Type" Title="Type" DefaultValue="streams">
+        <DataSource>
+          <Item Id="streams" Title="Streams" />
+          <Item Id="viral" Title="Viral" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+				https://www.spotontrack.com/charts/daily/@(Model.Type)/@(Model.Country)/
+				@if(Model.DisplayDate.ToShortDateString() == DateTime.Now.ToShortDateString())
+				{
+					@: @Model.DisplayDate.AddDays(-1).ToString("yyyy-MM-dd")
+				}
+				else
+				{
+					@: @Model.DisplayDate.ToString("yyyy-MM-dd")
+				}
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//span[@@class='chart-track']">
+        <XPath Expr="." Title="Track" Id="Track" Converter="String"/>
+      </XPath>
+      <XPath Expr="//span[@@class='chart-artists']">
+        <XPath Expr="." Title="Artist" Id="Artist" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[@@class='chart-plays']">
+        <XPath Expr="." Title="Plays" Id="Plays" Converter="Long"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="WeeklyCharts" Title="Weekly Charts">
+    <Parameters>
+      <Select Id="Country" Title="Country" Required="false" DefaultValue="global">
+        <DataSource>
+          <Resource Id="Countries"/>
+        </DataSource>
+      </Select>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="false"/>
+      <Radio Id="Type" Title="Type" DefaultValue="streams">
+        <DataSource>
+          <Item Id="streams" Title="Streams" />
+          <Item Id="viral" Title="Viral" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+				https://www.spotontrack.com/charts/weekly/@(Model.Type)/@(Model.Country)/
+				@{
+					DateTime earlierDate = Model.DisplayDate;
+					DateTime TodayDate = DateTime.Now;
+					int numberOfDays = (TodayDate- earlierDate).Days;
+					if(numberOfDays <=7)
+					{
+						@: @DateTime.Now.AddDays(-7).ToShortDateString()
+					}
+					else
+					{
+						@: @Model.DisplayDate.ToString("yyyy-MM-dd")
+					}
+				}
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//span[@@class='chart-track']">
+        <XPath Expr="." Title="Track" Id="Track" Converter="String"/>
+      </XPath>
+      <XPath Expr="//span[@@class='chart-artists']">
+        <XPath Expr="." Title="Artist" Id="Artist" Converter="String"/>
+      </XPath>
+      <XPath Expr="//td[@@class='chart-plays']">
+        <XPath Expr="." Title="Plays" Id="Plays" Converter="Auto"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>

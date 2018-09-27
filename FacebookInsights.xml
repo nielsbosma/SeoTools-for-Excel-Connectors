@@ -3,7 +3,9 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://www.facebook.com/v2.12/dialog/oauth?client_id=1860625117511570&amp;response_type=token&amp;scope=manage_pages,read_insights&amp;redirect_uri={0}"/>
+	<Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/facebook-insights/">
+    <Text Id="Token" Title="Token" Required="true" HelpUrl="http://seotoolsforexcel.com/facebook-insights"/>
+  </Settings>
 
   <RestConnector Id="GetPageToken" Title="GetPageToken" Hidden="true">
     <Parameters>
@@ -12,8 +14,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/@(Model.PageId)?fields=access_token
-        &access_token=@(Model.Authenticator.Token)
+        https://graph.facebook.com/v3.1/@(Model.PageId)?fields=access_token
+        &access_token=@(Model.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -29,8 +31,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/me/accounts?
-        &access_token=@(Model.Authenticator.Token)
+        https://graph.facebook.com/v3.1/me/accounts?
+        &access_token=@(Model.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -52,9 +54,9 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/@(Model.PageId)
+        https://graph.facebook.com/v3.1/@(Model.PageId)
         /posts?
-        &access_token=@(Model.Authenticator.Token)
+        &access_token=@(Model.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -76,9 +78,9 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/feed?
-        id=@(Model.PageId)
-        &access_token=@(Model.Authenticator.Token)
+        https://graph.facebook.com/@(Model.PageId)/feed
+				?fields=message,type
+        &access_token=@(Model.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -111,7 +113,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()?
@@ -180,7 +182,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()?
@@ -244,7 +246,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_impressions_by_story_type
@@ -294,7 +296,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_negative_feedback_by_type
@@ -339,7 +341,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_positive_feedback_by_type
@@ -385,7 +387,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()
@@ -452,7 +454,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_consumptions_by_consumption_type
@@ -479,7 +481,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PageStoriesbyStoryType" Title="Page Stories by Type">
+  <RestConnector Id="PageActivitiesbyStoryType" Title="Page Activities by Type">
     <Parameters>
       <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
@@ -497,10 +499,10 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
-        ,page_stories,page_stories_by_story_type
+        page_activity,page_activity_by_activity_type
         ?&access_token=@(Model.PageToken)
         &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
         &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
@@ -512,34 +514,34 @@
       <JsonPath Expr="data[0].values.*">
         <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity')].values.*">
         <JsonPath Expr="value" Id="StoriesTotal" Title="Stories Total" Converter="Int" HelpText="The number of stories created about your Page (Stories)"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.fan" Id="PageLikes" Title="Page Likes" Converter="Int" HelpText="Page likes"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.user post" Id="UserPosts" Title="User Posts" Converter="Int" HelpText="Posts by people on a Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.page post" Id="PagePosts" Title="Page Posts" Converter="Int" HelpText="Posts by a Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.checkin" Id="CheckIn" Title="Check-In" Converter="Int" HelpText="Page checkins"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.question" Id="Question" Title="Question" Converter="Int" HelpText="Question answers"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.coupon" Id="Coupon" Title="Coupon" Converter="Int" HelpText="Offer claims"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.event" Id="Event" Title="Event" Converter="Int" HelpText="RSVPing to event"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.mention" Id="Mention" Title="Mention" Converter="Int" HelpText="Page mentions"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_stories_by_story_type')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
         <JsonPath Expr="value.other" Id="Other" Title="Other" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
@@ -566,7 +568,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_impressions_by_age_gender_unique
@@ -620,7 +622,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @if(Model.LocationLevel == "country")
@@ -673,7 +675,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @if(Model.LocationLevel == "country")
@@ -707,7 +709,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/page_fans_gender_age
         ?&access_token=@(Model.PageToken)
@@ -740,7 +742,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_actions_post_reactions_total
@@ -777,7 +779,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
         post_reactions_by_type_total
@@ -811,7 +813,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()
@@ -851,11 +853,11 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         page_views_by_site_logged_in_unique
-        ?&access_token=@(Model.PageToken))
+        ?&access_token=@(Model.PageToken)
         &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
         &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
         &period=day
@@ -894,7 +896,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()
@@ -975,7 +977,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PageId)
         /insights/
         @SelectedFields()
@@ -1031,7 +1033,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
         @SelectedFields()
@@ -1093,7 +1095,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/insights/@SelectedFields(),post_consumptions_by_type
+        https://graph.facebook.com/v3.1/insights/@SelectedFields()
 				?ids=@(FetchIdsBatch())
 				&period=lifetime
         &access_token=@(Model.PageToken)
@@ -1113,22 +1115,22 @@
 				<JsonPath Expr="$.*.data[?(@@.name=='post_impressions_paid_unique')].values.*">
 					<JsonPath Expr="value" Id="pu" Tag="post_impressions_paid_unique" Title="Paid Impressions Unique" Converter="Int" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
 				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_consumptions')].values.*">
-					<JsonPath Expr="value" Id="c" Tag="post_consumptions" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
+				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks')].values.*">
+					<JsonPath Expr="value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
 				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_consumptions_unique')].values.*">
-					<JsonPath Expr="value" Id="e" Tag="post_consumptions_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your posts"/>
+				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks_unique')].values.*">
+					<JsonPath Expr="value" Id="e" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your posts"/>
 				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_stories_by_action_type')].values.*">
-					<JsonPath Expr="value.share" Id="sh" Tag="post_stories_by_action_type" Title="Shares" Converter="Int" HelpText="Number of Shares"  DefaultValue="0"/>
-					<JsonPath Expr="value.like" Id="li" Tag="post_stories_by_action_type" Title="Likes" Converter="Int" HelpText="Number of Likes"  DefaultValue="0"/>
-					<JsonPath Expr="value.comment" Id="co" Tag="post_stories_by_action_type" Title="Comments" Converter="Int" HelpText="Number of Comments"  DefaultValue="0"/>
+				<JsonPath Expr="$.*.data[?(@@.name=='post_activity_by_action_type')].values.*">
+					<JsonPath Expr="value.share" Id="sh" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" HelpText="Number of Shares"  DefaultValue="0"/>
+					<JsonPath Expr="value.like" Id="li" Tag="post_activity_by_action_type" Title="Likes" Converter="Int" HelpText="Number of Likes"  DefaultValue="0"/>
+					<JsonPath Expr="value.comment" Id="co" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" HelpText="Number of Comments"  DefaultValue="0"/>
 				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_consumptions_by_type')].values.*">
-					<JsonPath Expr="value.link clicks" Id="LinkClicks" Tag="post_consumptions_by_type" Title="Link Clicks" Converter="Int" Group="1" HelpText="Clicks on links." DefaultValue="0"/>
-					<JsonPath Expr="value.photo view" Id="PhotoViews" Tag="post_consumptions_by_type" Title="Photo Views" Converter="Int" Group="1" HelpText="View a photo." DefaultValue="0"/>
-					<JsonPath Expr="value.video play" Id="VideoPlays" Tag="post_consumptions_by_type" Title="Video Plays" Converter="Int" Group="1" HelpText="Playing a video." DefaultValue="0"/>
-					<JsonPath Expr="value.other clicks" Id="OtherClicks" Tag="post_consumptions_by_type" Title="Other Clicks" Converter="Int" Group="1" HelpText="" DefaultValue="0"/>
+				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks_by_type')].values.*">
+					<JsonPath Expr="value.link clicks" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" Group="1" HelpText="Clicks on links." DefaultValue="0"/>
+					<JsonPath Expr="value.photo view" Id="PhotoViews" Tag="post_clicks_by_type" Title="Photo Views" Converter="Int" Group="1" HelpText="View a photo." DefaultValue="0"/>
+					<JsonPath Expr="value.video play" Id="VideoPlays" Tag="post_clicks_by_type" Title="Video Plays" Converter="Int" Group="1" HelpText="Playing a video." DefaultValue="0"/>
+					<JsonPath Expr="value.other clicks" Id="OtherClicks" Tag="post_clicks_by_type" Title="Other Clicks" Converter="Int" Group="1" HelpText="" DefaultValue="0"/>
 				</JsonPath>
 				<JsonPath Expr="$.*.data[?(@@.name=='post_video_views')].values.*">
 					<JsonPath Expr="value" Id="v" Tag="post_video_views" Title="Video Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
@@ -1165,7 +1167,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
         @SelectedFields()
@@ -1177,14 +1179,11 @@
       <JsonPath Expr="data[?(@@.name=='post_engaged_users')].values.*">
         <JsonPath Expr="value" Id="e" Tag="post_engaged_users" Title="Engaged Users" Converter="Int" HelpText="The number of people who clicked anywhere in your posts"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_fan_reach')].values.*">
-        <JsonPath Expr="value" Id="fr" Tag="post_fan_reach" Title="Fan Reach" Converter="Int" HelpText="Post reach by people who like your page."/>
+      <JsonPath Expr="data[?(@@.name=='post_clicks')].values.*">
+        <JsonPath Expr="value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_consumptions')].values.*">
-        <JsonPath Expr="value" Id="c" Tag="post_consumptions" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_consumptions_unique')].values.*">
-        <JsonPath Expr="value" Id="cu" Tag="post_consumptions_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your post without generating a story"/>
+      <JsonPath Expr="data[?(@@.name=='post_clicks_unique')].values.*">
+        <JsonPath Expr="value" Id="cu" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your post without generating a story"/>
       </JsonPath>
       <JsonPath Expr="data[?(@@.name=='post_negative_feedback')].values.*">
         <JsonPath Expr="value" Id="nf" Tag="post_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action in your post (e.g. hid it)"/>
@@ -1212,7 +1211,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
         @SelectedFields()
@@ -1294,7 +1293,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
         @SelectedFields()
@@ -1342,10 +1341,10 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
-        post_consumptions_by_type
+        post_clicks_by_type
         @(Model.Unique ? "_unique" : "")
         ?&access_token=@(Model.PageToken)
         ]]>
@@ -1362,7 +1361,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="PostStoriesbyType" Title="Post Stories by Type">
+  <RestConnector Id="PostActivitiesbyType" Title="Post Activities by Type">
     <Parameters>
       <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
@@ -1374,10 +1373,10 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.PostId)
         /insights/
-        post_stories_by_action_type
+        post_activity_by_action_type
         @(Model.Unique ? "_unique" : "")
         ?&access_token=@(Model.PageToken)
         ]]>
@@ -1406,7 +1405,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/
+        https://graph.facebook.com/v3.1/
         @(Model.Id)/posts?
         fields=@SelectedFields()
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
@@ -1414,7 +1413,7 @@
           @: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
           @: &until=@(((DateTime)Model.DateInterval.EndDate.AddDays(1)).UnixTimeStampUtc())
         }
-        &access_token=@(Model.Authenticator.Token)
+        &access_token=@(Model.Token)
         &limit=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page != 0)
         {
@@ -1443,8 +1442,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v2.12/me/accounts?
-        &access_token=@(Model.Authenticator.Token)
+        https://graph.facebook.com/v3.1/me/accounts?
+        &access_token=@(Model.Token)
         ]]>
       </Fetch.Url>
     </Fetch>

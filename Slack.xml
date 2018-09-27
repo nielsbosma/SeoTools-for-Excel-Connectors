@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" Title="Slack" Id="Slack" RequireVersion="6.1.10" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Slack.xml" HelpUrl="http://seotoolsforexcel.com/slack/" HelpText="Documentation">
+<Suite Category="Productivity" Title="Slack" Id="Slack" RequireVersion="6.1.10" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Slack.xml" HelpUrl="http://seotoolsforexcel.com/slack/" HelpText="Documentation">
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/slack/">
     <Text Id="Token" Title="Access Token" Required="true"/>
@@ -258,10 +258,15 @@
 
   <RestConnector Id="ChannelHistory" Title="Channel History" HelpText="Fetches history of messages and events from a channel." HelpUrl="https://api.slack.com/methods/channels.history">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" DefaultValue="" Required="true" Debug.DefaultValue="C497RQTBQ" Select.Connector="ChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Number Id="Count" Title="Count" DefaultValue="100" Min="1" Max="1000" Required="true" HelpText=""/>
+      <Text Id="ChannelId" Title="Channel Id" DefaultValue="" Required="true" Debug.DefaultValue="CAXNW7C31" Select.Connector="ChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
 		</Parameters>
+    <Paging PageSize="25" EvenPages="true" Maximum="1000">
+      <Parse>
+        <JsonPath Expr="$.has_more" Id="HasMore"/>
+        <JsonPath Expr="$.messages[(@@.length-1)].ts" Id="PageOld" Converter="String"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -274,23 +279,23 @@
         <![CDATA[
         https://slack.com/api/channels.history
 				?channel=@(Model.ChannelId)
-				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-				{
-						@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-						@: &latest=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+				&count=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page == 0)
+        {
+					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+					@: &latest=@(((DateTime)Model.DateInterval.EndDate).AddDays(-1).UnixTimeStampUtc())
 				}
-				&count=@(Model.Count)
+				else if(Model.HasMore == "True")
+				{
+					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+					@: &latest=@(Model.PageOld)
+				}
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.messages.*">
         <JsonPath Expr="ts" Id="Identifier" Title="Identifier" Converter="String" HelpText=""/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
-        <JsonPath Expr="subtype" Id="Subtype" Title="Subtype" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="user" Id="User" Title="User" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText=""/>
         <Compute Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix">
           <Compute.Expr>
             <![CDATA[
@@ -303,6 +308,11 @@
           </Compute.Expr>
           <JsonPath Expr="ts" Id="Inp" DefaultValue="" Converter="String"/>
         </Compute>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="subtype" Id="Subtype" Title="Subtype" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="user" Id="User" Title="User" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -312,10 +322,15 @@
 
   <RestConnector Id="PrivateChannelHistory" Title="Private Channel History" HelpText="Fetches history of messages and events from a private channel." HelpUrl="https://api.slack.com/methods/groups.history">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" DefaultValue="" Required="true" Debug.DefaultValue="C497RQTBQ" Select.Connector="PrivateChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Number Id="Count" Title="Count" DefaultValue="100" Min="1" Max="1000" Required="true" HelpText=""/>
+      <Text Id="ChannelId" Title="Channel Id" DefaultValue="" Required="true" Debug.DefaultValue="GACQNR5U3" Select.Connector="PrivateChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
 		</Parameters>
+    <Paging PageSize="100" EvenPages="true" Maximum="1000">
+      <Parse>
+        <JsonPath Expr="$.has_more" Id="HasMore"/>
+        <JsonPath Expr="$.messages[(@@.length-1)].ts" Id="PageOld" Converter="String"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -328,23 +343,23 @@
         <![CDATA[
         https://slack.com/api/groups.history
 				?channel=@(Model.ChannelId)
-				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-				{
-						@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-						@: &latest=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+				&count=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page == 0)
+        {
+					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+					@: &latest=@(((DateTime)Model.DateInterval.EndDate).AddDays(1).UnixTimeStampUtc())
 				}
-				&count=@(Model.Count)
+				else if(Model.HasMore == "True")
+				{
+					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+					@: &latest=@(Model.PageOld)
+				}
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.messages.*">
         <JsonPath Expr="ts" Id="Identifier" Title="Identifier" Converter="String" HelpText=""/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
-        <JsonPath Expr="subtype" Id="Subtype" Title="Subtype" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="user" Id="User" Title="User" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText=""/>
         <Compute Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix">
           <Compute.Expr>
             <![CDATA[
@@ -357,6 +372,11 @@
           </Compute.Expr>
           <JsonPath Expr="ts" Id="Inp" DefaultValue="" Converter="String"/>
         </Compute>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="subtype" Id="Subtype" Title="Subtype" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="user" Id="User" Title="User" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
     <Fail>

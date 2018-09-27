@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Knowledge" RequireVersion="6.0.0" Title="Google Knowledge Graph" Id="GoogleKnowledgeGraph" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleKnowledgeGraph.xml" HelpUrl="http://seotoolsforexcel.com/google-knowledge-graph/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/google-knowledge-graph/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/google-knowledge-graph/"/>
+  </Settings>
+
+  <RestConnector Id="GoogleKnowledgeGraph" Title="Google Knowledge Graph" HelpUrl="https://developers.google.com/knowledge-graph/reference/rest/v1/">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+      <Text Id="Language" Title="Language Code (2 Letter ISO 639)" Debug.DefaultValue="" Required="false"/>
+      <Text Id="Types" Title="Filter by Types (One per newline)" Debug.DefaultValue="Person" Multiline="true" Required="false"/>
+      <Number Id="Results" Title="Number of Results" DefaultValue="20" Minimum="1" Maximum="100" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://kgsearch.googleapis.com/v1/entities:search
+				?key=@(Model.ApiKey)
+				&query=@(Utils.UrlEncode(Model.Query))
+        @if(!string.IsNullOrEmpty(Model.Language))
+        {
+          @: &languages=@(Model.Language)
+        }
+         @if(!string.IsNullOrEmpty(Model.Types))
+        {
+          @: &types=@FetchTypes()
+        }
+				&limit=@(Model.Results)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="itemListElement[*]">
+        <JsonPath Expr="result.@@id" Id="Id" Title="Id" Converter="String" DefaultValue="" HelpText="The canonical URI for the entity."/>
+        <JsonPath Expr="result.name" Id="Name" Title="Name" Converter="String" DefaultValue="" HelpText="The name of the entity."/>
+        <JsonPath Expr="result.description" Id="Description" Title="Description" Converter="String" DefaultValue="" HelpText="A short description of the entity."/>
+				<JsonPath Expr="resultScore" Id="Score" Title="Score" Converter="Double" HelpText="An indicator of how well the entity matched the request constraints."/>
+        <Compute Id="Type" Title="Type" DefaultValue="" HelpText="The list of supported schema.org types that match the entity.">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.TypeInput, @"\s+", " ");
+              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
+              var typesstripped = temp2.Substring(1,temp2.Length-2);
+            }
+            @typesstripped
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="result.@@type" Id="TypeInput" Converter="String" DefaultValue="" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="result.detailedDescription.articleBody" Id="Article" Title="Article" Converter="String" DefaultValue="" HelpText="A detailed description of the entity."/>
+        <JsonPath Expr="result.url" Id="Url" Title="URL" Converter="String" DefaultValue="" HelpText="The official website URL of the entity, if available."/>
+        <JsonPath Expr="result.image.url" Id="ImageUrl" Title="Image URL" Converter="String" DefaultValue="" HelpText="An image to help identify the entity."/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchTypes()
+    {
+      string[] lines = ((string)Model.Types).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+			return string.Join("&types=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>

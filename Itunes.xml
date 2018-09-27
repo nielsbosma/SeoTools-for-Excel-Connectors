@@ -292,6 +292,7 @@
         <![CDATA[
         https://itunes.apple.com/lookup?
         @(Model.AlbumType)=@(Model.AlbumId)
+				&output=json
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -347,8 +348,9 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://itunes.apple.com/lookup?
-        id=@(Model.AppId)
+        https://itunes.apple.com/lookup
+				?id=@(Model.AppId)
+				&output=json
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -470,6 +472,35 @@
         <JsonPath Expr="releaseDate" Id="ReleaseDate" Title="Release Date" Converter="DateTime" DefaultValue=""/>
         <JsonPath Expr="primaryGenreName" Id="PrimaryGenre" Title="Primary Genre" Converter="String" DefaultValue=""/>
       </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Title="Search Autocomplete " Id="SearchAutocomplete">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="rock"/>
+      <Select Id="Media" Title="Filter by Media Type" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Medias"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://search.itunes.apple.com/WebObjects/MZSearchHints.woa/wa/hints
+				?q=@(Utils.UrlEncode(Model.Query))
+				@if(Model.Media != "all")
+				{
+					@: &media=@(Model.Media)
+				}
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//dict/array/dict">
+        <XPath Expr="string[1]" Id="Term" Title="Term" Converter="String" DefaultValue=""/>
+        <XPath Expr="integer" Id="Priority" Title="Priority" Converter="Long" DefaultValue=""/>
+      </XPath>
     </Parse>
   </RestConnector>
 

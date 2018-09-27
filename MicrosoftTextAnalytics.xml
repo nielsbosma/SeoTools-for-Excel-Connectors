@@ -1,0 +1,226 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Language" Title="Microsoft Text Analytics" Id="MicrosoftTextAnalytics" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/MicrosoftTextAnalytics.xml" HelpUrl="http://seotoolsforexcel.com/ms-text-analytics/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/ms-text-analytics/">
+    <Text Id="Key" Title="Key" Required="true" HelpUrl="http://seotoolsforexcel.com/ms-text-analytics/"/>
+    <Select Id="Location" Title="Location" DefaultValue="westus" HelpUrl="http://seotoolsforexcel.com/ms-text-analytics/">
+      <DataSource>
+			<Item Id="westus" Title="West US"/>
+			<Item Id="westus2" Title="West US 2"/>
+			<Item Id="eastus" Title="East US"/>
+			<Item Id="eastus2" Title="East US 2"/>
+			<Item Id="westcentralus" Title="West Central US"/>
+			<Item Id="southcentralus" Title="South Central US"/>
+			<Item Id="westeurope" Title="West Europe"/>
+			<Item Id="northeurope" Title="North Europe"/>
+			<Item Id="southeastasia" Title="Southeast Asia"/>
+			<Item Id="eastasia" Title="East Asia"/>
+			<Item Id="australiaeast" Title="Australia East"/>
+			<Item Id="brazilsouth" Title="Brazil South"/>
+			<Item Id="canadacentral" Title="Canada Central"/>
+			<Item Id="centralindia" Title="Central India"/>
+			<Item Id="uksouth" Title="UK South"/>
+			<Item Id="japaneast" Title="Japan East"/>
+      </DataSource>
+    </Select>
+  </Settings>
+
+  <RestConnector Id="Sentiment" Title="Sentiment" HelpText="Returns a numeric score between 0 and 1." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c9">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Jag hatar måndagar." Required="true" HelpText=""/>
+      <Text Id="Language" Title="Language" Debug.DefaultValue="sv" Required="true"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="800" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"documents": [
+							{
+								"language": "@Model.Language",
+								"id": "1",
+								"text": "@Model.Text"
+							}
+						]
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/text/analytics/v2.0/sentiment
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="documents[0].score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="KeyPhrases" Title="Key Phrases" HelpText="Returns a list of strings denoting the key talking points in the input text." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c6">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Hello world. This is some input text that I love." Required="true" HelpText=""/>
+      <Text Id="Language" Title="Language" Debug.DefaultValue="en" Required="true"/>
+      <Checkbox Id="Multi" Title="Return Multiple Results" DefaultValue="false"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="800" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"documents": [
+							{
+								"language": "@Model.Language",
+								"id": "1",
+								"text": "@Model.Text"
+							}
+						]
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="documents[0].keyPhrases[@(Getquery())]">
+				<JsonPath Expr="." Id="KeyPhrases" Title="Key Phrases" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Entities" Title="Entities" HelpText="English only. Returns a list of recognized entities in a given document." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/5ac4251d5b4ccd1554da7634">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Microsoft released Windows 10" Required="true" HelpText=""/>
+      <Checkbox Id="Multi" Title="Return Multiple Results" DefaultValue="false"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="800" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"documents": [
+							{
+								"language": "en",
+								"id": "1",
+								"text": "@Model.Text"
+							}
+						]
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/text/analytics/v2.0/entities
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="documents[0].entities[@(Getquery())]">
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <Compute Id="Occurances" Title="Occurances" Converter="Long">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              int count = Regex.Matches(Model.MatchesArr, @"},").Count +1;
+            }
+            @count
+            ]]>
+          </Compute.Expr>
+				<JsonPath Expr="matches" Id="MatchesArr" Converter="String"/>
+        </Compute>
+				<JsonPath Expr="wikipediaId" Id="WikipediaId" Title="Wikipedia Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="wikipediaUrl" Id="WikipediaUrl" Title="Wikipedia URL" Converter="String" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="DetectLanguage" Title="Detect Language" HelpText="Returns the detected language and a numeric score between 0 and 1." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c7">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Jag hatar måndagar. Det är så mycket arbete." Required="true" HelpText=""/>
+      <Number Id="Delay" Title="Delay" DefaultValue="800" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+        </RequestHeaders>
+        <RequestBody>
+					{
+						"documents": [
+							{
+								"id": "1",
+								"text": "@Model.Text"
+							}
+						]
+					}
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Location).api.cognitive.microsoft.com/text/analytics/v2.0/languages
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="documents[0].detectedLanguages.*">
+				<JsonPath Expr="name" Id="Language" Title="Language" Converter="String" HelpText=""/>
+				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
+				<JsonPath Expr="iso6391Name" Id="Code" Title="Code" Converter="String" Checked="false" HelpText=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+  <![CDATA[
+  string Getquery()
+  {
+    if(Model.Multi == true)
+    {
+      return "*";
+    }
+    else
+    {
+      return "0";
+    }
+  }
+  ]]>
+  </RazorFunctions>
+
+</Suite>

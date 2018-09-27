@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Category="SEO" Title="Searchmetrics" Id="Searchmetrics" RequireVersion="6.1.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
+<Suite Category="SEO" Title="Searchmetrics" Id="Searchmetrics" RequireVersion="8.0.15" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
 
@@ -1502,6 +1502,135 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.response" Id="Credits" Title="Credits" Converter="Int" HelpText="Available credits."/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AdminStatusGetListProjects" Title="Projects" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/AdminStatusGetListProjects" HelpText="This call returns a complete list of all projects.">
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/AdminStatusGetListProjects.json?access_token=@(Model.Authorization)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="project_id" Id="ProjectId" Title="Project Id" Converter="Long" HelpText=""/>
+        <JsonPath Expr="project_name" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="project_url" Id="ProjectName" Title="Project Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="keyword_count" Id="Keywords" Title="Keywords" Converter="Long" HelpText=""/>
+        <JsonPath Expr="engine_count" Id="Engines" Title="Engines" Converter="Long" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AdminStatusGetListProjectSearchEngines" Hidden="true">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project Id" Required="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/AdminStatusGetListProjectSearchEngines.json
+                ?access_token=@(Model.Authorization)
+                &project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.*">
+        <JsonPath Expr="engine_id" Id="EngineId" Title="Engine Id" Converter="Long" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="AdminStatusGetListProjectDomainsAndBenchmarks" Hidden="true">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="1493497" Required="true" Select.Connector="AdminStatusGetListProjects" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/AdminStatusGetListProjectDomainsAndBenchmarks.json
+				?access_token=@(Model.Authorization)
+				&project_id=@(Model.ProjectId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<XPath Expr="//response/url|//response/benchmarks">
+				<XPath Expr="." Id="Url" Title="URL"/>
+			</XPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error_message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="ProjectPerformanceGetListUrlRankings" Title="Project URL Rankings" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ProjectPerformanceGetListUrlRankings" HelpText="Get the rankings for all urls, belongs to the given project.">
+    <Parameters>
+      <Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="" Required="true" Select.Connector="AdminStatusGetListProjects" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="SearchEngineId" Title="Search Engine Id" Debug.DefaultValue="" Required="true" Select.Connector="AdminStatusGetListProjectSearchEngines" Select.IdField="EngineId" Select.TitleField="EngineId"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="true" Select.Connector="AdminStatusGetListProjectDomainsAndBenchmarks" Select.IdField="Url" Select.TitleField="Url"/>
+			<Radio Id="Trend" Title="Trend Interval" DefaultValue="last">
+			<DataSource>
+				<Item Id="last" Title="Last Results" />
+				<Item Id="weekly" Title="Last Week" />
+				<Item Id="monthly" Title="Last Month" />
+			</DataSource>
+		</Radio>
+    </Parameters>
+    <Paging PageSize="100" MinTake="100" DefaultTake="100" EvenPages="false"/>
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.searchmetrics.com/v3/ProjectPerformanceGetListUrlRankings.json
+				?access_token=@(Model.Authorization)
+				&project_id=@(Model.ProjectId)
+				&se_id=@(Model.SearchEngineId)
+				&url=@(Model.Domain)
+				&trend_interval=@(Model.Trend)
+				&limit=100
+				@if(Model.PageCursor.Page != 0)
+				{
+					@: &offset=@(Model.PageCursor.Page*100)
+				}
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<XPath Expr="//response//keywords">
+				<XPath Expr="../url" Id="Url" Title="URL"/>
+				<XPath Expr="./keyword" Id="Keyword" Title="Keyword"/>
+				<XPath Expr="./position" Id="Position" Title="Position" Converter="Long"/>
+				<XPath Expr="./traffic_volume" Id="Volume" Title="Volume" Converter="Long"/>
+				<XPath Expr="./traffic" Id="Traffic" Title="Traffic" Converter="Long"/>
+				<XPath Expr="./cpc" Id="CPC" Title="CPC" Converter="Long"/>
+				<XPath Expr="./trend/trend" Id="Trend" Title="Trend" Converter="Long"/>
+				<XPath Expr="./trend/abs" Id="Abs" Title="Trend Absolute Change" Converter="Double"/>
+				<XPath Expr="./trend/per" Id="Per" Title="Trend Relative Change" Converter="Double"/>
+			</XPath>
     </Parse>
     <Fail>
       <JsonPath Expr="error_message"/>

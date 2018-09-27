@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="File Storage" RequireVersion="8.0.0" Title="Google Drive" Id="GoogleDrive" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleDrive.xml" HelpUrl="http://seotoolsforexcel.com/googledrive/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/drive.readonly" StayAuthenticated="true"/>
+
+  <Resources>
+    <Resource Id="Sortings">
+      <Item Id="default" Title="Default"/>
+      <Item Id="createdTime" Title="Created"/>
+      <Item Id="folder" Title="Folder"/>
+      <Item Id="modifiedByMeTime" Title="Modified by Me Time"/>
+      <Item Id="modifiedTime" Title="Modified Time"/>
+      <Item Id="name" Title="Name"/>
+      <Item Id="recency" Title="Recency"/>
+      <Item Id="starred" Title="Starred"/>
+      <Item Id="viewedByMeTime" Title="Viewed By Me Time"/>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="About" Title="About" HelpUrl="https://developers.google.com/drive/api/v3/reference/about/get">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/about?fields=user,storageQuota
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="user.displayName" Id="Name" Title="Name" Converter="String"/>
+      <JsonPath Expr="user.emailAddress" Id="Email" Title="Email" Converter="String"/>
+      <JsonPath Expr="storageQuota.limit" Id="StorageLimit" Title="Storage Limit" Converter="Long"/>
+      <JsonPath Expr="storageQuota.usage" Id="StorageUsage" Title="Storage Usage" Converter="Long"/>
+      <JsonPath Expr="storageQuota.usageInDrive" Id="StorageUsageDrive" Title="Storage Usage in Drive" Converter="Long"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Files" Title="Files" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list">
+    <Parameters>
+      <Text Id="Query" Title="Query String" Debug.DefaultValue="" HelpUrl="https://developers.google.com/drive/api/v3/search-parameters" Required="false"/>
+      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files
+				?pageSize=@(Model.PageCursor.NextTake)
+        @if(!string.IsNullOrEmpty(Model.Query))
+        {
+          @: &q=@Utils.UrlEncode(Model.Query)
+        }
+        @if(Model.Sort != "default")
+        {
+          @: &orderBy=@(Model.Sort)
+        }
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+				&fields=files,nextPageToken
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="files[*]">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="createdTime" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="modifiedTime" Id="Modified" Title="Modified" Converter="DateTime"/>
+        <JsonPath Expr="sharingUser.displayName" Id="SharingUser" Title="Sharing User" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="kind" Id="Kind" Title="Kind" Converter="String"/>
+        <JsonPath Expr="mimeType" Id="MimeType" Title="Mime Type" Converter="String"/>
+        <JsonPath Expr="version" Id="Version" Title="Version" Converter="Long"/>
+        <JsonPath Expr="webViewLink" Id="Link" Title="Link" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="FileLookup" Title="File Lookup" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/get">
+    <Parameters>
+      <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files/@(Model.FileId)
+				?fields=*
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="id" Id="Id" Title="Name" Converter="String"/>
+			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+			<JsonPath Expr="createdTime" Id="Created" Title="Created" Converter="DateTime"/>
+			<JsonPath Expr="modifiedTime" Id="Modified" Title="Modified" Converter="DateTime"/>
+			<JsonPath Expr="sharingUser.displayName" Id="SharingUser" Title="Sharing User" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="kind" Id="Kind" Title="Kind" Converter="String"/>
+			<JsonPath Expr="mimeType" Id="MimeType" Title="Mime Type" Converter="String"/>
+			<JsonPath Expr="version" Id="Version" Title="Version" Converter="Long"/>
+			<JsonPath Expr="webViewLink" Id="Link" Title="Link" Converter="String"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Comments" Title="Comments" HelpUrl="https://developers.google.com/drive/api/v3/reference/comments/list">
+    <Parameters>
+      <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
+      <Checkbox Id="Deleted" Title="Include Deleted" DefaultValue="False"/>
+    </Parameters>
+    <Paging PageSize="20" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files/@(Model.FileId)/comments
+				?pageSize=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+				&includeDeleted=@(Model.Deleted)
+				&fields=comments,nextPageToken
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="comments[*]">
+        <JsonPath Expr="id" Id="Id" Title="Name" Converter="String"/>
+        <JsonPath Expr="content" Id="Content" Title="Content" Converter="String"/>
+        <JsonPath Expr="createdTime" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="modifiedTime" Id="Modified" Title="Modified" Converter="DateTime"/>
+        <JsonPath Expr="author.displayName" Id="Author" Title="Author" Converter="String"/>
+        <JsonPath Expr="deleted" Id="Deleted" Title="Deleted" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Permissions" Title="Permissions" HelpUrl="https://developers.google.com/drive/api/v3/reference/permissions/list">
+    <Parameters>
+      <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files/@(Model.FileId)/permissions
+				?pageSize=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+				&fields=permissions,nextPageToken
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="permissions[*]">
+        <JsonPath Expr="id" Id="Id" Title="Name" Converter="String"/>
+        <JsonPath Expr="displayName" Id="Author" Title="Author" Converter="String"/>
+        <JsonPath Expr="emailAddress" Id="Email" Title="Email" Converter="String"/>
+        <JsonPath Expr="role" Id="Role" Title="Role" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="deleted" Id="Deleted" Title="Deleted" Converter="Bool"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="Revisions" Title="Revisions" HelpUrl="https://developers.google.com/drive/api/v3/reference/revisions/list">
+    <Parameters>
+      <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files/@(Model.FileId)/revisions
+				?pageSize=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@(Model.NextToken)
+        }
+				&fields=revisions,nextPageToken
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="revisions[*]">
+        <JsonPath Expr="id" Id="Id" Title="Name" Converter="Long"/>
+        <JsonPath Expr="modifiedTime" Id="Modified" Title="Modified" Converter="DateTime"/>
+        <JsonPath Expr="lastModifyingUser.displayName" Id="Author" Title="Author" Converter="String"/>
+        <JsonPath Expr="lastModifyingUser.emailAddress" Id="Email" Title="Email" Converter="String"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>

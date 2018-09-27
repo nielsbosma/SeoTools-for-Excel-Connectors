@@ -11,6 +11,20 @@
       <Item Id="review-rank" Title="Avg. Customer Review"/>
       <Item Id="date-desc-rank" Title="Newest Arrivals"/>
     </Resource>
+    <Resource Id="ReviewSortings">
+      <Item Id="helpful" Title="Helpful"/>
+      <Item Id="recent" Title="Recent"/>
+    </Resource>
+    <Resource Id="ReviewRatings">
+      <Item Id="all_stars" Title="All Stars"/>
+      <Item Id="five_star" Title="5 Stars"/>
+      <Item Id="four_star" Title="4 Stars"/>
+      <Item Id="three_star" Title="3 Stars"/>
+      <Item Id="two_star" Title="2 Stars"/>
+      <Item Id="one_star" Title="1 Stars"/>
+      <Item Id="positive" Title="All Positive"/>
+      <Item Id="critical" Title="All Critical"/>
+    </Resource>
     <Resource Id="Departments">
       <Item Id="aps" Title="All Departments"/>
       <Item Id="alexa-skills" Title="Alexa Skills"/>
@@ -65,7 +79,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Amazon" Title="Amazon">
+  <RestConnector Id="Search" Title="Search">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
       <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
@@ -79,9 +93,13 @@
           <Resource Id="Sortings"/>
         </DataSource>
       </Select>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
     </Parameters>
     <Paging PageSize="15" EvenPages="false"/>
     <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Host"/>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
         http://www.@(Model.Domain)/s?
@@ -128,7 +146,7 @@
           </Compute.Expr>
           <XPath Id="UrlInput" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
         </Compute>
-        <XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" />
+        <XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" Converter="String"/>
         <XPath Id="Title" Title="Title" Expr=".//h2" />
         <XPath Id="Price" Title="Price" Expr=".//span[contains(@@class,'-price')]"/>
         <Compute Id="AverageReview" Title="Average Review" Converter="Auto">
@@ -148,6 +166,96 @@
         </Compute>
         <XPath Id="Reviews" Title="Reviews" Expr=".//a[contains(@@href,'customerReviews')]" Converter="Int" DefaultValue="0"/>
         <XPath Id="Offers" Title="Offers" Expr=".//a[contains(@@href,'offer-listing')]/text()" Converter="Int" DefaultValue="0"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Reviews" Title="Reviews">
+    <Parameters>
+      <Text Id="ASIN" Title="ASIN" Debug.DefaultValue="0451167716" Required="true"/>
+      <Select Id="Rating" Title="Filter by Ratings" Required="false" DefaultValue="all_stars">
+        <DataSource>
+          <Resource Id="ReviewRatings"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sort" Title="Sort Reviews by" Required="false" DefaultValue="helpful">
+        <DataSource>
+          <Resource Id="ReviewSortings"/>
+        </DataSource>
+      </Select>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="false"/>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Host"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.amazon.com/dp/product-reviews/@(Model.ASIN)
+				?pageNumber=@(Model.PageCursor.Page+1)
+				&sortBy=@(Model.Sort)
+				&filterByStar=@(Model.Rating)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//a[@@data-hook='review-title']">
+        <XPath Id="Title" Title="Title" Expr="." Converter="String" DefaultValue=""/>
+      </XPath>
+      <XPath Expr="//span[@@data-hook='review-body']">
+        <XPath Id="Body" Title="Body" Expr="." Converter="String" DefaultValue=""/>
+      </XPath>
+      <XPath Expr="//div[contains(@@id,'customer_review')]/div[1]/a[1]/i/span">
+        <Compute Id="Score" Title="Score" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+            @if(Model.ScoreInput is string && Model.ScoreInput.Contains("out"))
+            {
+              @(Model.ScoreInput.Substring(0, Model.ScoreInput.IndexOf("out")))
+            }
+            else
+            {
+              @:
+            }
+            ]]>
+          </Compute.Expr>
+          <XPath Id="ScoreInput" Expr="." Converter="String"/>
+        </Compute>
+			</XPath>
+      <XPath Expr="//span[@@data-hook='helpful-vote-statement']">
+        <Compute Id="Helpfuls" Title="Helpfuls" Converter="Auto">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+							int helpfuls = 0;
+							Regex regex = new Regex(@"^(\w+)\s");
+							Match match = regex.Match(Model.HelpfulInput);
+							Regex regex2 = new Regex(@"^(\d+)\s");
+
+							if(match.Groups[1].Value == "One")
+							{
+									helpfuls = 1;
+							}
+							else if(regex2.IsMatch(Model.HelpfulInput))
+							{
+									helpfuls = Convert.ToInt32(match.Groups[1].Value);
+							}
+            }
+            @helpfuls
+            ]]>
+          </Compute.Expr>
+          <XPath Id="HelpfulInput" Expr="." Converter="String"/>
+        </Compute>
+			</XPath>
+      <XPath Expr="//span[@@data-hook='review-date']">
+        <XPath Id="Date" Title="Date" Expr="." Converter="String" DefaultValue=""/>
+      </XPath>
+      <XPath Expr="//a[@@data-hook='review-author']">
+        <XPath Id="Author" Title="Author" Expr="." Converter="String" DefaultValue=""/>
+      </XPath>
+      <XPath Expr="//div[contains(@@id,'customer_review')]/div[3]">
+        <XPath Id="span/a[1]" Title="Verified" Expr="." Converter="String" DefaultValue=""/>
       </XPath>
     </Parse>
   </RestConnector>

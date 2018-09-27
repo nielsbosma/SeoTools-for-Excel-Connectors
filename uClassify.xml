@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Machine Learning" Title="uClassify" Id="uClassify" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/uClassify.xml" HelpUrl="http://seotoolsforexcel.com/uclassify/" HelpText="Documentation">
+<Suite Category="Language" Title="uClassify" Id="uClassify" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/uClassify.xml" HelpUrl="http://seotoolsforexcel.com/uclassify/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/uclassify/">
-    <Text Id="ReadApiKey" Title="Read API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/uclassify-connector/"/>
+    <Text Id="ReadApiKey" Title="Read API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/uclassify/"/>
   </Settings>
 
   <RestConnector Id="Classifiers" Title="Classifiers" Hidden="true">
@@ -30,33 +30,33 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SimpleClassification" Title="Simple Classification" HelpText="Leave Language Field Empty to use default Classifier">
+  <RestConnector Id="SimpleClassification" Title="Simple Classification" HelpText="">
     <Parameters>
-      <Text Id="Classifier" Title="Classifier" DefaultValue="" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
-      <Text Id="Language" Title="Language" DefaultValue="" Required="false" Select.Connector="Languages" Select.IdField="LangId" Select.TitleField="Title"/>
+      <Text Id="Classifier" Title="Classifier" DefaultValue="" Debug.DefaultValue="" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
       <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
         <DataSource>
-          <Item Id="Text" Title="Text"/>
-          <Item Id="Url" Title="URL"/>
+          <Item Id="ClassifyText" Title="Text"/>
+          <Item Id="ClassifyUrl" Title="URL"/>
         </DataSource>
       </Radio>
-      <Text Id="Input" Title="Input" DefaultValue="jag är glad" Required="true"/>
+      <Text Id="Input" Title="Input" DefaultValue="" Debug.DefaultValue="" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-				https://api.uclassify.com/
-				@if(string.IsNullOrEmpty(Model.Language))
-				{
-					@: v1/@Model.Classifier.Substring(7)
-				}
-        else
-				{
-					@: v1/@Model.Language.Substring(7)
-				}
-        /Classify
+				http://uclassify.com
+				@(Model.Classifier)
+				/@(Model.Mode)
         ?readkey=@(Model.ReadApiKey)
-        &text=@(Utils.UrlEncode(Model.Input))
+				@if(Model.Mode == "ClassifyText")
+				{
+					@: &text=@(Utils.UrlEncode(Model.Input))
+				}
+				else
+				{
+					@: &url=@(Utils.UrlEncode(Model.Input))
+				}
+        &output=json
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -69,7 +69,7 @@
           <![CDATA[
           @{
             string body = Model.FetchedResult.Body;
-            string result = JObject.Parse(body).Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Name).Take(1).FirstOrDefault();
+            string result = JObject.Parse(body).SelectToken("cls1").Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Name).Take(1).FirstOrDefault();
           }
           @result
         ]]>
@@ -80,7 +80,7 @@
         <![CDATA[
         @{
           string body = Model.FetchedResult.Body;
-          string result = JObject.Parse(body).Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Value.ToString()).Take(1).FirstOrDefault();
+          string result = JObject.Parse(body).SelectToken("cls1").Children().Select(e => (JProperty)e).OrderByDescending(e => e.Value).Select(e => e.Value.ToString()).Take(1).FirstOrDefault();
         }
         @result
         ]]>

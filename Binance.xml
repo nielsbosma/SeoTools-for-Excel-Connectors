@@ -84,16 +84,16 @@
   <RestConnector Id="OrderBook" Title="Order Book" HelpText="List of open orders for specified symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book">
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="100" Min="5" Max="1000" Required="false" HelpText=""/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="100" Minimum="5" Maximum="1000" Required="false" HelpText=""/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v1/depth?
-        symbol=@Model.Symbol
+        symbol=@(Model.Symbol)
         @if(Model.Limit % 5 == 0)
         {
-          @: &limit=@Model.Limit
+          @: &limit=@(Model.Limit)
         }
         ]]>
       </Fetch.Url>
@@ -114,16 +114,16 @@
   <RestConnector Id="RecentTradesList" Title="Recent Trades List" HelpText="List recently made trades for specific symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#recent-trades-list">
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false" HelpText=""/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v1/trades?
-        symbol=@Model.Symbol
+        symbol=@(Model.Symbol)
         @if(Model.Limit % 5 == 0)
         {
-          @: &limit=@Model.Limit
+          @: &limit=@(Model.Limit)
         }
         ]]>
       </Fetch.Url>
@@ -157,16 +157,16 @@
   <RestConnector Id="AggregateTradesList" Title="Aggregate Trades List" HelpText="List compressed, aggregate trades" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#compressedaggregate-trades-list">
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false" HelpText=""/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v1/aggTrades?
-        symbol=@Model.Symbol
+        symbol=@(Model.Symbol)
         @if(Model.Limit % 5 == 0)
         {
-          @: &limit=@Model.Limit
+          @: &limit=@(Model.Limit)
         }
         ]]>
       </Fetch.Url>
@@ -207,7 +207,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v1/ticker/24hr
-        ?symbol=@Model.Symbol
+        ?symbol=@(Model.Symbol)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -333,7 +333,8 @@
           <Resource Id="Intervals"/>
         </DataSource>
       </Select>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="false" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false" HelpText=""/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -341,9 +342,14 @@
         https://api.binance.com/api/v1/klines?
         symbol=@(Model.Symbol)
         &interval=@(Model.Interval)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &startTime=@(((DateTimeOffset)Model.DateInterval.StartDate).ToUnixTimeMilliseconds())
+          @: &endTime=@(((DateTimeOffset)Model.DateInterval.EndDate).ToUnixTimeMilliseconds())
+        }
         @if(Model.Limit % 5 == 0)
         {
-          @: &limit=@Model.Limit
+          @: &limit=@(Model.Limit)
         }
         ]]>
       </Fetch.Url>
@@ -454,7 +460,7 @@
   <RestConnector Id="AllOrders" Title="All Orders (User data)" HelpText="Get all account orders; active, canceled, or filled." HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#all-orders-user_data">
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" DefaultValue="" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Min="5" Max="500" Required="true" HelpText="Limit of records to retrieve"/>
+      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="true" HelpText="Limit of records to retrieve"/>
     </Parameters>
     <Fetch>
       <HttpSettings>

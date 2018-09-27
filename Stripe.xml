@@ -1,0 +1,1547 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Finance" Title="Stripe" Id="Stripe" RequireVersion="8.0.15" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Stripe.xml" HelpUrl="http://seotoolsforexcel.com/stripe/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/stripe/">
+    <Text Id="SecretKey" Title="Secret Key" Required="true" HelpUrl="http://seotoolsforexcel.com/stripe/"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="TxTypes">
+      <Item Id="all" Title="All"/>
+      <Item Id="charge" Title="Charge"/>
+      <Item Id="refund" Title="Refund"/>
+      <Item Id="adjustment" Title="Adjustment"/>
+      <Item Id="application_fee" Title="Application Fee"/>
+      <Item Id="application_fee_refund" Title="Application Fee Refund"/>
+      <Item Id="transfer" Title="Transfer"/>
+      <Item Id="payment" Title="Payment"/>
+      <Item Id="payout" Title="Payout"/>
+      <Item Id="payout_failure" Title="Payout Failure"/>
+      <Item Id="stripe_fee" Title="Stripe Fee"/>
+      <Item Id="network_cost" Title="Network Cost"/>
+    </Resource>
+    <Resource Id="ChargeSources">
+      <Item Id="all" Title="All"/>
+      <Item Id="alipay_account" Title="Alipay Account"/>
+      <Item Id="bank_account" Title="Bank Account"/>
+      <Item Id="bitcoin_receiver" Title="Bitcoin"/>
+      <Item Id="Card" Title="Card"/>
+    </Resource>
+    <Resource Id="ActiveValues">
+      <Item Id="all" Title="All"/>
+      <Item Id="true" Title="Active"/>
+      <Item Id="false" Title="Inactive"/>
+    </Resource>
+    <Resource Id="ProductTypes">
+      <Item Id="all" Title="All"/>
+      <Item Id="good" Title="Good"/>
+      <Item Id="service" Title="Service"/>
+    </Resource>
+    <Resource Id="Headers">
+      <HttpSettings>
+        <RequestHeaders>
+          <RequestContentType>application/json</RequestContentType>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Error">
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="BalanceHistory" Title="Balance History" HelpUrl="https://stripe.com/docs/api#balance_history" HelpText="Returns a list of transactions that have contributed to the Stripe account balance">
+    <Parameters>
+      <Select Id="TxType" Title="Transaction Type" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="TxTypes"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/balance/history?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(Model.TxType != "all")
+        {
+          @: &type=@(Model.TxType)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Model.Inp / 100)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="available_on" Id="AvailableOn" Title="Available On" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="exchange_rate" Id="ExchangeRate" Title="Exchange Rate" Converter="Double" HelpText=""/>
+        <Compute Id="Fee" Title="Fee" Expr="@(Model.Inp / 100)" Converter="Double">
+          <JsonPath Expr="fee" Id="Inp" Converter="Double"/>
+        </Compute>
+        <Compute Id="Net" Title="Net" Expr="@(Model.Inp / 100)" Converter="Double">
+          <JsonPath Expr="net" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Customers" Title="Customers" HelpUrl="https://stripe.com/docs/api#list_customers" HelpText="Returns a list of your customers. ">
+    <Parameters>
+      <Text Id="Email" Title="Filter by email" Required="false" HelpText="A filter on the list based on the customer’s email field"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/customers?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Email))
+        {
+          @: &email=@Utils.UrlEncode(Model.Email)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <Compute Id="AccountBalance" Title="Account Balance" Expr="@(Model.Inp / 100)" Converter="Double">
+          <JsonPath Expr="account_balance" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="default_source" Id="DefaultSource" Title="Default Source" Converter="String" HelpText=""/>
+        <JsonPath Expr="delinquent" Id="Delinquent" Title="Delinquent" Converter="bool" HelpText=""/>
+        <JsonPath Expr="discount" Id="Discount" Title="Discount" Converter="Auto" HelpText=""/>
+        <JsonPath Expr="invoice_prefix" Id="InvoicePrefix" Title="Invoice Prefix" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="shipping" Id="Shipping" Title="Shipping" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="CustomersHidden" Title="CustomersHidden" Hidden="True" HelpUrl="https://stripe.com/docs/api#list_customers">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/customers?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Charges" Title="Charges" HelpUrl="https://stripe.com/docs/api#list_charges" HelpText="Returns a list of charges you’ve previously created">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+      <!--<Select Id="Source" Title="Charge Source" Required="false" DefaultValue="all">-->
+      <!--<DataSource>-->
+      <!--<Resource Id="ChargeSources"/>-->
+      <!--</DataSource>-->
+      <!--</Select>-->
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/charges?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="available_on" Id="AvailableOn" Title="Available On" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="exchange_rate" Id="ExchangeRate" Title="Exchange Rate" Converter="Double" HelpText=""/>
+        <Compute Id="Fee" Title="Fee" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="fee" Id="Inp" Converter="Double"/>
+        </Compute>
+        <Compute Id="Net" Title="Net" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="net" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="source" Id="Source" Title="Source" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Disputes" Title="Disputes" HelpUrl="https://stripe.com/docs/api#list_disputes" HelpText="Returns a list of your disputes.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/disputes?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Model.Inp / 100)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="is_charge_refundable" Id="IsChargeRefundable" Title="Charge is Refundable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.due_by" Id="EvidenceDetailsDueBy" Title="Evidence Due By" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="evidence_details.has_evidence" Id="EvidenceDetailsHasEvidence" Title="Has Evidence" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.past_due" Id="EvidenceDetailsPastDue" Title="Evidence Past Due" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="evidence_details.submission_count" Id="EvidenceDetailsSubmissionCount" Title="Evidence Details Submission Count" Converter="" HelpText=""/>
+        <JsonPath Expr="evidence.access_activity_log" Id="EvidenceAccessActivityLog" Title="Access Activity Log" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.billing_address" Id="EvidenceBillingAddress" Title="Billing Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_policy" Id="EvidenceCancellationPolicy" Title="Cancellation Policy" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_policy_disclosure" Id="EvidenceCancellationPolicyDisclosure" Title="Cancellation Policy Disclosure" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.cancellation_rebuttal" Id="EvidenceCancellationRebuttal" Title="ECancellation Rebuttal" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_communication" Id="EvidenceCustomerCommunication" Title="Customer Communication" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_email_address" Id="EvidenceCustomerEmailAddress" Title="Customer Email Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_name" Id="EvidenceCustomerName" Title="Customer Name" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_purchase_ip" Id="EvidenceCustomerPurchaseIp" Title="Customer Purchase Ip" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.customer_signature" Id="EvidenceCustomerSignature" Title="Customer Signature" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_documentation" Id="EvidenceDuplicateChargeDocumentation" Title="Duplicate Charge Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_explanation" Id="EvidenceDuplicateChargeExplanation" Title="Duplicate Charge Explanation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.duplicate_charge_id" Id="EvidenceDuplicateChargeId" Title="Duplicate Charge Id" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.product_description" Id="EvidenceProductDescription" Title="Product Description" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.receipt" Id="EvidenceReceipt" Title="Receipt" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_policy" Id="EvidenceRefundPolicy" Title="Refund Policy" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_policy_disclosure" Id="EvidenceRefundPolicyDisclosure" Title="Refund Policy Disclosure" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.refund_refusal_explanation" Id="EvidenceRefundRefusalExplanation" Title="Refund Refusal Explanation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.service_date" Id="EvidenceServiceDate" Title="Service Date" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.service_documentation" Id="EvidenceServiceDocumentation" Title="Service Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_address" Id="EvidenceShippingAddress" Title="Shipping Address" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_carrier" Id="EvidenceShippingCarrier" Title="EShipping Carrier" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_date" Id="EvidenceShippingDate" Title="Shipping Date" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_documentation" Id="EvidenceShippingDocumentation" Title="Shipping Documentation" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.shipping_tracking_number" Id="EvidenceShippingTrackingNumber" Title="Shipping Tracking Number" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.uncategorized_file" Id="EvidenceUncategorizedFile" Title="Uncategorized File" Converter="String" Checked="false" HelpText=""/>
+        <JsonPath Expr="evidence.uncategorized_text" Id="EvidenceUncategorizedText" Title="Uncategorized Text" Converter="String" Checked="false" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Events" Title="Events" HelpUrl="https://stripe.com/docs/api/curl#list_events" HelpText="List events, going back up to 30 days.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/events?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="id" Title="Id"/>
+        <JsonPath Expr="data.object.object" Id="Object" Title="Event Type"/>
+        <JsonPath Expr="data.object.customer" Id="CustomerId" Title="Customer Id"/>
+        <JsonPath Expr="data.object.currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="data.object.customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="data.object.date" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="data.object.description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Payouts" Title="Payouts" HelpUrl="https://stripe.com/docs/api/curl#list_payouts" HelpText="Returns a list of existing payouts sent to third-party bank accounts or that Stripe has sent you.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/payouts?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="object" Id="Object" Title="Object" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="arrival_date" Id="ArrivalDate" Title="Arrival Date" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="automatic" Id="Automatic" Title="Automatic" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="destination" Id="Destination" Title="Destination" Converter="String" HelpText=""/>
+        <JsonPath Expr="failure_balance_transaction" Id="FailureBalanceTransaction" Title="Failure Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="failure_code" Id="FailureCode" Title="Failure Code" Converter="String" HelpText=""/>
+        <JsonPath Expr="failure_message" Id="FailureMessage" Title="Failure Message" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Products" Title="Products" HelpUrl="https://stripe.com/docs/api/curl#list_products" HelpText="Returns a list of your products.">
+    <Parameters>
+      <Select Id="Active" Title="Only return active products" DefaultValue="False" HelpText="">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+      <Select Id="Type" Title="Filter by product type" DefaultValue="all" Required="false">
+        <DataSource>
+          <Resource Id="ProductTypes"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/products?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(@Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(@Model.Type != "all")
+        {
+          @: &type=@(Model.Type)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="caption" Id="Caption" Title="Caption" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="deactivate_on" Id="DeactivateOn" Title="Deactivate On" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="shippable" Id="Shippable" Title="Shippable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="url" Id="Url" Title="Url" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ProductsHidden" Title="ProductsHidden" Hidden="true" HelpUrl="https://stripe.com/docs/api/curl#list_products">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/products?
+        limit=100
+        &type=service
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Refunds" Title="Refunds" HelpUrl="https://stripe.com/docs/api/curl#list_refunds" HelpText="Returns a list of all refunds you’ve previously created.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/refunds?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText=""/>
+        <JsonPath Expr="reason" Id="Reason" Title="Reason" Converter="String" HelpText=""/>
+        <JsonPath Expr="receipt_number" Id="ReceiptNumber" Title="Receipt Number" Converter="String" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="BankAccounts" Title="Customer Bank Accounts" HelpUrl="https://stripe.com/docs/api/curl#customer_list_bank_accounts" HelpText="A list of the bank accounts belonging to a Customer.">
+    <Parameters>
+      <Text Id="Customer" Title="Customer Id" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="true" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/customers/@(Model.Customer)/sources?object=bank_account
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="account_holder_name" Id="AccountHolderName" Title="Holder Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="account_holder_type" Id="AccountHolderType" Title="Holder Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="bank_name" Id="BankName" Title="Bank Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="fingerprint" Id="Fingerprint" Title="Fingerprint" Converter="String" HelpText=""/>
+        <JsonPath Expr="last4" Id="Last4" Title="Last4" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText=""/>
+        <JsonPath Expr="routing_number" Id="RoutingNumber" Title="Routing Number" Converter="String" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Coupons" Title="Coupons" HelpUrl="https://stripe.com/docs/api/curl#list_coupons" HelpText="Returns a list of your coupons.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/coupons?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="AmountOff" Title="Amount off" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_off" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="String" HelpText=""/>
+        <JsonPath Expr="duration_in_months" Id="DurationInMonths" Title="Duration In Months" Converter="Int" HelpText=""/>
+        <JsonPath Expr="max_redemptions" Id="MaxRedemptions" Title="Max Redemptions" Converter="Double" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="percent_off" Id="PercentOff" Title="Percent Off" Converter="Double" HelpText=""/>
+        <JsonPath Expr="redeem_by" Id="RedeemBy" Title="Redeem By" Converter="String" HelpText=""/>
+        <JsonPath Expr="times_redeemed" Id="TimesRedeemed" Title="Times Redeemed" Converter="Int" HelpText=""/>
+        <JsonPath Expr="valid" Id="Valid" Title="Valid" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Invoices" Title="Invoices" HelpUrl="https://stripe.com/docs/api/curl#list_invoices" HelpText="List all invoices, or list the invoices for a specific customer.">
+    <Parameters>
+      <Text Id="Customer" Title="Customer Id" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/invoices?
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &customer=@(Model.Customer)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="object" Id="Object" Title="Object" Converter="String" HelpText=""/>
+        <Compute Id="AmountDue" Title="Amount Due" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_due" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <Compute Id="AmountPaid" Title="Amount Paid" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_paid" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <Compute Id="AmountRemaining" Title="Amount Remaining" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_remaining" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <Compute Id="ApplicationFee" Title="Application Fee" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="application_fee" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="attempt_count" Id="AttemptCount" Title="Attempt Count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="attempted" Id="Attempted" Title="Attempted" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="auto_advance" Id="AutoAdvance" Title="Auto Advance" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="billing" Id="Billing" Title="Billing" Converter="String" HelpText=""/>
+        <JsonPath Expr="billing_reason" Id="BillingReason" Title="Billing Reason" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge" Converter="String" HelpText=""/>
+        <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="discount" Id="Discount" Title="Discount" Converter="Auto" Checked="false"/>
+        <JsonPath Expr="due_date" Id="DueDate" Title="Due Date" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <Compute Id="EndingBalance" Title="Ending Balance" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="ending_balance" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="forgiven" Id="Forgiven" Title="Forgiven" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="hosted_invoice_url" Id="HostedInvoiceUrl" Title="Invoice Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="invoice_pdf" Id="InvoicePdf" Title="Invoice PDF Url" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="InvoicesHidden" Title="Invoices Hidden" HelpUrl="https://stripe.com/docs/api/curl#list_invoices" Hidden="True">
+    <Parameters>
+      <Text Id="Customer" Title="Customer Id" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/invoices?
+        &limit=100
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &customer=@(Model.Customer)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="InvoiceItems" Title="Invoice Items" HelpUrl="https://stripe.com/docs/api/curl#list_invoices" HelpText="Returns a list of your invoice items.">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer Id" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+      <Text Id="Invoice" Title="Filter by Invoice Id" Select.Connector="InvoicesHidden" Select.IdField="Id" Select.TitleField="Description" Required="false" HelpText=""/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/invoiceitems?
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer) && string.IsNullOrEmpty(Model.Invoice))
+        {
+          @: &customer=@(Model.Customer)
+        }
+        @if(!string.IsNullOrEmpty(Model.Invoice))
+        {
+          @: &invoice=@(Model.Invoice)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="discountable" Id="Discountable" Title="Discountable" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="invoice" Id="Invoice" Title="Invoice" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="period.start" Id="PeriodStart" Title="Period Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="period.end" Id="PeriodEnd" Title="Period End" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="plan" Id="Plan" Title="Plan" Converter="String" Checked="false"/>
+        <JsonPath Expr="proration" Id="Proration" Title="Proration" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="subscription" Id="Subscription" Title="Subscription" Converter="String" HelpText=""/>
+        <Compute Id="UnitAmount" Title="Unit Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="unit_amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Plans" Title="Plans" HelpUrl="https://stripe.com/docs/api/curl#list_plans" HelpText="Returns a list of your plans">
+    <Parameters>
+      <Text Id="Product" Title="Filter by product" Select.Connector="ProductsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText="Only products of type 'service' can be used"/>
+      <Select Id="Active" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/plans?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(@Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(!string.IsNullOrEmpty(Model.Product))
+        {
+          @: &product=@(Model.Product)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="aggregate_usage" Id="AggregateUsage" Title="Aggregate Usage" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="billing_scheme" Id="BillingScheme" Title="Billing Scheme" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="interval" Id="Interval" Title="Interval" Converter="String" HelpText=""/>
+        <JsonPath Expr="interval_count" Id="IntervalCount" Title="Interval Count" Converter="Int" HelpText=""/>
+        <JsonPath Expr="nickname" Id="Nickname" Title="Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="tiers" Id="Tiers" Title="Tiers" Converter="String" HelpText=""/>
+        <JsonPath Expr="tiers_mode" Id="TiersMode" Title="Tiers Mode" Converter="String" HelpText=""/>
+        <JsonPath Expr="transform_usage" Id="TransformUsage" Title="Transform Usage" Converter="String" HelpText=""/>
+        <JsonPath Expr="trial_period_days" Id="TrialPeriodDays" Title="Trial Period Days" Converter="Auto" HelpText=""/>
+        <JsonPath Expr="usage_type" Id="UsageType" Title="Usage Type" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="PlansHidden" Title="Plans Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_plans">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/plans
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="nickname" Id="Nickname" Title="Nickname" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Subscriptions" Title="Subscriptions" HelpUrl="https://stripe.com/docs/api/curl#list_subscriptions" HelpText="Returns a list of subscriptions">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false"/>
+      <Text Id="Plan" Title="Filter by plan" Select.Connector="PlansHidden" Select.IdField="Id" Select.TitleField="Nickname" Required="false"/>
+      <Select Id="Status" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Item Id="default" Title="default"/>
+          <Item Id="all" Title="All"/>
+          <Item Id="active" Title="Active"/>
+          <Item Id="trialing" Title="Trialing"/>
+          <Item Id="past_due" Title="Past Due"/>
+          <Item Id="unpaid" Title="Unpaid"/>
+          <Item Id="canceled" Title="Canceled"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscriptions?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &product=@(Model.Customer)
+        }
+        @if(!string.IsNullOrEmpty(Model.Plan))
+        {
+          @: &product=@(Model.Plan)
+        }
+        @if(@Model.Status != "default")
+        {
+          @: &status=@(Model.Status)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="application_fee_percent" Id="ApplicationFeePercent" Title="Application Fee Percent" Converter="Double" HelpText=""/>
+        <JsonPath Expr="billing" Id="Billing" Title="Billing" Converter="String" HelpText=""/>
+        <JsonPath Expr="billing_cycle_anchor" Id="BillingCycleAnchor" Title="Billing Cycle Anchor" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="cancel_at_period_end" Id="CancelAtPeriodEnd" Title="Cancel At Period End" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="canceled_at" Id="CanceledAt" Title="Canceled At" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="current_period_end" Id="CurrentPeriodEnd" Title="Current Period End" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="current_period_start" Id="CurrentPeriodStart" Title="Current Period Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="days_until_due" Id="DaysUntilDue" Title="Days Until Due" Converter="Int" HelpText=""/>
+        <JsonPath Expr="ended_at" Id="EndedAt" Title="Ended At" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="start" Id="Start" Title="Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="tax_percent" Id="TaxPercent" Title="Tax Percent" Converter="Double" HelpText=""/>
+        <JsonPath Expr="trial_end" Id="TrialEnd" Title="Trial End" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="trial_start" Id="TrialStart" Title="Trial Start" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.product" Id="PlanProduct" Title="Plan Product" Converter="String" HelpText="" Checked="false"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="SubscriptionsHidden" Title="SubscriptionsHidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_subscriptions">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscriptions?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = "" + Model.PlanId + " - " + Model.PlanNickname;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+          <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="SubscriptionItems" Title="Subscription Items" HelpUrl="https://stripe.com/docs/api/curl#list_subscription_items" HelpText="Returns a list of your subscription items for a given subscription.">
+    <Parameters>
+      <Text Id="Subscription" Title="Subscription Id" Select.Connector="SubscriptionsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Select Id="Status" Title="Filter by status" DefaultValue="all">
+        <DataSource>
+          <Item Id="default" Title="default"/>
+          <Item Id="all" Title="All"/>
+          <Item Id="active" Title="Active"/>
+          <Item Id="trialing" Title="Trialing"/>
+          <Item Id="past_due" Title="Past Due"/>
+          <Item Id="unpaid" Title="Unpaid"/>
+          <Item Id="canceled" Title="Canceled"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/subscription_items?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        &subscription=@(Model.Subscription)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="quantity" Id="Quantity" Title="Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="plan.id" Id="PlanId" Title="Plan Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.nickname" Id="PlanNickname" Title="Plan Nickname" Converter="String" HelpText=""/>
+        <JsonPath Expr="plan.product" Id="PlanProduct" Title="Plan Product" Converter="String" HelpText=""/>
+        <Compute Id="Plan Amount" Title="Plan Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="plan.amount" Id="Inp" Converter="" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="plan.currency" Id="PlanCurrency" Title="Plan Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="metadata" Id="Metadata" Title="Metadata" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="subscription" Id="Subscription" Title="Subscription" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountDetails" Title="Account Details" HelpUrl="https://stripe.com/docs/api/curl#retrieve_account" HelpText="Retrieves the details of the account.">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/account
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+      <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+      <JsonPath Expr="business_url" Id="BusinessUrl" Title="Business Url" Converter="String" HelpText=""/>
+      <JsonPath Expr="charges_enabled" Id="ChargesEnabled" Title="Charges Enabled" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+      <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+      <JsonPath Expr="default_currency" Id="DefaultCurrency" Title="Default Currency" Converter="String" HelpText=""/>
+      <JsonPath Expr="details_submitted" Id="DetailsSubmitted" Title="Details Submitted" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+      <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+      <JsonPath Expr="debit_negative_balances" Id="DebitNegativeBalances" Title="Debit Negative Balances" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="decline_charge_on.avs_failure" Id="DeclineChargeOnAvsFailure" Title="Decline Charge On AVS Failure" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="decline_charge_on.cvc_failure" Id="DeclineChargeOnCvcFailure" Title="Decline Charge On CVC Failure" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="payout_schedule.delay_days" Id="PayoutScheduleDelayDays" Title="Payout Schedule Delay Days" Converter="Int" HelpText=""/>
+      <JsonPath Expr="payout_schedule.interval" Id="PayoutScheduleInterval" Title="Payout Schedule Interval" Converter="String" HelpText=""/>
+      <JsonPath Expr="payout_statement_descriptor" Id="PayoutStatementDescriptor" Title="Payout Statement Descriptor" Converter="String" HelpText=""/>
+      <JsonPath Expr="payouts_enabled" Id="PayoutsEnabled" Title="Payouts Enabled" Converter="Bool" HelpText=""/>
+      <JsonPath Expr="product_description" Id="ProductDescription" Title="Product Description" Converter="String" HelpText=""/>
+      <JsonPath Expr="statement_descriptor" Id="StatementDescriptor" Title="Statement Descriptor" Converter="String" HelpText=""/>
+      <JsonPath Expr="support_email" Id="SupportEmail" Title="Support Email" Converter="String" HelpText=""/>
+      <JsonPath Expr="support_phone" Id="SupportPhone" Title="Support Phone" Converter="String" HelpText=""/>
+      <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText=""/>
+      <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+      <JsonPath Expr="legal_entity.type" Id="LegalEntityType" Title="Legal Entity Type" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.business_name" Id="LegalEntityBusinessName" Title="Legal Entity Business Name" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.business_tax_id_provided" Id="LegalEntityBusinessTaxIdProvided" Title="Legal Entity Business Tax Id Provided" Converter="Bool" Checked="False"/>
+      <JsonPath Expr="legal_entity.first_name" Id="LegalEntityFirstName" Title="Legal Entity First Name" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.last_name" Id="LegalEntityLastName" Title="Legal Entity Last Name" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.city" Id="LegalEntityAddressCity" Title="Legal Entity Address City" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.country" Id="LegalEntityAddressCountry" Title="Legal Entity Address Country" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.line1" Id="LegalEntityAddressLine1" Title="Legal Entity Address Line1" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.line2" Id="LegalEntityAddressLine2" Title="Legal Entity Address Line2" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.postal_code" Id="LegalEntityAddressPostalCode" Title="Legal Entity Address Postal Code" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.address.state" Id="LegalEntityAddressState" Title="Legal Entity Address State" Converter="nString" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.city" Id="LegalEntityPersonalAddressCity" Title="Legal Entity Personal Address City" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.country" Id="LegalEntityPersonalAddressCountry" Title="Legal Entity Personal Address Country" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.line1" Id="LegalEntityPersonalAddressLine1" Title="Legal Entity Personal Address Line1" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.line2" Id="LegalEntityPersonalAddressLine2" Title="Legal Entity Personal Address Line2" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.postal_code" Id="LegalEntityPersonalAddressPostalCode" Title="Legal Entity Personal Address Postal Code" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_address.state" Id="LegalEntityPersonalAddressState" Title="Legal Entity Personal Address State" Converter="String" Checked="False"/>
+      <JsonPath Expr="legal_entity.personal_id_number_provided" Id="LegalEntityPersonalIdNumberProvided" Title="Legal Entity Personal Id Number Provided" Converter="Bool" Checked="False"/>
+      <JsonPath Expr="legal_entity.ssn_last_4_provided" Id="LegalEntitySsnLast4Provided" Title="Legal Entity Ssn Last 4 Provided" Converter="Bool" Checked="False"/>
+      <JsonPath Expr="legal_entity.verification.status" Id="LegalEntityVerificationStatus" Title="Legal Entity Verification Status" Converter="String" Checked="False"/>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ConnectedAccounts" Title="Connected Accounts" HelpUrl="https://stripe.com/docs/api/curl#list_accounts" HelpText="Returns a list of accounts connected to your platform via Connect. If you’re not a platform, the list is empty.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/accounts?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="business_url" Id="BusinessUrl" Title="Business Url" Converter="String" HelpText=""/>
+        <JsonPath Expr="charges_enabled" Id="ChargesEnabled" Title="Charges Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="default_currency" Id="DefaultCurrency" Title="Default Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="details_submitted" Id="DetailsSubmitted" Title="Details Submitted" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="debit_negative_balances" Id="DebitNegativeBalances" Title="Debit Negative Balances" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.avs_failure" Id="DeclineChargeOnAvsFailure" Title="Decline Charge On AVS Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="decline_charge_on.cvc_failure" Id="DeclineChargeOnCvcFailure" Title="Decline Charge On CVC Failure" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="payout_schedule.delay_days" Id="PayoutScheduleDelayDays" Title="Payout Schedule Delay Days" Converter="Int" HelpText=""/>
+        <JsonPath Expr="payout_schedule.interval" Id="PayoutScheduleInterval" Title="Payout Schedule Interval" Converter="String" HelpText=""/>
+        <JsonPath Expr="payout_statement_descriptor" Id="PayoutStatementDescriptor" Title="Payout Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="payouts_enabled" Id="PayoutsEnabled" Title="Payouts Enabled" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="product_description" Id="ProductDescription" Title="Product Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="statement_descriptor" Id="StatementDescriptor" Title="Statement Descriptor" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_email" Id="SupportEmail" Title="Support Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="support_phone" Id="SupportPhone" Title="Support Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="timezone" Id="Timezone" Title="Timezone" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="legal_entity.type" Id="LegalEntityType" Title="Legal Entity Type" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_name" Id="LegalEntityBusinessName" Title="Legal Entity Business Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.business_tax_id_provided" Id="LegalEntityBusinessTaxIdProvided" Title="Legal Entity Business Tax Id Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.first_name" Id="LegalEntityFirstName" Title="Legal Entity First Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.last_name" Id="LegalEntityLastName" Title="Legal Entity Last Name" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.city" Id="LegalEntityAddressCity" Title="Legal Entity Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.country" Id="LegalEntityAddressCountry" Title="Legal Entity Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line1" Id="LegalEntityAddressLine1" Title="Legal Entity Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.line2" Id="LegalEntityAddressLine2" Title="Legal Entity Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.postal_code" Id="LegalEntityAddressPostalCode" Title="Legal Entity Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.address.state" Id="LegalEntityAddressState" Title="Legal Entity Address State" Converter="nString" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.city" Id="LegalEntityPersonalAddressCity" Title="Legal Entity Personal Address City" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.country" Id="LegalEntityPersonalAddressCountry" Title="Legal Entity Personal Address Country" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line1" Id="LegalEntityPersonalAddressLine1" Title="Legal Entity Personal Address Line1" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.line2" Id="LegalEntityPersonalAddressLine2" Title="Legal Entity Personal Address Line2" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.postal_code" Id="LegalEntityPersonalAddressPostalCode" Title="Legal Entity Personal Address Postal Code" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_address.state" Id="LegalEntityPersonalAddressState" Title="Legal Entity Personal Address State" Converter="String" Checked="False"/>
+        <JsonPath Expr="legal_entity.personal_id_number_provided" Id="LegalEntityPersonalIdNumberProvided" Title="Legal Entity Personal Id Number Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.ssn_last_4_provided" Id="LegalEntitySsnLast4Provided" Title="Legal Entity Ssn Last 4 Provided" Converter="Bool" Checked="False"/>
+        <JsonPath Expr="legal_entity.verification.status" Id="LegalEntityVerificationStatus" Title="Legal Entity Verification Status" Converter="String" Checked="False"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ConnectedAccountsHidden" Title="ConnectedAccounts Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_accounts">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/accounts?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = "" + Model.Email + " - " Model.BusinessName;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="business_name" Id="BusinessName" Title="Business Name" Converter="String" HelpText=""/>
+          <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="ApplicationFees" Title="Application Fees" HelpUrl="https://stripe.com/docs/api/curl#list_application_fees" HelpText="Returns a list of application fees you’ve previously collected.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/application_fees?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="account" Id="Account" Title="Account" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <Compute Id="AmountRefunded" Title="Amount Refunded" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_refunded" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="application" Id="Application" Title="Application" Converter="String" HelpText=""/>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="charge" Id="Charge" Title="Charge" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="DateTime" HelpText=""/>
+        <JsonPath Expr="originating_transaction" Id="OriginatingTransaction" Title="Originating Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="refunded" Id="Refunded" Title="Refunded" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Recipients" Title="Recipients" HelpUrl="https://stripe.com/docs/api/curl#list_recipients" HelpText="Returns a list of your recipients.">
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/recipients?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active_account" Id="ActiveAccount" Title="Active Account" Converter="String" HelpText=""/>
+        <JsonPath Expr="cards.data" Id="CardsData" Title="Cards" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="default_card" Id="DefaultCard" Title="Default Card" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="migrated_to" Id="MigratedTo" Title="Migrated To" Converter="String" HelpText=""/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Transfers" Title="Transfers" HelpUrl="https://stripe.com/docs/api/curl#list_transfers" HelpText="Returns a list of existing transfers sent to connected accounts.">
+    <Parameters>
+      <Text Id="Destination" Title="Filter by account Id" Select.Connector="ConnectedAccountsHidden" Select.IdField="Id" Select.TitleField="Name" Required="false"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Destination))
+        {
+          @: &destination=@(Model.Destination)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <Compute Id="AmountReversed" Title="Amount Reversed" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_reversed" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <JsonPath Expr="destination" Id="Destination" Title="Destination" Converter="String" HelpText=""/>
+        <JsonPath Expr="destination_payment" Id="DestinationPayment" Title="Destination Payment" Converter="String" HelpText=""/>
+        <JsonPath Expr="reversed" Id="Reversed" Title="Reversed" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="source_transaction" Id="SourceTransaction" Title="Source Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="source_type" Id="SourceType" Title="Source Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="transfer_group" Id="TransferGroup" Title="Transfer Group" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TransfersHidden" Title="Transfers Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_transfers">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string created = Model.Created ?? "";
+                string title = created + "-" Model.Destination + "-" + Model.Description;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+          <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+          <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+          <JsonPath Expr="destination" Id="Destination" Title="Destination" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="TransferReversals" Title="Transfer Reversals" HelpUrl="https://stripe.com/docs/api/curl#list_transfer_reversals" HelpText="List of the reversals belonging to a specific transfer.">
+    <Parameters>
+      <Text Id="Transfer" Title="Filter by account Id" Select.Connector="TransfersHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/transfers/@(Model.Transfer)/reversals?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="balance_transaction" Id="BalanceTransaction" Title="Balance Transaction" Converter="String" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="transfer" Id="Transfer" Title="Transfer" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Orders" Title="Orders" HelpUrl="https://stripe.com/docs/api/curl#list_orders" HelpText="Returns a list of your orders.">
+    <Parameters>
+      <Text Id="Customer" Title="Filter by customer" Select.Connector="CustomersHidden" Select.IdField="Id" Select.TitleField="Email" Required="false" HelpText=""/>
+      <Select Id="Status" Title="Filter by status">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="created" Title="Created"/>
+          <Item Id="paid" Title="Paid"/>
+          <Item Id="fulfilled" Title="Fulfilled"/>
+          <Item Id="refunded" Title="Refunded"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/orders?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Customer))
+        {
+          @: &customer=@(Model.Customer)
+        }
+        @if(Model.Status != "all")
+        {
+          @: &status=@(Model.Status)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Amount" Title="Amount" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <Compute Id="AmountReturned" Title="Amount Returned" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="amount_returned" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="application" Id="Application" Title="Application" Converter="String" HelpText=""/>
+        <Compute Id="ApplicationFee" Title="Application Fee" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="application_fee" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <Compute Id="Charge" Title="Charge" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="charge" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="customer" Id="Customer" Title="Customer" Converter="String" HelpText=""/>
+        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        <JsonPath Expr="selected_shipping_method" Id="SelectedShippingMethod" Title="Shipping Method" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.city" Id="ShippingAddressCity" Title="City" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.country" Id="ShippingAddressCountry" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.line1" Id="ShippingAddressLine1" Title="Address Line1" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.line2" Id="ShippingAddressLine2" Title="Address Line2" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.postal_code" Id="ShippingAddressPostalCode" Title="Postal Code" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.address.state" Id="ShippingAddressState" Title="State" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.carrier" Id="ShippingCarrier" Title="Shipping Carrier" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.name" Id="ShippingName" Title="Shipping Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.phone" Id="ShippingPhone" Title="Shipping Phone" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping.tracking_number" Id="ShippingTrackingNumber" Title="Tracking Number" Converter="String" HelpText=""/>
+        <JsonPath Expr="shipping_methods" Id="ShippingMethods" Title="Shipping Methods" Converter="String" HelpText="" Checked="False"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="status_transitions.canceled" Id="StatusTransitionsCanceled" Title="Canceled" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.fulfiled" Id="StatusTransitionsFulfiled" Title="Fulfiled" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.paid" Id="StatusTransitionsPaid" Title="Paid" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="status_transitions.returned" Id="StatusTransitionsReturned" Title="Returned" Converter="null" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="OrdersHidden" Title="Orders Hidden" Hidden="True" HelpUrl="https://stripe.com/docs/api/curl#list_orders">
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/orders?
+        limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <Compute Id="Name" Title="Name" Converter="String">
+          <Compute.Expr>
+            <![CDATA[
+              @{
+                string title = Model.Created + "-" + (Type.GetTypeCode(Model.Amount.GetType()) == TypeCode.Double ? (Model.Amount / 100) : 0) + Model.Currency +  "-" + Model.Email;
+              }
+              @title
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="amount" Id="Amount" Title="Amount" Converter="Double" HelpText=""/>
+          <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String"/>
+          <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+          <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Returns" Title="Returns" HelpUrl="https://stripe.com/docs/api/curl#list_order_returns" HelpText="Returns a list of your order returns.">
+    <Parameters>
+      <Text Id="Order" Title="Filter by order" Select.Connector="OrdersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Select Id="Status" Title="Filter by status">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="created" Title="Created"/>
+          <Item Id="paid" Title="Paid"/>
+          <Item Id="fulfilled" Title="Fulfilled"/>
+          <Item Id="refunded" Title="Refunded"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/order_returns?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(!string.IsNullOrEmpty(Model.Order))
+        {
+          @: &order=@(Model.Order)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="image" Id="Image" Title="Image" Converter="String" HelpText="" Checked="false"/>
+        <JsonPath Expr="inventory" Id="Inventory" Title="Inventory" Converter="String" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" HelpText=""/>
+        <Compute Id="Price" Title="Price" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="price" Id="Inp" Converter="Double"/>
+        </Compute>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Skus" Title="SKUs" HelpUrl="https://stripe.com/docs/api/curl#list_skus" HelpText="Returns a list of your SKUs.">
+    <Parameters>
+      <Select Id="Active" Title="Filter by status">
+        <DataSource>
+          <Resource Id="ActiveValues"/>
+        </DataSource>
+      </Select>
+      <Select Id="InStock" Title="Filter by availability">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="true" Title="In stock"/>
+          <Item Id="false" Title="Out of stock"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <Xpath Id="NextPageToken" Expr="//data[last()]/id"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.stripe.com/v1/skus?
+        limit=@(Model.PageCursor.NextTake)
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &starting_after=@Model.NextPageToken
+        }
+        @if(Model.Active != "all")
+        {
+          @: &active=@(Model.Active)
+        }
+        @if(Model.InStock != "all")
+        {
+          @: &in_stock=@(Model.InStock)
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <Compute Id="Price" Title="Price" Expr="@(Type.GetTypeCode(Model.Inp.GetType()) == TypeCode.Double ? (Model.Inp / 100) : 0)" Converter="Double">
+          <JsonPath Expr="price" Id="Inp" Converter="Double" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="image" Id="Image" Title="Image" Converter="String" HelpText=""/>
+        <JsonPath Expr="inventory.quantity" Id="InventoryQuantity" Title="Inventory Quantity" Converter="Int" HelpText=""/>
+        <JsonPath Expr="inventory.type" Id="InventoryType" Title="Inventory Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="inventory.value" Id="InventoryValue" Title="Inventory Value" Converter="Int" HelpText=""/>
+        <JsonPath Expr="package_dimensions" Id="PackageDimensions" Title="Package Dimensions" Converter="String" Checked="False" HelpText=""/>
+        <JsonPath Expr="product" Id="Product" Title="Product" Converter="String" HelpText=""/>
+        <JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix" HelpText=""/>
+        <JsonPath Expr="attributes" Id="Attributes" Title="Attributes" Converter="String" Checked="False" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth()
+    {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.SecretKey));
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
