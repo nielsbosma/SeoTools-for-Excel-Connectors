@@ -311,9 +311,9 @@
 
   <RestConnector Id="Report" Title="Custom Report" HelpUrl="https://tech.yandex.com/metrika/doc/api2/management/segments/getsegmentsforcounter-docpage/" HelpText="Returns a list of segments created via the API and pertaining to the specified label.">
     <Parameters>
-      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
-      <Text Id="Dimensions" Name="Dimensions" Required="true" />
-      <Text Id="Metrics" Name="Metrics" Required="true"/>
+      <Text Id="Tag" Title="Tag" Select.Connector="TagsHidden" Debug.DefaultValue="49122310" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Text Id="Dimensions" Name="Dimensions" Debug.DefaultValue="ym:s:startURL" Required="true" />
+      <Text Id="Metrics" Name="Metrics" Debug.DefaultValue="ym:s:visits,ym:s:users" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
     </Parameters>
     <Fetch>
@@ -324,18 +324,20 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-          https://api-metrica.yandex.com/stat/v1/data?
+          https://api-metrica.yandex.com/stat/v1/data/bytime?
           ids=@(Model.Tag)
           &dimensions=@(Model.Dimensions)
           &metrics=@(Model.Metrics)
+          &group=hour
           &date1=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
           &date2=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="dimensions" Id="Dimension"/>
+        <JsonPath Expr="metrics" Id="Metric"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
