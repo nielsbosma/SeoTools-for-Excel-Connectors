@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" Title="_TwitterAuth" Id="_TwitterAuth" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_TwitterAuth.xml" HelpUrl="http://seotoolsforexcel.com/_twitterauth/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <ConnectorAuthenticator LoginConnector="AuthStep3" LogoutConnector="" StayAuthenticated="true"/>
+
+  <RestConnector Id="RequestToken">
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestHeaders>
+          <Header Name='Authorization'>OAuth @(CreateOauth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+           https://api.twitter.com/oauth/request_token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr=".+" Group="0" Id="testt"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Authenticate">
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestHeaders>
+          <Header Name='Authorization'>OAuth @(CreateOauth())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+           https://api.twitter.com/oauth/request_token?oauth_token=QNSFPAAAAAAAzSvxAAABZh9U8Sk&oauth_token_secret=RBqEM0Kx71oBHoqKX9HR4pL5vFXxyXjN&oauth_callback_confirmed=true
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <!--<Regex Expr=".+" DefaultValue="test" Id="Token"/>-->
+      <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="Token"/>
+      <Regex Expr="oauth_token_secret=([^&amp;]+)" Id="TokenSecret"/>
+    </Parse>
+  </RestConnector>
+
+  <BrowserConnector Type="Popup" Id="AuthStep3" TokenParam="token">
+    <Url>@(Model.Token)...@(Model.TokenSecret)</Url>
+    <Prepare>
+      <Connector Id="AuthStep1"/>
+    </Prepare>
+  </BrowserConnector>
+
+
+</Suite>
