@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="_TwitterAuth" Id="_TwitterAuth" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_TwitterAuth.xml" HelpUrl="http://seotoolsforexcel.com/_twitterauth/">
+<Suite Category="SEO" Title="_TwitterAuth" Id="_TwitterAuth" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_TwitterAuth.xml" HelpUrl="http://seotoolsforexcel.com/_twitterauth/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
@@ -42,7 +42,6 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <!--<Regex Expr=".+" DefaultValue="test" Id="Token"/>-->
       <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="Token"/>
       <Regex Expr="oauth_token_secret=([^&amp;]+)" Id="TokenSecret"/>
     </Parse>
@@ -55,5 +54,69 @@
     </Prepare>
   </BrowserConnector>
 
+  <RazorFunctions>
+    <![CDATA[
+
+    string CreateOauth(){
+      string oauth = "";
+      string nonce = GenerateRandomString(20);
+      string timestamp = GetTimestamp().ToString();
+
+      string parameters = getParameters(nonce, timestamp, true);
+      string signatureBase = GetSignatureBase("https://api.twitter.com/oauth/request_token", parameters);
+			string signature = Utils.HmacSha1(signatureBase, Utils.UrlEncode(Model.OAuthConsumerSecret) + "&");
+
+      oauth = getParameters(nonce, timestamp, false);
+      oauth += ", oauth_signature=" + "\"" + Utils.UrlEncode(signature) + "\"";
+
+      return oauth;
+    }
+
+    string getParameters(string nonce, string timestamp, bool url = true){
+      Dictionary<string, string> parameters = new Dictionary<string, string>();
+      string generated = "";
+
+      parameters.Add("oauth_callback", Utils.UrlEncode("https://seotoolsforexcel.com"));
+      parameters.Add("oauth_consumer_key", Model.OAuthConsumerKey);
+      parameters.Add("oauth_nonce", nonce);
+      parameters.Add("oauth_signature_method", "HMAC-SHA1");
+      parameters.Add("oauth_timestamp", timestamp);
+      parameters.Add("oauth_version", "1.0");
+
+      if (url){
+        generated = String.Join("&", parameters.Select(x => x.Key + "=" + x.Value).ToArray());
+      }
+      else {
+        generated = String.Join(", ", parameters.Select(x => x.Key + "=" + "\"" + x.Value + "\"").ToArray());
+      }
+      return generated;
+    }
+
+    public string GenerateRandomString(int length) {
+      Random random = new Random();
+      string characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+      StringBuilder result = new StringBuilder(length);
+      for (int i = 0; i < length; i++) {
+        result.Append(characters[random.Next(characters.Length)]);
+      }
+      return result.ToString();
+    }
+
+    long GetTimestamp(){
+     return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    }
+
+    string GetSignatureBase(string url, string parameters){
+      string x = "POST&" + Utils.UrlEncode(url) + "&" + Utils.UrlEncode(parameters);
+      return x;
+    }
+
+    string GetSignature(string signatureBase){
+      string xx = Utils.HmacSha1(signatureBase, Utils.UrlEncode(Model.OAuthConsumerSecret) + "&");
+			return xx;
+    }
+
+    ]]>
+  </RazorFunctions>
 
 </Suite>
