@@ -211,7 +211,7 @@
 
   <RestConnector Id="ListAdsets" Title="List Adsets" Hidden="false">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
       <Text Id="CampaignFilter" Title="Filter by Campaign" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListCampaignsHidden" Select.IdField="CampaignId" Select.TitleField="Name"/>
     </Parameters>
     <Paging PageSize="25">
@@ -896,8 +896,9 @@
 
   <RestConnector Id="ActionsBreakdown" Title="Actions Breakdown" Hidden="false">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
       <Text Id="SubItemFilter" Title="Filter by Id (Campaign, Adset, or Ad)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="ActionFilter" Title="Filter by Action" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Radio Id="Unique" Title="Action Type" DefaultValue="actions" Required="true">
         <DataSource>
@@ -927,7 +928,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$..@(Model.Unique).*">
+      <JsonPath Expr="$..@(Model.Unique)@(ReturnActionFilter())">
         <JsonPath Expr="action_type" Id="Type" Title="Type" Converter="String" HelpText="Action type"/>
         <JsonPath Expr="value" Id="Actions" Title="Actions" Converter="Int" HelpText="Number of actions"/>
       </JsonPath>
@@ -939,8 +940,9 @@
 
   <RestConnector Id="ActionsBreakdownCost" Title="Actions Breakdown by Cost" Hidden="false">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="50872578" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
       <Text Id="SubItemFilter" Title="Filter by Id (Campaign, Adset, or Ad)" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="ActionFilter" Title="Filter by Action" DefaultValue="" Required="false" Debug.DefaultValue=""/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Radio Id="Unique" Title="Action Type" DefaultValue="actions" Required="true">
         <DataSource>
@@ -970,9 +972,9 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$..@(Model.Unique).*">
+      <JsonPath Expr="$..@(Model.Unique)@(ReturnActionFilter())">
         <JsonPath Expr="action_type" Id="Type" Title="Type" Converter="String" HelpText="Action type"/>
-        <JsonPath Expr="value" Id="Cost" Title="Cost" Converter="Double" HelpText="Cost"/>
+        <JsonPath Expr="value" Id="Actions" Title="Actions" Converter="Int" HelpText="Number of actions"/>
       </JsonPath>
     </Parse>
     <Fail>
@@ -985,6 +987,16 @@
       string SelectedFields() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
+      }
+      string ReturnActionFilter() {
+				if(!string.IsNullOrEmpty(Model.ActionFilter))
+				{
+					return "[?(@@.action_type=='" + Model.ActionFilter + "')]";
+				}
+				else
+				{
+					return ".*";
+				}
       }
     ]]>
   </RazorFunctions>
