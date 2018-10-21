@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Xovi" RequireVersion="7.0" Id="Xovi" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Xovi.xml" HelpUrl="http://seotoolsforexcel.com/xovi/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+	<Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/xovi/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/xovi/"/>
+  </Settings>
+
+  <RestConnector Id="ProjectKeywordsHidden" HelpUrl="http://developers.xovi.net/api/keywords/monitor/getdailykeywords/" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/monitor/getKeywords?format=json&key=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult.*">
+				<JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+				<JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Keywords" Title="Keywords" HelpUrl="http://developers.xovi.net/en/api-en/keywords-en/getkeywords-en/" HelpText="Returns all ranking keywords for a domain.">
+    <Parameters>
+      <Text Id="Url" Title="URL or Domain" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Engine" Title="Search Engine" DefaultValue="" Debug.DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="true"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/keywords/getKeywords?format=json&key=@(Model.ApiKey)
+				&urlpattern=@(Model.Url)
+				&sengine=@(Model.Engine)
+				&limit=@(Model.PageCursor.NextTake)
+				&skip=@(Model.PageCursor.Page)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult.*">
+				<JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Chosen keyword for the daily monitoring."/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Shows the best ranking url."/>
+				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText="Contains the best position of a keyword in a certain period of time."/>
+				<JsonPath Expr="change" Id="Change" Title="Change" Converter="Long" HelpText="Position change compared to previos week."/>
+				<JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="cost per click"/>
+				<JsonPath Expr="sevo" Id="Sevo" Title="Sevo" Converter="Double" HelpText="Position change compared to previos week."/>
+				<JsonPath Expr="competitorDensity" Id="CompetitorDensity" Title="Competitor Density" Converter="Double" HelpText=""/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ProjectKeywords" Title="Project Keywords" HelpUrl="http://developers.xovi.net/api/keywords/monitor/getdailykeywords/" HelpText="Returns the created monitoring keywords from the daily crawling.">
+    <Paging PageSize="100" EvenPages="true"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/monitor/getKeywords?format=json&key=@(Model.ApiKey)
+				&limit=@(Model.PageCursor.NextTake)
+				&skip=@(Model.PageCursor.Page)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult.*">
+				<JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+				<JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText=""/>
+				<JsonPath Expr="sengineId" Id="SearchEngineId" Title="Search Engine Id" Converter="Long" HelpText="Contains a unique identifier of the search engine."/>
+				<JsonPath Expr="keywordInserted" Id="Created" Title="Created" Converter="DateTime" HelpText="Indicates when the keyword was created."/>
+				<JsonPath Expr="resultCount" Id="Results" Title="Results" Converter="Long" HelpText="Displays the number of search results."/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Shows the best ranking URL."/>
+				<JsonPath Expr="isRanking" Id="Rank" Title="Rank" Converter="Long" HelpText=""/>
+				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText="The position at the time of the crawl."/>
+				<JsonPath Expr="positionChange" Id="Change" Title="Change" Converter="Long" HelpText="Shows the ranking difference from the previous day."/>
+				<JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" HelpText="cost per click"/>
+				<JsonPath Expr="sevo" Id="Sevo" Title="Sevo" Converter="Double" HelpText="Position change compared to previos week."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ProjectKeywordRankings" Title="Project Keyword Rankings" HelpUrl="http://developers.xovi.net/en/api-en/keywords-en/monitor-keywords-en/getdailykeywordrankings-en/" HelpText="Returns the Top 100 serchresults to installed keyword.">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" DefaultValue="" Debug.DefaultValue="seotools" Required="true" Select.Connector="ProjectKeywordsHidden" Select.IdField="Keyword" Select.TitleField="Domain"/>
+      <Text Id="EngineId" Title="Search Engine Id" DefaultValue="" Debug.DefaultValue="30" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/monitor/getKeywordRankings?format=json&key=@(Model.ApiKey)
+				&keyword=@Utils.UrlEncode(Model.Keyword)
+				&sengineid=@(Model.EngineId)
+				&limit=@(Model.PageCursor.NextTake)
+				&skip=@(Model.PageCursor.Page)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult.*">
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Contains the URL on which the searchresult is pointing."/>
+				<JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText="Contains the domain on which the searchresult is pointing."/>
+				<JsonPath Expr="page" Id="Page" Title="Page" Converter="Long" HelpText="Contains the page on which the searchresult was found on the searchengine."/>
+				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText="Contains the position of the keyword at the scanning time."/>
+				<JsonPath Expr="usearch" Id="SearchType" Title="Search Type" Converter="String" HelpText="Contains the universal search type."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="OviTrend" Title="OVI Trend" HelpUrl="http://developers.xovi.net/en/api-en/keywords-en/getstaticovitrend/" HelpText="Returns the static OVI trend of a domain.">
+    <Parameters>
+      <Text Id="Url" Title="URL or Domain" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Engine" Title="Search Engine" DefaultValue="" Debug.DefaultValue="google.com" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="true"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/keywords/getStaticOviTrend?format=json&key=@(Model.ApiKey)
+				&urlpattern=@(Model.Url)
+				&sengine=@(Model.Engine)
+				&limit=@(Model.PageCursor.NextTake)
+				&skip=@(Model.PageCursor.Page)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult.*">
+				<JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="Shows the date the OVI got determined."/>
+				<JsonPath Expr="staticOvi" Id="Ovi" Title="OVI" Converter="Double" HelpText="Contains the static OVI of a domain."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UrlRankingValue" Title="URL Ranking Value" HelpUrl="http://developers.xovi.net/en/api-en/keywords-en/getrankingvalue-en/" HelpText="Returns the value of a domain calculated from position, searchvolume, CPC and trafficfactor to a certain time.">
+    <Parameters>
+      <Text Id="Url" Title="URL or Domain" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Engine" Title="Search Engine" DefaultValue="" Debug.DefaultValue="google.com" Required="true"/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/keywords/getRankingValue?format=json&key=@(Model.ApiKey)
+				&urlpattern=@(Model.Url)
+				&sengine=@(Model.Engine)
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+          @: &date=@Model.DisplayDate.ToString("yyyy-MM-dd")
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult">
+				<JsonPath Expr="rankingValue" Id="RankingValue" Title="RankinValue" Converter="Double" HelpText="Shows the value of a domain"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="APICredits" Title="API Credits" HelpUrl="http://developers.xovi.net/en/api-en/user-en/getcreditstate-en/" HelpText="Returns the current state of your credit data.">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://suite.xovi.net/api/user/getCreditstate?format=json&key=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.apiResult">
+				<JsonPath Expr="creditsleft" Id="CreditsLeft" Title="Credits Left" Converter="Long" HelpText="Contains the credits left till next reinstatement."/>
+				<JsonPath Expr="creditsused" Id="CreditsUsed" Title="Credits Used" Converter="Long" HelpText="Contains the amount of credits being charged since the last reinstatement."/>
+				<JsonPath Expr="creditamount" Id="CreditAmount" Title="Credit Amount" Converter="Long" HelpText="Shows the monthly available credit amount."/>
+				<JsonPath Expr="additionalCreditamount" Id="AdditionalCreditAmount" Title="Additional Credit Amount" Converter="Long" HelpText="Shows the additional credit amount."/>
+				<JsonPath Expr="bookedCreditamount" Id="BookedCreditAmount" Title="Booked Credit Amount" Converter="Long" HelpText="Shows the additional requested credit amount."/>
+				<JsonPath Expr="refillintervall" Id="RefillInterval" Title="Refill Interval" Converter="Long" HelpText="Shows the interval of reinstatement for your credits."/>
+				<JsonPath Expr="lastrefill" Id="LastRefill" Title="Last Refill" Converter="DateTime" HelpText="Shows the date of the last reinstatement of your credits."/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
