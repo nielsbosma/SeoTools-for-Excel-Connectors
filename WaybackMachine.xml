@@ -3,7 +3,7 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
-  <RestConnector Id="Availability" Title="Availability" HelpUrl="https://archive.org/help/wayback_api.php" HelpText="Test to see if a given url is archived and currenlty accessible in the Wayback Machine.">
+  <RestConnector Id="Availability" Title="Availability" HelpUrl="https://archive.org/help/wayback_api.php" HelpText="Test to see if a given url is archived and currently accessible in the Wayback Machine.">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="https://www.seotoolsforexcel.com" Required="false"/>
     </Parameters>
@@ -34,6 +34,7 @@
 					<Item Id="domain" Title="Domain"/>
         </DataSource>
       </Select>
+      <Text Id="Filter" Title="Filter" Debug.DefaultValue="!statuscode:403" Required="false" HelpText="Any number of filter params of the following form may be specified: filter=[!]field:regex"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of snapshots to be returned back"/>
       <Radio Id="Sort" Title="Sort Order" DefaultValue="first">
@@ -46,8 +47,12 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				http://web.archive.org/cdx/search/cdx?url=@(Utils.UrlEncode(Model.Url))&output=json&fl=original,timestamp,statuscode,length
+				http://web.archive.org/cdx/search/cdx?url=@(Utils.UrlEncode(Model.Url))&output=json&fl=original,timestamp,mimetype,statuscode,length
 				&matchType=@(Model.Matchtype)
+        @if(!string.IsNullOrEmpty(Model.Filter))
+        {
+          @: &filter=@Utils.UrlEncode(Model.Filter)
+        }
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &from=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMdd"))
@@ -66,8 +71,10 @@
 			<JsonPath Expr="$[1:]">
 				<JsonPath Expr="$[0]" Id="Url" Title="URL" Converter="String" HelpText=""/>
 				<JsonPath Expr="$[1]" Id="Timestamp" Title="Timestamp" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" HelpText=""/>
-				<JsonPath Expr="$[3]" Id="Length" Title="Length" Converter="Long" HelpText="" Checked="false"/>
-				<JsonPath Expr="$[2]" Id="StatusCode" Title="Status Code" Converter="Auto" HelpText="" Checked="false"/>
+				<JsonPath Expr="$[2]" Id="MimeType" Title="Mime Type" Converter="String" HelpText="" Checked="false"/>
+				<JsonPath Expr="$[3]" Id="StatusCode" Title="Status Code" Converter="Auto" HelpText="" Checked="false"/>
+				<JsonPath Expr="$[4]" Id="Length" Title="Length" Converter="Long" HelpText="" Checked="false"/>
+
 			</JsonPath>
     </Parse>
   </RestConnector>
