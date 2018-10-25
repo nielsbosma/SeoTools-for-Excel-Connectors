@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Wayback Machine" Id="WaybackMachine" Category="SEO" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WaybackMachine.xml" HelpUrl="http://seotoolsforexcel.com/wayback-machine/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <RestConnector Id="Availability" Title="Availability" HelpUrl="https://archive.org/help/wayback_api.php" HelpText="Test to see if a given url is archived and currenlty accessible in the Wayback Machine.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://www.seotoolsforexcel.com" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://archive.org/wayback/available?url=@(Utils.UrlEncode(Model.Url))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="archived_snapshots.closest">
+				<JsonPath Expr="available" Id="Available" Title="Available" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="" Checked="false"/>
+				<JsonPath Expr="timestamp" Id="LastSnapshot" Title="Last Snapshot" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" HelpText="" Checked="false"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Snapshots" Title="Snapshots" HelpUrl="https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server" HelpText="Return each snapshot of the url that is available in the archive.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="false"/>
+      <Select Id="Matchtype" Title="Matchtype" Required="false" DefaultValue="exact">
+        <DataSource>
+					<Item Id="exact" Title="Exact"/>
+					<Item Id="prefix" Title="Prefix"/>
+					<Item Id="host" Title="Host"/>
+					<Item Id="domain" Title="Domain"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+      <Number Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of snapshots to be returned back"/>
+      <Radio Id="Sort" Title="Sort Order" DefaultValue="first">
+        <DataSource>
+          <Item Id="first" Title="Oldest" />
+          <Item Id="last" Title="Newest" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://web.archive.org/cdx/search/cdx?url=@(Utils.UrlEncode(Model.Url))&output=json&fl=original,timestamp,statuscode,length
+				&matchType=@(Model.Matchtype)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &from=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMdd"))
+          @: &to=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyyMMdd"))
+        }
+        &limit=
+				@if(Model.Sort == "last")
+				{
+					@: -
+				}
+				@(Model.MaxResults)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$[1:]">
+				<JsonPath Expr="$[0]" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="$[1]" Id="Timestamp" Title="Timestamp" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" HelpText=""/>
+				<JsonPath Expr="$[3]" Id="Length" Title="Length" Converter="Long" HelpText="" Checked="false"/>
+				<JsonPath Expr="$[2]" Id="StatusCode" Title="Status Code" Converter="Auto" HelpText="" Checked="false"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
