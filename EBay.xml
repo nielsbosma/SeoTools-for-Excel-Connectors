@@ -91,7 +91,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="FindItemsbyKeyword" Title="Find Items by Keyword" Hidden="false">
+  <RestConnector Id="FindItemsbyKeyword" Title="Find Items by Keyword" HelpUrl="https://developer.ebay.com/Devzone/finding/CallRef/findItemsByKeywords.html">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
       <Text Id="Seller" Title="Seller" DefaultValue="" Required="false" Debug.DefaultValue=""/>
@@ -209,7 +209,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="FindCompletedItems" Title="Find Completed Items" Hidden="false">
+  <RestConnector Id="FindCompletedItems" Title="Find Completed Items" HelpUrl="https://developer.ebay.com/Devzone/finding/CallRef/findCompletedItems.html">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
       <Text Id="Seller" Title="Seller" DefaultValue="" Required="false" Debug.DefaultValue="zaxtoyshop"/>
@@ -327,7 +327,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="GetSearchKeywordsRecommendation" Title="Get Keyword Recommentation" Hidden="false" HelpText="	Checks specified keywords and returns correctly spelled keywords for best search results.">
+  <RestConnector Id="GetSearchKeywordsRecommendation" Title="Get Keyword Recommentation" HelpUrl="https://developer.ebay.com/Devzone/finding/CallRef/getSearchKeywordsRecommendation.html" HelpText="Checks specified keywords and returns correctly spelled keywords for best search results.">
     <Parameters>
       <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
     </Parameters>
@@ -350,7 +350,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="GetItemStatus" Title="Get Items Statuses" Hidden="false">
+  <RestConnector Id="GetItemStatus" Title="Get Items Statuses" HelpUrl="https://developer.ebay.com/Devzone/shopping/docs/CallRef/GetItemStatus.html">
     <Parameters>
       <Text Id="Items" Title="Item IDs" DefaultValue="" Required="true" Debug.DefaultValue="" Multiline="true" HelpText="Enter one or more Item Ids separated by a new line"/>
     </Parameters>
@@ -392,7 +392,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="GetUserProfile" Title="Get User Profile" Hidden="false">
+  <RestConnector Id="GetUserProfile" Title="Get User Profile" HelpUrl="https://developer.ebay.com/Devzone/shopping/docs/CallRef/GetUserProfile.html">
     <Parameters>
       <Text Id="Username" Title="Username" DefaultValue="" Required="true" Debug.DefaultValue="rockodog2084" HelpText=""/>
     </Parameters>
@@ -427,6 +427,116 @@
     </Parse>
     <Fail>
       <JsonPath Expr="$.Errors[0].LongMessage"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="FindItemsBySeller" Title="Find Items by Seller" HelpUrl="https://developer.ebay.com/DevZone/finding/CallRef/findItemsAdvanced.html#sampleallSeller">
+    <Parameters>
+      <Text Id="SellerId" Title="Seller ID" DefaultValue="" Required="true" Debug.DefaultValue="theresasstuff"/>
+      <Text Id="Query" Title="Query" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="Seller" Title="Seller" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="ExcludeSeller" Title="Exclude Seller" DefaultValue="" Required="false" Debug.DefaultValue=""/>
+      <Text Id="MinPrice" Title="Min Price" DefaultValue="0" Required="true" Debug.DefaultValue="0"/>
+      <Text Id="MaxPrice" Title="Max Price" DefaultValue="1000" Required="true" Debug.DefaultValue="1000"/>
+      <Text Id="MinFeedbacks" Title="Min Feedback Score" DefaultValue="0" Required="true" Debug.DefaultValue="0"/>
+      <Checkbox Id="ListingType" Title="Auctions Only" DefaultValue="false"/>
+      <Checkbox Id="FreeShippingOnly" Title="Free Shipping" DefaultValue="false"/>
+      <Select Id="Condition" Title="Condition" Required="false" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Conditions"/>
+        </DataSource>
+      </Select>
+      <Select Id="Currency" Title="Currency" Required="false" DefaultValue="USD">
+        <DataSource>
+          <Resource Id="Currencies"/>
+        </DataSource>
+      </Select>
+      <Select Id="GlobalId" Title="eBay Site" Required="false" DefaultValue="EBAY-US">
+        <DataSource>
+          <Resource Id="GlobalIds"/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sort Results by" Required="false" DefaultValue="BestMatch">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="25"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://svcs.ebay.com/services/search/FindingService/v1
+          ?OPERATION-NAME=findItemsAdvanced
+          &keywords=@Utils.UrlEncode(Model.Query)
+          &paginationInput.entriesPerPage=@(Model.PageCursor.NextTake)
+          &paginationInput.pageNumber=@(Model.PageCursor.Page+1)
+          &GLOBAL-ID=@(Model.GlobalId)
+          &RESPONSE-DATA-FORMAT=JSON
+          &SECURITY-APPNAME=@(Model.AppId)
+					&itemFilter(0).name=Seller
+					&itemFilter(0).value=@(Model.SellerId)
+          &itemFilter(1).name=MinPrice&itemFilter(1).value=@(Model.MinPrice)
+          &itemFilter(1).paramName=Currency&itemFilter(1).paramValue=@(Model.Currency)
+          &itemFilter(2).name=MaxPrice&itemFilter(2).value=@(Model.MaxPrice)
+          &itemFilter(2).paramName=Currency&itemFilter(2).paramValue=@(Model.Currency)
+          &itemFilter(3).name=FeedbackScoreMin&itemFilter(3).value=@(Model.MinFeedbacks)
+          @{
+            int PrevParams = 3;
+            if(Model.ListingType == true)
+            {
+              PrevParams++;
+              @: &itemFilter(@PrevParams).name=ListingType&itemFilter(@PrevParams).value=Auction
+            }
+            if(Model.Condition != "all")
+            {
+              PrevParams++;
+              @: &itemFilter(@PrevParams).name=Condition&itemFilter(@PrevParams).value=@(Model.Condition)
+            }
+            if(Model.FreeShippingOnly == true)
+            {
+              PrevParams++;
+              @: &itemFilter(@PrevParams).name=FreeShippingOnly&itemFilter(@PrevParams).value=true
+            }
+          }
+          &sortOrder=@(Model.Sorting)
+          &outputSelector(0)=SellerInfo
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.findItemsAdvancedResponse[0].searchResult[0].item[*]">
+        <JsonPath Expr="itemId[0]" Id="ItemId" Title="Item Id" Converter="String" HelpText=""/>
+        <JsonPath Expr="title[0]" Id="Title" Title="Title" Converter="String" HelpText=""/>
+        <JsonPath Expr="condition[0].conditionDisplayName[0]" Id="Condition" Title="Condition" Converter="String" DefaultValue="" HelpText=""/>
+        <JsonPath Expr="primaryCategory[0].categoryId[0]" Id="CategoryId" Title="Category Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="primaryCategory[0].categoryName[0]" Id="CategoryName" Title="Category Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="viewItemURL[0]" Id="ItemUrl" Title="Item URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="galleryURL[0]" Id="GalleryUrl" Title="Gallery URL" Converter="String" HelpText=""/>
+        <JsonPath Expr="paymentMethod[0]" Id="PaymentMethod" Title="Payment Method" Converter="String" HelpText=""/>
+        <JsonPath Expr="autoPay[0]" Id="AutoPay" Title="AutoPay" Converter="String" HelpText=""/>
+        <JsonPath Expr="postalCode[0]" Id="PostalCode" Title="Postal Code" Converter="Int" HelpText="" DefaultValue="0"/>
+        <JsonPath Expr="location[0]" Id="Location" Title="Location" Converter="String" HelpText=""/>
+        <JsonPath Expr="country[0]" Id="Country" Title="Country" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].sellingState[0]" Id="SellingStatus" Title="Selling Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].bidCount[0]" Id="BidCount" Title="Bid Count" Converter="Int" HelpText="" DefaultValue="0"/>
+        <JsonPath Expr="sellingStatus[0].currentPrice[0].__value__" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="sellingStatus[0].currentPrice[0].@@currencyId" Id="Currency" Title="Currency" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].bestOfferEnabled[0]" Id="BestOffer" Title="Best Offer" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].buyItNowAvailable[0]" Id="BuyItNow" Title="Buy It Now" Converter="String" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].startTime[0]" Id="StartTime" Title="Start Time" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].endTime[0]" Id="EndTime" Title="End Time" Converter="DateTime" HelpText=""/>
+        <JsonPath Expr="listingInfo[0].listingType[0]" Id="ListingType" Title="Listing Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="topRatedListing[0]" Id="TopRatedListing" Title="Top Rated Listing" Converter="String" HelpText=""/>
+        <JsonPath Expr="returnsAccepted[0]" Id="ReturnsAccepted" Title="Returns Accepted" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellerInfo[0].sellerUserName[0]" Id="SellerUsername" Title="Seller Username" Converter="String" HelpText=""/>
+        <JsonPath Expr="sellerInfo[0].feedbackScore[0]" Id="SellerFeedbackScore" Title="Seller Feedback Score" Converter="Int" HelpText=""/>
+        <JsonPath Expr="sellerInfo[0].positiveFeedbackPercent[0]" Id="PositiveFeedbackRate" Title="Positive Feedback Rate" Converter="Double" HelpText=""/>
+      </JsonPath>
+        <JsonPath Expr="$.findItemsAdvancedResponse[0].paginationOutput[0].totalEntries[0]" Id="TotalResults" Title="Total Results" Converter="Long" HelpText=""/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.findItemsAdvancedResponse[0].errorMessage[0].error[0].message[0]"/>
     </Fail>
   </RestConnector>
 
