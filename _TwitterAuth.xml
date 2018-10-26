@@ -3,7 +3,52 @@
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <!--<ConnectorAuthenticator LoginConnector="AuthStep3" LogoutConnector="" StayAuthenticated="true"/>-->
+  <Resources>
+    <Resource Id="SelectCountry">
+      <Select Id="Country" Title="Country" Required="true" DefaultValue="US">
+        <DataSource>
+          <Item Id="AR" Title="Argentina"/>
+          <Item Id="AU" Title="Australia"/>
+          <Item Id="AT" Title="Austria"/>
+          <Item Id="BR" Title="Brazil"/>
+          <Item Id="CA" Title="Canada"/>
+          <Item Id="DK" Title="Denmark"/>
+          <Item Id="FI" Title="Finland"/>
+          <Item Id="FR" Title="France"/>
+          <Item Id="DE" Title="Germany"/>
+          <Item Id="HK" Title="Hong Kong"/>
+          <Item Id="IN" Title="India"/>
+          <Item Id="IT" Title="Italy"/>
+          <Item Id="JP" Title="Japan"/>
+          <Item Id="MX" Title="Mexico"/>
+          <Item Id="NL" Title="Netherlands"/>
+          <Item Id="NO" Title="Norway"/>
+          <Item Id="PL" Title="Poland"/>
+          <Item Id="RU" Title="Russian Federation"/>
+          <Item Id="SG" Title="Singapore"/>
+          <Item Id="ZA" Title="South Africa"/>
+          <Item Id="ES" Title="Spain"/>
+          <Item Id="SE" Title="Sweden"/>
+          <Item Id="CH" Title="Switzerland"/>
+          <Item Id="TR" Title="Turkey"/>
+          <Item Id="US" Title="USA"/>
+          <Item Id="GB" Title="United Kingdom"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="SelectCurrency">
+      <Select Id="Currency" Title="Currency" Required="true" DefaultValue="USD">
+        <DataSource>
+          <Item Id="USD" Title="USD"/>
+          <Item Id="EUR" Title="EUR"/>
+          <Item Id="GBP" Title="GBP"/>
+        </DataSource>
+      </Select>
+    </Resource>
+  </Resources>
+
+  <!--<ConnectorAuthenticator LoginConnector="AccessToken" LogoutConnector="" StayAuthenticated="true"/>-->
+
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sqlconnectors/">
     <Text Id="OAuthConsumerKey" Title="OAuth Consumer Key" Required="true"/>
     <Text Id="OAuthConsumerSecret" Title="OAuth Consumer Secret" Required="true"/>
@@ -12,12 +57,12 @@
     <Text Id="TokenSecret"/>
   </Settings>
 
-  <RestConnector Id="RequestToken">
+  <RestConnector Id="RequestToken" Title="RequestToken" Hidden="false" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/request_token">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
         <RequestHeaders>
-          <Header Name='Authorization'>OAuth @(CreateOauth())</Header>
+          <Header Name='Authorization'>OAuth @(CreateOauthInitial())</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -27,49 +72,76 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="Token"/>
-      <Regex Expr="oauth_token_secret=([^&amp;]+)" Id="TokenSecret"/>
+      <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="RequestToken"/>
+      <Regex Expr="oauth_token_secret=([^&amp;]+)" Group="1" Id="RequestTokenSecret"/>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Authenticate">
+  <BrowserConnector Id="Authenticate" Title="Authenticate" Type="Popup" TokenParam="oauth_token,oauth_verifier" TokenName="OauthToken,OauthVerifier">
     <Prepare>
       <Connector Id="RequestToken"/>
+    </Prepare>
+    <Url>
+      <![CDATA[
+        https://api.twitter.com/oauth/authenticate?oauth_token=@(Model.RequestToken)&oauth_token_secret=@(Model.RequestTokenSecret)&oauth_callback_confirmed=true
+      ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="AccessToken" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/authenticate">
+    <Prepare>
+      <Connector Id="Authenticate"/>
     </Prepare>
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
+        <RequestHeaders>
+          <Header Name='Authorization'>OAuth @(CreateOauthInitial())</Header>
+        </RequestHeaders>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestForm>
+          <Param Name='oauth_verifier'>@(Model.OauthVerifier)</Param>
+        </RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/oauth/access_token?oauth_token=@(Model.OauthToken)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="AccessToken"/>
+      <Regex Expr="oauth_token_secret=([^&amp;]+)" Group="1" Id="AccessTokenSecret"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="RetweetsOfMe" Title="Retweets Of Me" HelpUrl="https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/get-statuses-retweets_of_me">
+    <Parameters>
+      <Number Id="Limit" Title="Max results" Required="true" DefaultValue="20" MinValue="1" MaxValue="100"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'>OAuth @(CreateOauth())</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-           https://api.twitter.com/oauth/request_token?oauth_token=@(Model.Token)&oauth_token_secret=@(Model.TokenSecret)&oauth_callback_confirmed=true
+        https://api.twitter.com/1.1/statuses/retweets_of_me.json?count=@(Model.Limit)
         ]]>
       </Fetch.Url>
+      <Parse>
+        <JsonPath Expr="$.*">
+          <JsonPath Expr="text" Id="Text" Converter="String" />
+        </JsonPath>
+      </Parse>
     </Fetch>
-    <Parse>
-      <Regex Expr="oauth_token=([^&amp;]+)" Group="1" Id="Token"/>
-      <Regex Expr="oauth_token_secret=([^&amp;]+)" Id="TokenSecret"/>
-    </Parse>
   </RestConnector>
-
-  <BrowserConnector Type="Popup" Id="Browser" Title="Browser" TokenParam="oauth_token" TokenName="Token">
-    <!--<Prepare>-->
-      <!--<Connector Id="RequestToken"/>-->
-    <!--</Prepare>-->
-    <Url>
-      <![CDATA[
-        https://api.twitter.com/oauth/authenticate?oauth_token=@(Model.Token)&oauth_token_secret=@(Model.TokenSecret)
-      ]]>
-    </Url>
-  </BrowserConnector>
 
   <RazorFunctions>
     <![CDATA[
 
-    string CreateOauth(){
+    string CreateOauthInitial(){
       string oauth = "";
       string nonce = GenerateRandomString(20);
       string timestamp = GetTimestamp().ToString();
@@ -80,6 +152,12 @@
 
       oauth = getParameters(nonce, timestamp, false);
       oauth += ", oauth_signature=" + "\"" + Utils.UrlEncode(signature) + "\"";
+
+      return oauth;
+    }
+
+     string CreateOauth(){
+      string oauth = "";
 
       return oauth;
     }
