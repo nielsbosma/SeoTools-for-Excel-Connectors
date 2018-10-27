@@ -1,11 +1,27 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="5.1" Title="Google Search Console" Id="GoogleSearchConsole" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Google-Search-Console.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="7.0" Title="Google Search Console" Id="GoogleSearchConsole" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Google-Search-Console.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/webmasters.readonly" StayAuthenticated="true"/>
 
   <Resources>
+    <Resource Id="Platforms">
+      <Item Id="web" Title="Web"/>
+			<Item Id="mobile" Title="Mobile"/>
+			<Item Id="smartphoneOnly" Title="Smartphone Only"/>
+    </Resource>
+    <Resource Id="Categories">
+			<Item Id="notFound" Title="NotFound"/>
+      <Item Id="flashContent" Title="flashContent"/>
+			<Item Id="authPermissions" Title="AuthPermissions"/>
+			<Item Id="manyToOneRedirect" Title="ManyToOneRedirect"/>
+			<Item Id="notFollowed" Title="NotFollowed"/>
+			<Item Id="other" Title="Other"/>
+			<Item Id="roboted" Title="Roboted"/>
+			<Item Id="serverError" Title="ServerError"/>
+			<Item Id="soft404" Title="Soft404"/>
+    </Resource>
     <Resource Id="Fail">
       <Fail>
         <Regex Expr="^Not Found$" Group="0"/>
@@ -64,7 +80,7 @@
    ]]>
   </RazorFunctions>
 
-  <RestConnector Id="Sites" Title="Sites" Hidden="false">
+  <RestConnector Id="Sites" Title="Sites" Hidden="true">
     <Parameters>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites?fields=siteEntry">
@@ -133,9 +149,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Sitemaps" Title="Sitemaps">
+  <RestConnector Id="Sitemaps" Title="Sitemaps" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/sitemaps">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps?fields=sitemap">
       <HttpSettings>
@@ -158,10 +174,10 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SitemapContents" Title="Sitemap Status">
+  <RestConnector Id="SitemapContents" Title="Sitemap Status" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/sitemaps/get">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
-      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="Path"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/sitemap.xml" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="Path"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps/@(Utils.UrlEncode(Model.Sitemap))?fields=contents">
       <HttpSettings>
@@ -180,11 +196,39 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UrlCrawlErrorCounts" Title="URL Crawl Error Counts">
+  <RestConnector Id="UrlCrawlErrorCounts" Title="URL Crawl Error Counts" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/urlcrawlerrorscounts/query">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Select Id="Platform" Title="Platform" Required="false" DefaultValue="all">
+        <DataSource>
+					<Item Id="all" Title="All"/>
+          <Resource Id="Platforms"/>
+        </DataSource>
+      </Select>
+      <Select Id="Category" Title="Category" Required="false" DefaultValue="all">
+        <DataSource>
+					<Item Id="all" Title="All"/>
+          <Resource Id="Categories"/>
+        </DataSource>
+      </Select>
+      <Checkbox Id="LatestCounts" Title="Latest Counts" HelpText="If true, returns only the latest crawl error counts." DefaultValue="True"/>
     </Parameters>
-    <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/urlCrawlErrorsCounts/query?fields=countPerTypes&amp;latestCountsOnly=true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/urlCrawlErrorsCounts/
+					query?fields=countPerTypes
+					&latestCountsOnly=@(Model.LatestCounts ? "true" : "false")
+					@if(Model.Platform != "all")
+					{
+						@: &platform=@(Model.Platform)
+					}
+					@if(Model.Category != "all")
+					{
+						@: &category=@(Model.Category)
+					}
+        ]]>
+      </Fetch.Url>
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
@@ -201,26 +245,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UrlCrawlErrorSamples" Title="URL Crawl Error Samples">
+  <RestConnector Id="UrlCrawlErrorSamples" Title="URL Crawl Error Samples" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/urlcrawlerrorssamples/list">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
-      <Select Id="Category" Title="Category" DefaultValue="notFound">
+      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Id"/>
+      <Select Id="Category" Title="Category" Required="false" DefaultValue="notFound">
         <DataSource>
-          <Item Id="authPermissions" Title="AuthPermissions"/>
-          <Item Id="manyToOneRedirect" Title="ManyToOneRedirect"/>
-          <Item Id="notFollowed" Title="NotFollowed"/>
-          <Item Id="notFound" Title="NotFound"/>
-          <Item Id="other" Title="Other"/>
-          <Item Id="roboted" Title="Roboted"/>
-          <Item Id="serverError" Title="ServerError"/>
-          <Item Id="soft404" Title="Soft404"/>
+          <Resource Id="Categories"/>
         </DataSource>
       </Select>
-      <Select Id="Platform" Title="Platform" DefaultValue="web">
+      <Select Id="Platform" Title="Platform" Required="false" DefaultValue="web">
         <DataSource>
-          <Item Id="mobile" Title="Mobile"/>
-          <Item Id="smartphoneOnly" Title="Smartphone Only"/>
-          <Item Id="web" Title="Web"/>
+          <Resource Id="Platforms"/>
         </DataSource>
       </Select>
     </Parameters>
