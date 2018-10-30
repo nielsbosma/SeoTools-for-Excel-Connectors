@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="_ZohoConnectorAuth" Id="_ZohoConnectorAuth" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_ZohoConnectorAuth.xml" HelpUrl="http://seotoolsforexcel.com/zoho/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings>
+    <Text Id="ClientId" Title="Client Id" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+  </Settings>
+
+  <ConnectorAuthenticator LoginConnector="AccessToken" LogoutConnector="" StayAuthenticated="true"/>
+
+  <BrowserConnector Id="Authorization" Type="Default" TokenParam="code" TokenName="GrantToken">
+    <Url>
+      <![CDATA[
+          https://accounts.zoho.com/oauth/v2/auth?scope=ZohoCRM.modules.READ,ZohoCRM.settings.READ,ZohoCRM.users.READ,ZohoCRM.org.READ,Aaaserver.profile.READ
+          &client_id=@(Model.ClientId)
+          &response_type=code&access_type=online&redirect_uri=http://localhost:2108
+        ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="AccessToken">
+    <Prepare>
+      <Connector Id="Authorization"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://accounts.zoho.com/oauth/v2/token?code=@(Model.GrantToken)&redirect_uri=http://localhost:2108
+          &client_id=@(Model.ClientId)&client_secret=@(Model.ClientSecret)&grant_type=authorization_code
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$">
+        <JsonPath Expr="access_token" Id="AccessToken"/>
+        <JsonPath Expr="api_domain" Id="ApiDomain"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Leads">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Zoho-oauthtoken @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.zohoapis.com/crm/v2/Leads
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.*">
+        <JsonPath Expr="Email" Id="Email"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
