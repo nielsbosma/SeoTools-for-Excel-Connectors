@@ -13,6 +13,12 @@
 			<Item Id="viewCount" Title="View Count"/>
 			<Item Id="rating" Title="Rating"/>
     </Resource>
+    <Resource Id="SubscriptionSortings">
+			<Item Id="default" Title="Default"/>
+			<Item Id="alphabetical" Title="Alphabetical"/>
+			<Item Id="relevance" Title="Relevance"/>
+			<Item Id="unread" Title="Unread"/>
+    </Resource>
     <Resource Id="Durations">
 			<Item Id="any" Title="Any"/>
 			<Item Id="long" Title="20 min+"/>
@@ -573,6 +579,108 @@
     <Parse>
       <Regex Id="VideoId" Expr="&quot;video_id&quot;:&quot;(.*?)&quot;" Converter="String" HelpText=""/>
     </Parse>
+  </RestConnector>
+
+  <RestConnector Id="ChannelSubscriptions" Title="Channel Subscriptions" HelpUrl="https://developers.google.com/youtube/v3/docs/subscriptions/list">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="UCRDoSzbAoJTmq16vxMomCdg" HelpText="Leave empty to retrieve a feed of the authenticated user's subscriptions." Required="false"/>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="default">
+        <DataSource>
+          <Resource Id="SubscriptionSortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+        <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/subscriptions?
+        @(!string.IsNullOrEmpty(Model.ChannelId) ? "channelId=" + Model.ChannelId : "mine=true")
+				&part=snippet,contentDetails
+        &maxResults=@(Model.PageCursor.NextTake)
+				@if(Model.Sorting != "default")
+				{
+					@: &order=@(Model.Sorting)
+				}
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@Model.NextPageToken
+        }
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items.*">
+				<JsonPath Expr="snippet.channelId" Id="Id" Title="Channel Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="snippet.title" Id="ChannelName" Title="Channel Name" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="snippet.description" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="snippet.publishedAt" Id="Created" Title="Created" Converter="DateTime" DefaultValue=""/>
+				<JsonPath Expr="contentDetails.totalItemCount" Id="Items" Title="Items" Converter="Long" DefaultValue=""/>
+				<JsonPath Expr="snippet.thumbnails.default.url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="MySubscribers" Title="My Subscribers" HelpText="retrieve a feed of the subscribers of the authenticated user in no particular order." HelpUrl="https://developers.google.com/youtube/v3/docs/subscriptions/list">
+    <Parameters>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="default">
+        <DataSource>
+          <Resource Id="SubscriptionSortings"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+        <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+      <![CDATA[
+        https://www.googleapis.com/youtube/v3/subscriptions?mySubscribers=true
+				&part=subscriberSnippet
+        &maxResults=@(Model.PageCursor.NextTake)
+				@if(Model.Sorting != "default")
+				{
+					@: &order=@(Model.Sorting)
+				}
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: &pageToken=@Model.NextPageToken
+        }
+      ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items.*.subscriberSnippet">
+				<JsonPath Expr="channelId" Id="Id" Title="Channel Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="title" Id="ChannelName" Title="Channel Name" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="thumbnails.default.url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="$.error.errors[0].reason"/>
+    </Fail>
   </RestConnector>
 
 </Suite>
