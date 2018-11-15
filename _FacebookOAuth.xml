@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="_FacebookAuth" Id="_FacebookAuth" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_TwitterAuth.xml" HelpUrl="http://seotoolsforexcel.com/_twitterauth/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <ConnectorAuthenticator LoginConnector="AccessToken" LogoutConnector="" StayAuthenticated="true"/>
+
+  <BrowserConnector Id="AccessToken" Title="Access Token" Type="Popup" TokenParam="access_token" TokenName="AccessToken">
+    <Url>
+      <![CDATA[
+        https://www.facebook.com/v3.2/dialog/oauth?client_id=1305465169512905&response_type=token&scope=manage_pages&auth_type=rerequest&redirect_uri=https://www.facebook.com/connect/login_success.html
+      ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="PageLookup" Title="Page Lookup">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Debug.DefaultValue="368720386801835" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.0/?id=
+        @(Model.PageId)
+        &fields=@SelectedFields()
+        &access_token=@(Model.Authenticator.AccessToken))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" HelpText=""/>
+      <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id" HelpText=""/>
+      <JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category" HelpText=""/>
+      <JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins" HelpText=""/>
+      <JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count" HelpText=""/>
+      <JsonPath Title="Talking About" Id="TalkingAbout" Expr="talking_about_count" Converter="Int" Tag="talking_about_count" HelpText=""/>
+      <JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" HelpText="" DefaultValue=""/>
+      <JsonPath Title="Email" Id="Email" Expr="emails" Converter="String" Tag="emails" HelpText="" DefaultValue="" Checked="false"/>
+      <JsonPath Title="Phone" Id="Phone" Expr="phone" Converter="String" Tag="phone" HelpText="" DefaultValue="" Checked="false"/>
+      <JsonPath Title="Company Overview" Id="CompanyOverview" Expr="company_overview" Converter="String" Tag="company_overview" HelpText="" DefaultValue="" Checked="false"/>
+      <JsonPath Title="Awards" Id="Awards" Expr="awards" Converter="String" Tag="awards" HelpText="" DefaultValue="" Checked="false"/>
+      <JsonPath Title="Hours" Id="Hours" Expr="hours" Converter="String" Tag="hours" HelpText="" DefaultValue="" Checked="false"/>
+      <JsonPath Title="Location Name" Id="NameLocation" Expr="name_with_location_descriptor" Converter="String" Tag="name_with_location_descriptor" HelpText="" DefaultValue="" Checked="false"/>
+      <Compute Id="PageUrl" Title="Page URL">
+        <Compute.Expr>
+          <![CDATA[
+            http://www.facebook.com/@(Model.PageIdInput)
+            ]]>
+        </Compute.Expr>
+        <JsonPath Id="PageIdInput" Expr="id" Converter="String"/>
+      </Compute>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+    string FetchIdsBatch()
+    {
+      string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
+      return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
