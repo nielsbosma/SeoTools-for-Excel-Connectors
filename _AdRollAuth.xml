@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="_AdrollAuth" Id="_AdrollAuth" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/_AdrollAuth.xml" HelpUrl="http://seotoolsforexcel.com/_adrollauth/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sqlconnectors/">
+    <Text Id="ClientId" Required="true"/>
+    <Text Id="ClientSecret"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <JsonPath Expr="$.errors"/>
+    </Resource>
+  </Resources>
+
+  <ConnectorAuthenticator LoginConnector="RequestToken" LogoutConnector="" StayAuthenticated="true"/>
+
+  <BrowserConnector Id="Authorize" Type="Default" TokenParam="code" TokenName="TempCode">
+    <Url>
+      <![CDATA[
+           https://services.adroll.com/auth/authorize?response_type=code&client_id=@(Model.ClientId)&state=@(RandomString(15))
+        ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="RequestToken" Title="RequestToken" Hidden="false" >
+    <Prepare>
+      <Connector Id="Authorize"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestForm>
+          <Param Name="client_id">@(Model.ClientId)</Param>
+          <Param Name="client_secret">@(Model.ClientSecret)</Param>
+          <Param Name="code">@(Model.TempCode)</Param>
+          <Param Name="grant_type">authorization_code</Param>
+        </RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://services.adroll.com/auth/token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.access_token" Id="AccessToken"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Organization" Title="OrganizationInfo">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+           https://services.adroll.com/api/v1/organization/get
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.results">
+        <JsonPath Expr="name" Id="Name" Title="Name"/>
+        <JsonPath Expr="created_date" Id="Created" Title="Created" Converter="DateTime"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    private static Random random = new Random();
+    public string RandomString(int length)
+    {
+      const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      return new string(Enumerable.Repeat(chars, length)
+      .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+    ]]>
+  </RazorFunctions>
+</Suite>
