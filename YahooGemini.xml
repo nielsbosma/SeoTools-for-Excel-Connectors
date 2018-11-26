@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Ads" Title="YahooGemini" Id="YahooGemini" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YahooGemini.xml" HelpUrl="http://seotoolsforexcel.com/yahoo-gemini/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <ConnectorAuthenticator LoginConnector="AccessToken" StayAuthenticated="true"/>
+
+  <Settings>
+    <Text Id="ClientId" Title="Client ID" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+    <Radio Id="Environment" DefaultValue="general" Required="true">
+      <DataSource>
+        <Item Id="api" Title="Production"/>
+        <Item Id="sandbox-api" Title="Sandbox"/>
+      </DataSource>
+    </Radio>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.errors"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <BrowserConnector Id="Authorize" Type="Popup" TokenParam="code" TokenName="TempCode">
+    <Url>
+      <![CDATA[
+           https://api.login.yahoo.com/oauth2/request_auth?client_id=dj0yJmk9bXYwOU1Oc3V2NURVJnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWE4&response_type=code&state=@(RandomString(15))&redirect_uri=https://seotoolsforexcel.com
+        ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="AccessToken">
+    <Prepare>
+      <Connector Id="Authorize"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestForm>
+          <Param Name="client_id">@(Model.ClientId)</Param>
+          <Param Name="client_secret">@(Model.ClientSecret)</Param>
+          <Param Name="code">@(Model.TempCode)</Param>
+          <Param Name="grant_type">authorization_code</Param>
+          <Param Name="redirect_uri">https://seotoolsforexcel.com</Param>
+        </RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.login.yahoo.com/oauth2/get_token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.access_token" Id="AccessToken"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Advertisers" Title="Advertisers" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/advertiser.html">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer <Model class="Authenticator AccessToken"></Model></Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Environment).gemini.yahoo.com/v3/rest/advertiser/
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="advertiserName" Id="AdvertiserName" Title="AdvertiserName"/>
+        <JsonPath Expr="timezone" Id="Timezone"/>
+        <JsonPath Expr="currency" Id="Currency" />
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Campaigns" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/campaigns.html">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Environment).gemini.yahoo.com/v3/rest/campaign/
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <JsonPath Expr="advertiserId" Id="AdvertiserId" Title="Advertiser ID" Converter="Int" HelpText=""/>
+        <JsonPath Expr="campaignName" Id="CampaignName" Title="Campaig Nname" Converter="String" HelpText=""/>
+        <JsonPath Expr="budget" Id="Budget" Title="Budget" Converter="Double" HelpText=""/>
+        <JsonPath Expr="language" Id="Language" Title="Language" Converter="String" HelpText=""/>
+        <JsonPath Expr="budgetType" Id="BudgetType" Title="Budget Type" Converter="String" HelpText=""/>
+        <JsonPath Expr="channel" Id="Channel" Title="Channel" Converter="String" HelpText=""/>
+        <JsonPath Expr="objective" Id="Objective" Title="Objective" Converter="String" HelpText=""/>
+        <JsonPath Expr="isPartnerNetwork" Id="IsPartnerNetwork" Title="Partner Network" Converter="Bool" HelpText=""/>
+        <JsonPath Expr="advancedGeoPos" Id="AdvancedGeoPos" Title="Advanced Geo Pos" Converter="String" HelpText=""/>
+        <JsonPath Expr="advancedGeoNeg" Id="AdvancedGeoNeg" Title="Advanced Geo Neg" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    private static Random random = new Random();
+    public string RandomString(int length)
+    {
+      const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      return new string(Enumerable.Repeat(chars, length)
+      .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+    ]]>
+
+
+    string CreateBasicAuth()
+    {
+    return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + ":" + Model.ClientSecret));
+    }
+  </RazorFunctions>
+</Suite>
