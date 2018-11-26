@@ -3,7 +3,12 @@
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
-  <ConnectorAuthenticator LoginConnector="Authorize" StayAuthenticated="true"/>
+  <ConnectorAuthenticator LoginConnector="AccessToken" StayAuthenticated="true"/>
+
+  <Settings>
+    <Text Id="ClientId" Title="Client ID" Required="true"/>
+    <Text Id="ClientSecret" Title="Client Secret" Required="true"/>
+  </Settings>
 
   <BrowserConnector Id="Authorize" Type="Popup" TokenParam="code" TokenName="TempCode">
     <Url>
@@ -13,9 +18,35 @@
     </Url>
   </BrowserConnector>
 
-  <!--<RestConnector>-->
-    <!---->
-  <!--</RestConnector>-->
+  <RestConnector Id="AccessToken">
+    <Prepare>
+      <Connector Id="Authorize"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <RequestForm>
+          <Param Name="client_id">@(Model.ClientId)</Param>
+          <Param Name="client_secret">@(Model.ClientSecret)</Param>
+          <Param Name="code">@(Model.TempCode)</Param>
+          <Param Name="grant_type">authorization_code</Param>
+          <Param Name="redirect_uri">https://seotoolsforexcel.com</Param>
+        </RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.login.yahoo.com/oauth2/get_token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.access_token" Id="AccessToken"/>
+    </Parse>
+  </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
@@ -27,5 +58,11 @@
       .Select(s => s[random.Next(s.Length)]).ToArray());
     }
     ]]>
+
+
+    string CreateBasicAuth()
+    {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + ":" + Model.ClientSecret));
+    }
   </RazorFunctions>
 </Suite>
