@@ -25,45 +25,56 @@
 			<Item Id="medium" Title="4-20 min"/>
 			<Item Id="short" Title="4 min-"/>
     </Resource>
+		<Resource Id="Authorization">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+		</Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="$.error.errors[0].reason"/>
+			</Fail>
+    </Resource>
+
   </Resources>
 
-  <RestConnector Id="VideoStatistics" Title="Video Statistics">
+  <RestConnector Id="VideoStatistics" Title="Video Statistics" HelpUrl="https://developers.google.com/youtube/v3/docs/videos/list">
     <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="true"/>
+      <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="Ddz8ZlhCjZk"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://www.googleapis.com/youtube/v3/videos?
         id=@(Model.VideoId)
-        &part=statistics,snippet
+        &part=statistics,snippet,contentDetails
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="Auto" DefaultValue=""/>
       <JsonPath Title="Title" Identifier="Title" Expr="$.items.[snippet].[title]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue=""/>
+      <JsonPath Title="Duration" Identifier="Duration" Expr="$.items.[contentDetails].[duration]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Favorites" Identifier="Favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" Checked="false" DefaultValue=""/>
+      <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" DefaultValue=""/>
+      <JsonPath Title="Dimension" Identifier="Dimension" Expr="$.items.[contentDetails].[dimension]" Converter="String" DefaultValue=""/>
+      <JsonPath Title="Definition" Identifier="Definition" Expr="$.items.[contentDetails].[definition]" Converter="String" DefaultValue=""/>
+      <JsonPath Title="Caption" Identifier="Caption" Expr="$.items.[contentDetails].[caption]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String" DefaultValue=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ChannelStatistics" Title="Channel Statistics">
+  <RestConnector Id="ChannelStatistics" Title="Channel Statistics" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
     <Parameters>
       <Text Id="ChannelInput" Title="Channel" Required="true"/>
       <Radio Id="InputType" Title="Input Type" DefaultValue="id" Required="false">
@@ -80,11 +91,7 @@
         &part=statistics,snippet
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Title="Id" Id="Id"  Expr="$.items.[id]" Converter="String" DefaultValue="0"/>
@@ -96,12 +103,10 @@
       <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
       <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchVideos" Title="Videos Search">
+  <RestConnector Id="SearchVideos" Title="Videos Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
       <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
@@ -139,17 +144,10 @@
           @: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
         }
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -157,22 +155,13 @@
           <Compute.Expr>
             <![CDATA[
             @{
-              var Broadcast = Model.BroadcastInput;
-              var UrlString = "";
-              if(Broadcast == "upcoming")
-              {
-                UrlString = "upcoming";
-              }
-              else
-              {
-                UrlString = "http://www.youtube.com/watch/" + Model.Id;
-              }
+              var UrlString = (Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id);
             }
             @UrlString
             ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
-          <JsonPath Expr="snippet.liveBroadcastContent" Id="BroadcastInput" Converter="String"/>
+          <JsonPath Expr="snippet.liveBroadcastContent" Id="Broadcast" Converter="String"/>
         </Compute>
         <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
         <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
@@ -183,12 +172,10 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchChannels" Title="Channels Search">
+  <RestConnector Id="SearchChannels" Title="Channels Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
       <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
@@ -219,25 +206,16 @@
         &channelType=@(Model.ChannelType)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-            <![CDATA[
-            http://www.youtube.com/channel/@(Model.Id)
-            ]]>
+            <![CDATA[http://www.youtube.com/channel/@(Model.Id)]]>
           </Compute.Expr>
           <JsonPath Expr="id.channelId" Id="Id" Converter="String"/>
         </Compute>
@@ -249,12 +227,10 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchPlaylists" Title="Playlists Search">
+  <RestConnector Id="SearchPlaylists" Title="Playlists Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
       <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
@@ -278,25 +254,16 @@
         &order=@(Model.Sorting)
         &q=@Utils.UrlEncode(Model.Query)
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="Url">
           <Compute.Expr>
-            <![CDATA[
-            http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)
-            ]]>
+            <![CDATA[http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)]]>
           </Compute.Expr>
           <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
         </Compute>
@@ -308,12 +275,10 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideosFromChannel" Title="Channel Videos">
+  <RestConnector Id="VideosFromChannel" Title="Channel Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
       <Text Id="ChannelId" DefaultValue="" Title="Channel Id" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
@@ -343,17 +308,10 @@
           @: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
         }
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -361,15 +319,7 @@
           <Compute.Expr>
             <![CDATA[
             @{
-              var UrlString = "";
-              if(Model.Broadcast == "upcoming")
-              {
-                UrlString = "upcoming";
-              }
-              else
-              {
-                UrlString = "http://www.youtube.com/watch/" + Model.Id;
-              }
+              var UrlString = (Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id);
             }
             @UrlString
             ]]>
@@ -385,12 +335,10 @@
         <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideosFromPlayList" Title="Playlist Videos">
+  <RestConnector Id="VideosFromPlayList" Title="Playlist Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/playlistItems/list">
     <Parameters>
       <Text Id="PlayListId" DefaultValue="" Title="PlayList Id" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L"/>
     </Parameters>
@@ -400,32 +348,23 @@
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/playlistItems?
         &part=snippet
         &playlistId=@Utils.UrlEncode(Model.PlayListId)
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
-            <![CDATA[
-            http://www.youtube.com/watch/@(Model.Id)
-            ]]>
+            <![CDATA[http://www.youtube.com/watch/@(Model.Id)]]>
           </Compute.Expr>
           <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
         </Compute>
@@ -436,12 +375,10 @@
         <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideoComments" Title="Video Comments">
+  <RestConnector Id="VideoComments" Title="Video Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
     <Parameters>
       <Text Id="VideoId" DefaultValue="" Title="Video Id" Required="true" Debug.DefaultValue="MbHQo4KkBWc"/>
       <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
@@ -456,7 +393,7 @@
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/commentThreads?
@@ -465,17 +402,10 @@
         &order=@(Model.Sorting)
         &textFormat=plainText
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -490,12 +420,10 @@
         <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ChannelComments" Title="Channel Comments">
+  <RestConnector Id="ChannelComments" Title="Channel Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
     <Parameters>
       <Text Id="ChannelId" DefaultValue="" Title="Channel Id" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w"/>
       <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
@@ -510,7 +438,7 @@
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/youtube/v3/commentThreads?
@@ -519,17 +447,10 @@
         &order=@(Model.Sorting)
         &textFormat=plainText
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -544,41 +465,7 @@
         <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String" HelpText=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="UserConverter" Title="Channel URL to Id" HelpText="">
-    <Parameters>
-      <Text Id="ChannelUrl" Title="Channel URL" Debug.DefaultValue="https://www.youtube.com/user/LionelY2K" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        @(Model.ChannelUrl)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Id="ChannelId" Expr="data-channel-external-id=&quot;(.*?)&quot;" Converter="String" HelpText=""/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="VideoConverter" Title="Video URL to Id" HelpText="">
-    <Parameters>
-      <Text Id="VideoUrl" Title="Video URL" Debug.DefaultValue="https://www.youtube.com/watch?v=APLCiryMFdk" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        @(Model.VideoUrl)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Id="VideoId" Expr="&quot;video_id&quot;:&quot;(.*?)&quot;" Converter="String" HelpText=""/>
-    </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ChannelSubscriptions" Title="Channel Subscriptions" HelpUrl="https://developers.google.com/youtube/v3/docs/subscriptions/list">
@@ -603,21 +490,11 @@
         @(!string.IsNullOrEmpty(Model.ChannelId) ? "channelId=" + Model.ChannelId : "mine=true")
 				&part=snippet,contentDetails
         &maxResults=@(Model.PageCursor.NextTake)
-				@if(Model.Sorting != "default")
-				{
-					@: &order=@(Model.Sorting)
-				}
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+				@(Model.Sorting != "default" ? "&order=" + Model.Sorting : "")
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*">
@@ -629,9 +506,7 @@
 				<JsonPath Expr="snippet.thumbnails.default.url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="MySubscribers" Title="My Subscribers" HelpText="Retrieve a feed of the subscribers of the authenticated user in no particular order." HelpUrl="https://developers.google.com/youtube/v3/docs/subscriptions/list">
@@ -654,21 +529,11 @@
         https://www.googleapis.com/youtube/v3/subscriptions?mySubscribers=true
 				&part=subscriberSnippet
         &maxResults=@(Model.PageCursor.NextTake)
-				@if(Model.Sorting != "default")
-				{
-					@: &order=@(Model.Sorting)
-				}
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@Model.NextPageToken
-        }
+				@(Model.Sorting != "default" ? "&order=" + Model.Sorting : "")
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
       ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.items.*.subscriberSnippet">
@@ -678,9 +543,35 @@
 				<JsonPath Expr="thumbnails.default.url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.errors[0].reason"/>
-    </Fail>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UserConverter" Title="Channel URL to Id" HelpText="">
+    <Parameters>
+      <Text Id="ChannelUrl" Title="Channel URL" Debug.DefaultValue="https://www.youtube.com/user/LionelY2K" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[@(Model.ChannelUrl)]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Id="ChannelId" Expr="data-channel-external-id=&quot;(.*?)&quot;" Converter="String" HelpText=""/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="VideoConverter" Title="Video URL to Id" HelpText="">
+    <Parameters>
+      <Text Id="VideoUrl" Title="Video URL" Debug.DefaultValue="https://www.youtube.com/watch?v=APLCiryMFdk" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[@(Model.VideoUrl)]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Id="VideoId" Expr="&quot;video_id&quot;:&quot;(.*?)&quot;" Converter="String" HelpText=""/>
+    </Parse>
   </RestConnector>
 
 </Suite>
