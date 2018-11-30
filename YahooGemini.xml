@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Ads" Title="YahooGemini" Id="YahooGemini" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YahooGemini.xml" HelpUrl="http://seotoolsforexcel.com/yahoo-gemini/">
+<Suite Category="Ads" Title="Yahoo Gemini" Id="YahooGemini" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YahooGemini.xml" HelpUrl="http://seotoolsforexcel.com/yahoo-gemini/">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
@@ -19,12 +19,13 @@
   <Resources>
     <Resource Id="Fail">
       <Fail>
+        <Xpath Expr="//error"/>
         <JsonPath Expr="$.errors"/>
       </Fail>
     </Resource>
   </Resources>
 
-  <BrowserConnector Id="Authorize" Type="Popup" TokenParam="code" TokenName="TempCode">
+  <BrowserConnector Id="Authorize" Type="Popup" TokenParam="code" Hidden="true" TokenName="TempCode">
     <Url>
       <![CDATA[
            https://api.login.yahoo.com/oauth2/request_auth?client_id=dj0yJmk9bXYwOU1Oc3V2NURVJnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWE4&response_type=code&state=@(RandomString(15))&redirect_uri=https://seotoolsforexcel.com
@@ -32,7 +33,7 @@
     </Url>
   </BrowserConnector>
 
-  <RestConnector Id="AccessToken">
+  <RestConnector Id="AccessToken" Hidden="true">
     <Prepare>
       <Connector Id="Authorize"/>
     </Prepare>
@@ -66,7 +67,7 @@
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Bearer <Model class="Authenticator AccessToken"></Model></Header>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
@@ -104,7 +105,7 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText=""/>
         <JsonPath Expr="advertiserId" Id="AdvertiserId" Title="Advertiser ID" Converter="Int" HelpText=""/>
-        <JsonPath Expr="campaignName" Id="CampaignName" Title="Campaig Nname" Converter="String" HelpText=""/>
+        <JsonPath Expr="campaignName" Id="CampaignName" Title="Campaign Name" Converter="String" HelpText=""/>
         <JsonPath Expr="budget" Id="Budget" Title="Budget" Converter="Double" HelpText=""/>
         <JsonPath Expr="language" Id="Language" Title="Language" Converter="String" HelpText=""/>
         <JsonPath Expr="budgetType" Id="BudgetType" Title="Budget Type" Converter="String" HelpText=""/>
@@ -113,6 +114,233 @@
         <JsonPath Expr="isPartnerNetwork" Id="IsPartnerNetwork" Title="Partner Network" Converter="Bool" HelpText=""/>
         <JsonPath Expr="advancedGeoPos" Id="AdvancedGeoPos" Title="Advanced Geo Pos" Converter="String" HelpText=""/>
         <JsonPath Expr="advancedGeoNeg" Id="AdvancedGeoNeg" Title="Advanced Geo Neg" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CampaignsHidden" Hidden="True" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/campaigns.html">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://@(Model.Environment).gemini.yahoo.com/v3/rest/campaign/
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText=""/>
+        <JsonPath Expr="campaignName" Id="  Name" Title="Campaign Name" Converter="String" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdGroups" Title="Ad Groups" HelpText="List ad groups" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/adgroup.html">
+    <Parameters>
+      <Select Id="SearchBy" Title="Filtery by" DefaultValue="adgroup">
+        <DataSource>
+          <Item Id="advertiserId" Title="Advertiser Id"/>
+          <Item Id="campaignId" Title="Campaign Id"/>
+          <Item Id="adgroup" Title="Ad group Id"/>
+        </DataSource>
+      </Select>
+      <Text Id="SearchId" Title="Id"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://@(Model.Environment).gemini.yahoo.com/v3/rest/adgroup/
+         @if(!string.IsNullOrEmpty(Model.SearchId))
+         {
+          if(Model.SearchBy == "adgroup")
+          {
+            @: @(Model.SearchId)
+          }
+          else {
+            @: ?@(Model.SearchBy)=@(Model.SearchId)
+          }
+         }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="adGroupName" Id="Adgroupname" Title="Ad Group Name" Converter="String" HelpText="The name of the ad group. Maximum limit is 255 characters."/>
+        <JsonPath Expr="advertiserId" Id="Advertiserid" Title="Advertiser Id" Converter="Long" HelpText="The ID of the advertiser."/>
+        <JsonPath Expr="campaignId" Id="CampaignId" Title="Campaign Id" Converter="Int" HelpText="The ID of the campaign associated with the ad group."/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="The ID of the ad group."/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="The status of the ad group. "/>
+        <JsonPath Expr="startDateStr" Id="StartDateStr" Title="Start Date" Converter="DateTime" HelpText="The start date string value of the ad group (in YYYY-mm-dd format) in the timezone of the account. The time will automatically get set to 00:00:00.000"/>
+        <JsonPath Expr="endDateStr" Id="EndDateStr" Title="End Date" Converter="DateTime" HelpText="The end date string value of the ad group (in YYYY-mm-dd format) in the timezone of the account. The time will automatically get set to 23:59:59.000	"/>
+        <JsonPath Expr="advancedGeoPos" Id="AdvancedGeoPos" Title="Advanced GeoPos" Converter="String" HelpText="Applies only to SEARCH campaigns. For the locations you target, the recommended and default value is DEFAULT, which means you will reach people either physically in your targeted locations or who have expressed interest in these locations. LOCATION_OF_PRESENCE means reaching only people physically in the targeted location, and LOCATION_OF_INTEREST means targeting only people who have expressed interest in the location."/>
+        <JsonPath Expr="advancedGeoNeg" Id="AdvancedGeoNeg" Title="Advanced GeoNeg" Converter="String" HelpText="Applies only to SEARCH campaigns. Similar to advancedGeoPos but applies only to locations you exclude. Valid values are DEFAULT (the default) and LOCATION_OF_PRESENCE."/>
+        <JsonPath Expr="ecpaGoal" Id="Ecpagoal" Title="ECPA Goal" Converter="Double" HelpText="This is the value you place on the conversion. Refer to Data Dictionary to look up currency by type. Note that decreasing your ecpaGoal will typically lower the delivery of your campaign. If the bidding strategy is OPT_CONVERSION, the ecpaGoal is required. For install app campaigns, the ecpaGoal is also required.	numeric	Required for install app campaigns, otherwise, optional	If the bidding strategy is OPT_CONVERSION, the ecpaGoal is required."/>
+        <JsonPath Expr="productSetId" Id="ProductSetId" Title="Product Set Id" Converter="Int" HelpText="The id of the associate product set."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdGroupsHidden" Hidden="true" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/adgroup.html">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://@(Model.Environment).gemini.yahoo.com/v3/rest/adgroup/
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="The ID of the ad group."/>
+        <JsonPath Expr="adGroupName" Id="Name" Title="Ad Group Name" Converter="String" HelpText="The name of the ad group. Maximum limit is 255 characters."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Ads" HelpText="List ads" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/ad.html">
+    <Parameters>
+      <Select Id="SearchBy" Title="Filtery by" DefaultValue="ad">
+        <DataSource>
+          <Item Id="advertiserId" Title="Advertiser Id"/>
+          <Item Id="adGroupId" Title="Campaign Id"/>
+          <Item Id="ad" Title="Ad Id"/>
+        </DataSource>
+      </Select>
+      <Text Id="SearchId" Title="Id"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://@(Model.Environment).gemini.yahoo.com/v3/rest/ad/
+         @if(!string.IsNullOrEmpty(Model.SearchId))
+         {
+          if(Model.SearchBy == "ad")
+          {
+            @: @(Model.SearchId)
+          }
+          else {
+            @: ?@(Model.SearchBy)=@(Model.SearchId)
+          }
+         }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="adGroupId" Id="AdGroupId" Title="Ad Group Id" Converter="Long" HelpText="The ID of the ad group associated with the ad."/>
+        <JsonPath Expr="advertiserId" Id="AdvertiserId" Title="Advertiser Id" Converter="Long" HelpText="The ID of the advertiser associated with the ad."/>
+        <JsonPath Expr="campaignId" Id="CampaignId" Title="Campaign Id" Converter="Long" HelpText="The ID of the campaign associated with the ad."/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText="The description of the ad."/>
+        <JsonPath Expr="displayUrl" Id="DisplayUrl" Title="Display URL" Converter="String" HelpText="The user-friendly URL displayed to the user."/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="The ID of the ad."/>
+        <JsonPath Expr="imageUrl" Id="ImageUrl" Title="Image URL" Converter="String" HelpText="The URL of the image for the ad. "/>
+        <JsonPath Expr="imageUrlHQ" Id="ImageurlHq" Title="Image Url HQ" Checked="false" Converter="String" HelpText="A URL to a 1200 x 627 high-resolution image that will be used in eligible native positions."/>
+        <JsonPath Expr="landingUrl" Id="LandingUrl" Title="Landing Url" Converter="String" HelpText="The landing page URL associated with the ad."/>
+        <JsonPath Expr="mailAssetUrl" Id="MailAssetUrl" Title="Mail Asset Url" Checked="false" Converter="String" HelpText="A URL to a high-resolution image or a compressed HTML file for a mail sponsored ad. "/>
+        <JsonPath Expr="imageUrlThumbnail" Id="ImageUrlThumbnail" Title="Image Url Thumbnail" Converter="String" HelpText="A URL to a high-resolution image for an ad."/>
+        <JsonPath Expr="sponsoredBy" Id="SponsoredBy" Title="Sponsored By" Converter="String" HelpText="The string shown against the sponsored by label in the ad. This field is not shown for ads that run on mobile search, but is still a required input when creating any text ad."/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="The status of the ad. ACTIVE/PAUSED/DELETED/REJECTED"/>
+        <JsonPath Expr="editorialStatus" Id="EditorialStatus" Title="Editorial Status" Converter="String" HelpText="The editorial status of the ad. NOT_REVIEWED/PENDING_REVIEW/APPROVED/REJECTED"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="The title for the ad. "/>
+        <JsonPath Expr="title2" Id="Title2" Title="Title 2" Converter="String" HelpText="The title for the ad."/>
+        <JsonPath Expr="contentUrl" Id="ContentUrl" Title="Content URL" Converter="String" HelpText="This field applies only to INSTALL_APP campaigns."/>
+        <JsonPath Expr="videoPrimaryUrl" Id="VideoPrimaryUrl" Title="Video Primary URL" Checked="false" Converter="String" HelpText="In INSTALL_APP, REENGAGE_APP or PROMOTE_BRAND campaigns you can provide a url for a video, making your campaign eligible to serve in video-enabled native positions."/>
+        <JsonPath Expr="videoCaptionUrl" Id="VideoCaptionUrl" Title="Video Caption URL" Checked="false" Converter="String" HelpText="Optional video caption file url to accompany the video url provided for video ads. Maximum url length is 1024 characters."/>
+        <JsonPath Expr="videoPreviewStartTime" Id="VideoPreviewStarttime" Title="Video Preview Start Time" Checked="false" Converter="Int" HelpText="Optional start time (in seconds) to start the video clip or preview for Mail Trailer Video Ad. "/>
+        <JsonPath Expr="videoAutoloop" Id="VideoAutoLoop" Title="Video Auto Loop" Checked="false" Converter="String" HelpText="Optional video autoloop flag to accompany the video url provided for ad. If set to TRUE, the video will autoloop continuously."/>
+        <JsonPath Expr="impressionTrackingUrls" Id="ImpressionTrackingurls" Title="Impression Tracking Urls" Checked="false" Converter="String" HelpText="The impressionTrackingUrls object is used to set third-party view tracking for your ads."/>
+        <JsonPath Expr="callToActionText" Id="CalltoactionText" Title="CTA Text" Converter="String" HelpText="Call to action buttons used to help drive users to take specific actions. "/>
+        <JsonPath Expr="adName" Id="Adname" Title="Adname" Converter="String" HelpText="This is an optional field that allows you to name ads for your internal purposes. This value is not part of the actual creative that is rendered. "/>
+        <JsonPath Expr="assets" Id="Assets" Title="Assets" Converter="String" Checked="false" HelpText="A list of JSON objects representing additional ad assets - for example, carousel image cards"/>
+        <JsonPath Expr="flashSaleConfig" Id="FlashSaleConfig" Title="Flash Sale Config" Checked="false" Converter="String" HelpText="A configuration object containing all the necessary information for configuring a flash sale ad. "/>
+        <JsonPath Expr="rejectionReasons" Id="RejectionReasons" Title="Rejection Reasons" Converter="String" HelpText="The list of reasons the ad was editorially rejected due to policy."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Keywords" HelpText="List keywords" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/keyword.html">
+    <Parameters>
+      <Text Id="AdGroupId" Title="Ad Group Id" Select.Connector="AdGroupsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true" HelpText=""/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://@(Model.Environment).gemini.yahoo.com/v3/rest/keyword/?parentId=@(Model.AdGroupId)&parentType=ADGROUP
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="advertiserId" Id="Advertiserid" Title="Advertiser Id" Converter="Long" HelpText="The ID of the advertiser associated with the keyword. This field cannot be updated."/>
+        <JsonPath Expr="exclude" Id="Exclude" Title="Exclude" Converter="Bool" HelpText="Specifies whether to exclude (TRUE) or include (FALSE) for targeting."/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="The ID of the keyword."/>
+        <JsonPath Expr="matchType" Id="Matchtype" Title="Match Type" Converter="String" HelpText="The serving matching algorithm. Supported match types: For positive keywords (exclude=FALSE): BROAD/EXACT/PHRASE. For negative keywords (exclude=TRUE): PHRASE/EXACT"/>
+        <JsonPath Expr="parentId" Id="Parentid" Title="Parent Id" Converter="Long" HelpText="The ID of the ad group the keyword belongs to. If it is a negative keyword (exclude=TRUE) then the parent can be a campaign."/>
+        <JsonPath Expr="parentType" Id="Parenttype" Title="Parent Type" Converter="String" HelpText="type of parent. For a keyword object, this value is typically ADGROUP. It can also be CAMPAIGN for negative keywords (exclude=TRUE).	enum	Required	Required"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="The status of the keyword. ACTIVE/PAUSED/DELETED/REJECTED"/>
+        <JsonPath Expr="editorialStatus" Id="EditorialStatus" Title="Editorial Status" Converter="String" HelpText="The editorial status of the ad. NOT_REVIEWED/PENDING_REVIEW/APPROVED/REJECTED"/>
+        <JsonPath Expr="value" Id="Value" Title="Value" Converter="String" HelpText="The actual keyword."/>
+        <JsonPath Expr="landingUrl" Id="LandingUrl" Title="Landing Url" Converter="String" HelpText="The landing page URL is the web address that a user is sent to after clicking on the ad triggered by the keyword."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdExtensions" Title="Ad Extensions" HelpText="Ad Extensions" HelpUrl="https://developer.yahoo.com/nativeandsearch/guide/adextensions.html">
+    <Parameters>
+      <Text Id="CampaignId" Title="Campaign Id" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.AccessToken)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://@(Model.Environment).gemini.yahoo.com/v3/rest/adextension/?parentId=@(Model.CampaignId)&parentType=CAMPAIGN
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="advertiserId" Id="Advertiserid" Title="Advertiserid" Converter="Long" HelpText="The ID of the advertiser associated with the call extension."/>
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText="The ID of the call extension. IDs are unique across all ad extensions."/>
+        <JsonPath Expr="parentId" Id="Parentid" Title="Parentid" Converter="Long" HelpText="The ID of the parent."/>
+        <JsonPath Expr="parentType" Id="Parenttype" Title="Parenttype" Converter="StringThe" HelpText="type of parent. This value needs to be set to CAMPAIGN	"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="ACTIVE/DELETED/PAUSED"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="StringThe" HelpText="type of ad extension. For call extensions, the type should be set to CALL."/>
+        <JsonPath Expr="phoneNumber" Id="Phonenumber" Title="Phonenumber" Converter="String" HelpText="The phone number to be included in the ad. It must be a valid phone number for the country code provided in the phoneCountry field. Valid phone numbers provided will be reformatted to (555) 555-5555 format."/>
+        <JsonPath Expr="phoneCountry" Id="Phonecountry" Title="Phonecountry" Converter="String" HelpText="The country code - for example US or CA."/>
+        <JsonPath Expr="isCallOnly" Id="Iscallonly" Title="Iscallonly" Converter="Bool" HelpText="Determines whether the phone number is the only clickable element in the ad. This value defaults to FALSE."/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
