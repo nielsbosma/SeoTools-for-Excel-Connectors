@@ -42,7 +42,7 @@
 
   <RestConnector Id="VideoStatistics" Title="Video Statistics" HelpUrl="https://developers.google.com/youtube/v3/docs/videos/list">
     <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="Ddz8ZlhCjZk"/>
+      <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="k5kJlDJfHgQ"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -58,13 +58,29 @@
       <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="Auto" DefaultValue=""/>
       <JsonPath Title="Title" Identifier="Title" Expr="$.items.[snippet].[title]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Duration" Identifier="Duration" Expr="$.items.[contentDetails].[duration]" Converter="String" DefaultValue=""/>
+			<Compute Id="Duration" Converter="String">
+				<Compute.Expr>
+					<![CDATA[
+					@{
+						string Raw = Model.Inp;
+						TimeSpan youTubeDuration = System.Xml.XmlConvert.ToTimeSpan(Raw);
+					}
+					@youTubeDuration
+					]]>
+				</Compute.Expr>
+				<JsonPath Title="Duration" Identifier="Inp" Expr="$.items.[contentDetails].[duration]" Converter="String" DefaultValue=""/>
+			</Compute>
       <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Favorites" Identifier="Favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue=""/>
       <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Tags" Identifier="Tags" Expr="$.items.[snippet].[tags]" Converter="String" DefaultValue=""/>
+			<Compute Id="Tags" Converter="Auto" DefaultValue="">
+				<Compute.Expr>
+					<![CDATA[@Regex.Replace(Model.Inp, @"[""\[\]\r\n]", "")]]>
+				</Compute.Expr>
+				<JsonPath Id="Inp" Expr="$.items.[snippet].[tags]" Converter="String" DefaultValue=""/>
+			</Compute>
       <JsonPath Title="Dimension" Identifier="Dimension" Expr="$.items.[contentDetails].[dimension]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Definition" Identifier="Definition" Expr="$.items.[contentDetails].[definition]" Converter="String" DefaultValue=""/>
       <JsonPath Title="Caption" Identifier="Caption" Expr="$.items.[contentDetails].[caption]" Converter="String" DefaultValue=""/>
