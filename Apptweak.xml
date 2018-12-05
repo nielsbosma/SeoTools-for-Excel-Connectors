@@ -387,6 +387,13 @@
       <Text Id="Category" Title="Category" DefaultValue="ALL" Required="true" Debug.DefaultValue="BUSINESS" Select.Connector="AndroidCategories" Select.IdField="Id" Select.TitleField="Category" HelpText="The ID of the category this rankings object is referring to."/>
       <Text Id="Country" Title="Country" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="AndroidCountries" Select.IdField="Id" Select.TitleField="Country" HelpText="The two letter country code you want to fetch the application in."/>
       <Text Id="Language" Title="Language (Two-letter Code)" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="AndroidLanguages" Select.IdField="Id" Select.TitleField="Id" HelpText="The two letter language you want to fetch the application in."/>
+      <Select Id="Type" Title="Type" Required="false" DefaultValue="free" HelpText="The kind of chart you want to fetch.">
+        <DataSource>
+					<Item Id="free" Title="Free"/>
+					<Item Id="paid" Title="Paid"/>
+					<Item Id="grossing" Title="Grossing"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Fetch>
       <Resource Id="Header"/>
@@ -395,6 +402,7 @@
         https://api.apptweak.com/android/categories/@(Model.Category)/top.json
 				?language=@(Model.Language)
 				&country=@(Model.Country)
+				&type=@(Model.Type)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -506,7 +514,7 @@
 
   <RestConnector Id="iOSKeywordStats" Title="iOS Keyword Stats" HelpText="Allow you to fetch information about the popularity and competition of a given keyword." HelpUrl="https://apptweak.io/api/ios#keywords-stats">
     <Parameters>
-      <Text Id="Keywords" Title="Keywords" DefaultValue="" Required="true" Debug.DefaultValue="arcade" Multiline="true" HelpText="List of up to 10 keywords you wish to fetch stats on. One keyword per line"/>
+      <Text Id="Keyword" Title="Keywords" DefaultValue="" Required="true" Debug.DefaultValue="arcade"/>
       <Text Id="Country" Title="Country" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="iOSCountries" Select.IdField="Id" Select.TitleField="Country" HelpText="The two letter country code you want to fetch the application in."/>
       <Text Id="Language" Title="Language (Two-letter Code)" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="iOSLanguages" Select.IdField="Id" Select.TitleField="Id" HelpText="The two letter language you want to fetch the application in."/>
       <Select Id="Device" Title="Device" Required="false" DefaultValue="iphone" HelpText="The device you want to fetch the application for.">
@@ -520,7 +528,7 @@
       <Resource Id="Header"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.apptweak.com/ios/keywords/stats.json?keywords=@FetchKeywords()
+        https://api.apptweak.com/ios/keywords/stats.json?keywords=@(Model.Keyword)
 				&language=@(Model.Language)
 				&country=@(Model.Country)
 				&device=@(Model.Device)
@@ -528,14 +536,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="keys($.content)">
-        <JsonPath Expr="key" Id="Keyword" Converter="String"/>
-			</JsonPath>
       <JsonPath Expr="$.content.*">
-        <JsonPath Expr="volume" Id="Volume" Converter="Double" HelpText="A score between 0 and 100 indicating how popular the keyword is."/>
-        <JsonPath Expr="competition" Id="Competition" Converter="Double" HelpText="A score between 0 and 100 indicating how competitive the keyword is."/>
-        <JsonPath Expr="kei" Id="Kei" Title="Keyword Efficiency Index" Converter="Double" HelpText="A score between 0 and 100 taking into account both the volume and competition."/>
-        <JsonPath Expr="competition_details.total_size" Id="CompetitionSize"  Converter="Double" HelpText="provides the precise number of apps in the App Store search results when a search is performed on the keyword."/>
+        <JsonPath Expr="volume" Id="Volume" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how popular the keyword is."/>
+        <JsonPath Expr="competition" Id="Competition" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how competitive the keyword is."/>
+        <JsonPath Expr="kei" Id="Kei" Title="Keyword Efficiency Index" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 taking into account both the volume and competition."/>
+        <JsonPath Expr="competition_details.total_size" Id="CompetitionSize"  Converter="Double" DefaultValue="" HelpText="provides the precise number of apps in the App Store search results when a search is performed on the keyword."/>
         <JsonPath Expr="volume_details.language_frequency" Id="LanguageFrequency" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how often is the word used in the common language."/>
 			</JsonPath>
     </Parse>
@@ -544,7 +549,7 @@
 
   <RestConnector Id="AndroidKeywordStats" Title="Android Keyword Stats" HelpText="Allow you to fetch information about the popularity and competition of a given keyword." HelpUrl="https://apptweak.io/api/android#keywords-stats">
     <Parameters>
-      <Text Id="Keywords" Title="Keywords" DefaultValue="" Required="true" Debug.DefaultValue="arcade" Multiline="true" HelpText="List of up to 10 keywords you wish to fetch stats on. One keyword per line"/>
+      <Text Id="Keyword" Title="Keywords" DefaultValue="" Required="true" Debug.DefaultValue="arcade"/>
       <Text Id="Country" Title="Country" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="AndroidCountries" Select.IdField="Id" Select.TitleField="Country" HelpText="The two letter country code you want to fetch the application in."/>
       <Text Id="Language" Title="Language (Two-letter Code)" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="AndroidLanguages" Select.IdField="Id" Select.TitleField="Id" HelpText="The two letter language you want to fetch the application in."/>
     </Parameters>
@@ -552,21 +557,18 @@
       <Resource Id="Header"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.apptweak.com/android/keywords/stats.json?keywords=@FetchKeywords()
+        https://api.apptweak.com/android/keywords/stats.json?keywords=@(Model.Keyword)
 				&language=@(Model.Language)
 				&country=@(Model.Country)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="keys($.content)">
-        <JsonPath Expr="key" Id="Keyword" Converter="String"/>
-			</JsonPath>
       <JsonPath Expr="$.content.*">
-        <JsonPath Expr="volume" Id="Volume" Converter="Double" HelpText="A score between 0 and 100 indicating how popular the keyword is."/>
-        <JsonPath Expr="competition" Id="Competition" Converter="Double" HelpText="A score between 0 and 100 indicating how competitive the keyword is."/>
-        <JsonPath Expr="kei" Id="Kei" Title="Keyword Efficiency Index" Converter="Double" HelpText="A score between 0 and 100 taking into account both the volume and competition."/>
-        <JsonPath Expr="competition_details.total_size" Id="CompetitionSize"  Converter="Double" HelpText="provides the precise number of apps search results when a search is performed on the keyword."/>
+        <JsonPath Expr="volume" Id="Volume" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how popular the keyword is."/>
+        <JsonPath Expr="competition" Id="Competition" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how competitive the keyword is."/>
+        <JsonPath Expr="kei" Id="Kei" Title="Keyword Efficiency Index" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 taking into account both the volume and competition."/>
+        <JsonPath Expr="competition_details.total_size" Id="CompetitionSize"  Converter="Double" DefaultValue="" HelpText="provides the precise number of apps in the App Store search results when a search is performed on the keyword."/>
         <JsonPath Expr="volume_details.language_frequency" Id="LanguageFrequency" Converter="Double" DefaultValue="" HelpText="A score between 0 and 100 indicating how often is the word used in the common language."/>
 			</JsonPath>
     </Parse>
@@ -753,7 +755,7 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="content.*">
-				<JsonPath Expr="id" Id="Id" Converter="Int" HelpText="The ID given by the developer to its application."/>
+				<JsonPath Expr="id" Id="Id" Converter="String" HelpText="The ID given by the developer to its application."/>
 				<JsonPath Expr="title" Id="Title" Converter="String" HelpText="The App name as it appears on the Play Store, in the chosen language."/>
 				<JsonPath Expr="price" Id="Price" Converter="String" HelpText="The price of the application as displayed on the store"/>
 				<JsonPath Expr="rating" Id="Rating" Converter="Double" HelpText="The average rating of the App."/>
@@ -770,7 +772,7 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="iOSCategoryTopKeywords" Title="iOS Category Top Keywords" HelpText="Gives the most popular keyword for a given category. This is computed by looking at the best keywords for the app present at the top of each cateogry." HelpUrl="https://apptweak.io/api/ios#category-top-keywords">
+  <RestConnector Id="iOSCategoryTopKeywords" Title="iOS Category Top Keywords" HelpText="Gives the most popular keyword for a given category. This is computed by looking at the best keywords for the app present at the top of each category." HelpUrl="https://apptweak.io/api/ios#category-top-keywords">
     <Parameters>
       <Text Id="Category" Title="Category" DefaultValue="" Required="true" Debug.DefaultValue="6000" Select.Connector="iOSCategories" Select.IdField="Id" Select.TitleField="Category" HelpText="The ID of the category this rankings object is referring to."/>
       <Text Id="Country" Title="Country" DefaultValue="" Required="true" Debug.DefaultValue="us" Select.Connector="iOSCountries" Select.IdField="Id" Select.TitleField="Country" HelpText="The two letter country code you want to fetch the application in."/>
@@ -862,15 +864,5 @@
     </Parse>
     <Resource Id="Error"/>
   </RestConnector>
-
-  <RazorFunctions>
-    <![CDATA[
-    string FetchKeywords()
-    {
-      string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(10).ToArray();
-      return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
-    }
-    ]]>
-  </RazorFunctions>
 
 </Suite>
