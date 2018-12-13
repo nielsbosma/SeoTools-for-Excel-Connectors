@@ -52,17 +52,14 @@
     </Resource>
   </Resources>
 
-  <ConnectorAuthenticator LoginConnector="AccessToken" LogoutConnector="" StayAuthenticated="true"/>
+  <ConnectorAuthenticator LoginConnector="AccessToken" StayAuthenticated="true"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/sqlconnectors/">
     <Text Id="OAuthConsumerKey" Title="OAuth Consumer Key" Required="true"/>
     <Text Id="OAuthConsumerSecret" Title="OAuth Consumer Secret" Required="true"/>
-
-    <Text Id="Token"/>
-    <Text Id="TokenSecret"/>
   </Settings>
 
-  <RestConnector Id="RequestToken" Title="RequestToken" Hidden="false" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/request_token">
+  <RestConnector Id="RequestToken" Hidden="true" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/request_token">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -82,7 +79,7 @@
     </Parse>
   </RestConnector>
 
-  <BrowserConnector Id="Authenticate" Title="Authenticate" Type="Popup" TokenParam="oauth_token,oauth_verifier" TokenName="OauthToken,OauthVerifier">
+  <BrowserConnector Id="Authenticate" Hidden="true" Type="Popup" TokenParam="oauth_token,oauth_verifier" TokenName="OauthToken,OauthVerifier">
     <Prepare>
       <Connector Id="RequestToken"/>
     </Prepare>
@@ -93,7 +90,7 @@
     </Url>
   </BrowserConnector>
 
-  <RestConnector Id="AccessToken" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/authenticate">
+  <RestConnector Id="AccessToken" Hidden="true" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/authenticate">
     <Prepare>
       <Connector Id="Authenticate"/>
     </Prepare>
@@ -120,7 +117,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Logout" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/invalidate_bearer_token">
+  <RestConnector Id="Logout" Hidden="true" HelpUrl="https://developer.twitter.com/en/docs/basics/authentication/api-reference/invalidate_bearer_token">
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -146,9 +143,12 @@
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>OAuth @(CreateOauth("parameters"))</Header>
-        </RequestHeaders>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.Authenticator.AccessToken</Token>
+          <TokenSecret>@Model.Authenticator.AccessTokenSecret</TokenSecret>
+        </OAuth>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
@@ -172,25 +172,20 @@
       string nonce = GenerateRandomString(20);
       string timestamp = GetTimestamp().ToString();
 
-      string parameters = getParameters(nonce, timestamp, true);
+      string parameters = getParametersInitial(nonce, timestamp, true);
       string signatureBase = GetSignatureBase("https://api.twitter.com/oauth/request_token", parameters);
 			string signature = Utils.HmacSha1(signatureBase, Utils.UrlEncode(Model.OAuthConsumerSecret) + "&");
 
-      oauth = getParameters(nonce, timestamp, false);
+      oauth = getParametersInitial(nonce, timestamp, false);
       oauth += ", oauth_signature=" + "\"" + Utils.UrlEncode(signature) + "\"";
 
       return oauth;
     }
 
-    //https://developer.twitter.com/en/docs/basics/authentication/guides/authorizing-a-request.html
 
-     string CreateOauth(string parameters){
-      string oauth = "";
 
-      return oauth;
-    }
 
-    string getParameters(string nonce, string timestamp, bool url = true){
+    string getParametersInitial(string nonce, string timestamp, bool url = true){
       Dictionary<string, string> parameters = new Dictionary<string, string>();
       string generated = "";
 
@@ -224,8 +219,8 @@
      return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 
-    string GetSignatureBase(string url, string parameters){
-      string x = "POST&" + Utils.UrlEncode(url) + "&" + Utils.UrlEncode(parameters);
+    string GetSignatureBase(string url, string parameters, string method = "POST"){
+      string x = method + "&" + Utils.UrlEncode(url) + "&" + Utils.UrlEncode(parameters);
       return x;
     }
 
