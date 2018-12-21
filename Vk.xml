@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="VK" Id="VK" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Vk.xml" HelpUrl="http://seotoolsforexcel.com/vk/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.error.error_msg"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <ConnectorAuthenticator LoginConnector="Authorization" StayAuthenticated="true"/>
+
+  <BrowserConnector Id="Authorization" Hidden="true" Type="Popup" TokenParam="access_token,user_id" TokenName="AccessToken,UserId">
+    <Url>
+      <![CDATA[
+          https://oauth.vk.com/authorize?client_id=6792846&scope=friends,photos,stories,pages,wall,ads,groups,stats,market,docs&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v=5.92&response_type=token
+        ]]>
+    </Url>
+  </BrowserConnector>
+
+  <RestConnector Id="AdsAccounts" Title="Ad accounts" HelpUrl="https://vk.com/dev/ads.getAccounts?params[v]=5.92" HelpText="Returns a list of advertising accounts">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getAccounts?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="account_id" Id="AccountId" Title="Account Id" Converter="integer" HelpText="Advertising account ID."/>
+        <JsonPath Expr="account_name" Id="AccountName" Title="Account Name" Converter="string" HelpText="Account name"/>
+        <JsonPath Expr="account_type" Id="AccountType" Title="Account Type" Converter="string" HelpText="Advertising account type. Possible values:general — general account;"/>
+        <JsonPath Expr="agency" Id="Agency" Title="Agency" Converter="string" HelpText="agency."/>
+        <JsonPath Expr="account_status" Id="AccountStatus" Title="Account Status" Converter="int" HelpText="Advertising account status. Possible values: 1 — active; 0 — not active."/>
+        <JsonPath Expr="access_role" Id="AccessRole" Title="Access Role" Converter="string" HelpText="User permissions in advertising account. Possible values: admin — main administrator; manager — administrator; reports — observer."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdsAccountsHidden" Hidden="true" HelpUrl="https://vk.com/dev/ads.getAccounts?params[v]=5.92">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getAccounts?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="account_id" Id="AccountId" Title="Account Id" Converter="string" HelpText="Advertising account ID."/>
+        <JsonPath Expr="account_name" Id="AccountName" Title="Account Name" Converter="string" HelpText="Account name"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Ads" Title="Ads" HelpUrl="https://vk.com/dev/ads.getAds">
+    <Parameters>
+      <Text Id="AccId" Title="Account Id" Select.Connector="AdsAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName" Required="true"/>
+      <Radio Id="IncludeDeleted" Title="Include archived campaigns" DefaultValue="0" Required="true">
+        <DataSource>
+          <Item Id="0" Title="Yes"/>
+          <Item Id="1" Title="No"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getAds?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        &account_id=@(Model.AccId)
+        &include_deleted=@(Model.IncludeDeleted)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="int" HelpText="Ad ID."/>
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="int" HelpText="Campaign ID."/>
+        <JsonPath Expr="ad_format" Id="AdFormat" Title="Ad Format" Converter="int" HelpText="Ad format. Possible values: 1 — image and text; 2 — big image; 3 — exclusive format; 4 — community or app, square image; 5 — application in newsfeed (deprecated); 6 — mobile application; 9 — community post."/>
+        <JsonPath Expr="cost_type" Id="CostType" Title="Cost Type" Converter="int" HelpText="Cost type. Possible values: 0 — per clicks; 1 — per impressions."/>
+        <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="int" HelpText="(if cost_type = 0) cost of a click, kopecks."/>
+        <JsonPath Expr="cpm" Id="Cpm" Title="Cpm" Converter="int" HelpText="(if cost_type = 1) cost of 1000 impressions, kopecks."/>
+        <JsonPath Expr="impressions_limit" Id="ImpressionsLimit" Title="Impressions Limit" Converter="int" HelpText="(if any) impressions limit per user."/>
+        <JsonPath Expr="impressions_limited" Id="ImpressionsLimited" Title="Impressions Limited" Converter="int" HelpText="(if any) 1 — not more than 100 impressions per user."/>
+        <JsonPath Expr="ad_platform" Id="AdPlatform" Title="Ad Platform" Converter="string" HelpText="(if any) ad platforms. Possible values: (if ad_format = 1) 0 — VK and partners sites; 1 — VK only. (if ad_format = 9) all — all platforms; desktop — web version; mobile — mobile version and apps."/>
+        <JsonPath Expr="ad_platform_no_wall" Id="AdPlatformNoWall" Title="Ad Platform No Wall" Converter="int" HelpText="1 — «Don't show on communities walls» restriction switched on."/>
+        <JsonPath Expr="all_limit" Id="AllLimit" Title="All Limit" Converter="int" HelpText="Total ad limit in roubles. 0 — not specified."/>
+        <JsonPath Expr="category1_id" Id="Category1Id" Title="Category1 Id" Converter="int" HelpText="Category ID. See ads.getCategories."/>
+        <JsonPath Expr="category2_id" Id="Category2Id" Title="Category2 Id" Converter="int" HelpText="Additional category ID"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="int" HelpText="Ad status. Possible values: 0 — stopped; 1 — run; 2 — deleted."/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="string" HelpText="Ad name."/>
+        <JsonPath Expr="approved" Id="Approved" Title="Approved" Converter="int" HelpText="Ad moderation status. Possible values: 0 — not checked; 1 — pending moderation; 2 — approved; 3 — declined."/>
+        <JsonPath Expr="video" Id="Video" Title="Video" Converter="int" HelpText="1 — Video ad."/>
+        <JsonPath Expr="disclaimer_medical" Id="DisclaimerMedical" Title="Disclaimer Medical" Converter="int" HelpText="1 — &gt;Attention: Be sure to read contra indications before use&gt; warning is shown."/>
+        <JsonPath Expr="disclaimer_specialist" Id="DisclaimerSpecialist" Title="Disclaimer Specialist" Converter="int" HelpText="1 — &gt;Attention: Consult a specialist before using&gt; warning is shown."/>
+        <JsonPath Expr="disclaimer_supplements" Id="DisclaimerSupplements" Title="Disclaimer Supplements" Converter="int" HelpText="1 — &gt;Attention: A bioactive nutrient, is not a medicine&gt; warning is shown."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdCampaigns" Title="Ad Campaigns" HelpUrl="https://vk.com/dev/ads.getCampaigns" HelpText="Returns a list of campaigns in an advertising account">
+    <Parameters>
+      <Text Id="AccId" Title="Account Id" Select.Connector="AdsAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName" Required="true"/>
+      <Radio Id="IncludeDeleted" Title="Include archived campaigns" DefaultValue="0" Required="true">
+        <DataSource>
+          <Item Id="0" Title="Yes"/>
+          <Item Id="1" Title="No"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getCampaigns?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        &account_id=@(Model.AccId)
+        &include_deleted=@(Model.IncludeDeleted)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="int" HelpText="campaign ID"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="string" HelpText="campaign name"/>
+        <JsonPath Expr="status" Id="Status" Title="Status" Converter="int" HelpText="campaign status (0 — campaign stopped, 1 — campaign started, 2 — campaign deleted)"/>
+        <JsonPath Expr="day_limit" Id="DayLimit" Title="Daily budget" Converter="int" HelpText="campaign day limit, rubles (0 — no limit set)"/>
+        <JsonPath Expr="all_limit" Id="AllLimit" Title="Total budget" Converter="int" HelpText="campaign total limit, rubles (0 — no limit set)"/>
+        <Compute Id="StartTime" Title="Start Time">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string time = "0";
+            if(Model.StartInput is string)
+            {
+              if (Model.StartInput != "0"){
+                try {
+                  long datelong = Convert.ToInt64(Model.StartInput);
+                  time = (DateTimeOffset.FromUnixTimeSeconds(datelong)).ToString("yyyy-MM-dd");
+                }
+                catch (Exception e){
+                }
+              }
+            }
+            @time
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="start_time" Id="StartInput" Converter="String"/>
+        </Compute>
+        <Compute Id="StopTime" Title="Stop Time">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string time = "0";
+            if(Model.StopInput is string)
+            {
+              if (Model.StopInput != "0"){
+                try {
+                  long datelong = Convert.ToInt64(Model.StopInput);
+                  time = (DateTimeOffset.FromUnixTimeSeconds(datelong)).ToString("yyyy-MM-dd");
+                }
+                catch (Exception e){
+                }
+              }
+            }
+            @time
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="stop_time" Id="StopInput" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="create_time" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <JsonPath Expr="update_time" Id="Updated" Title="Updated" Converter="DateTime" Converter.SourceFormat="Unix"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdStats" Title="Ad Statistics" HelpUrl="https://vk.com/dev/ads.getStatistics" HelpText="Returns statistics of performance indicators for ads, campaigns, clients or the whole account.">
+    <Parameters>
+      <Text Id="AccId" Title="Account Id" Select.Connector="AdsAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName" Required="true"/>
+      <Text Id="Ids" Title="Object Ids" Debug.DefaultValue="49436796" Multiline="true" HelpText="Ad/campaign/client/office Ids, one per line"/>
+      <Select Id="IdsType" Title="Object type" DefaultValue="ad" Required="true" HelpText="Type of objects to get stats for">
+        <DataSource>
+          <Item Id="ad" Title="Ads"/>
+          <Item Id="campaign" Title="Campaigns"/>
+          <Item Id="client" Title="Clients"/>
+          <Item Id="office" Title="Account"/>
+        </DataSource>
+      </Select>
+      <Select Id="Period" DefaultValue="day" Required="true" HelpText="Data grouping by dates">
+        <DataSource>
+          <Item Id="day" Title="Day"/>
+          <Item Id="month" Title="Month"/>
+          <Item Id="overall" Title="Overall"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getStatistics?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        &account_id=@(Model.AccId)
+        &ids_type=@(Model.IdsType)
+        &ids=@(FetchIds())
+        &period=@(Model.Period)
+        &date_from=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+        &date_to=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Item Id" Converter="Int"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+        <JsonPath Expr="stats.day" Id="Day" Title="Day" Converter="string" HelpText="(if period is day) — one day, in YYYY-MM-DD format"/>
+        <JsonPath Expr="stats.month" Id="Month" Title="Month" Converter="string" HelpText="(if 'period is month) — one month, in YYYY-MM format"/>
+        <JsonPath Expr="stats.overall" Id="Overall" Title="Overall" Converter="int" HelpText="(if period is overall) — 1"/>
+        <JsonPath Expr="stats.spent" Id="Spent" Title="Spent" Converter="double" HelpText="spent funds"/>
+        <JsonPath Expr="stats.impressions" Id="Impressions" Title="Impressions" Converter="double" HelpText="impressions"/>
+        <JsonPath Expr="stats.clicks" Id="Clicks" Title="Clicks" Converter="double" HelpText="Clicks"/>
+        <JsonPath Expr="stats.reach" Id="Reach" Title="Reach" Converter="string" HelpText="Reach"/>
+        <JsonPath Expr="stats.video_views" Id="VideoViews" Title="Video Views" Converter="double" HelpText="Video Views"/>
+        <JsonPath Expr="stats.video_views_half" Id="VideoViewsHalf" Title="Half Video Views" Converter="double" HelpText="Half video views"/>
+        <JsonPath Expr="stats.video_views_full" Id="VideoViewsFull" Title="Full Video Views" Converter="double" HelpText="Full video views"/>
+        <JsonPath Expr="stats.video_clicks_site" Id="VideoClicksSite" Title="Video Clicks" Converter="double" HelpText="(if ids_type is ad) — visits of advertiser's website from the video ad (for video ads)"/>
+        <JsonPath Expr="stats.join_rate" Id="JoinRate" Title="Join Rate" Converter="int" HelpText="(if ids_type is ad or campaign) — number of joins to a group, event, subscriptions for a public page or application installation (only if the ad includes a direct link to the respective VK page)."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdsTargeting" Title="Ad Targeting Parameters" HelpUrl="https://vk.com/dev/ads.getAdsTargeting" HelpText="Retuns ad targeting parameters.">
+    <Parameters>
+      <Text Id="AccId" Title="Account Id" Select.Connector="AdsAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName" Required="true"/>
+      <Radio Id="IncludeDeleted" Title="Include archived campaigns" DefaultValue="0" Required="true">
+        <DataSource>
+          <Item Id="0" Title="Yes"/>
+          <Item Id="1" Title="No"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.vk.com/method/ads.getAdsTargeting?v=5.52&access_token=@(Model.Authenticator.AccessToken)
+        &account_id=@(Model.AccId)
+        &include_deleted=@(Model.IncludeDeleted)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.response.*">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="int" HelpText=""/>
+        <JsonPath Expr="campaign_id" Id="CampaignId" Title="Campaign Id" Converter="long" HelpText=""/>
+        <Compute Id="Sex">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+            string sex = "Any";
+            if (Model.SexInp == "1")
+              sex = "Female";
+            else if (Model.SexInp == "2")
+              sex = "Male";
+            @sex
+            ]]>
+          </Compute.Expr>
+          <JsonPath Expr="sex" Id="SexInp" Title="Sex" Converter="String" HelpText=""/>
+        </Compute>
+        <JsonPath Expr="age_from" Id="AgeFrom" Title="Age From" Converter="int" HelpText=""/>
+        <JsonPath Expr="age_to" Id="AgeTo" Title="Age To" Converter="int" HelpText=""/>
+        <JsonPath Expr="country" Id="Country" Title="Country" Converter="int" HelpText=""/>
+        <JsonPath Expr="count" Id="Count" Title="Count" Converter="int" HelpText=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string FetchIds()
+      {
+        string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+        return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
+      }
+    ]]>
+  </RazorFunctions>
+</Suite>
