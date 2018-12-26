@@ -6,41 +6,25 @@
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Resources>
-    <Resource Id="OrderTopics">
-      <Item Id="trustflow&amp;links" Title="Default"/>
-      <Item Id="topic" Title="Topic"/>
-      <Item Id="links" Title="Links"/>
-      <Item Id="pages" Title="Pages"/>
-      <Item Id="refdomains" Title="Refdomains"/>
-      <Item Id="linksfromrefdomains" Title="Links from Refdomains"/>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.ErrorMessage"/>
+      </Fail>
     </Resource>
-
-    <Resource Id="OrderRefDomains">
-      <Item Id="default" Title="Default"/>
-      <Item Id="0" Title="Number of Matches"/>
-      <Item Id="1" Title="AlexaRank"/>
-      <Item Id="2" Title="Referring Root Domains"/>
-      <Item Id="3" Title="External Backlinks"/>
-      <Item Id="4" Title="URLs from Root Domain Added to Index"/>
-      <Item Id="5" Title="URLs from Root Domain Crawled"/>
-      <Item Id="6" Title="Root Domain First Crawled"/>
-      <Item Id="7" Title="Last URL Crawl"/>
-      <Item Id="8" Title="Domain IP Adress"/>
-      <Item Id="9" Title="Domain C-class Subnet"/>
-      <Item Id="10" Title="Country Code"/>
-      <Item Id="11" Title="Matched Links"/>
-    </Resource>
-  </Resources>
-
-  <RestConnector Id="IndexData" Title="Index Data" HelpUrl="https://developer-support.majestic.com/api/commands/get-index-item-info.shtml" AvailableInSpider="true">
-    <Parameters>
-      <Text Id="Urls" Title="URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Enter one or more URLs separated by a new line" Multiline="true"/>
+    <Resource Id="Datasource">
       <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
         <DataSource>
           <Item Id="fresh" Title="Fresh"/>
           <Item Id="historic" Title="Historic"/>
         </DataSource>
       </Radio>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="IndexData" Title="Index Data" HelpUrl="https://developer-support.majestic.com/api/commands/get-index-item-info.shtml" AvailableInSpider="true">
+    <Parameters>
+      <Text Id="Urls" Title="URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Enter one or more URLs separated by a new line" Multiline="true"/>
+      <Resource Id="Datasource"/>
     </Parameters>
     <Batch Parameter="Urls" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
@@ -98,28 +82,21 @@
         <JsonPath Expr="ItemType" Id="ItemType" Title="ItemType" Converter="Int" HelpText="Type of the item" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Backlinks" Title="Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-back-link-data.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="MaxDomains" Title="Max best URLs from any refdomain" DefaultValue="-1" Required="false" HelpText="If set to 1, then it will effectively produce list of referring domains with just 1 best backlink from each of them.">
+      <Resource Id="Datasource"/>
+      <Select Id="MaxDomains" Title="Max best URLs from any refdomain" DefaultValue="-1" Required="false" HelpText="If set to 1, then it will effectively produce list of referring domains with just 1 best backlink from each of them.">
         <DataSource>
           <Item Id="-1" Title="All"/>
           <Item Id="1" Title="1"/>
           <Item Id="3" Title="3"/>
           <Item Id="10" Title="10"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Number Id="MaxUrls" Title="Max same source URLs" DefaultValue="" Required="false" HelpText="If set to greater than 0, then it will set a limit to number of same source urls returned."/>
       <Text Id="FilterTopic" Title="Filter by Topic" DefaultValue="" Required="false" HelpText="For example: Computers/Programming/Languages"/>
     </Parameters>
@@ -135,18 +112,9 @@
           &cmd=GetBackLinkData
           &item=@Utils.UrlEncode(Model.Url)
           &datasource=@(Model.Datasource)
-          @if(Model.MaxDomains != "-1")
-          {
-            @: &MaxSourceURLsPerRefDomain=@(Model.MaxDomains)
-          }
-          @if(Model.MaxUrls != null)
-          {
-            @: &MaxSameSourceURLs=@(Model.MaxUrls)
-          }
-          @if(!string.IsNullOrEmpty(Model.FilterTopic))
-          {
-            @: &FilterTopic=@(Model.FilterTopic)
-          }
+          @(Model.MaxDomains != "-1" ? "&MaxSourceURLsPerRefDomain=" + Model.MaxDomains : "")
+          @(Model.MaxUrls != null ? "&MaxSameSourceURLs=" + Model.MaxUrls : "")
+          @(!string.IsNullOrEmpty(Model.FilterTopic) ? "&FilterTopic=" + Model.FilterTopic : "")
           &Count=@(Model.PageCursor.NextTake)
           &From=@(Model.PageCursor.NextSkip)
         ]]>
@@ -182,20 +150,13 @@
         <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="legacy metric of the SourceURL, scaled down from CitationFlow" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://developer-support.majestic.com/api/commands/get-anchor-text.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
       <Text Id="FilterAnchorText" Title="Filter by Anchor Text" DefaultValue="" Required="false" HelpText=""/>
       <Radio Id="FilterAnchorTextMode" Title="Anchor Text Matching" DefaultValue="2" Required="false">
         <DataSource>
@@ -217,10 +178,7 @@
           &cmd=GetAnchorText
           &item=@Utils.UrlEncode(Model.Url)
           &datasource=@(Model.Datasource)
-          @if(Model.TextMode == true)
-          {
-          @: &TextMode=1
-          }
+          @(Model.TextMode == true ? "&TextMode=1" : "")
           @if(!string.IsNullOrEmpty(Model.FilterAnchorText))
           {
             @: &FilterAnchorText=@(Utils.UrlEncode(Model.FilterAnchorText))
@@ -242,20 +200,13 @@
         <JsonPath Expr="EstimatedLinkTrustFlow" Id="EstimatedLinkTrustFlow" Title="EstimatedLinkTrustFlow" Converter="Int" HelpText="estimated Trust Flow of referring links that pass it" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="HostedDomains" Title="Hosted Domains" HelpUrl="https://developer-support.majestic.com/api/commands/get-hosted-domains.shtml">
     <Parameters>
       <Text Id="Domain" Title="Domain or IP" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Domain or IP to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
       <Number Id="MaxResults" Title="Max results" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back"/>
     </Parameters>
     <Fetch>
@@ -281,9 +232,7 @@
         <JsonPath Expr="IPAddress" Id="IPAddress" Title="IPAddress" Converter="String" HelpText="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Keywords" Title="Keywords" HelpUrl="https://developer-support.majestic.com/api/commands/get-keyword-info.shtml">
@@ -329,9 +278,7 @@
         <JsonPath Expr="Item" Id="Item" Title="Item" Converter="Int" HelpText="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="NewAndLostBackLinks" Title="New &amp; Lost Backlinks" HelpUrl="https://developer-support.majestic.com/api/commands/get-new-lost-back-links.shtml">
@@ -344,12 +291,7 @@
         </DataSource>
       </Radio>
       <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -397,20 +339,38 @@
         <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NewAndLostBackLinksCalender" Title="New &amp; Lost Backlinks Calender" HelpUrl="https://developer-support.majestic.com/api/commands/get-new-lost-back-link-calendar.shtml">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Resource Id="Datasource"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
+          &cmd=GetNewLostBackLinkCalendar
+          &item=@Utils.UrlEncode(Model.Url)
+          &datasource=@(Model.Datasource)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="DataTables.Calendar.Data[*]">
+        <JsonPath Expr="Date" Id="Date" Title="Date" Converter="DateTime" HelpText="Date given as a day."/>
+        <JsonPath Expr="NewLinks" Id="New" Title="New" Converter="Long" HelpText="Number of new links on that date."/>
+        <JsonPath Expr="LostLinks" Id="Lost" Title="Lost" Converter="Long" HelpText="Number of lost links on that date."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="TopPages" Title="Top Pages" HelpUrl="https://developer-support.majestic.com/api/commands/get-top-pages.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
       <Number Id="MaxResults" Title="Max results" DefaultValue="100" Required="true" HelpText="Number o of results to be returned back."/>
     </Parameters>
     <Fetch>
@@ -450,24 +410,22 @@
         <JsonPath Expr="ACRank" Id="ACRank" Title="ACRank" Converter="Int" HelpText="ACRank value of the URL" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Topics" Title="Topics" HelpUrl="https://developer-support.majestic.com/api/commands/get-topics.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
       <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="trustflow&amp;links">
         <DataSource>
-          <Resource Id="OrderTopics"/>
-        </DataSource>
+					<Item Id="trustflow&amp;links" Title="Default"/>
+					<Item Id="topic" Title="Topic"/>
+					<Item Id="links" Title="Links"/>
+					<Item Id="pages" Title="Pages"/>
+					<Item Id="refdomains" Title="Refdomains"/>
+					<Item Id="linksfromrefdomains" Title="Links from Refdomains"/>
+				</DataSource>
       </Select>
       <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="true">
         <DataSource>
@@ -505,9 +463,7 @@
         <JsonPath Expr="Pages" Id="Pages" Title="Pages" Converter="Int" HelpText="Number of pages on the target site or domain or URL which have this topic associated with them"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="SearchByKeyword" Title="Search by Keyword" HelpUrl="https://developer-support.majestic.com/api/commands/search-by-keyword.shtml">
@@ -526,6 +482,9 @@
       </Parse>
     </Paging>
     <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="3000" RandomTo="3000" IfSame="Host"/>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
           http://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
@@ -552,24 +511,29 @@
         <JsonPath Expr="ScoreOther" Id="ScoreOther" Title="ScoreOther" Converter="Int" HelpText="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ReferringDomains" Title="Referring Domains" HelpUrl="https://developer-support.majestic.com/api/commands/get-ref-domains.shtml ">
     <Parameters>
       <Text Id="Urls" Title="URLs" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query" Multiline="true"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
       <Select Id="OrderBy" Title="Order by" Required="true" DefaultValue="default">
         <DataSource>
-          <Resource Id="OrderRefDomains"/>
-        </DataSource>
+					<Item Id="default" Title="Default"/>
+					<Item Id="0" Title="Number of Matches"/>
+					<Item Id="1" Title="AlexaRank"/>
+					<Item Id="2" Title="Referring Root Domains"/>
+					<Item Id="3" Title="External Backlinks"/>
+					<Item Id="4" Title="URLs from Root Domain Added to Index"/>
+					<Item Id="5" Title="URLs from Root Domain Crawled"/>
+					<Item Id="6" Title="Root Domain First Crawled"/>
+					<Item Id="7" Title="Last URL Crawl"/>
+					<Item Id="8" Title="Domain IP Adress"/>
+					<Item Id="9" Title="Domain C-class Subnet"/>
+					<Item Id="10" Title="Country Code"/>
+					<Item Id="11" Title="Matched Links"/>
+				</DataSource>
       </Select>
       <Radio Id="Direction" Title="Direction" DefaultValue="1" Required="true">
         <DataSource>
@@ -632,20 +596,13 @@
         <JsonPath Expr="TopicalTrustFlow_Value_4" Id="TopicalTrustFlow_Value_4" Title="TopicalTrustFlow_Value_4" Converter="Int" HelpText=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
-  
+
   <RestConnector Id="LinkProfileGraph" Title="Link Profile Graph" HelpUrl="https://developer-support.majestic.com/api/commands/get-link-profile.shtml">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
-        <DataSource>
-          <Item Id="fresh" Title="Fresh"/>
-          <Item Id="historic" Title="Historic"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Datasource"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -664,9 +621,7 @@
         <JsonPath Expr="Value" Id="Value" Title="Value" Converter="Int" HelpText="Value of this link."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="SubscriptionInfo" Title="Subscription Info" HelpUrl="https://developer-support.majestic.com/api/commands/get-subscription-info.shtml">
@@ -695,32 +650,25 @@
         <JsonPath Expr="MaxPeriods" Id="MaxPeriods" Title="MaxPeriods" Converter="Int" HelpText="" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="ErrorMessage"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-
-    string FetchIndexUrls()
-    {
+    string FetchIndexUrls() {
       string[] lines = (string[])Model.UrlsBatch;
       return "items=" + lines.Length + "&" + string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
     }
 
-    string FetchKeywords()
-    {
+    string FetchKeywords() {
       string[] lines = (string[])Model.KeywordsBatch;
       return string.Join("&",lines.Select((e, i) => "item" + (i+1) + "=" + Utils.UrlEncode(e)).ToArray());
     }
 
-    string FetchRefDomains()
-    {
+    string FetchRefDomains() {
       string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
       return string.Join("&",lines.Select((e, i) => "item" + i + "=" + Utils.UrlEncode(e)).ToArray());
     }
-
     ]]>
   </RazorFunctions>
 
