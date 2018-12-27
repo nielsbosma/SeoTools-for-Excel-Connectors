@@ -7,38 +7,30 @@
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/google-safe-browsing//"/>
   </Settings>
 
-  <Resources>
-    <Resource Id="Types">
-      <Item Id="MALWARE" Title="Malware"/>
-      <Item Id="POTENTIALLY_HARMFUL_APPLICATION" Title="Potentially Harmful Application"/>
-      <Item Id="SOCIAL_ENGINEERING" Title="Social Engineering"/>
-      <Item Id="UNWANTED_SOFTWARE" Title="Unwanted Software"/>
-    </Resource>
-    <Resource Id="Platforms">
-      <Item Id="ANY_PLATFORM" Title="Any Platforms"/>
-      <Item Id="ALL_PLATFORMS" Title="All Platforms"/>
-      <Item Id="WINDOWS" Title="Windows"/>
-      <Item Id="CHROME" Title="Chrome"/>
-      <Item Id="OSX" Title="OSX"/>
-      <Item Id="ANDROID" Title="Android"/>
-      <Item Id="LINUX" Title="Linux"/>
-    </Resource>
-  </Resources>
-
   <RestConnector Id="GoogleSafeBrowsing" Title="Google Safe Browsing" HelpUrl="https://developers.google.com/safe-browsing/v4/lookup-api" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Urls" Title="List of URLs to test" HelpText="One per newline. Up to 500 URLs." Debug.DefaultValue="http://testsafebrowsing.appspot.com/apiv4/ANY_PLATFORM/MALWARE/URL/" Multiline="true" Required="true"/>
+      <Text Id="Urls" Title="List of URLs to test" HelpText="One per newline" Debug.DefaultValue="http://testsafebrowsing.appspot.com/apiv4/ANY_PLATFORM/MALWARE/URL/" Multiline="true" Required="true"/>
       <Select Id="Type" Title="Type of Threat" Required="false" DefaultValue="MALWARE">
-        <DataSource>
-          <Resource Id="Types"/>
-        </DataSource>
+				<DataSource>
+					<Item Id="MALWARE" Title="Malware"/>
+					<Item Id="POTENTIALLY_HARMFUL_APPLICATION" Title="Potentially Harmful Application"/>
+					<Item Id="SOCIAL_ENGINEERING" Title="Social Engineering"/>
+					<Item Id="UNWANTED_SOFTWARE" Title="Unwanted Software"/>
+				</DataSource>
       </Select>
       <Select Id="Platform" Title="Type of Platform" Required="false" DefaultValue="ALL_PLATFORMS">
-        <DataSource>
-          <Resource Id="Platforms"/>
-        </DataSource>
+				<DataSource>
+					<Item Id="ANY_PLATFORM" Title="Any Platforms"/>
+					<Item Id="ALL_PLATFORMS" Title="All Platforms"/>
+					<Item Id="WINDOWS" Title="Windows"/>
+					<Item Id="CHROME" Title="Chrome"/>
+					<Item Id="OSX" Title="OSX"/>
+					<Item Id="ANDROID" Title="Android"/>
+					<Item Id="LINUX" Title="Linux"/>
+				</DataSource>
       </Select>
     </Parameters>
+    <Batch Parameter="Urls" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
@@ -84,7 +76,7 @@
 
 			var dict = new Dictionary<string, string>();
 
-			string[] lines = ((string)Model.Urls).Trim().Split('\n').Where(e => !string.IsNullOrEmpty(e)).Take(500).ToArray();
+			string[] lines = (string[])Model.UrlsBatch;
 
 			string json = "";
 
