@@ -87,9 +87,10 @@
 
   <RestConnector Id="ContactsbyId" Title="Contacts by Id" Hidden="false" HelpText="Returns information about one or more contacts by their unique ID's.">
     <Parameters>
-      <Text Id="ContactIds" Title="Contact Ids" Debug.DefaultValue="3842424" HelpText="Enter one or more Contact Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Contact Ids" Debug.DefaultValue="3842424" HelpText="Enter one or more Contact Ids separated by a new line" Required="true" Multiline="true"/>
       <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -141,9 +142,10 @@
 
   <RestConnector Id="ContactbyEmail" Title="Contacts by Email" Hidden="false" HelpText="Returns information about one or more contacts by their E-mail addresses.">
     <Parameters>
-      <Text Id="ContactEmails" Title="Contact Email Address" Debug.DefaultValue="email_abc9bd5cdf@abctest.com" Required="true" HelpText="Enter one or more Email addresses separated by a new line" Multiline="true"/>
+      <Text Id="Ids" Title="Contact Email Address" Debug.DefaultValue="email_abc9bd5cdf@abctest.com" Required="true" HelpText="Enter one or more Email addresses separated by a new line" Multiline="true"/>
       <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -301,8 +303,9 @@
 
   <RestConnector Id="ContactListsbyId" Title="Contact Lists by Id" Hidden="false" HelpText="Returns one or more contact lists that you specify with list Ids.">
     <Parameters>
-      <Text Id="ContactListsIds" Title="Contact Lists Ids" Debug.DefaultValue="229998" Required="true"  HelpText="Enter one or more Contact List Ids separated by a new line"  Multiline="true"/>
+      <Text Id="ContactListsIds" Title="Contact Lists Ids" Debug.DefaultValue="229998" Required="true" HelpText="Enter one or more Contact List Ids separated by a new line"  Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -878,55 +881,36 @@
 
   <RazorFunctions>
   <![CDATA[
-  string FetchContactIdString()
-  {
-    string[] lines = ((string)Model.ContactIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+  string FetchContactIdString() {
+		string[] lines = (string[])Model.IdsBatch;
     return string.Join("&vid=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
   }
-  string FetchContactEmailString()
-  {
-    string[] lines = ((string)Model.ContactEmails).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+  string FetchContactEmailString() {
+		string[] lines = (string[])Model.IdsBatch;
     return string.Join("&email=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
   }
-  string FetchContactListString()
-  {
-    string[] lines = ((string)Model.ContactListsIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+  string FetchContactListString() {
+		string[] lines = (string[])Model.IdsBatch;
     return string.Join("&listId=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
   }
-  string FetchCompanyPath()
-  {
-    if(Model.ReturnType == "all")
-    {
-      return "companies";
-    }
-    else
-    {
-      return "results";
-    }
+
+  string FetchCompanyPath() {
+    return (Model.ReturnType == "all" ? "companies" : "results");
   }
-  string FetchDealPath()
-  {
-    if(Model.ReturnType == "all")
-    {
-      return "deals";
-    }
-    else
-    {
-      return "results";
-    }
+
+  string FetchDealPath() {
+		return (Model.ReturnType == "all" ? "deals" : "results");
   }
-  string SelectedCompanyDealsFields()
-  {
+
+  string SelectedCompanyDealsFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&properties=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
   }
-  string SelectedContactFields()
-  {
+  string SelectedContactFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&property=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
   }
-    string SelectedDealsFields()
-  {
+    string SelectedDealsFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&properties=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
   }
