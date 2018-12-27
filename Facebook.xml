@@ -3,9 +3,15 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-	<BrowserAuthenticator AuthUrl="https://www.facebook.com/v3.1/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri=https://www.facebook.com/connect/login_success.html"
-                        StayAuthenticated="false"
-                        QueryParameter="access_token"/>
+	<BrowserAuthenticator AuthUrl="https://www.facebook.com/v3.1/dialog/oauth?client_id=1305465169512905&amp;response_type=token&amp;scope=manage_pages&amp;redirect_uri=https://www.facebook.com/connect/login_success.html" StayAuthenticated="false" QueryParameter="access_token"/>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+				<JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
 
   <RestConnector Id="PageLookup" Title="Page Lookup">
     <Parameters>
@@ -14,8 +20,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/?id=
-        @(Model.PageId)
+        https://graph.facebook.com/v3.1/?id=@(Model.PageId)
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -47,20 +52,18 @@
           <JsonPath Id="PageIdInput" Expr="id" Converter="String"/>
         </Compute>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PagesLookup" Title="Page Lookup Batch">
     <Parameters>
-      <Text Id="Ids" Title="Multiple Page Ids (Max 50)" Debug.DefaultValue="56796081303" Required="true" HelpText="" Multiline="true"/>
+      <Text Id="Ids" Title="Multiple Page Ids" Debug.DefaultValue="56796081303" Required="true" HelpText="Separated by newline" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/?ids=
-        @(FetchIdsBatch())
+        https://graph.facebook.com/v3.1/?ids=@(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -94,9 +97,7 @@
         </Compute>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PagePlaces" Title="Page Places">
@@ -116,10 +117,7 @@
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -143,9 +141,7 @@
 				<JsonPath Title="Location URL" Id="LocationUrl" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PlaceLookup" Title="Place Lookup" HelpUrl="https://developers.facebook.com/docs/places/fields">
@@ -180,20 +176,18 @@
 			<JsonPath Title="Page Name" Id="PageName" Expr="page.name" Converter="String" Tag="page" HelpText=""/>
 			<JsonPath Title="Link" Id="Link" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PlaceLookupBatch" Title="Place Lookup Batch">
     <Parameters>
-      <Text Id="Ids" Title="Multiple Place Ids (Max 50) (Use 'PageId_PostId' Format)" Debug.DefaultValue="1408301722811369" Required="true" Multiline="true" HelpText=""/>
+      <Text Id="Ids" Title="Multiple Place Ids (Use 'PageId_PostId' Format)" Debug.DefaultValue="1408301722811369" Required="true" HelpText="Separated by newline" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/?ids=
-        @(FetchIdsBatch())
+        https://graph.facebook.com/v3.1/?ids=@(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -219,9 +213,7 @@
 				<JsonPath Title="Link" Id="Link" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PageAlbums" Title="Page Albums">
@@ -241,10 +233,7 @@
         fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -260,9 +249,7 @@
         <JsonPath Title="Album Link" Id="AlbumLink" Expr="link" Converter="String" Tag="link" HelpText=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PageFeed" Title="Page Feed">
@@ -294,10 +281,7 @@
         }
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -342,9 +326,7 @@
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Videos" Title="Videos">
@@ -373,10 +355,7 @@
         }
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -399,9 +378,7 @@
         </Compute>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PagePhotos" Title="Page Photos">
@@ -430,10 +407,7 @@
         }
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -447,9 +421,7 @@
         <JsonPath Title="Picture Link" Id="PictureLink" Expr="picture" Converter="String" Tag="picture" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Comments" Title="Comments">
@@ -469,10 +441,7 @@
         fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -488,9 +457,7 @@
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message" Converter="String"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PostLookup" Title="Post Lookup">
@@ -546,20 +513,18 @@
 			</Compute>
       <JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" HelpText="" DefaultValue=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PostLookupBatch" Title="Post Lookup Batch">
     <Parameters>
-      <Text Id="Ids" Title="Multiple Post Ids (Max 50) (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10155832978701304" HelpText="" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Multiple Post Ids (Use 'PageId_PostId' Format)" DefaultValue="" Debug.DefaultValue="56796081303_10155832978701304" HelpText="Separated by newline" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/?ids=
-        @(FetchIdsBatch())
+        https://graph.facebook.com/v3.1/?ids=@(FetchIdsBatch())
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         ]]>
@@ -606,9 +571,7 @@
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="CommentLookup" Title="Comment Lookup">
@@ -635,15 +598,14 @@
       <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
       <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="CommentsLookup" Title="Comment Lookup Batch">
     <Parameters>
-      <Text Id="Ids" Title="Multiple Comment Ids (Max 50) (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Multiple Comment Ids (Use 'PostId_CommentId' Format)" DefaultValue="" Debug.DefaultValue="1531576806852516_1531721810171349" HelpText="Separated by newline" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -689,10 +651,7 @@
         &access_token=@(Model.Authenticator.Token)
         &fields=@SelectedFields()
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -706,9 +665,7 @@
         <JsonPath Title="Place URL" Id="PlaceUrl" Expr="link" Converter="String" Tag="link" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
  <RestConnector Id="URLEngagement" Title="URL Engagement" HelpText="Engagement for single external URL">
@@ -734,8 +691,9 @@
 
   <RestConnector Id="URLEngagementBatch" Title="URL Engagement Batch" HelpText="Engagement for multiple external URLs">
     <Parameters>
-      <Text Id="Ids" Title="Multiple URLs (Max 50)" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Multiple URLs" Required="true" HelpText="Separated by newline" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -779,11 +737,11 @@
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
       }
-    string FetchIdsBatch()
-    {
-      string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
-      return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
-    }
+
+			string FetchIdsBatch() {
+				string[] lines = (string[])Model.IdsBatch;
+				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+			}
     ]]>
   </RazorFunctions>
 
