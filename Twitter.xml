@@ -485,9 +485,10 @@
 
   <RestConnector Id="TweetsLookup" Title="Tweet Lookup Batch" HelpUrl="https://dev.twitter.com/rest/reference/get/statuses/lookup">
     <Parameters>
-      <Text Id="TweetIds" Title="Multiple Tweet Ids or URLs (Max 100)" Debug.DefaultValue="" HelpText="" Multiline="true" Required="false"/>
+      <Text Id="TweetIds" Title="Multiple Tweet Ids or URLs" HelpText="Separated by newline" Multiline="true" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Batch Parameter="TweetIds" Separator="\n" ItemsPerBatch="100"/>
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/statuses/lookup.json?id=@(FetchTweetString())
@@ -590,9 +591,9 @@
 
   <RestConnector Id="UserLookup" Title="User Lookup" HelpUrl="https://dev.twitter.com/rest/reference/get/users/lookup">
     <Parameters>
-      <Text Id="Username" Title="Single Username" Debug.DefaultValue="ChristLindgren" HelpText="" Required="false"/>
+      <Text Id="Username" Title="Single Username" Debug.DefaultValue="ChristLindgren" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/users/show.json?screen_name=@(Model.Username)
@@ -643,15 +644,15 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="UsersLookup" Title="User Lookup Batch" HelpUrl="https://dev.twitter.com/rest/reference/get/users/lookup">
+  <RestConnector Id="UsersLookup" Title="User Lookup Batch" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-users-lookup">
     <Parameters>
-      <Text Id="Usernames" Title="Multiple Usernames (Max 100)" Debug.DefaultValue="" HelpText="" Multiline="true" Required="false"/>
+      <Text Id="Usernames" Title="Multiple Usernames" HelpText="Separated by newline" Multiline="true" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Batch Parameter="Usernames" Separator="\n" ItemsPerBatch="100"/>
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.twitter.com/1.1/users/
-        lookup.json?screen_name=@(FetchUserString())
+        https://api.twitter.com/1.1/users/lookup.json?screen_name=@(FetchUserString())
         ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -817,7 +818,8 @@
       </Radio>
       <Text Id="Usernames" Title="List of Users" Debug.DefaultValue="wearebuddler" HelpText="Enter usernames or user ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Batch Parameter="Usernames" Separator="\n" ItemsPerBatch="100"/>
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/friendships/lookup.json?
@@ -946,24 +948,19 @@
 
   <RazorFunctions>
     <![CDATA[
-    string FetchUserString()
-    {
-      string[] lines = ((string)Model.Usernames).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    string FetchUserString() {
+      string[] lines = (string[])Model.UsernamesBatch;
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-    string FetchTweetString()
-    {
-      string[] lines = ((string)Model.TweetIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+
+    string FetchTweetString() {
+      string[] lines = (string[])Model.TweetIdsBatch;
       return string.Join(",",lines.Select((e, i) => Regex.Replace(e, @"(\w*)\/status", string.Empty)).Select((e, i) => Regex.Replace(e, @"[^\d]", string.Empty)).ToArray());
     }
-    string FetchSingleTweet()
-    {
-      string step1 = Model.Tweet;
-      string step2;
-      string step3;
-      step2 = Regex.Replace(step1, @"(\w*)\/status", string.Empty);
-      step3 = Regex.Replace(step2, @"[^\d]", string.Empty);
-      return step3;
+
+    string FetchSingleTweet() {
+      string step1 = Regex.Replace(Model.Tweet, @"(\w*)\/status", string.Empty);
+      return Regex.Replace(step1, @"[^\d]", string.Empty);
     }
     ]]>
   </RazorFunctions>
