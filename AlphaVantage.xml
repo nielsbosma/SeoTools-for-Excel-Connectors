@@ -192,8 +192,9 @@
 
   <RestConnector Id="BatchStockQuotes" Title="Batch Stock Quotes" HelpText="Real-time multiple stock quotes" HelpUrl="https://www.alphavantage.co/documentation/#batchquotes">
     <Parameters>
-      <Text Id="StockSymbols" Title="Stock Symbols (one per line, up to 100)" Debug.DefaultValue="AAPL" Required="true" Multiline="true" HelpText="For all supported symbols check the Documentation link below"/>
+      <Text Id="Ids" Title="Stock Symbols (one per line)" Debug.DefaultValue="AAPL" Required="true" Multiline="true" HelpText="For all supported symbols check the Documentation link below"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -628,9 +629,8 @@
 
   <RazorFunctions>
     <![CDATA[
-    string FetchBatchStockSymbolString()
-    {
-      string[] lines = ((string)Model.StockSymbols).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+    string FetchBatchStockSymbolString() {
+      string[] lines = (string[])Model.IdsBatch;
       if (lines.Length > 0){
         return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
       }

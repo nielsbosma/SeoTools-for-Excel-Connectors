@@ -195,10 +195,10 @@
 
   <RestConnector Id="VideosSpecific" Title="Videos Specific" HelpText="Provides statistics related a list of videos provided by the user.">
     <Parameters>
-      <Text Id="Ids" Title="Video Ids (Max 200)" Debug.DefaultValue="1lvItfPSWe4" Required="true" Multiline="true" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
+      <Text Id="Ids" Title="Video Ids" Debug.DefaultValue="1lvItfPSWe4" Required="true" Multiline="true" HelpText="Ids separated by newline."/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
     </Parameters>
-    <Paging PageSize="200"/>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="200"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
@@ -209,10 +209,7 @@
         &dimensions=video
         &maxResults=@(Model.PageCursor.NextTake)
 				&metrics=views,likes,dislikes,comments,shares,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
+        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
@@ -271,18 +268,12 @@
         https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: &filters=@Utils.UrlEncode(Model.Filter)
-        }
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filters=" + Utils.UrlEncode(Model.Filter) : "")
         &dimensions=@(Model.Dimension)
         &maxResults=@(Model.PageCursor.NextTake)
         &metrics=views,estimatedMinutesWatched
         &sort=@(Model.Sorting)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
+        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
@@ -303,17 +294,11 @@
         https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: &filters=@Utils.UrlEncode(Model.Filter)
-        }
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filters=" + Utils.UrlEncode(Model.Filter) : "")
         &dimensions=sharingService
         &maxResults=@(Model.PageCursor.NextTake)
         &metrics=shares
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
+        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
@@ -335,10 +320,7 @@
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
         &filters=isCurated==1
         &metrics=views,estimatedMinutesWatched,playlistStarts,viewsPerPlaylistStart
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: ;@Utils.UrlEncode(Model.Filter)
-        }
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filters=" + Utils.UrlEncode(Model.Filter) : "")
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
@@ -349,10 +331,10 @@
 
   <RestConnector Id="PlaylistsSpecific" Title="Playlists Specific" HelpText="Provides statistics related a list of playlists provided by the user.">
     <Parameters>
-      <Text Id="Ids" Title="Playlist Ids (Max 200)" Debug.DefaultValue="PLveF1eCPUBjhldDk3sd0Q4GYKFPCIcBCp" Required="true" Multiline="true" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
+      <Text Id="Ids" Title="Playlist Ids" Debug.DefaultValue="PLveF1eCPUBjhldDk3sd0Q4GYKFPCIcBCp" Required="true" Multiline="true" HelpText="Ids separated by a newline"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
     </Parameters>
-    <Paging PageSize="200"/>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="200"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
@@ -363,10 +345,7 @@
         &dimensions=playlist
         &maxResults=@(Model.PageCursor.NextTake)
         &metrics=views,estimatedMinutesWatched,playlistStarts,viewsPerPlaylistStart
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
+        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
@@ -407,9 +386,8 @@
 
   <RazorFunctions>
     <![CDATA[
-      string FetchIdsBatch()
-      {
-        string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(200).ToArray();
+      string FetchIdsBatch() {
+				string[] lines = (string[])Model.IdsBatch;
         return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
       }
     ]]>

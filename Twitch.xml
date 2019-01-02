@@ -33,6 +33,18 @@
 			<Item Id="trending" Title="Trending"/>
 			<Item Id="views" Title="Views"/>
     </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+    <Resource Id="Authentication">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
   </Resources>
 
   <RestConnector Id="TopGames" Title="Top Games" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-top-games" Hidden="false">
@@ -42,32 +54,23 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/games/top
         ?first=@(Model.PageCursor.NextTake)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="GameId" Title="Game Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="name" Id="Game" Title="Game" Converter="String" HelpText=""/>
-        <JsonPath Expr="box_art_url" Id="BoxArt" Title="Box Art" Converter="String" HelpText=""/>
+        <JsonPath Expr="id" Id="GameId" Title="Game Id" Converter="Long"/>
+        <JsonPath Expr="name" Id="Game" Title="Game" Converter="String"/>
+        <JsonPath Expr="box_art_url" Id="BoxArt" Title="Box Art" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Streams" Title="Streams" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-streams" Hidden="false">
@@ -86,85 +89,61 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/streams
         ?first=@(Model.PageCursor.NextTake)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
-        @if(!string.IsNullOrEmpty(Model.GameId))
-        {
-          @: &game_id=@(Model.GameId)
-        }
-        @if(!string.IsNullOrEmpty(Model.UserId))
-        {
-          @: &user_id=@(Model.UserId)
-        }
-        @if(Model.Language != "all")
-        {
-          @: &language=@(Model.Language)
-        }
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        @(!string.IsNullOrEmpty(Model.GameId) ? "&game_id=" + Model.GameId : "")
+        @(!string.IsNullOrEmpty(Model.UserId) ? "&user_id=" + Model.UserId : "")
+        @(Model.Language != "all" ? "&language=" + Model.Language : "")
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="StreamId" Title="Stream Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="started_at" Id="Started" Title="Started" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-        <JsonPath Expr="viewer_count" Id="Viewers" Title="Viewers" Converter="Int" HelpText=""/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="" DefaultValue=""/>
-        <JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="language" Id="Langauge" Title="Langauge" Converter="String" HelpText=""/>
-        <JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
+        <JsonPath Expr="id" Id="StreamId" Title="Stream Id" Converter="Long"/>
+        <JsonPath Expr="started_at" Id="Started" Title="Started" Converter="DateTime"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="viewer_count" Id="Viewers" Title="Viewers" Converter="Int"/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long"/>
+        <JsonPath Expr="language" Id="Langauge" Title="Langauge" Converter="String"/>
+        <JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="VideosLookup" Title="Videos Lookup" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-videos" Hidden="false">
     <Parameters>
-      <Text Id="Ids" Title="Video Ids" Debug.DefaultValue="298372123" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Video Ids" Debug.DefaultValue="298372123" Required="true" Multiline="true" HelpText="Ids separated by newline."/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.twitch.tv/helix/videos?
-        id=@(FetchIdsBatch())
+        https://api.twitch.tv/helix/videos?id=@(FetchIdsBatch())
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="id" Id="VideoId" Title="Video Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
-				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="String" HelpText=""/>
-				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="viewable" Id="Viewable" Title="Viewable" Converter="String" HelpText=""/>
-				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
-				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
+				<JsonPath Expr="id" Id="VideoId" Title="Video Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="viewable" Id="Viewable" Title="Viewable" Converter="String"/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Videos" Title="Videos" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-videos" Hidden="false">
@@ -205,96 +184,64 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/videos?
         ?first=@(Model.PageCursor.PageSize)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
-        @if(!string.IsNullOrEmpty(Model.GameId))
-        {
-          @: &game_id=@(Model.GameId)
-        }
-        @if(!string.IsNullOrEmpty(Model.UserId))
-        {
-          @: &user_id=@(Model.UserId)
-        }
-        @if(Model.Type != "all")
-        {
-          @: &type=@(Model.Type)
-        }
-        @if(Model.Language != "all")
-        {
-          @: &language=@(Model.Language)
-        }
-        @if(Model.Period != "all")
-        {
-          @: &period=@(Model.Period)
-        }
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        @(!string.IsNullOrEmpty(Model.GameId) ? "&game_id=" + Model.GameId : "")
+        @(!string.IsNullOrEmpty(Model.UserId) ? "&user_id=" + Model.UserId : "")
+        @(Model.Type != "all" ? "&type=" + Model.Type : "")
+        @(Model.Language != "all" ? "&language=" + Model.Language : "")
+        @(Model.Period != "period" ? "&language=" + Model.Period : "")
         &sort=@(Model.Sort)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="id" Id="VideoId" Title="Video Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
-				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="String" HelpText=""/>
-				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="viewable" Id="Viewable" Title="Viewable" Converter="String" HelpText=""/>
-				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
-				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
+				<JsonPath Expr="id" Id="VideoId" Title="Video Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="duration" Id="Duration" Title="Duration" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="viewable" Id="Viewable" Title="Viewable" Converter="String"/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="UsersLookup" Title="Users Lookup" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-users" Hidden="false">
 		<Parameters>
-      <Text Id="Ids" Title="Filter by User Ids (blank = me)" Debug.DefaultValue="44322889" Multiline="true" Required="false"/>
+      <Text Id="Ids" Title="Filter by User Ids (blank = me)" Debug.DefaultValue="44322889" Multiline="true" Required="false" HelpText="Ids separated by newline."/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>		
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/users
-        @if(!string.IsNullOrEmpty(Model.Ids))
-        {
-          @: ?id=@(FetchUserIdsBatch())
-        }
+        @(!string.IsNullOrEmpty(Model.Ids) ? "?id=" + FetchUserIdsBatch() : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="login" Id="Login" Title="Login" Converter="String" HelpText=""/>
-				<JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="broadcaster_type" Id="BroadcasterType" Title="Broadcaster Type" Converter="String" HelpText=""/>
-				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="UserId" Title="User Id" Converter="Long"/>
+				<JsonPath Expr="login" Id="Login" Title="Login" Converter="String"/>
+				<JsonPath Expr="display_name" Id="DisplayName" Title="Display Name" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="broadcaster_type" Id="BroadcasterType" Title="Broadcaster Type" Converter="String"/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="UsersFollowers" Title="Users Followers" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-users-follows" Hidden="false">
@@ -307,33 +254,24 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/users/follows
         ?first=@(Model.PageCursor.PageSize)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
 				&to_id=@(Model.UserId)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="from_id" Id="FromId" Title="From User" Converter="Long" HelpText=""/>
-				<JsonPath Expr="to_id" Id="ToId" Title="To User" Converter="Long" HelpText=""/>
-				<JsonPath Expr="followed_at" Id="FollowedAt" Title="Followed At" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="from_id" Id="FromId" Title="From User" Converter="Long"/>
+				<JsonPath Expr="to_id" Id="ToId" Title="To User" Converter="Long"/>
+				<JsonPath Expr="followed_at" Id="FollowedAt" Title="Followed At" Converter="DateTime"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="UsersFollowing" Title="Users Following" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-users-follows" Hidden="false">
@@ -346,68 +284,53 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/users/follows
         ?first=@(Model.PageCursor.PageSize)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
 				&from_id=@(Model.UserId)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="from_id" Id="FromId" Title="From User" Converter="Long" HelpText=""/>
-				<JsonPath Expr="to_id" Id="ToId" Title="To User" Converter="Long" HelpText=""/>
-				<JsonPath Expr="followed_at" Id="FollowedAt" Title="Followed At" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="from_id" Id="FromId" Title="From User" Converter="Long"/>
+				<JsonPath Expr="to_id" Id="ToId" Title="To User" Converter="Long"/>
+				<JsonPath Expr="followed_at" Id="FollowedAt" Title="Followed At" Converter="DateTime"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ClipsLookup" Title="Clips Lookup" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-clips" Hidden="false">
     <Parameters>
-      <Text Id="Ids" Title="Clip Ids" Debug.DefaultValue="StrongCredulousWalrusStrawBeary" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Clip Ids" Debug.DefaultValue="StrongCredulousWalrusStrawBeary" Required="true" Multiline="true" HelpText="Ids separated by newline."/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.twitch.tv/helix/clips?
-        id=@(FetchIdsBatch())
+        https://api.twitch.tv/helix/clips?id=@(FetchIdsBatch())
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="id" Id="ClipId" Title="Clip Id" Converter="String" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="broadcaster_id" Id="BroadcasterId" Title="Broadcaster Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="creator_id" Id="CreatorId" Title="Creator Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="video_id" Id="VideoId" Title="Video Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="ClipId" Title="Clip Id" Converter="String"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="broadcaster_id" Id="BroadcasterId" Title="Broadcaster Id" Converter="Long"/>
+				<JsonPath Expr="creator_id" Id="CreatorId" Title="Creator Id" Converter="Long"/>
+				<JsonPath Expr="video_id" Id="VideoId" Title="Video Id" Converter="Long"/>
+				<JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long"/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Clips" Title="Clips" HelpUrl="https://dev.twitch.tv/docs/api/reference/#get-clips" Hidden="false">
@@ -421,59 +344,42 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="Authentication"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitch.tv/helix/clips
         ?first=@(Model.PageCursor.PageSize)
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: &after=@(Model.Cursor)
-				}
-        @if(!string.IsNullOrEmpty(Model.GameId))
-        {
-          @: &game_id=@(Model.GameId)
-        }
-        @if(!string.IsNullOrEmpty(Model.BroadcasterId))
-        {
-          @: &broadcaster_id=@(Model.BroadcasterId)
-        }
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        @(!string.IsNullOrEmpty(Model.GameId) ? "&game_id=" + Model.GameId : "")
+        @(!string.IsNullOrEmpty(Model.BroadcasterId) ? "&broadcaster_id=" + Model.BroadcasterId : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Expr="id" Id="ClipId" Title="Clip Id" Converter="String" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="language" Id="Language" Title="Language" Converter="String" HelpText=""/>
-				<JsonPath Expr="broadcaster_id" Id="BroadcasterId" Title="Broadcaster Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="creator_id" Id="CreatorId" Title="Creator Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="video_id" Id="VideoId" Title="Video Id" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="ClipId" Title="Clip Id" Converter="String"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="view_count" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="language" Id="Language" Title="Language" Converter="String"/>
+				<JsonPath Expr="broadcaster_id" Id="BroadcasterId" Title="Broadcaster Id" Converter="Long"/>
+				<JsonPath Expr="creator_id" Id="CreatorId" Title="Creator Id" Converter="Long"/>
+				<JsonPath Expr="video_id" Id="VideoId" Title="Video Id" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="game_id" Id="GameId" Title="Game Id" Converter="Long"/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 		</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-    string FetchIdsBatch()
-    {
-      string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    string FetchIdsBatch() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-    string FetchUserIdsBatch()
-    {
-      string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    string FetchUserIdsBatch() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join("&id=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
     ]]>

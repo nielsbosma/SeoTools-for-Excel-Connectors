@@ -51,13 +51,8 @@
           &PageSize=@(Model.PageCursor.NextTake)
           &Page=@(Model.PageCursor.Page+1)
           &ListType=@(Model.ListType)
-          @if(!string.IsNullOrEmpty(Model.SearchTerm))
-          {
-            @: &SearchTerm=@(Model.SearchTerm)
-          }
-          @if(Model.SortBy != "default"){
-           @: &SortBy=@(Model.SortBy)
-          }
+          @(!string.IsNullOrEmpty(Model.SearchTerm) ? "&SearchTerm=" + Model.SearchTerm : "")
+          @(Model.SortBy != "default" ? "&SortBy=" + Model.SortBy : "")
           &ClientIp=@(Model.ClientIp)
         ]]>
       </Fetch.Url>
@@ -151,8 +146,9 @@
 
   <RestConnector Id="CheckAvailability" Title="Check Availability" HelpText="Checks the availability of domain" HelpUrl="https://www.namecheap.com/support/api/methods/domains/check.aspx">
     <Parameters>
-      <Text Id="Urls" Title="URL(s)" Required="true" HelpText="Enter 1 to 50 URLs, one per line" Multiline="true"/>
+      <Text Id="Ids" Title="List of URLs" Required="true" HelpText="URLs separated by newline" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -164,7 +160,6 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-
       <XPath Expr="//*[name()='commandresponse']/*">
         <XPath Expr="." Attribute="Domain" Id="Domain" Title="Domain" Converter="String" HelpText="Domain name for which you wish to check availability"/>
         <XPath Expr="." Attribute="Available" Id="Available" Title="Available" Converter="Bool" HelpText="Indicates whether the domain name is available for registration"/>
@@ -175,7 +170,6 @@
         <XPath Expr="." Attribute="PremiumTransferPrice" Id="Premium TransferPrice" Title="Premium Transfer Price" Converter="Double" HelpText="Transfer price for the premium domain"/>
         <XPath Expr="." Attribute="IcannFee" Id="IcannFee" Title="Icann Fee" Converter="Double" HelpText="Fee charged by ICANN"/>
         <XPath Expr="." Attribute="EapFee" Id="EapFee" Title="EAP Fee"  Converter="Double" HelpText="Purchase fee for the premium domain during Early Access Program (EAP)*"/>
-
       </XPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -309,7 +303,6 @@
 				<XPath Expr="." Id="Email" Title="Email" Converter="String"/>
 				<XPath Expr="." Attribute="mailboxid" Id="MailboxId" Title="Mailbox Id" Converter="String" HelpText="The Id of email forwarding mailbox that was created."/>
 				<XPath Expr="." Attribute="mailbox" Id="Mailbox" Title="Mailbox" Converter="String" HelpText="The email forwarding mailbox that was created."/>
-
 			</XPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -338,13 +331,11 @@
 
   <RazorFunctions>
     <![CDATA[
-
-    string FetchUrls()
-    {
-    string[] lines = ((string)Model.Urls).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
-    return string.Join(",",lines.ToArray());
+    string FetchUrls() {
+      string[] lines = (string[])Model.IdsBatch;
+			return string.Join(",",lines.ToArray());
     }
-      ]]>
+    ]]>
   </RazorFunctions>
 
 </Suite>
