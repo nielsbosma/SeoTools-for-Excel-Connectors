@@ -446,8 +446,9 @@
 	<RestConnector Id="KeywordSearchVolume" Title="Keyword Search Volume" HelpUrl="https://seranking.com/api-total-information.html#anchor5" HelpText="Get the search volume data for a specified region and keyword list.">
     <Parameters>
       <Text Id="RegionId" Title="Region Id" Debug.DefaultValue="182" Required="true" Select.Connector="Regions" Select.IdField="Id" Select.TitleField="Name" HelpText=""/>
-      <Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="seo" Required="true" Multiline="true" HelpText="Keywords separated by newline."/>
+      <Text Id="Ids" Title="List of Keywords" Debug.DefaultValue="seo" Required="true" Multiline="true" HelpText="Keywords separated by newline."/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="10"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -499,7 +500,7 @@
     <![CDATA[
       string Fetchkeywords()
       {
-        string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(20).ToArray();
+				string[] lines = (string[])Model.IdsBatch;
         return string.Join("&keyword[]=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
       }
     ]]>

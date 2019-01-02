@@ -578,9 +578,10 @@
 
   <RestConnector Id="KeywordDifficulty" Title="Keyword Difficulty" HelpUrl="https://www.semrush.com/api-analytics/#phrase_kdi" HelpText="Provides keyword difficulty, an index that helps to estimate how difficult it would be to seize competitors' positions in organic search within the Google's top 20 with an indicated search term.">
     <Parameters>
-      <Text Id="Phrase" Title="Phrases (Up to 100 keywords separated by &quot;;&quot;) " Debug.DefaultValue="" Required="true" HelpUrl="" Multiline="true"/>
+      <Text Id="Ids" Title="Phrases" Debug.DefaultValue="" Required="true" HelpUrl="Phrases separated by newline" Multiline="true"/>
       <Resource Id="SelectDatabase"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -1181,9 +1182,8 @@
 
   <RazorFunctions>
     <![CDATA[
-    string FetchPhrases()
-    {
-      string[] lines = ((string)Model.Phrase).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
+    string FetchPhrases() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join(";",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
     ]]>

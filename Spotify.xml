@@ -654,13 +654,14 @@
 
   <RestConnector Id="TracksLookup" Title="Tracks Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-tracks/">
     <Parameters>
-      <Text Id="TrackIds" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter up to 50 Track Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter Track Ids separated by a new line" Required="true" Multiline="true"/>
       <Select Id="CountryCode" Title="Filter by Market" Required="false" DefaultValue="all" HelpText="">
         <DataSource>
           <Resource Id="CountryCodes"/>
         </DataSource>
       </Select>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -753,8 +754,9 @@
 
   <RestConnector Id="TrackAudioFeatures" Title="Tracks Audio Features" HelpUrl="https://developer.spotify.com/web-api/get-audio-features/">
     <Parameters>
-      <Text Id="TrackIds" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter one or more Track Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter one or more Track Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -981,8 +983,9 @@
 
   <RestConnector Id="ArtistsLookup" Title="Artists Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-artists/">
     <Parameters>
-      <Text Id="ArtistIds" Title="Artist Ids" Debug.DefaultValue="18Zv2g2vUcEGqJf6WnjfXN" HelpText="Enter up to 50 Artist Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Artist Ids" Debug.DefaultValue="18Zv2g2vUcEGqJf6WnjfXN" HelpText="Enter Artist Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -1153,8 +1156,9 @@
 
   <RestConnector Id="AlbumsLookup" Title="Albums Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-albums/">
     <Parameters>
-      <Text Id="AlbumIds" Title="Album Ids" Debug.DefaultValue="0yCqicy5tGkPiB6gUZCRy4" HelpText="Enter up to 50 Album Ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Album Ids" Debug.DefaultValue="0yCqicy5tGkPiB6gUZCRy4" HelpText="Enter Album Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
       <HttpSettings>
         <RequestHeaders>
@@ -1239,24 +1243,20 @@
 
   <RazorFunctions>
     <![CDATA[
-    string FetchTrackIdString()
-    {
-      string[] lines = ((string)Model.TrackIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+    string FetchTrackIdString() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-    string FetchUserIdString()
-    {
+    string FetchUserIdString() {
       string[] lines = ((string)Model.UserIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(5).ToArray();
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-    string FetchArtistIdString()
-    {
-      string[] lines = ((string)Model.ArtistIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
+    string FetchArtistIdString() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-    string FetchAlbumIdString()
-    {
-      string[] lines = ((string)Model.AlbumIds).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(50).ToArray();
+    string FetchAlbumIdString() {
+      string[] lines = (string[])Model.IdsBatch;
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
     ]]>
