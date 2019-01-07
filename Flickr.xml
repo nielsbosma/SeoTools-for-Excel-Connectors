@@ -7,16 +7,27 @@
     <Text Id="Key" Title="API Key" Required="true"/>
   </Settings>
 
-  <RestConnector Id="PhotoSearch" Title="Photo Search">
-    <Parameters>
-      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
-      <Radio Id="MediaType" Title="Media Type" DefaultValue="all" Required="false">
+	 <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+    </Resource>
+    <Resource Id="MediaType">
+      <Select Id="MediaType" Title="Media Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
           <Item Id="photos" Title="Photos"/>
           <Item Id="videos" Title="Videos"/>
         </DataSource>
-      </Radio>
+      </Select>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="PhotoSearch" Title="Photo Search" HelpText="Return a list of photos matching some criteria." HelpUrl="https://www.flickr.com/services/api/flickr.photos.search.html">
+    <Parameters>
+      <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
+			<Resource Id="MediaType"/>
       <DateInterval Id="UploadedInterval" Title="Uploaded Interval" Required="false" Nullable="true"/>
       <DateInterval Id="TakenInterval" Title="Taken Interval" Required="false" Nullable="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="date-posted-desc" Required="false">
@@ -32,24 +43,19 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.photos.search
+        https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=@(Model.Key)&format=json&nojsoncallback=2
         &text=@Utils.UrlEncode(Model.Query)
         &sort=@Utils.UrlEncode(Model.Sorting)
         &media=@(Model.MediaType)
         &order=@(Model.Sorting)
-        &format=json
-        &nojsoncallback=2
         &extras=description,date_upload,date_taken,owner_name,views,url_m,media,original_format
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
-        &api_key=@Model.Key
-
         @if(Model.UploadedInterval.StartDate != null && Model.UploadedInterval.EndDate != null)
         {
             @: &min_upload_date=@(((DateTime)Model.UploadedInterval.StartDate).UnixTimeStampUtc())
             @: &max_upload_date=@(((DateTime)Model.UploadedInterval.EndDate).UnixTimeStampUtc())
         }
-
         @if(Model.TakenInterval.StartDate != null && Model.TakenInterval.EndDate != null)
         {
             @: &min_taken_date=@(((DateTime)Model.TakenInterval.StartDate).UnixTimeStampUtc())
@@ -83,12 +89,12 @@
         <JsonPath Expr="dateupload" Id="DateUploaded" Title="Date Uploaded" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="datetaken" Id="DateTaken" Title="Date Taken" Converter="DateTime"/>
         <JsonPath Expr="views" Id="Views" Converter="Int"/>
+        <JsonPath Expr="height_m" Id="Height" Converter="Int"/>
+        <JsonPath Expr="width_m" Id="Width" Converter="Int"/>
         <JsonPath Expr="originalformat" Id="OriginalFormat" Title="Original Format" Converter="String"  DefaultValue=""/>
         <JsonPath Expr="url_m" Id="PictureUrl" Title="Media URL" Converter="String"/>
         <JsonPath Expr="ownername" Id="Owner" Converter="String"/>
         <JsonPath Expr="owner" Id="OwnerId" Title="Owner Id" Converter="String"/>
-      </JsonPath>
-      <JsonPath Expr="photos.photo[*]">
         <Compute Id="OwnerUrl" Title="Owner URL">
           <Compute.Expr>
             <![CDATA[
@@ -100,22 +106,14 @@
         <JsonPath Expr="isfriend" Id="IsFriend" Title="Is Friend" Converter="Bool"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserMedia" Title="User Media">
+  <RestConnector Id="AccountMedia" Title="Account Media" HelpText="Return a list of photos posted by an account." HelpUrl="https://www.flickr.com/services/api/flickr.photos.search.html">>
     <Parameters>
       <Text Id="UserId" Title="User Id" Debug.DefaultValue="12037949754@N01" Required="true"/>
       <Text Id="Query" Title="Search" Debug.DefaultValue="" Required="false"/>
-      <Radio Id="MediaType" Title="Media Type" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="All"/>
-          <Item Id="photos" Title="Photos"/>
-          <Item Id="videos" Title="Videos"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="MediaType"/>
       <DateInterval Id="UploadedInterval" Title="Uploaded Interval" Required="false" Nullable="true"/>
       <DateInterval Id="TakenInterval" Title="Taken Interval" Required="false" Nullable="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="date-posted-desc" Required="false">
@@ -131,21 +129,15 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.photos.search
+        https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &user_id=@(Model.UserId)
-        @if(!string.IsNullOrEmpty(Model.Query))
-        {
-          @: &text=@Utils.UrlEncode(Model.Query)
-        }
+        @(!string.IsNullOrEmpty(Model.Query) ? "&text=" + Utils.UrlEncode(Model.Query) : "")
         &sort=@Utils.UrlEncode(Model.Sorting)
         &media=@(Model.MediaType)
         &order=@(Model.Sorting)
-        &format=json
-        &nojsoncallback=2
         &extras=description,date_upload,date_taken,views,url_m,media,original_format
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
-        &api_key=@Model.Key
         @if(Model.UploadedInterval.StartDate != null && Model.UploadedInterval.EndDate != null)
         {
           @: &min_upload_date=@(((DateTime)Model.UploadedInterval.StartDate).UnixTimeStampUtc())
@@ -176,10 +168,7 @@
         <Compute Id="Description" Title="Description">
           <Compute.Expr>
             <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.Input, "<.*?>", String.Empty);
-            }
-            @Cleaned
+            @Regex.Replace(Model.Input, "<.*?>", String.Empty)
             ]]>
           </Compute.Expr>
           <JsonPath Expr="description._content" Id="Input"/>
@@ -187,28 +176,25 @@
         <JsonPath Expr="dateupload" Id="DateUploaded" Title="Date Uploaded" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="datetaken" Id="DateTaken" Title="Date Taken" Converter="DateTime"/>
         <JsonPath Expr="views" Id="Views" Converter="Int"/>
+        <JsonPath Expr="height_m" Id="Height" Converter="Int"/>
+        <JsonPath Expr="width_m" Id="Width" Converter="Int"/>
         <JsonPath Expr="originalformat" Id="OriginalFormat" Title="Original Format" Converter="String" DefaultValue=""/>
         <JsonPath Expr="url_m" Id="PictureUrl" Title="Media URL" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="GroupSearch" Title="Groups Search">
+  <RestConnector Id="GroupSearch" Title="Groups Search" HelpUrl="https://www.flickr.com/services/api/flickr.groups.search.html">
     <Parameters>
       <Text Id="Query" Title="Search" Debug.DefaultValue="panda" Required="true"/>
     </Parameters>
     <Paging PageSize="200" EvenPages="false"/>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.groups.search
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.groups.search&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &text=@Utils.UrlEncode(Model.Query)
-        &format=json
-        &nojsoncallback=2
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
         ]]>
@@ -216,6 +202,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="groups.group[*]">
+        <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
@@ -224,30 +211,24 @@
           </Compute.Expr>
           <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Converter="String"/>
         <JsonPath Expr="members" Id="Members" Converter="Int"/>
         <JsonPath Expr="pool_count" Id="PoolCount" Title="Pool Count" Converter="int"/>
         <JsonPath Expr="topic_count" Id="TopicCount" Title="Topic Count" Converter="Int"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="FindAccountbyEmail" Title="Find Account by Email">
+  <RestConnector Id="FindAccountbyEmail" Title="Find Account by Email" HelpUrl="https://www.flickr.com/services/api/flickr.people.findByEmail.html">
     <Parameters>
-      <Text Id="Email" Title="E-mail" Debug.DefaultValue="" Required="true"/>
+      <Text Id="Email" Title="E-mail" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.people.findByEmail
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.people.findByEmail&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &find_email=@Utils.UrlEncode(Model.Email)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -263,23 +244,18 @@
         <JsonPath Expr="user.nsid" Id="Id" Converter="String"/>
       </Compute>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="FindAccountbyUsername" Title="Find Account by Username">
+  <RestConnector Id="FindAccountbyUsername" Title="Find Account by Username" HelpUrl="https://www.flickr.com/services/api/flickr.people.findByUsername.html">
     <Parameters>
-      <Text Id="Username" Title="Username" Debug.DefaultValue="" Required="true"/>
+      <Text Id="Username" Title="Username" DRequired="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.people.findByUsername
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.people.findByUsername&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &username=@Utils.UrlEncode(Model.Username)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -294,23 +270,18 @@
         <JsonPath Expr="user.nsid" Id="Id" Converter="String"/>
       </Compute>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="FindAccountbyUrl" Title="Find Account by Flickr URL">
+  <RestConnector Id="FindAccountbyUrl" Title="Find Account by Flickr URL" HelpUrl="https://www.flickr.com/services/api/flickr.urls.lookupUser.html">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.flickr.com/people/35034348999@N01" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.urls.lookupUser
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.urls.lookupUser&api_key=@(Model.Key)&format=json&nojsoncallback=2
         &url=@Utils.UrlEncode(Model.Url)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -326,23 +297,18 @@
         <JsonPath Expr="user.id" Id="Id" Converter="String"/>
       </Compute>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserLookup" Title="User Lookup">
+  <RestConnector Id="AccountLookup" Title="Account Lookup" HelpText="Get information about a user." HelpUrl="https://www.flickr.com/services/api/flickr.people.getInfo.html">
     <Parameters>
-      <Text Id="UserId" Title="User Id" Debug.DefaultValue="12037949754@N01" Required="true"/>
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="12037949754@N01" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.people.getInfo
-        &api_key=@Model.Key
-        &user_id=@Utils.UrlEncode(Model.UserId)
-        &format=json
-        &nojsoncallback=2
+        https://api.flickr.com/services/rest/?method=flickr.people.getInfo&api_key=@(Model.Key)&nojsoncallback=2&format=json
+        &user_id=@Utils.UrlEncode(Model.AccountId)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -355,28 +321,24 @@
       <JsonPath Expr="person.photosurl._content" Id="Url" Title="URL" Converter="String"/>
       <JsonPath Expr="person.photos.count._content" Id="Photos" Title="Photos" Converter="Int"/>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserGroups" Title="User Groups">
+  <RestConnector Id="AccountGroups" Title="Account Groups" HelpText="Returns the list of groups a user is a member of." HelpUrl="https://www.flickr.com/services/api/flickr.people.getGroups.html">
     <Parameters>
-      <Text Id="UserId" Title="User Id" Debug.DefaultValue="12037949754@N01" Required="true"/>
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="12037949754@N01" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.people.getPublicGroups
-        &api_key=@Model.Key
-        &user_id=@Utils.UrlEncode(Model.UserId)
-        &format=json
-        &nojsoncallback=2
+        https://api.flickr.com/services/rest/?method=flickr.people.getPublicGroups&api_key=@(Model.Key)&nojsoncallback=2&format=json
+        &user_id=@Utils.UrlEncode(Model.AccountId)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="groups.group[*]">
+        <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
@@ -385,29 +347,23 @@
           </Compute.Expr>
           <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Expr="nsid" Id="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Converter="String"/>
         <JsonPath Expr="members" Id="Members" Converter="Int"/>
         <JsonPath Expr="pool_count" Id="PoolCount" Title="Pool Count" Converter="int"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PhotoLookup" Title="Photo Lookup">
+  <RestConnector Id="PhotoLookup" Title="Photo Lookup" HelpText="Get information about a photo." HelpUrl="https://www.flickr.com/services/api/flickr.photos.getInfo.html">
     <Parameters>
       <Text Id="PhotoId" Title="Photo Id" Debug.DefaultValue="31928125563" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.photos.getInfo
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.photos.getInfo&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &photo_id=@Utils.UrlEncode(Model.PhotoId)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -428,10 +384,7 @@
         <Compute Id="Description" Title="Description">
           <Compute.Expr>
             <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.Input, "<.*?>", String.Empty);
-            }
-            @Cleaned
+            @Regex.Replace(Model.Input, "<.*?>", String.Empty)
             ]]>
           </Compute.Expr>
           <JsonPath Expr="description._content" Id="Input"/>
@@ -439,6 +392,8 @@
         <JsonPath Expr="dates.posted" Id="DatePosted" Title="Date Posted" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="dates.taken" Id="DateTaken" Title="Date Taken" Converter="DateTime"/>
         <JsonPath Expr="views" Id="Views" Converter="Int"/>
+        <JsonPath Expr="height_m" Id="Height" Converter="Int"/>
+        <JsonPath Expr="width_m" Id="Width" Converter="Int"/>
         <JsonPath Expr="originalformat" Id="OriginalFormat" Title="Original Format" Converter="String"  DefaultValue=""/>
         <JsonPath Expr="owner.username" Id="Username" Converter="String"/>
         <JsonPath Expr="owner.nsid" Id="OwnerId" Title="Owner Id" Converter="String"/>
@@ -452,31 +407,27 @@
         </Compute>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PhotoComments" Title="Photo Comments">
+  <RestConnector Id="PhotoComments" Title="Photo Comments" HelpText="Returns the comments for a photo" HelpUrl="https://www.flickr.com/services/api/flickr.photos.comments.getList.html">
     <Parameters>
       <Text Id="PhotoId" Title="Photo Id" Debug.DefaultValue="109722179" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.photos.comments.getList
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.photos.comments.getList&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &photo_id=@Utils.UrlEncode(Model.PhotoId)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="comments.comment[*]">
         <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
-        <JsonPath Expr="_content" Id="Comment" Converter="Comment"/>
         <JsonPath Expr="permalink" Id="Permalink" Title="Permalink" Converter="String"/>
+        <JsonPath Expr="_content" Id="Comment" Converter="Comment"/>
+        <JsonPath Expr="datecreate" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="authorname" Id="AccountName" Title="AccountName" Converter="String"/>
         <JsonPath Expr="path_alias" Id="Username" Title="Username" Converter="String"/>
         <JsonPath Expr="author" Id="UserId" Title="User Id" Converter="String"/>
@@ -490,29 +441,23 @@
         </Compute>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PhotoTags" Title="Photo Tags">
+  <RestConnector Id="PhotoTags" Title="Photo Tags" HelpText="Get the tag list for a given photo." HelpUrl="https://www.flickr.com/services/api/flickr.tags.getListPhoto.html">
     <Parameters>
       <Text Id="PhotoId" Title="Photo Id" Debug.DefaultValue="109722179" Required="true"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.flickr.com/services/rest/?method=flickr.tags.getListPhoto
-        &api_key=@Model.Key
+        https://api.flickr.com/services/rest/?method=flickr.tags.getListPhoto&api_key=@(Model.Key)&nojsoncallback=2&format=json
         &photo_id=@Utils.UrlEncode(Model.PhotoId)
-        &format=json
-        &nojsoncallback=2
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="photo.tags.tag[*]">
-        <JsonPath Expr="id" Id="TagId" Title="Tag Id" Converter="String"/>
         <JsonPath Expr="_content" Id="Tag" Converter="Tag" Conveter="String"/>
         <JsonPath Expr="authorname" Id="AccountName" Title="AccountName" Converter="String"/>
         <JsonPath Expr="author" Id="UserId" Title="User Id" Converter="String"/>
@@ -526,9 +471,7 @@
         </Compute>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>
