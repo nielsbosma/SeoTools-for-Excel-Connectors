@@ -103,7 +103,20 @@
 			</Compute>
       <Regex Title="Image URL" Id="ImageUrl" Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
       <Xpath Title="User Id" Id="UserId" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String"/>
-      <Regex Title="Avatar" Id="Avatar" Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue=""/>
+			<Compute Id="Avatar" Title="Avatar" DefaultValue="">
+				<Compute.Expr>
+					<![CDATA[
+          @{
+            string body = Model.FetchedResult.Body;
+						string strRegex = Model.Inp + "\",\"is_verified\":\\w+,\"profile_pic_url\":\"(.*?)\"";
+            Regex regex = new Regex(@strRegex);
+            Match match = regex.Match(body);
+          }
+          @(match.Groups[1].Value)
+					]]>
+				</Compute.Expr>
+				<Xpath Id="Inp" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String"/>
+			</Compute>
     </Parse>
   </RestConnector>
 
