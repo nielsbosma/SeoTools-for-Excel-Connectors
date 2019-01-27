@@ -7,7 +7,7 @@
     <Text Id="ReadApiKey" Title="Read API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/uclassify/"/>
   </Settings>
 
-  <RestConnector Id="Classifiers" Title="Classifiers" Hidden="true">
+  <RestConnector Id="Classifiers" Hidden="true">
     <Fetch Url="https://uclassify.com/browse"/>
     <Parse>
       <XPath Expr="//ul[contains(@@class, 'list-group')]/li/h4">
@@ -17,46 +17,23 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Languages" Title="Languages" Hidden="true">
+  <RestConnector Id="uClassify" Title="uClassify" HelpUrl="https://www.uclassify.com/docs/urlrestapi">
     <Parameters>
-      <Text Id="Classifier" Required="false" HelpText=""/>
-    </Parameters>
-    <Fetch Url="https://uclassify.com/browse"/>
-    <Parse>
-      <XPath Expr="//p/a[contains(@@href,'@(Model.Classifier)')]">
-        <XPath Expr="." Attribute="href" Id="LangId"/>
-        <XPath Expr="." Attribute="title" Id="Title"/>
-      </XPath>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="SimpleClassification" Title="Simple Classification" HelpText="">
-    <Parameters>
-      <Text Id="Classifier" Title="Classifier" DefaultValue="" Debug.DefaultValue="" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
+      <Text Id="Classifier" Title="Classifier" Required="true" HelpUrl="https://uclassify.com/browse" Select.Connector="Classifiers"/>
       <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
         <DataSource>
           <Item Id="ClassifyText" Title="Text"/>
           <Item Id="ClassifyUrl" Title="URL"/>
         </DataSource>
       </Radio>
-      <Text Id="Input" Title="Input" DefaultValue="" Debug.DefaultValue="" Required="true"/>
+      <Text Id="Input" Title="Input" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-				http://uclassify.com
-				@(Model.Classifier)
-				/@(Model.Mode)
-        ?readkey=@(Model.ReadApiKey)
-				@if(Model.Mode == "ClassifyText")
-				{
-					@: &text=@(Utils.UrlEncode(Model.Input))
-				}
-				else
-				{
-					@: &url=@(Utils.UrlEncode(Model.Input))
-				}
-        &output=json
+				http://uclassify.com@(Model.Classifier)/@(Model.Mode)
+        ?readkey=@(Model.ReadApiKey)&output=json
+				@(Model.Mode == "ClassifyText" ? "&text=" + Utils.UrlEncode(Model.Input) : "&url=" + Utils.UrlEncode(Model.Input))
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -86,45 +63,6 @@
         ]]>
         </Compute.Expr>
       </Compute>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="$.errorMessage"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="DetailedTopicClassifier" Title="Detailed Topic Classifier">
-    <Parameters>
-      <Radio Id="Mode" Title="Mode" DefaultValue="text" Required="true">
-        <DataSource>
-          <Item Id="Text" Title="Text"/>
-          <Item Id="Url" Title="URL"/>
-        </DataSource>
-      </Radio>
-      <Text Id="Input" Title="Input" DefaultValue="" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://api.uclassify.com/v1/uclassify/topics/
-        /Classify
-        ?readkey=@(Model.ReadApiKey)
-        &text=@(Utils.UrlEncode(Model.Input))
-      ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="100" RandomTo="200" IfSame="Host"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="Arts" Id="Arts" Title="Arts" Converter="Double"/>
-      <JsonPath Expr="Computers" Id="Computers" Title="Computers" Converter="Double"/>
-      <JsonPath Expr="Games" Id="Games" Title="Games" Converter="Double"/>
-      <JsonPath Expr="Health" Id="Health" Title="Health" Converter="Double"/>
-      <JsonPath Expr="Home" Id="Home" Title="Home" Converter="Double"/>
-      <JsonPath Expr="Recreation" Id="Recreation" Title="Recreation" Converter="Double"/>
-      <JsonPath Expr="Science" Id="Science" Title="Science" Converter="Double"/>
-      <JsonPath Expr="Society" Id="Society" Title="Society" Converter="Double"/>
-      <JsonPath Expr="Sports" Id="Sports" Title="Sports" Converter="Double"/>
     </Parse>
     <Fail>
       <JsonPath Expr="$.errorMessage"/>
