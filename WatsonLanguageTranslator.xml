@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Watson Language Translator" Id="WatsonLanguageTranslator" Category="Language" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WatsonLanguageTranslator.xml" HelpUrl="http://seotoolsforexcel.com/watson-lt/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/watson-lt/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+    <Select Id="Location" Title="Location" DefaultValue="https://gateway.watsonplatform.net/language-translator/api" Required="true">
+      <DataSource>
+				<Item Id="https://gateway.watsonplatform.net/language-translator/api" Title="Dallas"/>
+				<Item Id="https://gateway-lon.watsonplatform.net/language-translator/api" Title="London"/>
+				<Item Id="https://gateway-fra.watsonplatform.net/language-translator/api" Title="Frankfurt"/>
+				<Item Id="https://gateway-wdc.watsonplatform.net/language-translator/api" Title="Washington DC"/>
+				<Item Id="https://gateway-syd.watsonplatform.net/language-translator/api" Title="Sydney"/>
+				<Item Id="https://gateway-tok.watsonplatform.net/language-translator/api" Title="Tokyo"/>
+      </DataSource>
+    </Select>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Error">
+      <Fail>
+				<JsonPath Expr="error"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Languages" Hidden="true" HelpUrl="https://cloud.ibm.com/apidocs/language-translator#list-identifiable-languages">
+    <Fetch>
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+				</RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				@(Model.Location)/v3/identifiable_languages?version=2018-05-01
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.languages.*">
+				<JsonPath Expr="language" Id="Language" Converter="String"/>
+				<JsonPath Expr="name" Id="Name" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Translate" Title="Translate" HelpUrl="https://cloud.ibm.com/apidocs/language-translator">
+    <Parameters>
+			<Text Id="Input" Title="Input" Debug.DefaultValue="Jag gillar att grilla varmkorv och äta majs" Required="true"/>
+			<Text Id="Source" Title="Source Language" DefaultValue="en" Debug.DefaultValue="sv" Required="true" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
+			<Text Id="Target" Title="Target Language" DefaultValue="es" Debug.DefaultValue="en" Required="true" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+				<RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+				</RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+					{
+						"text": ["@Regex.Replace(Model.Input, @"[\r\n]", " ")"],
+						"model_id": "@(Model.Source)-@(Model.Target)"
+					}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				@(Model.Location)/v3/translate?version=2018-05-01
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.translations.*">
+				<JsonPath Expr="translation" Id="Text" Converter="String"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Detect" Title="Detect" HelpUrl="https://cloud.ibm.com/apidocs/language-translator#identify-language">
+    <Parameters>
+			<Text Id="Input" Title="Input" Debug.DefaultValue="Jag gillar att grilla varmkorv och äta majs" Required="true"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+			<RequestMethod>POST</RequestMethod>
+			<RequestContentType>text/plain</RequestContentType>
+			<RequestHeaders>
+				<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+			</RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+						@Regex.Replace(Model.Input, @"[\r\n]"," ")
+					]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				@(Model.Location)/v3/identify?version=2018-05-01
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.languages[0]">
+				<JsonPath Expr="language" Id="Language" Converter="String"/>
+				<JsonPath Expr="confidence" Id="Confidence" Converter="Double"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+			string CreateBasicAuth() {
+				return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes("apikey" + ":" + Model.ApiKey));
+			}
+    ]]>
+  </RazorFunctions>
+
+</Suite>
