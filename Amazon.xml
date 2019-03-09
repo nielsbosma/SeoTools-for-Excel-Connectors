@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="6.0" Title="Amazon" Id="Amazon" Category="Products &amp; Reviews" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
+<Suite RequireVersion="8.0" Title="Amazon" Id="Amazon" Category="Products &amp; Reviews" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Resources>
     <Resource Id="Sortings">
@@ -111,61 +111,35 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//ul[contains(@@class,'s-result-list')]/li[descendant::span[contains(@@class,'-price')]]">
+      <XPath Expr="//div[contains(@@class,'s-result-list')]//h5/a[contains(@@href,'qid=')][not(contains(@@href,'offer-listing'))]">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
-            @if(Model.UrlInput.Contains("/slredirect/") && Model.UrlInput is string)
-            {
-              @: https://www.amazon.com@(Model.UrlInput)
-            }
-            else if(!Model.UrlInput.Contains("/slredirect/") && Model.UrlInput is string)
-            {
-              @(Model.UrlInput)
-            }
-            else
-            {
-              @:
-            }
+						https://www.amazon.com@(Utils.HtmlDecode(Model.Inp))
             ]]>
           </Compute.Expr>
-          <XPath Id="UrlInput" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
+          <XPath Expr="." Id="Inp" Attribute="href"/>
         </Compute>
-        <Compute Id="Type" Title="Type">
+        <XPath Expr="." Id="Title" Title="Title"/>
+			</XPath>
+      <XPath Expr="//div[@@data-asin][descendant::h5/a[contains(@@href,'qid=')][not(contains(@@href,'offer-listing'))]]">
+        <XPath Expr="." Id="Asin" Title="ASIN" Attribute="data-asin"/>
+        <XPath Expr=".//span[@@class='a-price'][1]/span" Id="LowestPrice" Title="Lowest Price" Converter="Auto" DefaultValue=""/>
+        <XPath Expr=".//a[contains(@@href,'customerReviews')]" Id="Reviews" Title="Reviews" Converter="Int" DefaultValue="0"/>
+        <Compute Id="AverageReview" Title="Average Score" Converter="Double" DefaultValue="0">
           <Compute.Expr>
             <![CDATA[
-            @if(Model.UrlInput.Contains("/slredirect/") && Model.UrlInput is string)
-            {
-              @: Sponsored
-            }
-            else
-            {
-              @: Organic
-            }
+						@{
+							string output = (Model.Inp is string && Model.Inp.Contains("out")) ?
+								Model.Inp.Substring(0, Model.Inp.IndexOf("out")) : "0";
+						}
+						@output
             ]]>
           </Compute.Expr>
-          <XPath Id="UrlInput" Expr=".//a[contains(@@class,'-link')]" Attribute="href"/>
+          <XPath Id="Inp" Expr=".//i[contains(@@class,'a-icon a-icon-star')]" Converter="String" DefaultValue=""/>
         </Compute>
-        <XPath Id="Asin" Title="ASIN" Expr="." Attribute="data-asin" Converter="String"/>
-        <XPath Id="Title" Title="Title" Expr=".//h2" />
-        <XPath Id="Price" Title="Price" Expr=".//span[contains(@@class,'-price')]"/>
-        <Compute Id="AverageReview" Title="Average Review" Converter="Auto">
-          <Compute.Expr>
-            <![CDATA[
-            @if(Model.AverageReviewInput is string && Model.AverageReviewInput.Contains("out"))
-            {
-              @(Model.AverageReviewInput.Substring(0, Model.AverageReviewInput.IndexOf("out")))
-            }
-            else
-            {
-              @:
-            }
-            ]]>
-          </Compute.Expr>
-          <XPath Id="AverageReviewInput" Expr=".//i[contains(@@class,'a-icon a-icon-star a-star')]" Converter="String"/>
-        </Compute>
-        <XPath Id="Reviews" Title="Reviews" Expr=".//a[contains(@@href,'customerReviews')]" Converter="Int" DefaultValue="0"/>
-        <XPath Id="Offers" Title="Offers" Expr=".//a[contains(@@href,'offer-listing')]/text()" Converter="Int" DefaultValue="0"/>
+        <XPath Expr=".//a[contains(@@href,'offer-listing')]/text()" Id="Offers" Title="Offers" Converter="Int" DefaultValue="0"/>
+        <XPath Expr=".//img[contains(@@src,'media-amazon')]" Attribute="src" Id="Thumbnail" Title="Thumbnail" DefaultValue=""/>
       </XPath>
     </Parse>
   </RestConnector>
@@ -200,62 +174,43 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//a[@@data-hook='review-title']">
-        <XPath Id="Title" Title="Title" Expr="." Converter="String" DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//span[@@data-hook='review-body']">
-        <XPath Id="Body" Title="Body" Expr="." Converter="String" DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//div[contains(@@id,'customer_review')]/div[1]/a[1]/i/span">
-        <Compute Id="Score" Title="Score" Converter="Auto">
+      <XPath Expr="//div[contains(@@id,'customer_review')]">
+        <XPath Expr=".//a[@@data-hook='review-title']" Id="Title" Title="Title" DefaultValue=""/>
+        <XPath Expr=".//span[@@data-hook='review-body']" Id="Body" Title="Body" DefaultValue=""/>
+        <Compute Id="AverageReview" Title="Average Score" Converter="Double" DefaultValue="0">
           <Compute.Expr>
             <![CDATA[
-            @if(Model.ScoreInput is string && Model.ScoreInput.Contains("out"))
-            {
-              @(Model.ScoreInput.Substring(0, Model.ScoreInput.IndexOf("out")))
-            }
-            else
-            {
-              @:
-            }
+						@{
+							string output = (Model.Inp is string && Model.Inp.Contains("out")) ?
+								Model.Inp.Substring(0, Model.Inp.IndexOf("out")) : "0";
+						}
+						@output
             ]]>
           </Compute.Expr>
-          <XPath Id="ScoreInput" Expr="." Converter="String"/>
+          <XPath Id="Inp" Expr=".//i[contains(@@class,'a-icon a-icon-star')]" Converter="String" DefaultValue=""/>
         </Compute>
-			</XPath>
-      <XPath Expr="//span[@@data-hook='helpful-vote-statement']">
         <Compute Id="Helpfuls" Title="Helpfuls" Converter="Auto">
           <Compute.Expr>
             <![CDATA[
             @{
 							int helpfuls = 0;
 							Regex regex = new Regex(@"^(\w+)\s");
-							Match match = regex.Match(Model.HelpfulInput);
+							Match match = regex.Match(Model.Inp);
 							Regex regex2 = new Regex(@"^(\d+)\s");
 
 							if(match.Groups[1].Value == "One")
-							{
 									helpfuls = 1;
-							}
-							else if(regex2.IsMatch(Model.HelpfulInput))
-							{
+							else if(regex2.IsMatch(Model.Inp))
 									helpfuls = Convert.ToInt32(match.Groups[1].Value);
-							}
             }
             @helpfuls
             ]]>
           </Compute.Expr>
-          <XPath Id="HelpfulInput" Expr="." Converter="String"/>
+          <XPath Expr=".//span[@@data-hook='helpful-vote-statement']" Id="Inp" DefaultValue=""/>
         </Compute>
-			</XPath>
-      <XPath Expr="//span[@@data-hook='review-date']">
-        <XPath Id="Date" Title="Date" Expr="." Converter="String" DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//a[@@data-hook='review-author']">
-        <XPath Id="Author" Title="Author" Expr="." Converter="String" DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//div[contains(@@id,'customer_review')]/div[3]">
-        <XPath Id="span/a[1]" Title="Verified" Expr="." Converter="String" DefaultValue=""/>
+        <XPath Expr=".//span[@@data-hook='review-date']" Id="Date" Title="Date" DefaultValue=""/>
+        <XPath Expr=".//span[@@class='a-profile-name']" Id="Author" Title="Author" DefaultValue=""/>
+        <XPath Expr=".//span[@@data-hook='avp-badge']" Id="Verified" Title="Verified" DefaultValue=""/>
       </XPath>
     </Parse>
   </RestConnector>
