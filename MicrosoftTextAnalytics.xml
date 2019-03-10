@@ -27,6 +27,23 @@
     </Select>
   </Settings>
 
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+    <Resource Id="HttpSettings">
+			<IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
+			<RequestMethod>POST</RequestMethod>
+			<RequestContentType>application/json</RequestContentType>
+			<RequestHeaders>
+				<Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
+			</RequestHeaders>
+    </Resource>
+  </Resources>
+
+
   <RestConnector Id="Sentiment" Title="Sentiment" HelpText="Returns a numeric score between 0 and 1." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c9">
     <Parameters>
       <Text Id="Text" Title="Text" Debug.DefaultValue="Jag hatar måndagar." Required="true" HelpText=""/>
@@ -35,12 +52,7 @@
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
-        </RequestHeaders>
+        <Resource Id="HttpSettings"/>
         <RequestBody>
 					{
 						"documents": [
@@ -62,9 +74,7 @@
     <Parse>
 			<JsonPath Expr="documents[0].score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="KeyPhrases" Title="Key Phrases" HelpText="Returns a list of strings denoting the key talking points in the input text." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c6">
@@ -76,12 +86,7 @@
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
-        </RequestHeaders>
+        <Resource Id="HttpSettings"/>
         <RequestBody>
 					{
 						"documents": [
@@ -105,9 +110,7 @@
 				<JsonPath Expr="." Id="KeyPhrases" Title="Key Phrases" Converter="String" HelpText=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Entities" Title="Entities" HelpText="English only. Returns a list of recognized entities in a given document." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/5ac4251d5b4ccd1554da7634">
@@ -118,12 +121,7 @@
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
-        </RequestHeaders>
+        <Resource Id="HttpSettings"/>
         <RequestBody>
 					{
 						"documents": [
@@ -160,9 +158,7 @@
 				<JsonPath Expr="wikipediaUrl" Id="WikipediaUrl" Title="Wikipedia URL" Converter="String" HelpText=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="DetectLanguage" Title="Detect Language" HelpText="Returns the detected language and a numeric score between 0 and 1." HelpUrl="https://westus.dev.cognitive.microsoft.com/docs/services/TextAnalytics.V2.0/operations/56f30ceeeda5650db055a3c7">
@@ -172,12 +168,7 @@
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Ocp-Apim-Subscription-Key'>@Model.Key</Header>
-        </RequestHeaders>
+        <Resource Id="HttpSettings"/>
         <RequestBody>
 					{
 						"documents": [
@@ -202,23 +193,13 @@
 				<JsonPath Expr="iso6391Name" Id="Code" Title="Code" Converter="String" Checked="false" HelpText=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
   <![CDATA[
-  string Getquery()
-  {
-    if(Model.Multi == true)
-    {
-      return "*";
-    }
-    else
-    {
-      return "0";
-    }
+  string Getquery() {
+    return (Model.Multi == true) ? "*" : "0";
   }
   ]]>
   </RazorFunctions>
