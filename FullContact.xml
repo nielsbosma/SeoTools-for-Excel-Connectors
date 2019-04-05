@@ -23,16 +23,23 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ContactLookupbyEmail" Title="Email Lookup">
+  <RestConnector Id="PersonLookup" Title="Person Lookup">
     <Parameters>
-      <Text Id="Email" Title="Email" Debug.DefaultValue="viktoria.isaksson@missioncouncil.se" Required="true"/>
+      <Select Id="Type" Title="Input Type" DefaultValue="email">
+        <DataSource>
+          <Item Id="email" Title="Email Address"/>
+          <Item Id="phone" Title="Phone Number"/>
+          <Item Id="twitter" Title="Twitter Username"/>
+        </DataSource>
+      </Select>
+      <Text Id="Input" Title="Query" Debug.DefaultValue="zaralarsson" HelpText="Either email, phone or twitter username" Required="true"/>
       <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.fullcontact.com/v2/person.json?email=@Model.Email
+        https://api.fullcontact.com/v2/person.json?@(Model.Type)=@(Model.Input)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -42,6 +49,7 @@
       <JsonPath Expr="contactInfo.givenName" Id="GivenName" Title="Given Name" Converter="String" DefaultValue=""/>
       <JsonPath Expr="contactInfo.familyName" Id="FamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
       <JsonPath Expr="demographics.gender" Id="Gender" Title="Gender" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="demographics.age" Id="Age" Title="Age" Converter="Auto" DefaultValue=""/>
       <JsonPath Expr="demographics.locationGeneral" Id="Location" Title="Location" Converter="String" DefaultValue=""/>
       <JsonPath Expr="organizations[@(Getquery())]">
         <JsonPath Expr="name" Id="OrganizationsName" Title="Organization" Converter="String" DefaultValue=""/>
@@ -56,85 +64,16 @@
       <JsonPath Expr="socialProfiles[?(@@.typeId=='linkedin')].url" Id="LinkedInUrl" Title="LinkedIn URL" Converter="String" DefaultValue=""/>
       <JsonPath Expr="socialProfiles[?(@@.typeId=='twitter')].url" Id="TwitterUrl" Title="Twitter URL" Converter="String" DefaultValue=""/>
       <JsonPath Expr="socialProfiles[?(@@.typeId=='facebook')].url" Id="FacebookUrl" Title="Facebook URL" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="socialProfiles[?(@@.typeId=='instagram')].url" Id="InstagramUrl" Title="Instagram URL" Converter="String" DefaultValue=""/>
       <JsonPath Expr="socialProfiles[?(@@.typeId=='flickr')].url" Id="FlickR" Title="FlickR URL" Converter="String" DefaultValue=""/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="NameNormalizer" Title="Name Normalizer" HelpText="Takes quasi-structured name data provided as a string and outputs the data in a structured manner.">
-    <Parameters>
-      <Text Id="NameString" Title="Name String" Debug.DefaultValue="mr john (johnny) michael smith jr mba" Required="true"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.fullcontact.com/v2/name/normalizer.json?q=@Utils.UrlEncode(Model.NameString)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.prefixes[0]" Id="Prefixes" Title="Prefixes" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.suffixes[0]" Id="Suffixes" Title="Suffixes" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.nicknames[0]" Id="Nicknames" Title="Nicknames" Converter="String" DefaultValue=""/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="EmailDeducer" Title="Email Deducer" HelpText="takes an email address provided as a string and attempts to deduce a structured name.">
-    <Parameters>
-      <Text Id="NameString" Title="Email" Debug.DefaultValue="johndsmith79@business.com" Required="true"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.fullcontact.com/v2/name/deducer.json?email=@Utils.UrlEncode(Model.NameString)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="region" Id="Region" Title="Region" Converter="String" DefaultValue=""/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="UsernameDeducer" Title="Username Deducer" HelpText="takes a username provided as a string and attempts to deduce a structured name.">
-    <Parameters>
-      <Text Id="NameString" Title="Name String" Debug.DefaultValue="johndsmith79" Required="true"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.fullcontact.com/v2/name/deducer.json?username=@Utils.UrlEncode(Model.NameString)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="region" Id="Region" Title="Region" Converter="String" DefaultValue=""/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="DomainLookup" Title="Domain Lookup">
+  <RestConnector Id="CompanyDomainLookup" Title="Company Domain Lookup">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="aftonbladet.se" Required="true"/>
+      <Checkbox Id="KeyPeople" Title="Key People" DefaultValue="false" HelpText="If true, a list of Executive and VP level employees at this company will be returned under the keyPeople field."/>
       <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="true"/>
     </Parameters>
     <Fetch>
@@ -142,8 +81,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/company/lookup.json?domain=@Utils.UrlEncode(Model.Domain)
-        &keyPeople=true
-
+				&keyPeople=@(Model.KeyPeople)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -184,7 +122,106 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="EmailVerification" Title="Email Verification" HelpUrl="https://docs.fullcontact.com/#batch-request">
+  <RestConnector Id="CompanyNameLookup" Title="Company Name Lookup">
+    <Parameters>
+      <Text Id="CompanyName" Title="Company Name" Debug.DefaultValue="fullcontact" Required="true" HelpText="The name of the company to search for. Common words like 'Inc.' will be ignored."/>
+      <Text Id="Location" Title="Filter by Location" HelpText="If supplied, only companies matching given location will be returned."/>
+      <Text Id="Country" Title="Filter by Country" HelpText="If supplied, only companies matching given country will be returned."/>
+      <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="false"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/company/search.json?companyName=@Utils.UrlEncode(Model.CompanyName)
+				@(!string.IsNullOrEmpty(Model.Location) ? "&location=" + Utils.UrlEncode(Model.Location) : "")
+				@(!string.IsNullOrEmpty(Model.Country) ? "&country=" + Utils.UrlEncode(Model.Country) : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[@(Getquery())]">
+        <JsonPath Expr="orgName" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="lookupDomain" Id="Domain" Title="Domain" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="location.locality" Id="Location" Title="Location" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="location.country.name" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NameNormalizer" Title="Name Normalizer" HelpText="Takes quasi-structured name data provided as a string and outputs the data in a structured manner.">
+    <Parameters>
+      <Text Id="NameString" Title="Name String" Debug.DefaultValue="mr john (johnny) michael smith jr mba" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/name/normalizer.json?q=@Utils.UrlEncode(Model.NameString)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.prefixes[0]" Id="Prefixes" Title="Prefixes" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.suffixes[0]" Id="Suffixes" Title="Suffixes" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.nicknames[0]" Id="Nicknames" Title="Nicknames" Converter="String" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NameEmailDeducer" Title="Email Deducer" HelpText="Takes an email address provided as a string and attempts to deduce a structured name.">
+    <Parameters>
+      <Text Id="NameString" Title="Email" Debug.DefaultValue="johndsmith79@business.com" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/name/deducer.json?email=@Utils.UrlEncode(Model.NameString)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="region" Id="Region" Title="Region" Converter="String" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NameUsernameDeducer" Title="Username Deducer" HelpText="takes a username provided as a string and attempts to deduce a structured name.">
+    <Parameters>
+      <Text Id="NameString" Title="Name String" Debug.DefaultValue="johndsmith79" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/name/deducer.json?username=@Utils.UrlEncode(Model.NameString)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="region" Id="Region" Title="Region" Converter="String" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EmailVerification" Title="Email Verification" HelpUrl="https://docs.fullcontact.com/#request-for-single-email">
     <Parameters>
       <Text Id="Email" Title="Email" Debug.DefaultValue="viktoria.isaksson@missioncouncil.se" Required="true"/>
     </Parameters>
