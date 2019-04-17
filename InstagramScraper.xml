@@ -154,6 +154,62 @@
 		</Fail>
   </RestConnector>
 
+  <RestConnector Title="Hashtag Feed" Id="HashtagFeed">
+    <Parameters>
+      <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
+      <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="70" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept-Language'>@Model.CaptionLanguage</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/explore/tags/@(Model.Hashtag)/?__a=1
+				@((Model.PageCursor.Page != 0 && Model.HasNextPage) ? "&max_id=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption"/>
+
+				<Compute Id="Type" Title="Type">
+					<Compute.Expr>
+						<![CDATA[
+						@Regex.Replace(Model.Inp, "Graph", "")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_liked_by.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId" Converter="Auto"/>
+				<JsonPath Expr="accessibility_caption" Id="Accessibility Caption" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string FetchPostString() {
