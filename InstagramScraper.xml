@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.1.35" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -190,7 +190,6 @@
 				</Compute>
 				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
 				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption"/>
-
 				<Compute Id="Type" Title="Type">
 					<Compute.Expr>
 						<![CDATA[
@@ -206,7 +205,39 @@
 				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
 				<JsonPath Expr="thumbnail_src" Id="Thumbnail"/>
 				<JsonPath Expr="owner.id" Id="OwnerId" Converter="Auto"/>
-				<JsonPath Expr="accessibility_caption" Id="Accessibility Caption" DefaultValue=""/>
+				<Compute Id="AccessibilityCaption" Title="Accessibility Caption">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = Model.Inp;
+							string NoPrediction = "";
+							string IntroSentence = "";
+							
+							var dictLangs = new Dictionary<string, string>();
+							dictLangs.Add("en", "No photo description,Image may contain: ");
+							dictLangs.Add("sv", "Ingen fotobeskrivning,Bilden kan innehålla: ");
+							dictLangs.Add("nb", "Ingen bildebeskrivelse er tilgjengelig.,Bildet kan inneholde: ");
+							dictLangs.Add("da", "Ingen tilgængelig billedbeskrivelse.,Billedet indeholder sandsynligvis: ");
+							dictLangs.Add("fi", "Kuvan kuvausta ei ole saatavilla.,Kuvan mahdollinen sisältö: ");
+							dictLangs.Add("de", "Keine Fotobeschreibung verfügbar.,Bild könnte enthalten: ");
+							dictLangs.Add("es", "No hay descripción de la foto disponible.,La imagen puede contener: ");
+							
+							if (dictLangs.ContainsKey(Model.CaptionLanguage))
+							{
+								NoPrediction = dictLangs[Model.CaptionLanguage].Split(',')[0];
+								IntroSentence = dictLangs[Model.CaptionLanguage].Split(',')[1];
+
+								if(!Model.Inp.Contains(NoPrediction) && !string.IsNullOrEmpty(Model.Inp))
+									output = Regex.Replace(Model.Inp, @IntroSentence, "");
+								else
+									output = "";
+							}
+						}
+						@output
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="accessibility_caption" Id="Inp" DefaultValue=""/>
+				</Compute>
 			</JsonPath>
     </Parse>
   </RestConnector>
