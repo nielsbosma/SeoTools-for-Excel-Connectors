@@ -6,37 +6,11 @@
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/dropbox/">
     <Text Id="AppId" Title="App Id" Required="true" HelpUrl="http://seotoolsforexcel.com/oxford-dictionaries/"/>
     <Text Id="AppKey" Title="App Key" Required="true" HelpUrl="http://seotoolsforexcel.com/oxford-dictionaries/"/>
-    <Select Id="AccountType" Title="Account type" DefaultValue="free">
-      <DataSource>
-        <Item Id="free" Title="Free (1 request per second)"/>
-        <Item Id="paid" Title="Paid"/>
-      </DataSource>
-    </Select>
   </Settings>
 
   <Resources>
-    <Resource Id="LemmatronLanguages">
-      <Item Id="en" Title="English"/>
-      <Item Id="es" Title="Spanish"/>
-      <Item Id="de" Title="German"/>
-      <Item Id="pt" Title="Portuguese"/>
-      <Item Id="hi" Title="Hindi"/>
-    </Resource>
-    <Resource Id="DictionaryLanguages">
-      <Item Id="en" Title="English"/>
-      <Item Id="es" Title="Spanish"/>
-      <Item Id="de" Title="German"/>
-      <Item Id="pt" Title="Portuguese"/>
-      <Item Id="hi" Title="Hindi"/>
-      <Item Id="sw" Title="Swahili"/>
-      <Item Id="lv" Title="Latvian"/>
-      <Item Id="ta" Title="Tamil"/>
-      <Item Id="gu" Title="Gujarati"/>
-      <Item Id="hi" Title="Hindi"/>
-    </Resource>
-    <Resource Id="HttpSettingsR">
+    <Resource Id="HttpSettings">
       <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@IntervalBetweenRequests()" RandomTo="@IntervalBetweenRequests()" IfSame="Host"/>
 				<RequestContentType>application/json</RequestContentType>
         <RequestHeaders>
           <Header Name='app_id'>@(Model.AppId)</Header>
@@ -44,258 +18,82 @@
         </RequestHeaders>
       </HttpSettings>
     </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<Regex Expr="^Unauthorized request$" Group="0"/>
+				<XPath Expr="p"/>
+			</Fail>
+    </Resource>
   </Resources>
 
-  <RazorFunctions>
-    <![CDATA[
-		int IntervalBetweenRequests() {
-      return Model.AccountType=="free" ? 1000 : 0;
-    }
-    ]]>
-  </RazorFunctions>
-
-  <RestConnector Id="Domains" Hidden="true">
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/domains/en
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[*]..">
-				<JsonPath Expr="en" Id="Domain" Title="Domain" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Registers" Hidden="true">
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/registers/en
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[*]..">
-				<JsonPath Expr="en" Id="Register" Title="Register" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="RootForm" Title="Root Form" HelpText="Check a word exists in the dictionary and retrieve its root form" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Lemmatron/get_inflections_source_lang_word_id">
+  <RestConnector Id="Entries" Title="Entries" HelpText="Retrieve dictionary information for a given word" HelpUrl="https://developer.oxforddictionaries.com/documentation#/Entries">
     <Parameters>
-      <Text Id="Word" Title="Word" Debug.DefaultValue="swimming" Required="true" HelpText=""/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="en">
+      <Text Id="Word" Title="Word" Debug.DefaultValue="ace" Required="true"/>
+      <Checkbox Id="Strict" Title="Strict Matching" HelpText="Specifies whether diacritics must match exactly. If False, near-homographs for the given word will also be selected"/>
+      <Select Id="Language" Title="Language" DefaultValue="en-us">
         <DataSource>
-          <Resource Id="LemmatronLanguages"/>
+					<Item Id="en-us" Title="English (US)"/>
+					<Item Id="en-gb" Title="English (GB)"/>
+					<Item Id="es" Title="Spanish"/>
+					<Item Id="de" Title="German"/>
+					<Item Id="pt" Title="Portuguese"/>
+					<Item Id="hi" Title="Hindi"/>
+					<Item Id="sw" Title="Swahili"/>
+					<Item Id="lv" Title="Latvian"/>
+					<Item Id="ta" Title="Tamil"/>
+					<Item Id="gu" Title="Gujarati"/>
+					<Item Id="hi" Title="Hindi"/>
         </DataSource>
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="HttpSettingsR"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/inflections/@(Model.Language)/@(Model.Word)
+				https://od-api.oxforddictionaries.com:443/api/v2/entries/@(Model.Language)/@(Model.Word)
+				?fields=definitions,domains,examples&strictMatch=@Model.Strict
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="results[0].lexicalEntries[0]">
-				<JsonPath Expr="inflectionOf[0].text" Id="Root" Title="Root" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="lexicalCategory" Id="Category" Title="Category" Converter="String" DefaultValue="" HelpText="" Checked="false"/>
-				<JsonPath Expr="grammaticalFeatures[0].text" Id="GrammaticalFeature" Title="Feature" Converter="String" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="results[*].lexicalEntries[*]">
+				<JsonPath Expr="lexicalCategory.text" Id="Category" Title="Category" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="entries[0].senses[0].domains[0].text" Id="Domain" Title="Domain" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="entries[0].senses[0].definitions[0]" Id="Definition" Title="Definition" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="entries[0].senses[0].examples[0].text" Id="Example" Title="Example" Converter="String" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Lookup" Title="Lookup" HelpText="Retrieve dictionary information for a given word" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Dictionary32entries/get_entries_source_lang_word_id">
+  <RestConnector Id="Lemmas" Title="Lemmas" HelpText="Use this to check if a word exists in the dictionary, or what 'root' form it links to (e.g., swimming > swim)" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Lemmas">
     <Parameters>
-      <Text Id="Word" Title="Word" Debug.DefaultValue="swimming" Required="true" HelpText=""/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="en">
+      <Text Id="Word" Title="Word" Debug.DefaultValue="ace" Required="true"/>
+      <Select Id="Language" Title="Language" DefaultValue="en">
         <DataSource>
-          <Resource Id="DictionaryLanguages"/>
+					<Item Id="en" Title="English"/>
+					<Item Id="es" Title="Spanish"/>
+					<Item Id="de" Title="German"/>
+					<Item Id="pt" Title="Portuguese"/>
+					<Item Id="hi" Title="Hindi"/>
         </DataSource>
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="HttpSettingsR"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/entries/@(Model.Language)/@(Model.Word)
+				https://od-api.oxforddictionaries.com:443/api/v2/lemmas/@(Model.Language)/@(Model.Word)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="results[0].lexicalEntries[0]">
-				<JsonPath Expr="lexicalCategory" Id="Category" Title="Category" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="entries[0].grammaticalFeatures[0].text" Id="GrammaticalFeature" Title="Feature" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="pronunciations[0].phoneticSpelling" Id="PhoneticSpelling" Title="Phonetic Spelling" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="pronunciations[0].audioFile" Id="AudioFile" Title="Audio File" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="entries[0].senses[0].definitions.0" Id="Definition" Title="Definition" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="entries[0].senses[0].examples[0].text" Id="Example" Title="Example" Converter="String" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="results[*].lexicalEntries[*]">
+				<JsonPath Expr="lexicalCategory.text" Id="Category" Title="Category" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="inflectionOf[0].text" Id="Root" Title="Root" Converter="String" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Synonyms" Title="Synonyms" HelpText="Retrieve words that are similar" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Thesaurus/get_entries_source_lang_word_id_synonyms">
-    <Parameters>
-      <Text Id="Word" Title="Word" Debug.DefaultValue="swim" Required="true" HelpText=""/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="en">
-        <DataSource>
-          <Resource Id="DictionaryLanguages"/>
-        </DataSource>
-      </Select>
-    </Parameters>
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/entries/@(Model.Language)/@(Model.Word)/synonyms
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[0].lexicalEntries[0].entries[0].senses[0].synonyms[*]">
-				<JsonPath Expr="text" Id="Word" Title="Word" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Antonyms" Title="Antonyms" HelpText="Retrieve words that mean the opposite" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Thesaurus/get_entries_source_lang_word_id_antonyms">
-    <Parameters>
-      <Text Id="Word" Title="Word" Debug.DefaultValue="hate" Required="true" HelpText=""/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="en">
-        <DataSource>
-          <Resource Id="DictionaryLanguages"/>
-        </DataSource>
-      </Select>
-    </Parameters>
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/entries/@(Model.Language)/@(Model.Word)/antonyms
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[0].lexicalEntries[0].entries[0].senses[0].antonyms[*]">
-				<JsonPath Expr="text" Id="Word" Title="Word" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Search" Title="Search" HelpText="Retrieve possible matches to input" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Search/get_search_source_lang">
-    <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="swimming" Required="true" HelpText=""/>
-      <Checkbox Id="Prefix" Title="Prefix" HelpText="True if you'd like to get results only starting with search string." DefaultValue="False"/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="en">
-        <DataSource>
-          <Resource Id="DictionaryLanguages"/>
-        </DataSource>
-      </Select>
-    </Parameters>
-    <Paging PageSize="20" EvenPages="true"/>
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/search/@(Model.Language)
-				?q=@Utils.UrlEncode(Model.Query)
-				&prefix=@(Model.Prefix)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[*]">
-				<JsonPath Expr="word" Id="Word" Title="Word" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" DefaultValue="" HelpText="" Checked="false"/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Translate" Title="Translate" HelpText="Retrieve translation for a given word" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Translation/get_entries_source_translation_language_word_id_translations_target_translation_language">
-    <Parameters>
-      <Text Id="Word" Title="Word" Debug.DefaultValue="swim" Required="true" HelpText=""/>
-      <Select Id="SourceLanguage" Title="Source Language" Required="false" DefaultValue="en">
-        <DataSource>
-          <Resource Id="DictionaryLanguages"/>
-        </DataSource>
-      </Select>
-      <Select Id="TargetLanguage" Title="Target Language" Required="false" DefaultValue="es">
-        <DataSource>
-          <Resource Id="DictionaryLanguages"/>
-        </DataSource>
-      </Select>
-    </Parameters>
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/entries/@(Model.SourceLanguage)/@(Model.Word)/translations=@(Model.TargetLanguage)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[0].lexicalEntries[0].entries[0].senses[0].translations[0]">
-				<JsonPath Expr="text" Id="Word" Title="Word" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="WordLists" Title="Word Lists" HelpText="Retrieve a list of words in a category" HelpUrl="https://developer.oxforddictionaries.com/documentation#!/Wordlist/get_wordlist_source_lang_filters_basic">
-    <Parameters>
-      <Text Id="Register" Title="Register" DefaultValue="" Required="true" Select.Connector="Registers" Select.IdField="Register" Select.TitleField="Register"/>
-      <Text Id="Domain" Title="Domain" DefaultValue="" Required="true" Select.Connector="Domains" Select.IdField="Domain" Select.TitleField="Domain"/>
-    </Parameters>
-    <Fetch>
-      <Resource Id="HttpSettingsR"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://od-api.oxforddictionaries.com:443/api/v1/wordlist/en/
-				domains=@Utils.UrlEncode(@Model.Domain)
-				;registers=@Utils.UrlEncode(@Model.Register)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="results[*]">
-				<JsonPath Expr="word" Id="Word" Title="Word" Converter="String" DefaultValue="" HelpText=""/>
-			</JsonPath>
-    </Parse>
-    <Fail>
-      <XPath Expr="p"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>
