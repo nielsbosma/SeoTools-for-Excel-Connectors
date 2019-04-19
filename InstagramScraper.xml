@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.1.35" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <RestConnector Title="Account Lookup by Username" Id="AccountLookupUsername">
     <Parameters>
-      <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
+      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -15,14 +15,16 @@
       </Fetch.Url>
 		</Fetch>
     <Parse>
-      <Regex Title="Followers" Id="Followers" Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int"/>
-      <Regex Title="Follows" Id="Follows" Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int"/>
-      <Regex Title="Posts" Id="Posts" Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Int"/>
-      <Regex Title="User Id" Id="UserId" Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;" Group="1" Converter="String" HelpText=""/>
-      <Regex Title="Private" Id="UserId" Expr="&quot;is_private&quot;:(\w+)" Group="1" Converter="String" HelpText=""/>
-      <Regex Title="Bio" Id="Bio" Expr="&quot;description&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="" HelpText=""/>
-			<Regex Title ="External URL" Id="ExternalUrl" Expr="&quot;external_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue=""/>
-      <Regex Title="Avatar" Id="Avatar" Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String"/>
+      <Regex Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Id="Followers" Title="Followers"  Group="1" Converter="Int"/>
+      <Regex Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Id="Follows" Title="Follows" Group="1" Converter="Int"/>
+      <Regex Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Id="Posts" Title="Posts" Group="1" Converter="Int"/>
+      <Regex Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;" Id="UserId" Title="User Id" Group="1" Converter="Auto"/>
+      <Regex Expr="&quot;is_private&quot;:(\w+)" Id="Private" Title="Private"  Group="1" Converter="String"/>
+			<Compute Expr="@Utils.HtmlDecode(Model.Inp)" Id="Bio" Title="Bio" DefaultValue="">
+				<Regex Expr="&quot;description&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
+			</Compute>
+			<Regex Expr="&quot;external_url&quot;:&quot;(.*?)&quot;" Id="ExternalUrl" Title="External URL" Group="1" Converter="String" DefaultValue=""/>
+      <Regex Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Id="Avatar" Title="Avatar" Group="1" Converter="String"/>
     </Parse>
   </RestConnector>
 
@@ -39,32 +41,31 @@
 		</Fetch>
     <Parse>
       <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
-				<Compute Id="PostUrl" Title="Post URL" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[https://www.instagram.com/p/@(Model.PostIdInput)]]>
-					</Compute.Expr>
+				<Compute Expr="https://www.instagram.com/p/@(Model.PostIdInput)" Id="PostUrl" Title="Post URL" DefaultValue="">
 					<Regex Expr=".*" Group="0" Id="PostIdInput" DefaultValue=""/>
 				</Compute>
       </Regex>
 			<Regex Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter.SourceFormat="Unix" >
-        <Regex Expr=".*" Title="Created" Id="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
+        <Regex Expr=".*" Id="Created" Title="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </Regex>
-			<Regex Expr="typename&quot;:&quot;(\w+)" Group="1" Converter="String" DefaultValue="">
+			<Regex Expr="typename&quot;:&quot;(\w+)" Group="1" DefaultValue="">
 				<Compute Id="Type" Title="Type" DefaultValue="">
 					<Compute.Expr>
-						<![CDATA[@Regex.Replace(Model.TypeInput, "Graph", "")]]>
+						<![CDATA[
+						@Regex.Replace(Model.TypeInput, "Graph", "")
+						]]>
 					</Compute.Expr>
 					<Regex Expr=".*" Group="0" Id="TypeInput" DefaultValue=""/>
 				</Compute>
       </Regex>
 			<Regex Expr="edge_liked_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int" DefaultValue="">
-        <Regex Expr=".*" Title="Likes" Id="Likes" Group="0" Converter="Long"/>
+        <Regex Expr=".*" Id="Likes" Title="Likes" Group="0" Converter="Long"/>
       </Regex>
 			<Regex Expr="edge_media_to_comment&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Long" DefaultValue="">
-        <Regex Expr=".*" Title="Comments" Id="Comments" Group="0" Converter="Long"/>
+        <Regex Expr=".*" Id="Comments" Title="Comments" Group="0" Converter="Long"/>
       </Regex>
 			<Regex Expr="display_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="">
-        <Regex Expr=".*" Title="Image URL" Id="ImageUrl" Group="0" Converter="String"/>
+        <Regex Expr=".*" Id="ImageUrl" Title="Display URL" Group="0" Converter="String"/>
       </Regex>
     </Parse>
   </RestConnector>
@@ -89,10 +90,10 @@
 				</Compute.Expr>
 				<Regex Id="Inp" Expr="shortcode&quot;:&quot;(.*?)&quot;" DefaultValue=""/>
 			</Compute>
-      <Regex Title="Created" Id="Created" Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter="DateTime" Converter.SourceFormat="Unix" DefaultValue=""/>
-      <Regex Title="Likes" Id="Likes" Expr="media_preview_like&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Auto" DefaultValue=""/>
-      <Regex Title="Comments" Id="Comments" Expr="media_to_comment&quot;:{&quot;count&quot;:(\d+)" Group="1" Converter="Auto" DefaultValue=""/>
-      <Regex Title="Video Views" Id="VideoViews" Expr="&quot;video_view_count&quot;:(\d+)" Group="1" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="taken_at_timestamp&quot;:(\d+)" Id="Created" Title="Created" Group="1" Converter="DateTime" Converter.SourceFormat="Unix" DefaultValue=""/>
+      <Regex Expr="media_preview_like&quot;:{&quot;count&quot;:(\d+)" Id="Likes" Title="Likes" Group="1" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="media_to_comment&quot;:{&quot;count&quot;:(\d+)" Id="Comments" Title="Comments" Group="1" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="&quot;video_view_count&quot;:(\d+)" Id="VideoViews" Title="Video Views" Group="1" Converter="Auto" DefaultValue=""/>
 			<Compute Id="Type" Title="Type" DefaultValue="">
 				<Compute.Expr>
 					<![CDATA[
@@ -101,9 +102,9 @@
 				</Compute.Expr>
 				<Regex Expr="typename&quot;:&quot;(\w+)" Id="Inp" Group="1" DefaultValue=""/>
 			</Compute>
-      <Regex Title="Image URL" Id="ImageUrl" Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue=""/>
-      <Xpath Title="User Id" Id="UserId" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String" DefaultValue=""/>
-      <Regex Title="Username" Id="Username" Expr="rel=&quot;canonical&quot;\shref=&quot;https://www.instagram.com/(.*?)/p/" Group="1" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Id="ImageUrl" Title="Display URL" Group="1" Converter="String" DefaultValue=""/>
+      <XPath Expr="//meta[@@property='instapp:owner_user_id']" Title="User Id" Id="UserId" Attribute="content" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="rel=&quot;canonical&quot;\shref=&quot;https://www.instagram.com/(.*?)/p/" Id="Username" Group="1" Converter="Auto" DefaultValue=""/>
 			<Compute Id="UserUrl" Title="User URL" DefaultValue="">
 				<Compute.Expr>
 					<![CDATA[
@@ -124,7 +125,7 @@
           @(match.Groups[1].Value)
 					]]>
 				</Compute.Expr>
-				<Xpath Id="Inp" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content" Converter="String"/>
+				<XPath Id="Inp" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content"/>
 			</Compute>
     </Parse>
   </RestConnector>
@@ -141,17 +142,104 @@
       </Fetch.Url>
 		</Fetch>
     <Parse>
-      <JsonPath Title="Post Id" Id="PostId" Expr="media_id" Converter="String"/>
-      <Regex Title="Created" Id="Created" Expr="datetime=\\&quot;(.*?)\\&quot;" Group="1" Converter="DateTime"/>
-      <JsonPath Title="Text" Id="Text" Expr="title" Converter="String"/>
-      <JsonPath Title="Author Id" Id="AuthorId" Expr="author_id" Converter="String"/>
-      <JsonPath Title="Thumbnail" Id="Thumbnail" Expr="thumbnail_url" Converter="String"/>
-      <JsonPath Title="User" Id="Author" Expr="author_name" Converter="String"/>
-      <JsonPath Title="User URL" Id="AuthorUrl" Expr="author_url" Converter="String"/>
+      <JsonPath Expr="media_id" Id="PostId" Title="Post Id"/>
+      <Regex Expr="datetime=\\&quot;(.*?)\\&quot;" Id="Created" Title="Created" Group="1" Converter="DateTime"/>
+      <JsonPath Expr="title" Id="Text" Title="Caption"/>
+      <JsonPath Expr="author_id" Id="AuthorId" Title="Author Id" Converter="Auto"/>
+      <JsonPath Expr="thumbnail_url" Id="Thumbnail" Title="Thumbnail"/>
+      <JsonPath Expr="author_name" Id="Author" Title="User"/>
+      <JsonPath Expr="author_url" Id="AuthorUrl" Title="User URL"/>
     </Parse>
 		<Fail>
 			<Regex Expr="^No URL Match$" Group="0"/>
 		</Fail>
+  </RestConnector>
+
+  <RestConnector Title="Hashtag Feed" Id="HashtagFeed">
+    <Parameters>
+      <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
+      <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="70" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept-Language'>@Model.CaptionLanguage</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/explore/tags/@(Model.Hashtag)/?__a=1
+				@((Model.PageCursor.Page != 0 && Model.HasNextPage) ? "&max_id=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption"/>
+				<Compute Id="Type" Title="Type">
+					<Compute.Expr>
+						<![CDATA[
+						@Regex.Replace(Model.Inp, "Graph", "")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_liked_by.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId" Converter="Auto"/>
+				<Compute Id="AccessibilityCaption" Title="Accessibility Caption">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = Model.Inp;
+							string NoPrediction = "";
+							string IntroSentence = "";
+							
+							var dictLangs = new Dictionary<string, string>();
+							dictLangs.Add("en", "No photo description,Image may contain: ");
+							dictLangs.Add("sv", "Ingen fotobeskrivning,Bilden kan innehålla: ");
+							dictLangs.Add("nb", "Ingen bildebeskrivelse er tilgjengelig.,Bildet kan inneholde: ");
+							dictLangs.Add("da", "Ingen tilgængelig billedbeskrivelse.,Billedet indeholder sandsynligvis: ");
+							dictLangs.Add("fi", "Kuvan kuvausta ei ole saatavilla.,Kuvan mahdollinen sisältö: ");
+							dictLangs.Add("de", "Keine Fotobeschreibung verfügbar.,Bild könnte enthalten: ");
+							dictLangs.Add("es", "No hay descripción de la foto disponible.,La imagen puede contener: ");
+							
+							if (dictLangs.ContainsKey(Model.CaptionLanguage))
+							{
+								NoPrediction = dictLangs[Model.CaptionLanguage].Split(',')[0];
+								IntroSentence = dictLangs[Model.CaptionLanguage].Split(',')[1];
+
+								if(!Model.Inp.Contains(NoPrediction) && !string.IsNullOrEmpty(Model.Inp))
+									output = Regex.Replace(Model.Inp, @IntroSentence, "");
+								else
+									output = "";
+							}
+						}
+						@output
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="accessibility_caption" Id="Inp" DefaultValue=""/>
+				</Compute>
+			</JsonPath>
+    </Parse>
   </RestConnector>
 
   <RazorFunctions>
