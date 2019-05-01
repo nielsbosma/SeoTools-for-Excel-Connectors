@@ -57,8 +57,53 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="FilterDeals" Hidden="true">
+    <Fetch Url="https://api.pipedrive.com/v1/filters?api_token=@(Model.ApiKey)&amp;type=deals"/>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="FilterPersons" Hidden="true">
+    <Fetch Url="https://api.pipedrive.com/v1/filters?api_token=@(Model.ApiKey)&amp;type=people"/>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="FilterOrgs" Hidden="true">
+    <Fetch Url="https://api.pipedrive.com/v1/filters?api_token=@(Model.ApiKey)&amp;type=org"/>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="FilterActivities" Hidden="true">
+    <Fetch Url="https://api.pipedrive.com/v1/filters?api_token=@(Model.ApiKey)&amp;type=activity"/>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="Persons" Title="Persons List" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/get_persons">
     <Parameters>
+			<Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterPersons" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
       <Select Id="Sorting" Title="Sort by" DefaultValue="last_name">
         <DataSource>
 					<Item Id="first_name" Title="First Name"/>
@@ -87,6 +132,7 @@
         &limit=@(Model.PageCursor.NextTake)
         &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -191,6 +237,7 @@
 
   <RestConnector Id="ListOrganizations" Title="Organizations List" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/get_organizations">
     <Parameters>
+     <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterOrgs" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
       <Select Id="Sorting" Title="Sort by" DefaultValue="name">
         <DataSource>
 					<Item Id="name" Title="Organization Name"/>
@@ -219,6 +266,7 @@
         &limit=@(Model.PageCursor.NextTake)
         &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -287,8 +335,9 @@
 
   <RestConnector Id="ListActivities" Title="Activities List" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Activities/get_activities">
     <Parameters>
-      <Text Id="User" Title="User" DefaultValue="" Required="true" Select.Connector="FetchUsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Select a user to display his or her activities."/>
-      <Text Id="ActivityType" Title="Activity Type" DefaultValue="" Required="false" Select.Connector="FetchActivityTypes" HelpText="Filter the results by activity type."/>
+     <Text Id="User" Title="User" DefaultValue="" Required="true" Select.Connector="FetchUsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Select a user to display his or her activities."/>
+     <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterActivities" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
+      <Text Id="ActivityType" Title="Activity Type" Required="false" Select.Connector="FetchActivityTypes" HelpText="Filter the results by activity type."/>
       <Select Id="Done" Title="Activity Status" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -309,6 +358,7 @@
         &end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         @(Model.Done != "all" ? "&done=" + Model.Done : "")
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -396,6 +446,7 @@
 
   <RestConnector Id="ListDeals" Title="Deals List" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/get_deals">
     <Parameters>
+      <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterDeals" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
       <Select Id="Sorting" Title="Sort By" Required="true" DefaultValue="title">
         <DataSource>
 					<Item Id="title" Title="Deal Title"/>
@@ -424,6 +475,7 @@
         &limit=@(Model.PageCursor.NextTake)
         &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
