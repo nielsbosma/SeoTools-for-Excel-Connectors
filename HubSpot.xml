@@ -7,428 +7,28 @@
     <Text Id="AccessToken" Title="Access Token" Required="true" HelpUrl="http://seotoolsforexcel.com/HubSpot/"/>
   </Settings>
 
-  <RestConnector Id="Contacts" Title="Contacts" Hidden="false" HelpText="Returns all contacts that have been created in the portal.">
-    <Parameters>
-      <Checkbox Id="ReturnRecent" Title="Return Recently Modified Only" DefaultValue="false"/>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="VidOffset" Expr="vid-offset"/>
-        <JsonPath Id="HasMore" Expr="hasMore"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/lists/
-        @if(Model.ReturnRecent == false)
-        {
-          @: all/contacts/all
-        }
-        else
-        {
-          @: recently_updated/contacts/recent
-        }
-        ?hapikey=@(Model.AccessToken)
-        &property=@(SelectedContactFields())
-        &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0 && Model.HasMore == "true")
-        {
-          @: &vidOffset=@(Model.VidOffset)
-        }
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="contacts.*">
-        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
-        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Tag="firstname" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Tag="lastname" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Tag="company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.phone.value" Id="Phone" Title="Phone" Converter="String" Tag="phone" HelpText="Phone Number of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.num_associated_deals.value" Id="Deals" Title="Deals" Converter="Int" Tag="num_associated_deals" HelpText="Number of associated deals" DefaultValue="0"/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
-        </Compute>
-        <Compute Id="Added" Title="Added" Converter="DateTime" HelpText="The Timestamp when contact was created." DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.AddedAt))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="addedAt" Id="AddedAt" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
-        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
-        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+  </Resources>
 
-  <RestConnector Id="ContactsbyId" Title="Contacts by Id" Hidden="false" HelpText="Returns information about one or more contacts by their unique ID's.">
+  <RestConnector Id="Properties" Title="Properties" HelpText="Returns a list of object properties." Hidden="true">
     <Parameters>
-      <Text Id="Ids" Title="Contact Ids" Debug.DefaultValue="3842424" HelpText="Enter one or more Contact Ids separated by a new line" Required="true" Multiline="true"/>
-      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/contact/vids/batch/
-        ?hapikey=@(Model.AccessToken)
-        &vid=@(FetchContactIdString())
-        @if(Model.IncludeDeleted == true)
-        {
-          @: &includeDeletes=true
-        }
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
-        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
-        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
-        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="ContactbyEmail" Title="Contacts by Email" Hidden="false" HelpText="Returns information about one or more contacts by their E-mail addresses.">
-    <Parameters>
-      <Text Id="Ids" Title="Contact Email Address" Debug.DefaultValue="email_abc9bd5cdf@abctest.com" Required="true" HelpText="Enter one or more Email addresses separated by a new line" Multiline="true"/>
-      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/contact/emails/batch/
-        ?email=@(FetchContactEmailString())/profile
-        &hapikey=@(Model.AccessToken)
-        @if(Model.IncludeDeleted == true)
-        {
-          @: &includeDeletes=true
-        }
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
-        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
-        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
-        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="ContactsSearch" Title="Contacts Search" Hidden="false" HelpText="Returns contacts by the contact's email address, first and last name, and company name.">
-    <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="portal" Required="true"/>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/search/query?
-        q=@(Utils.UrlEncode(Model.Query))
-        &hapikey=@(Model.AccessToken)
-        &count=@(Model.PageCursor.NextTake)
-        &offset=@(Model.PageCursor.NextSkip)
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="contacts.*">
-        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
-        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
-        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
-        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="ContactsLists" Title="Contact Lists" Hidden="false" HelpText="Returns the contact lists for a portal.">
-    <Parameters>
-      <Radio Id="ListType" Title="Filter by List Type" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="All"/>
-          <Item Id="static" Title="Static"/>
-          <Item Id="dynamic" Title="Dynamic"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/lists
-        @if(Model.ListType != "all")
-        {
-          @: /@(Model.ListType)
-        }
-        ?hapikey=@(Model.AccessToken)
-        &count=@(Model.PageCursor.NextTake)
-        &offset=@(Model.PageCursor.NextSkip)
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="lists.*">
-        <JsonPath Expr="listId" Id="ListId" Title="List Id" Converter="Int" HelpText="The unique ID of the list."/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the list."/>
-        <JsonPath Expr="metaData.size" Id="Contacts" Title="Contacts" Converter="Int" HelpText="The number of contacts in the list."/>
-        <JsonPath Expr="listType" Id="ListType" Title="Type" Converter="String" HelpText="One of DYNAMIC or STATIC"/>
-        <Compute Id="Updated" Title="Updated" Converter="DateTime" HelpText="The Timestamp when the list was last updated.">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.UpdatedAt))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="updatedAt" Id="UpdatedAt" Converter="Long"/>
-        </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when the list was created.">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedAt))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="createdAt" Id="CreatedAt" Converter="Long"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="ContactListsbyId" Title="Contact Lists by Id" Hidden="false" HelpText="Returns one or more contact lists that you specify with list Ids.">
-    <Parameters>
-      <Text Id="ContactListsIds" Title="Contact Lists Ids" Debug.DefaultValue="229998" Required="true" HelpText="Enter one or more Contact List Ids separated by a new line"  Multiline="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/lists/batch?
-        listId=@(FetchContactListString())
-        &hapikey=@(Model.AccessToken)
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="lists.*">
-        <JsonPath Expr="listId" Id="ListId" Title="List Id" Converter="Int" HelpText="The unique ID of the list."/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the list."/>
-        <JsonPath Expr="metaData.size" Id="Contacts" Title="Contacts" Converter="Int" HelpText="The number of contacts in the list."/>
-        <JsonPath Expr="listType" Id="ListType" Title="Type" Converter="String" HelpText="One of DYNAMIC or STATIC"/>
-        <Compute Id="Updated" Title="Updated" Converter="DateTime" HelpText="The Timestamp when the list was last updated.">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.UpdatedAt))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="updatedAt" Id="UpdatedAt" Converter="Long"/>
-        </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when the list was created.">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedAt))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="createdAt" Id="CreatedAt" Converter="Long"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="ContactsInList" Title="Contacts in List" Hidden="false" HelpText="Returns a list of contacts registered in a particular list.">
-    <Parameters>
-      <Text Id="ListId" Title="List Id" Debug.DefaultValue="1" HelpText="" Required="true"/>
-      <Checkbox Id="ReturnRecent" Title="Return Recently Added Only" DefaultValue="false"/>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="VidOffset" Expr="vid-offset"/>
-        <JsonPath Id="HasMore" Expr="hasMore"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.hubapi.com/contacts/v1/lists/
-        @(Model.ListId)/contacts/
-        @if(Model.ReturnRecent == false)
-        {
-          @: all
-        }
-        else
-        {
-          @: recent
-        }
-        ?hapikey=@(Model.AccessToken)
-        &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &vidOffset=@(Model.VidOffset && Model.HasMore == "true")
-        }
-        ]]>
-        </Fetch.Url>
-      </Fetch>
-    <Parse>
-      <JsonPath Expr="contacts.*">
-        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
-        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
-        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.lastmodifieddate.value" Id="LastModified" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
-        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
-        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Properties" Title="Properties" Hidden="false" HelpText="Returns a list of object properties.">
-    <Parameters>
-      <Radio Id="Type" Title="Return Properties of" DefaultValue="contacts" Required="false">
+      <Select Id="Type" Title="Return Properties of" DefaultValue="contacts" Required="false">
         <DataSource>
           <Item Id="contacts" Title="Contacts"/>
           <Item Id="companies" Title="Companies"/>
           <Item Id="deals" Title="Deals"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/properties/v1/
-        @(Model.Type)/properties
-        ?hapikey=@(Model.AccessToken)
+        https://api.hubapi.com/properties/v1/@(Model.Type)/properties?hapikey=@(Model.AccessToken)
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -443,21 +43,325 @@
         <JsonPath Expr="readOnlyValue" Id="ReadOnly" Title="ReadOnly" Converter="Bool" HelpText="A value of true means that the value cannot be set manually, and that only the HubSpot system can update the property."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-
-  <RestConnector Id="Companies" Title="Companies" Hidden="false" HelpText="Returns all companies that have been created in the portal.">
+  <RestConnector Id="Contacts" Title="Contacts" HelpText="Returns all contacts that have been created in the portal.">
     <Parameters>
-      <Radio Id="ReturnType" Title="Return" DefaultValue="all" Required="false">
+      <Checkbox Id="ReturnRecent" Title="Return Recently Modified Only" DefaultValue="false"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="VidOffset" Expr="vid-offset"/>
+        <JsonPath Id="HasMore" Expr="hasMore"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/lists/
+        @(Model.ReturnRecent == false ? "all/contacts/all" : "recently_updated/contacts/recent")
+        ?hapikey=@(Model.AccessToken)
+        &property=@(SelectedPropertyFields())
+        &count=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="contacts.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Tag="firstname" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Tag="lastname" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Tag="company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.phone.value" Id="Phone" Title="Phone" Converter="String" Tag="phone" HelpText="Phone Number of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.num_associated_deals.value" Id="Deals" Title="Deals" Converter="Int" Tag="num_associated_deals" HelpText="Number of associated deals" DefaultValue="0"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties.lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Added" Title="Added" Converter="DateTime" HelpText="The Timestamp when contact was created." DefaultValue="">
+          <JsonPath Expr="addedAt" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactsbyId" Title="Contacts by Id" HelpText="Returns information about one or more contacts by their unique ID's.">
+    <Parameters>
+      <Text Id="Ids" Title="Contact Ids" Debug.DefaultValue="101" HelpText="Enter one or more Contact Ids separated by a new line" Required="true" Multiline="true"/>
+      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/contact/vids/batch/?hapikey=@(Model.AccessToken)
+        &vid=@(FetchIdString("vid"))
+        @(Model.IncludeDeleted == true ? "&includeDeletes=true" : "")
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties.lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactbyEmail" Title="Contacts by Email" HelpText="Returns information about one or more contacts by their E-mail addresses.">
+    <Parameters>
+      <Text Id="Ids" Title="Contact Email Address" Debug.DefaultValue="email_abc9bd5cdf@abctest.com" Required="true" HelpText="Enter one or more Email addresses separated by a new line" Multiline="true"/>
+      <Checkbox Id="IncludeDeleted" Title="Include Deleted Contacts" DefaultValue="false"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/contact/emails/batch?hapikey=@(Model.AccessToken)
+        &email=@(FetchIdString("email"))
+        @(Model.IncludeDeleted == true ? "&includeDeletes=true" : "")
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties.lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactsSearch" Title="Contacts Search" HelpText="Returns contacts by the contact's email address, first and last name, and company name.">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="portal" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/search/query?q=@(Utils.UrlEncode(Model.Query))&hapikey=@(Model.AccessToken)
+        &count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="contacts.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties.lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactsLists" Title="Contact Lists" HelpText="Returns the contact lists for a portal.">
+    <Parameters>
+      <Select Id="ListType" Title="Filter by List Type" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="static" Title="Static"/>
+          <Item Id="dynamic" Title="Dynamic"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/lists
+        @(Model.ListType != "all" ? "/" + Model.ListType : "")
+        ?hapikey=@(Model.AccessToken)
+        &count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="lists.*">
+        <JsonPath Expr="listId" Id="ListId" Title="List Id" Converter="Int" HelpText="The unique ID of the list."/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the list."/>
+        <JsonPath Expr="metaData.size" Id="Contacts" Title="Contacts" Converter="Int" HelpText="The number of contacts in the list."/>
+        <JsonPath Expr="listType" Id="ListType" Title="Type" Converter="String" HelpText="One of DYNAMIC or STATIC"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Updated" Title="Updated" Converter="DateTime" HelpText="The Timestamp when the list was last updated.">
+          <JsonPath Expr="updatedAt" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when the list was created.">
+          <JsonPath Expr="createdAt" Id="Inp" Converter="Long"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactListsbyId" Title="Contact Lists by Id" HelpText="Returns one or more contact lists that you specify with list Ids.">
+    <Parameters>
+      <Text Id="ContactListsIds" Title="Contact Lists Ids" Debug.DefaultValue="229998" Required="true" HelpText="Enter one or more Contact List Ids separated by a new line"  Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/lists/batch?listId=@(FetchIdString("listId"))
+        &hapikey=@(Model.AccessToken)
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="lists.*">
+        <JsonPath Expr="listId" Id="ListId" Title="List Id" Converter="Int" HelpText="The unique ID of the list."/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the list."/>
+        <JsonPath Expr="metaData.size" Id="Contacts" Title="Contacts" Converter="Int" HelpText="The number of contacts in the list."/>
+        <JsonPath Expr="listType" Id="ListType" Title="Type" Converter="String" HelpText="One of DYNAMIC or STATIC"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Updated" Title="Updated" Converter="DateTime" HelpText="The Timestamp when the list was last updated.">
+          <JsonPath Expr="updatedAt" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when the list was created.">
+          <JsonPath Expr="createdAt" Id="Inp" Converter="Long"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ContactsInList" Title="Contacts in List" HelpText="Returns a list of contacts registered in a particular list.">
+    <Parameters>
+      <Text Id="ListId" Title="List Id" Debug.DefaultValue="1" HelpText="" Required="true"/>
+      <Checkbox Id="ReturnRecent" Title="Return Recently Added Only" DefaultValue="false"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="VidOffset" Expr="vid-offset"/>
+        <JsonPath Id="HasMore" Expr="hasMore"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.hubapi.com/contacts/v1/lists/@(Model.ListId)/contacts/
+        @(Model.ReturnRecent == false ? "all" : "recent")
+        ?hapikey=@(Model.AccessToken)
+        &count=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
+        ]]>
+        </Fetch.Url>
+      </Fetch>
+    <Parse>
+      <JsonPath Expr="contacts.*">
+        <JsonPath Expr="vid" Id="ContactId" Title="Contact Id" Converter="Int" HelpText="The internal ID of the contact record"/>
+        <JsonPath Expr="properties.firstname.value" Id="FirstName" Title="First Name" Converter="String" HelpText="First name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.lastname.value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
+        <JsonPath Expr="properties.company.value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties.lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="canonical-vid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
+        <JsonPath Expr="profile-url" Id="ProfileUrl" Title="Profile URL" Converter="String" HelpText="A URL that can be used to view the contact data without logging in. Anyone with this link would be able to view (but not edit) the record"/>
+        <Compute Id="MergedIds" Title="Merged Ids"  Converter="String" HelpText="A list of vids that have been merged into this contact record." Checked="false">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              var temp = Regex.Replace(Model.MergedIds, @"\s+", " ");
+              var stripped = temp.Substring(1,temp.Length-2);
+            }
+            @stripped
+            ]]>
+          </Compute.Expr>
+        <JsonPath Expr="merged-vids" Id="MergedIds" Converter="String"/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Companies" Title="Companies" HelpText="Returns all companies that have been created in the portal.">
+    <Parameters>
+      <Select Id="ReturnType" Title="Return" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All Companies"/>
           <Item Id="modified" Title="Recently Modified"/>
           <Item Id="created" Title="Recently Created"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -469,20 +373,10 @@
       <Fetch.Url>
         <![CDATA[
         https://api.hubapi.com/companies/v2/companies/
-        @if(Model.ReturnType == "all")
-        {
-          @: paged?properties=@SelectedCompanyDealsFields()&
-        }
-        else
-        {
-          @: recent/@(Model.ReturnType)?
-        }
+        @(Model.ReturnType == "all" ? "paged?properties=" + SelectedPropertiesFields() : "recent/" + Model.ReturnType)
         hapikey=@(Model.AccessToken)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0  && Model.HasMore == "true")
-        {
-          @: &offset=@(Model.Offset)
-        }
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -501,12 +395,10 @@
         <JsonPath Expr="properties.city.value" Id="City" Title="City" Converter="String" Tag="city" HelpText="The city of the company." DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CompaniesbyDomain" Title="Companies by Domain" Hidden="false" HelpText="Returns a list of all companies that have a matching domain to the specified domai	.">
+  <RestConnector Id="CompaniesbyDomain" Title="Companies by Domain" HelpText="Returns a list of all companies that have a matching domain to the specified domai	.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="jollo.se" HelpText="" Required="true"/>
     </Parameters>
@@ -533,12 +425,10 @@
         <JsonPath Expr="properties.city.value" Id="City" Title="City" Converter="String" HelpText="The city of the company." DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ContactsInCompany" Title="Contacts in Company" Hidden="false" HelpText="Returns all of the contacts who are associated with the company.">
+  <RestConnector Id="ContactsInCompany" Title="Contacts in Company" HelpText="Returns all of the contacts who are associated with the company.">
     <Parameters>
       <Text Id="CompanyId" Title="Company Id" Debug.DefaultValue="117000871" HelpText="" Required="true"/>
     </Parameters>
@@ -551,14 +441,10 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/companies/v2/companies/
-        @(Model.CompanyId)/contacts/
+        https://api.hubapi.com/companies/v2/companies/@(Model.CompanyId)/contacts/
         ?hapikey=@(Model.AccessToken)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0 && Model.HasMore == "true")
-        {
-          @: &vidOffset=@(Model.VidOffset)
-        }
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -569,31 +455,24 @@
         <JsonPath Expr="properties[?(@@.name=='lastname')].value" Id="LastName" Title="Last Name" Converter="String" HelpText="Last name of the contact." DefaultValue=""/>
         <JsonPath Expr="properties[?(@@.name=='company')].value" Id="Company" Title="Company" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
         <JsonPath Expr="identity-profiles[*].identities[?(@@.type=='EMAIL')].value" Id="Email" Title="Email" Converter="String" HelpText="Company of the contact." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when contact was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModified))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties[?(@@.name=='lastmodifieddate')].value" Id="LastModified" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="lastmodifieddate" HelpText="The Timestamp when contact was last modified" DefaultValue="">
+          <JsonPath Expr="properties[?(@@.name=='lastmodifieddate')].value" Id="Inp" Converter="Long"/>
         </Compute>
         <JsonPath Expr="canonicalVid" Id="ContactIdCanon" Title="Contact Id Canon" Converter="Int" HelpText="Contacts may have multiple vids, but the canonical-vid will be the primary ID for a record."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Deals" Title="Deals" Hidden="false" HelpText="Returns all deals that have been created in the portal.">
+  <RestConnector Id="Deals" Title="Deals" HelpText="Returns all deals that have been created in the portal.">
     <Parameters>
-      <Radio Id="ReturnType" Title="Return" DefaultValue="all" Required="false">
+      <Select Id="ReturnType" Title="Return" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All Deals"/>
           <Item Id="modified" Title="Recently Modified"/>
           <Item Id="created" Title="Recently Created"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -605,20 +484,10 @@
       <Fetch.Url>
         <![CDATA[
         https://api.hubapi.com/deals/v1/deal/
-        @if(Model.ReturnType == "all")
-        {
-          @: paged?properties=@SelectedDealsFields()&
-        }
-        else
-        {
-          @: recent/@(Model.ReturnType)?
-        }
-        hapikey=@(Model.AccessToken)
+				@(Model.ReturnType == "all" ? "paged?properties=" + SelectedPropertiesFields() : "recent/" + Model.ReturnType)
+        &hapikey=@(Model.AccessToken)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0 && Model.HasMore == "true")
-        {
-          @: &offset=@(Model.Offset)
-        }
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -627,38 +496,36 @@
         <JsonPath Expr="dealId" Id="DealId" Title="Deal Id" Converter="Int" HelpText="The internal ID of the deal."/>
         <JsonPath Expr="properties.dealname.value" Id="Name" Title="Name" Tag="dealname" Converter="String" HelpText="The name of the deal." DefaultValue=""/>
         <JsonPath Expr="properties.amount.value" Id="Amount" Title="Amount" Tag="amount" Converter="Double" HelpText="The amount of the deal." DefaultValue="0"/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="hs_lastmodifieddate" HelpText="The Timestamp when deal was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModifiedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="LastModifiedInput" Converter="Long"/>
-        </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" Tag="createdate" HelpText="The Timestamp when deal was created" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.createdate.value" Id="CreatedInput" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="properties.dealstage.value" Id="Stage" Title="Stage" Tag="dealstage" Converter="String" HelpText="" DefaultValue=""/>
         <JsonPath Expr="properties.num_associated_contacts.value" Id="Contacts" Title="Contacts" Tag="num_associated_contacts" Converter="Int" HelpText="Number of associated contacts." DefaultValue=""/>
+        <JsonPath Expr="properties.notes.value" Id="Notes" Title="Notes" Tag="notes" Converter="Int" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.num_contacted_notes.value" Id="ContactedNotes" Title="Contacted Notes" Tag="num_contacted_notes" Converter="Int" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.pipeline.value" Id="Pipeline" Title="Pipeline" Tag="pipeline" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.dealtype.value" Id="Type" Title="Type" Tag="dealtype" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.description.value" Id="Description" Title="Description" Tag="description" Converter="String" HelpText="" DefaultValue=""/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="CloseDate" Title="Close Date" Converter="DateTime" Tag="closedate" HelpText="" DefaultValue="">
+          <JsonPath Expr="properties.closedate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="hs_lastmodifieddate" HelpText="The Timestamp when deal was last modified" DefaultValue="">
+          <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" Tag="createdate" HelpText="The Timestamp when deal was created" DefaultValue="">
+          <JsonPath Expr="properties.createdate.value" Id="Inp" Converter="Long"/>
+        </Compute>
+        <JsonPath Expr="properties.hubspot_owner_id.value" Id="OwnerId" Title="Owner Id" Tag="hubspot_owner_id" Converter="Int" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DealsAssociated" Title="Deals Associated" Hidden="false" HelpText="Returns all of the deals associated with a contact or company.">
+  <RestConnector Id="DealsAssociated" Title="Deals Associated" HelpText="Returns all of the deals associated with a contact or company.">
     <Parameters>
-      <Radio Id="AssociatedType" Title="Associated With" DefaultValue="contact" Required="false">
+      <Select Id="AssociatedType" Title="Associated With" DefaultValue="contact" Required="false">
         <DataSource>
           <Item Id="contact" Title="Contact"/>
           <Item Id="company" Title="Company"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Text Id="ObjectId" Title="Contact/Company Id" Debug.DefaultValue="204727" HelpText="" Required="true"/>
     </Parameters>
     <Paging PageSize="100">
@@ -670,54 +537,57 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/deals/v1/deal/associated/
-        @(Model.AssociatedType)/
-        @(Model.ObjectId)/
-        paged?properties=@SelectedCompanyDealsFields()
+        https://api.hubapi.com/deals/v1/deal/associated/@(Model.AssociatedType)/@(Model.ObjectId)
+        /paged?properties=@SelectedPropertiesFields()
         &hapikey=@(Model.AccessToken)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0 && Model.HasMore == "true")
-        {
-          @: &offset=@(Model.Offset)
-        }
+        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
         ]]>
         </Fetch.Url>
       </Fetch>
     <Parse>
+      <Table DefaultConverter="auto">
+        <JsonPath Id="Headers" Expr="keys($.deals[0].properties)">
+					<Compute Id="Headers" Title="Headers">
+						<Compute.Expr>
+							<![CDATA[
+							@{
+								string Cleaned = Regex.Replace(Model.Input, "_", " ");
+								string Cleaned2 = Utils.Capitalize(Cleaned);
+							}
+							@Cleaned2
+							]]>
+						</Compute.Expr>
+						<JsonPath Expr="key" Id="Input" DefaultValue=""/>
+					</Compute>
+        </JsonPath>
+        <JsonPath Id="Cells" Expr="keys(deals[*].properties[*])">
+          <JsonPath Expr="value" />
+        </JsonPath>
+      </Table>
+			<!--
       <JsonPath Expr="deals.*">
         <JsonPath Expr="dealId" Id="DealId" Title="Deal Id" Converter="Int" HelpText="The internal ID of the deal."/>
         <JsonPath Expr="properties.dealname.value" Id="Name" Title="Name" Tag="dealname" Converter="String" HelpText="The name of the deal." DefaultValue=""/>
         <JsonPath Expr="properties.amount.value" Id="Amount" Title="Amount" Tag="amount" Converter="Double" HelpText="The amount of the deal." DefaultValue="0"/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="hs_lastmodifieddate" HelpText="The Timestamp when deal was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModifiedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="LastModifiedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" Tag="hs_lastmodifieddate" HelpText="The Timestamp when deal was last modified" DefaultValue="">
+          <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="Inp" Converter="Long"/>
         </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" Tag="createdate" HelpText="The Timestamp when deal was created" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="properties.createdate.value" Id="CreatedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" Tag="createdate" HelpText="The Timestamp when deal was created" DefaultValue="">
+          <JsonPath Expr="properties.createdate.value" Id="Inp" Converter="Long"/>
         </Compute>
         <JsonPath Expr="properties.num_associated_contacts.value" Id="Contacts" Title="Contacts" Tag="num_associated_contacts" Converter="Int" HelpText="Number of associated contacts." DefaultValue=""/>
       </JsonPath>
+			-->
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DealsPipelines" Title="Deals Pipelines" Hidden="false" HelpText="Returns all deal pipelines for a given portal.">
+  <RestConnector Id="DealsPipelines" Title="Deals Pipelines" HelpText="Returns all deal pipelines for a given portal.">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/deals/v1/pipelines
-        ?hapikey=@(Model.AccessToken)
+        https://api.hubapi.com/deals/v1/pipelines?hapikey=@(Model.AccessToken)
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -743,38 +613,27 @@
         <JsonPath Expr="stages[4].closedWon" Id="Stage4ClosedWon" Title="Stage 5 Closed" Converter="String" HelpText="Stage 5 closed and won." DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
 
-  <RestConnector Id="Keywords" Title="Keywords" Hidden="false" HelpText="Returns all keywords that have been created in the portal.">
+  <RestConnector Id="Keywords" Title="Keywords" HelpText="Returns all keywords that have been created in the portal.">
     <Parameters>
       <Text Id="Query" Title="Optional Keyword Search Query" Debug.DefaultValue="inbound" Required="false"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/keywords/v1/keywords
-        ?hapikey=@(Model.AccessToken)
-        @if(!string.IsNullOrEmpty(Model.Query))
-        {
-          @: &search=@(Utils.UrlEncode(Model.Query))
-        }
+        https://api.hubapi.com/keywords/v1/keywords?hapikey=@(Model.AccessToken)
+        @(!string.IsNullOrEmpty(Model.Query) ? "&search=" + Utils.UrlEncode(Model.Query) : "")
         ]]>
         </Fetch.Url>
       </Fetch>
     <Parse>
       <JsonPath Expr="$.keywords.*">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="The name of the keyword."/>
-        <Compute Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when keyword was created" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="created_at" Id="CreatedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when keyword was created" DefaultValue="">
+          <JsonPath Expr="created_at" Id="Inp" Converter="Long"/>
         </Compute>
         <JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Int" HelpText="Number of visits."/>
         <JsonPath Expr="contacts" Id="Contacts" Title="Contacts" Converter="Int" HelpText="Number of contacts."/>
@@ -782,12 +641,10 @@
         <JsonPath Expr="keyword_guid" Id="KeywordId" Title="Keyword Id" Converter="String" HelpText="The Id of the keyword." Checked="false"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Owners" Title="Owners" Hidden="false" HelpText="Returns all of the owners that exist inside of HubSpot.">
+  <RestConnector Id="Owners" Title="Owners" HelpText="Returns all of the owners that exist inside of HubSpot.">
     <Parameters>
       <Text Id="Email" Title="Optional Email Adress Filter" Debug.DefaultValue="" Required="false"/>
       <Checkbox Id="IncludeInactiveOwners" Title="Include Inactive Owners" DefaultValue="false"/>
@@ -797,14 +654,8 @@
         <![CDATA[
         http://api.hubapi.com/owners/v2/owners
         ?hapikey=@(Model.AccessToken)
-        @if(!string.IsNullOrEmpty(Model.Email))
-        {
-          @: &email=@(Utils.UrlEncode(Model.Email))
-        }
-        @if(Model.IncludeInactiveOwners != false)
-        {
-          @: &includeInactive=true
-        }
+        @(!string.IsNullOrEmpty(Model.Email) ? "&email=" + Utils.UrlEncode(Model.Email) : "")
+        @(Model.IncludeInactiveOwners != false ? "&includeInactive=true" : "")
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -815,36 +666,23 @@
         <JsonPath Expr="lastName" Id="LastName" Title="Last Name" Converter="String" HelpText="The last name of the owner." DefaultValue=""/>
         <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText="The email of the owner." DefaultValue=""/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="The owner type."/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when owner was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModifiedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="updatedAt" Id="LastModifiedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when owner was last modified" DefaultValue="">
+          <JsonPath Expr="updatedAt" Id="Inp" Converter="Long"/>
         </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when owner was registered" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="createdAt" Id="CreatedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when owner was registered" DefaultValue="">
+          <JsonPath Expr="createdAt" Id="Inp" Converter="Long"/>
         </Compute>
         <JsonPath Expr="hasContactsAccess" Id="ContactAccess" Title="Contact Access" Converter="Bool" HelpText="If the owner has access to contacts."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Workflows" Title="Workflows" Hidden="false" HelpText="Returns all workflows that have been created in the portal.">
+  <RestConnector Id="Workflows" Title="Workflows" HelpText="Returns all workflows that have been created in the portal.">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/automation/v3/workflows/
-        ?hapikey=@(Model.AccessToken)
+        https://api.hubapi.com/automation/v3/workflows/?hapikey=@(Model.AccessToken)
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -853,66 +691,39 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int" HelpText="The Id of the workflow."/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the workflow." DefaultValue=""/>
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="The workflow type." DefaultValue=""/>
-        <Compute Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when workflow was last modified" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.LastModifiedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="updatedAt" Id="LastModifiedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="LastModified" Title="Last Modified" Converter="DateTime" HelpText="The Timestamp when workflow was last modified" DefaultValue="">
+          <JsonPath Expr="updatedAt" Id="Inp" Converter="Long"/>
         </Compute>
-        <Compute Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when workflow was registered" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @(DateTimeOffset.FromUnixTimeMilliseconds(Model.CreatedInput))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="insertedAt" Id="CreatedInput" Converter="Long"/>
+        <Compute Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Id="Created" Title="Created" Converter="DateTime" HelpText="The Timestamp when workflow was registered" DefaultValue="">
+          <JsonPath Expr="insertedAt" Id="Inp" Converter="Long"/>
         </Compute>
         <JsonPath Expr="contactListIds.enrolled" Id="EnrolledContacts" Title="Enrolled Contacts" Converter="Int" HelpText="Number of enrolled contacts in the workflow." DefaultValue="0"/>
         <JsonPath Expr="contactListIds.active" Id="ActiveContacts" Title="Active Contacts" Converter="Int" HelpText="Number of active contacts in the workflow." DefaultValue="0"/>
         <JsonPath Expr="enabled" Id="Enabled" Title="Enabled" Converter="String" HelpText="if the workflow is enabled." DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
   <![CDATA[
-  string FetchContactIdString() {
+  string FetchIdString(string parameter) {
 		string[] lines = (string[])Model.IdsBatch;
-    return string.Join("&vid=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+    return string.Join("&" + parameter + "=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
   }
-  string FetchContactEmailString() {
-		string[] lines = (string[])Model.IdsBatch;
-    return string.Join("&email=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
-  }
-  string FetchContactListString() {
-		string[] lines = (string[])Model.IdsBatch;
-    return string.Join("&listId=",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
-  }
-
   string FetchCompanyPath() {
     return (Model.ReturnType == "all" ? "companies" : "results");
   }
-
   string FetchDealPath() {
 		return (Model.ReturnType == "all" ? "deals" : "results");
   }
-
-  string SelectedCompanyDealsFields() {
+  string SelectedPropertiesFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&properties=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
   }
-  string SelectedContactFields() {
+  string SelectedPropertyFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&property=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
-  }
-    string SelectedDealsFields() {
-    string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-    return string.Join("&properties=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
   }
   ]]>
   </RazorFunctions>
