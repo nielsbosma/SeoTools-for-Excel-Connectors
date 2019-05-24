@@ -81,7 +81,7 @@
 
   <RestConnector Id="Search" Title="Search">
     <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="gopro" Required="true"/>
       <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
       <Select Id="Department" Title="Department" Required="false" DefaultValue="aps">
         <DataSource>
@@ -111,20 +111,13 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[contains(@@class,'s-result-list')]//h2/a[contains(@@href,'qid=')][not(contains(@@href,'offer-listing'))]">
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            <![CDATA[
-						https://www.amazon.com@(Utils.HtmlDecode(Model.Inp))
-            ]]>
-          </Compute.Expr>
-          <XPath Expr="." Id="Inp" Attribute="href"/>
+      <XPath Expr="//div[contains(@@data-asin, 'B')][not(@@class='asinImage')]">
+				<Compute Expr="https://www.amazon.com@(Utils.HtmlDecode(Model.Inp))" Id="Url" Title="URL">
+					<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Attribute="href" Id="Inp" DefaultValue=""/>
         </Compute>
-        <XPath Expr="." Id="Title" Title="Title"/>
-			</XPath>
-      <XPath Expr="//div[@@data-asin][descendant::h2/a[contains(@@href,'qid=')][not(contains(@@href,'offer-listing'))]]">
+				<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Id="Title" Title="Title" DefaultValue=""/>
         <XPath Expr="." Id="Asin" Title="ASIN" Attribute="data-asin"/>
-        <XPath Expr=".//span[@@class='a-price'][1]/span" Id="LowestPrice" Title="Lowest Price" Converter="Auto" DefaultValue=""/>
+        <XPath Expr=".//span[@@class='a-price'][1]/span[1]" Id="LowestPrice" Title="Lowest Price" Converter="Auto" DefaultValue=""/>
         <XPath Expr=".//a[contains(@@href,'customerReviews')]" Id="Reviews" Title="Reviews" Converter="Int" DefaultValue="0"/>
         <Compute Id="AverageReview" Title="Average Score" Converter="Double" DefaultValue="0">
           <Compute.Expr>
