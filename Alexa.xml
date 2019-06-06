@@ -1,32 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="7.0.0" Title="Alexa" Id="Alexa" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Alexa.xml" HelpUrl="http://seotoolsforexcel.com/Alexa" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="8.0.0" Title="Alexa Rank" Id="Alexa" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Alexa.xml" HelpUrl="http://seotoolsforexcel.com/Alexa" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="Alexa" Title="Alexa">
+  <RestConnector Id="Alexa" Title="Alexa Rank">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Text Id="Domain" Title="URL or Domain" Required="true" Debug.DefaultValue="https://www.seotoolsforexcel.com"/>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
 			<![CDATA[
-        https://www.alexa.com/siteinfo/@(Utils.UrlProperty(Model.Url).Domain)
+        https://www.alexa.com/minisiteinfo/@(Utils.UrlProperty(Model.Domain).Domain)
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<Compute Id="GlobalRank" Title="Global Rank" Converter="Auto">
-				<Compute.Expr>
-					<![CDATA[
-						@Regex.Replace(Model.Inp, @"[^0-9]+", "")
-					]]>
-				</Compute.Expr>
-				<XPath Expr="//div[@@class='rank-global']//p[@@class='big data']" Id="Inp" DefaultValue=""/>
+			<Compute Expr="@CleanedNumber()" Id="GlobalRank" Title="Global Rank" Converter="Auto">
+				<XPath Expr="//td[1]/div[1]" Id="Inp" DefaultValue=""/>
 			</Compute>
-      <XPath Expr="//*[text()='Bounce rate ']/../p/text()" Id="BounceRate" Title="Bounce Rate" Converter="Auto"/>
-      <XPath Expr="//*[text()='Daily Pageviews per Visitor']/../p/text()" Id="PageViews" Title="Daily Page Views per Visitor" Converter="String"/>
-      <XPath Expr="//*[text()='Daily Time on Site  ']/../p/text()" Id="TimeOnSite" Title="Daily Time on Site" Converter="String"/>
+			<Compute Expr="@(CleanedNumber()) (@(Model.Inp2))" Id="LocalRank" Title="Local Rank" Converter="Auto">
+				<XPath Expr="//td[2]/div[1]" Id="Inp" DefaultValue=""/>
+				<XPath Expr="//div[@@class='label']/a" Id="Inp2" Attribute="title" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="@CleanedNumber()" Id="Refdomains" Title="Referring Domains" Converter="Auto">
+				<XPath Expr="//td[@@class='end']/div" Id="Inp" DefaultValue=""/>
+			</Compute>
     </Parse>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CleanedNumber() {
+			return Regex.Replace(Model.Inp, @"[^0-9]+", "");
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
