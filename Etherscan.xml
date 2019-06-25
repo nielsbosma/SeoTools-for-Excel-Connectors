@@ -15,7 +15,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="EtherBalance" Title="Ether Balance for Addresses" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Retrieve Ethereum balance for one or more addresses">
+  <RestConnector Id="EtherBalance" Title="Ether Balance" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Retrieve Ethereum balance for one or more addresses">
     <Parameters>
       <Text Id="Addresses" Title="Addresses (one per line, 20 max)" Required="True" Multiline="true" Debug.DefaultValue="0x63a6121a7e1e29fE00Beb11F92bda892D185e91F"/>
     </Parameters>
@@ -38,28 +38,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SingleTokenBalance" Title="Token Account Balance for Address" HelpUrl="https://etherscan.io/apis#tokens" HelpText="Get ERC20-Token Account Balance for Token Contract Address">
-    <Parameters>
-      <Text Id="Address" Title="Wallet Address" Required="True" Debug.DefaultValue="0x57d90b64a1a57749b0f932f1a3395792e12e7055"/>
-      <Text Id="Contract" Title="Contract address" Debug.DefaultValue="0xe04f27eb70e025b78871a2ad7eabe85e61212761"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.etherscan.io/api?apikey=@(Model.ApiKey)&module=account&action=tokenbalance
-        &contractaddress=0x57d90b64a1a57749b0f932f1a3395792e12e7055&
-        address=0xe04f27eb70e025b78871a2ad7eabe85e61212761
-        &tag=latest
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="result" Id="Balance" Title="Balance" Converter="Double"/>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="BlocksMined" Title="Blocks Mined by Address" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get list of Blocks Mined by Address">
+  <RestConnector Id="BlocksMined" Title="Blocks Mined" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get list of Blocks Mined by Address">
     <Parameters>
       <Text Id="Address" Title="Address" Required="True" Debug.DefaultValue="0x9dd134d14d1e65f84b706d6f205cd5b1cd03a46b"/>
       <Select Id="BlockType" Title="Block Type" DefaultValue="day">
@@ -92,7 +71,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="NormalTransactions" Title="Normal Transactions by Address" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get a list of 'Normal' Transactions By Address">
+  <RestConnector Id="NormalTransactions" Title="Normal Transactions" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get a list of 'Normal' Transactions By Address">
     <Parameters>
       <Text Id="Address" Title="Address" Required="True" Debug.DefaultValue="0x9dd134d14d1e65f84b706d6f205cd5b1cd03a46b"/>
       <Number Id="StartBlock" Title="Start Block" Minimum="1" Maximum="99999999" DefaultValue="1"/>
@@ -135,7 +114,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="InternalTransactions" Title="Internal Transactions by Address" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get a list of 'Internal' Transactions By Address">
+  <RestConnector Id="InternalTransactions" Title="Internal Transactions" HelpUrl="https://etherscan.io/apis#accounts" HelpText="Get a list of 'Internal' Transactions By Address">
     <Parameters>
       <Text Id="Address" Title="Address" Required="True" Debug.DefaultValue="0x9dd134d14d1e65f84b706d6f205cd5b1cd03a46b"/>
       <Number Id="StartBlock" Title="Start Block" Minimum="1" Maximum="99999999" DefaultValue="1"/>
@@ -172,8 +151,45 @@
         <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
         <JsonPath Expr="isError" Id="Error" Title="Error" Converter="Bool"/>
         <JsonPath Expr="errCode" Id="ErrorCode" Title="Error Code" Converter="String"/>
-
       </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="TokenTotalSupply" Title="Token Total Supply" HelpUrl="https://etherscan.io/apis#tokens" HelpText="Get the token total supply by contract address">
+    <Parameters>
+      <Text Id="ContractAddress" Title="Contract Address" Required="True" Debug.DefaultValue="0x57d90b64a1a57749b0f932f1a3395792e12e7055"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.etherscan.io/api?&action=tokensupply&module=stats&apikey=@(Model.ApiKey)
+        &contractaddress=@(Model.ContractAddress)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="result" Id="Result" Title="Result" Converter="Double"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="TokenAccountBalance" Title="Token Account Balance" HelpUrl="https://etherscan.io/apis#tokens" HelpText="Get the token account balance by contract address">
+    <Parameters>
+      <Text Id="ContractAddress" Title="Contract Address" Required="True" Debug.DefaultValue="0x57d90b64a1a57749b0f932f1a3395792e12e7055"/>
+      <Text Id="Address" Title="Address" Required="True" Debug.DefaultValue="0xe04f27eb70e025b78871a2ad7eabe85e61212761"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.etherscan.io/api?&action=tokensupply&module=stats&apikey=@(Model.ApiKey)
+        &contractaddress=@(Model.ContractAddress)
+        &address=@(Model.Address)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="result" Id="Result" Title="Result" Converter="Double"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
