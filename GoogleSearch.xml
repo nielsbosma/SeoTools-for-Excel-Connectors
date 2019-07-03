@@ -4,60 +4,6 @@
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Resources>
-    <Resource Id="SearchIn">
-      <Select Id="SearchIn" Title="Search In" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="All"/>
-          <Item Id="intext:" Title="Text"/>
-          <Item Id="intitle:" Title="Title"/>
-          <Item Id="inurl:" Title="URL"/>
-        </DataSource>
-      </Select>
-		</Resource>
-    <Resource Id="File">
-      <Select Id="File" Title="File Type (Can't be combined with 'Search In')" Required="false" DefaultValue="all">
-        <DataSource>
-					<Item Id="all" Title="All File Types"/>
-					<Item Id="swf" Title="Adobe Flash (.swf)"/>
-					<Item Id="pdf" Title="Adobe Portable Document Format (.pdf)"/>
-					<Item Id="ps" Title="Adobe PostScript (.ps)"/>
-					<Item Id="dwf" Title="Autodesk Design Web Format (.dwf)"/>
-					<Item Id="kml" Title="Google Earth (.kml)"/>
-					<Item Id="kmz" Title="Google Earth (.kmz)"/>
-					<Item Id="gpx" Title="GPS eXchange Format (.gpx)"/>
-					<Item Id="hwp" Title="Hancom Hanword (.hwp)"/>
-					<Item Id="htm" Title="HTML (.htm)"/>
-					<Item Id="html" Title="HTML (.html)"/>
-					<Item Id="xls" Title="Microsoft Excel (.xls)"/>
-					<Item Id="xlsx" Title="Microsoft Excel (.xlsx)"/>
-					<Item Id="ppt" Title="Microsoft PowerPoint (.ppt)"/>
-					<Item Id="pptx" Title="Microsoft PowerPoint (.pptx)"/>
-					<Item Id="doc" Title="Microsoft Word (.doc)"/>
-					<Item Id="docx" Title="Microsoft Word (.docx)"/>
-					<Item Id="odp" Title="OpenOffice presentation (.odp)"/>
-					<Item Id="odt" Title="OpenOffice text (.odt)"/>
-					<Item Id="rtf" Title="Rich Text Format (.rtf)"/>
-					<Item Id="svg" Title="Scalable Vector Graphics (.svg"/>
-					<Item Id="tex" Title="TeX/LaTeX (.tex)"/>
-					<Item Id="txt" Title="Standard text file (.txt)"/>
-					<Item Id="text" Title="Standard text file (.text)"/>
-					<Item Id="bas" Title="Basic source code (.bas)"/>
-					<Item Id="cs" Title="C# source code (.cs)"/>
-					<Item Id="c" Title="C/C++ source code (.c)"/>
-					<Item Id="cc" Title="C/C++ source code (.cc)"/>
-					<Item Id="cpp" Title="C/C++ source code (.cpp)"/>
-					<Item Id="cxx" Title="C/C++ source code (.cxx)"/>
-					<Item Id="h" Title="C/C++ source code (.h)"/>
-					<Item Id="hpp" Title="C/C++ source code (.hpp)"/>
-					<Item Id="java" Title="Java source code (.java)"/>
-					<Item Id="pl" Title="Perl source code (.pl)"/>
-					<Item Id="py" Title="Python source code (.py)"/>
-					<Item Id="wml" Title="Wireless Markup Language (.wml)"/>
-					<Item Id="wap" Title="Wireless Markup Language (.wap)"/>
-					<Item Id="xml" Title="XML (.xml)"/>
-        </DataSource>
-      </Select>
-    </Resource>
     <Resource Id="DisplayLanguage">
       <Select Id="DisplayLanguage" Title="Display Language" DefaultValue="en">
         <DataSource>
@@ -87,10 +33,6 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Domain" Title="Filter by Domain" HelpText="(Can't be combined with 'Search In')"/>
-      <Text Id="ExcludeDomain" Title="Exclude Domain" HelpText="(Can't be combined with 'Search In')"/>
-      <Resource Id="SearchIn"/>
-      <Resource Id="File"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
 			<Resource Id="DisplayLanguage"/>
       <Resource Id="PeriodSorting"/>
@@ -103,17 +45,14 @@
         <![CDATA[
         https://google.com/search?safe=off
 				&hl=@Model.DisplayLanguage
-				&q=@(Model.Query.Contains(" ") && Model.SearchIn != "all" ? "all" + Model.SearchIn : (Model.SearchIn != "all") ? Model.SearchIn : Utils.UrlEncode(Model.Query))
-        @(!string.IsNullOrEmpty(Model.Domain) && Model.SearchIn == "all" ? "+site:" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
-        @(!string.IsNullOrEmpty(Model.ExcludeDomain) && Model.SearchIn == "all" ? "+-site:" + Utils.UrlEncode(Utils.UrlProperty(Model.ExcludeDomain).Domain) : "")
-        @(Model.File != "all" && Model.SearchIn == "all" ? "+filetype:" + Model.File : "")
+				&q=@Utils.UrlEncode(Model.Query)
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
 					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
         }
         @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
-        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.FetchedRows+1 : "")
+        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -135,10 +74,6 @@
   <RestConnector Id="Ads" Title="Ads" HelpText="Returns ads on the first results page">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Domain" Title="Filter by Domain" HelpText="(Can't be combined with 'Search In')"/>
-      <Text Id="ExcludeDomain" Title="Exclude Domain" HelpText="(Can't be combined with 'Search In')"/>
-      <Resource Id="SearchIn"/>
-      <Resource Id="File"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
 			<Resource Id="DisplayLanguage"/>
       <Resource Id="PeriodSorting"/>
@@ -151,17 +86,13 @@
         <![CDATA[
         https://google.com/search?safe=off
 				&hl=@Model.DisplayLanguage
-				&q=@(Model.Query.Contains(" ") && Model.SearchIn != "all" ? "all" + Model.SearchIn : (Model.SearchIn != "all") ? Model.SearchIn : Utils.UrlEncode(Model.Query))
-        @(!string.IsNullOrEmpty(Model.Domain) && Model.SearchIn == "all" ? "+site:" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
-        @(!string.IsNullOrEmpty(Model.ExcludeDomain) && Model.SearchIn == "all" ? "+-site:" + Utils.UrlEncode(Utils.UrlProperty(Model.ExcludeDomain).Domain) : "")
-        @(Model.File != "all" && Model.SearchIn == "all" ? "+filetype:" + Model.File : "")
+				&q=@Utils.UrlEncode(Model.Query)
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
 					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
         }
         @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
-        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.FetchedRows+1 : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -181,12 +112,7 @@
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Domain" Title="Filter by Domain" HelpText="(Can't be combined with 'Search In')"/>
-      <Text Id="ExcludeDomain" Title="Exclude Domain" HelpText="(Can't be combined with 'Search In')"/>+
-      <Resource Id="SearchIn"/>
-      <Resource Id="File"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
-			<Resource Id="DisplayLanguage"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
@@ -194,10 +120,7 @@
       <Fetch.Url>
         <![CDATA[
         https://google.com/search?safe=off
-				&q=@(Model.Query.Contains(" ") && Model.SearchIn != "all" ? "all" + Model.SearchIn : (Model.SearchIn != "all") ? Model.SearchIn : Utils.UrlEncode(Model.Query))
-        @(!string.IsNullOrEmpty(Model.Domain) && Model.SearchIn == "all" ? "+site:" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
-        @(!string.IsNullOrEmpty(Model.ExcludeDomain) && Model.SearchIn == "all" ? "+-site:" + Utils.UrlEncode(Utils.UrlProperty(Model.ExcludeDomain).Domain) : "")
-        @(Model.File != "all" && Model.SearchIn == "all" ? "+filetype:" + Model.File : "")
+				&q=@Utils.UrlEncode(Model.Query)
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
@@ -214,7 +137,6 @@
   <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="aftonbladet.se"/>
-      <Resource Id="File"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
     </Parameters>
@@ -224,7 +146,6 @@
         <![CDATA[
         https://google.com/search?safe=off
 				&q=site:@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Domain)
-        @(Model.File != "all" && Model.SearchIn == "all" ? "+filetype:" + Model.File : "")
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
