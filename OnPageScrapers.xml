@@ -89,6 +89,28 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="Emails.CSV" Title="Emails CSV" AvailableInSpider="true" HelpText="Returns all emails separated by commas">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="https://tessin.se/kontakt/"/>
+    </Parameters>
+    <Fetch Url="@(Utils.UrlProperty(Model.Url).Absolute)">
+    </Fetch>
+    <Parse>
+      <Compute Id="All" Title="All (comma-separated)" DefaultValue="">
+        <Compute.Expr>
+          <![CDATA[
+          @{
+						string search = @"(([A-Z0-9._+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}))(?![\s\S]*\1)";
+						MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, search, RegexOptions.IgnoreCase);
+						string output = string.Join(",", matches.Cast<Match>().Select(m => m.Groups[0].Value));
+          }
+          @output
+        ]]>
+        </Compute.Expr>
+      </Compute>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="GoogleAnalyticsId" Title="Google Analytics Id" AvailableInSpider="true">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true"/>
