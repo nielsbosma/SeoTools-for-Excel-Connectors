@@ -38,14 +38,14 @@
       </Select>
     </Resource>
     <Resource Id="SelectMode">
-      <Radio Id="Mode" Title="Mode" DefaultValue="domain">
+      <Select Id="Mode" Title="Mode" DefaultValue="domain">
         <DataSource>
           <Item Id="domain" Title="Domain" />
           <Item Id="host" Title="Host" />
           <Item Id="path" Title="Path" />
           <Item Id="url" Title="Url" />
         </DataSource>
-      </Radio>
+      </Select>
     </Resource>
     <Resource Id="Extended">
 			<Checkbox Id="Extended" Title="Extended Database" HelpText="Extended database includes millions more keywords in some countries. These Keywords are updated monthly rather than weekly, but are considerably more comprehensive"/>
@@ -103,6 +103,7 @@
         ?api_key=@(Model.ApiKey)
         &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
         &country=@(Model.Country)
+				&history=true
         @(Model.Smartphone == true ? "&mobile=true" : "")
         @(Model.Extended == true ? "&extended=true" : "")
         ]]>
@@ -115,6 +116,43 @@
     </Fetch>
     <Parse>
       <XPath Expr="/response/answer/sichtbarkeitsindex" Attribute="value" Id="VisibilityIndex" Title="Visibility Index" Converter="Double" />
+    </Parse>
+    <Fail>
+      <XPath Expr="/response/error" Attribute="error_message" />
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="DomainVisibilityIndexHistory" Title="Domain Visibility Index History" HelpUrl="https://www.sistrix.com/api/domain/#domainsichtbarkeitsindex">
+    <Parameters>
+      <Text Id="Domain" Title="Domain/Host/Path/URL" DefaultValue="" Required="true" />
+      <Resource Id="SelectMode" />
+      <Resource Id="SelectCountry" />
+      <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
+			<Resource Id="Extended"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sistrix.com/domain.sichtbarkeitsindex
+        ?api_key=@(Model.ApiKey)
+        &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
+        &country=@(Model.Country)
+				&history=true
+        @(Model.Smartphone == true ? "&mobile=true" : "")
+        @(Model.Extended == true ? "&extended=true" : "")
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="User-Agent">SeoToolsForExcel</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<XPath Expr="/response/answer/sichtbarkeitsindex">
+				<XPath Expr="." Attribute="date" Id="Date" Title="Date" Converter="DateTime" />
+				<XPath Expr="." Attribute="value" Id="VisibilityIndex" Title="Visibility Index" Converter="Double" />
+			</XPath>
     </Parse>
     <Fail>
       <XPath Expr="/response/error" Attribute="error_message" />
