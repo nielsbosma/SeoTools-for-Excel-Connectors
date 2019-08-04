@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Ipstack" Identifier="Ipstack" RequireVersion="8.1.2" Category="Locations" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Ipstack.xml" HelpUrl="http://seotoolsforexcel.com/ipstack/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/ipstack/">
+    <Text Id="AccessKey" Title="Access Key" Required="true" HelpUrl="http://seotoolsforexcel.com/ipstack"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fields">
+			<JsonPath Expr="ip" Id="IpAddress" Title="IP Address" Converter="String" HelpText="Returns the requested IP address."/>
+			<JsonPath Expr="hostname" Id="Hostname" Converter="String" HelpText="Returns the hostname the requested IP resolves to."/>
+			<JsonPath Expr="type" Id="Type" Converter="String" HelpText="Returns the IP address type IPv4 or IPv6."/>
+			<JsonPath Expr="city" Id="City" Converter="String" HelpText="Returns the name of the city associated with the IP."/>
+			<JsonPath Expr="country_name" Id="CountryName" Converter="String" HelpText="Returns the name of the country associated with the IP."/>
+			<JsonPath Expr="country_code" Id="CountryCode" Converter="String" HelpText="Returns the 2-letter country code associated with the IP. "/>
+			<JsonPath Expr="region_name" Id="RegionName" Converter="String" HelpText="Returns the name of the region associated with the IP."/>
+			<JsonPath Expr="region_code" Id="RegionCode" Converter="String" HelpText="Returns the region code of the region associated with the IP"/>
+			<JsonPath Expr="continent_name" Id="ContinentName" Converter="String" HelpText="Returns the name of the continent associated with the IP."/>
+			<JsonPath Expr="continent_code" Id="ContinentCode" Converter="String" HelpText="Returns the 2-letter continent code associated with the IP. "/>
+			<JsonPath Expr="zip" Id="Zip" Converter="String" HelpText="Returns the ZIP code associated with the IP."/>
+			<JsonPath Expr="latitude" Id="Latitude" Converter="Double" HelpText="Returns the latitude value associated with the IP."/>
+			<JsonPath Expr="longitude" Id="Longitude" Converter="Double" HelpText="Returns the longitude value associated with the IP."/>
+			<JsonPath Expr="location.capital" Id="Capital" Converter="String" HelpText="Returns the capital city of the country associated with the IP."/>
+			<JsonPath Expr="location.calling_code" Id="CallingCode" Converter="String" HelpText="Returns the calling/dial code of the country associated with the IP."/>
+			<JsonPath Expr="location.languages[0].name" Id="LanguageName" Converter="String" HelpText="Returns the main language spoken in the country associated with the IP."/>
+			<JsonPath Expr="location.languages[0].code" Id="LanguageCode" Converter="String" HelpText="Returns the 2-letter language code for the given language."/>
+			<JsonPath Expr="location.is_eu" Id="IsEU" Converter="Bool" HelpText="Returns true or false depending on whether or not the county associated with the IP is in the European Union."/>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+				<JsonPath Expr="error.info"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="StandardIPLookup" Title="Standard IP Lookup" HelpText="Used to look up single IPv4 or IPv6 addresses.">
+    <Parameters>
+      <Text Id="Ip" Title="IP Address" Required="true" Debug.DefaultValue="134.201.250.155"/>
+    </Parameters>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.ipstack.com/@(Model.Ip)?access_key=@(Model.AccessKey)&hostname=1
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Resource Id="Fields"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="BulkIPLookup" Title="Bulk IP Lookup" HelpText="Request data for multiple IPv4 or IPv6 addresses at the same time. Requires a PRO license.">
+    <Parameters>
+      <Text Id="Ips" Title="IP Addresses" Required="true" Debug.DefaultValue="134.201.250.155" Multiline="true" HelpText="Enter one or more IP Addresses separated by a new line"/>
+    </Parameters>
+		<Batch Parameter="Ips" Separator="\n" ItemsPerBatch="50"/>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.ipstack.com/@(FetchIps())?access_key=@(Model.AccessKey)&hostname=1
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.*">
+				<Resource Id="Fields"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RequesterLookup" Title="Requester Lookup" HelpText="Look up the data behind the IP address your API request is coming from.">
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          http://api.ipstack.com/check?access_key=@(Model.AccessKey)&hostname=1
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Resource Id="Fields"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string FetchIps() {
+        string[] lines = (string[])Model.IpsBatch;
+        return string.Join(",",lines.Select((e) => Utils.UrlEncode(e)).ToArray());
+      }
+    ]]>
+  </RazorFunctions>
+</Suite>

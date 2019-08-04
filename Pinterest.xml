@@ -1,28 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="7.0" Category="Social" Title="Pinterest" Id="Pinterest" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Pinterest.xml" HelpUrl="http://seotoolsforexcel.com/pinterest/" HelpText="Documentation">
+<Suite RequireVersion="8.1.35" Category="Social" Title="Pinterest" Id="Pinterest" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Pinterest.xml" HelpUrl="http://seotoolsforexcel.com/pinterest/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+	
+  <SeoToolsAuthenticator StayAuthenticated="false" Key="pinterest"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/pinterest/">
-    <Text Id="Key" Title="Access Token" Required="true"/>
-  </Settings>
-
-  <Resources>
-    <Resource Id="Fail">
-			<Fail>
-        <JsonPath Expr="$.message"/>
-			</Fail>
-    </Resource>
-  </Resources>
-
-  <RestConnector Id="UserLookup" Title="User Lookup">
+  <RestConnector Id="UserLookup" Title="User Lookup" Group="Public Data">
     <Parameters>
       <Text Id="User" Title="Username or User Id or Me" Debug.DefaultValue="viviangomes" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/users/@(Model.User)/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/users/@(Model.User)/?access_token=@(Model.Authenticator.Token)
         &fields=first_name,id,last_name,url,account_type,bio,counts,created_at,username,image
         ]]>
       </Fetch.Url>
@@ -44,17 +34,19 @@
         <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="PinLookup" Title="Pin Lookup">
+  <RestConnector Id="PinLookup" Title="Pin Lookup" Group="Public Data">
     <Parameters>
       <Text Id="Pin" Title="Pin Id" Debug.DefaultValue="470837336012272856" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/pins/@(Model.Pin)/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/pins/@(Model.Pin)/?access_token=@(Model.Authenticator.Token)
         &fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
         ]]>
       </Fetch.Url>
@@ -78,17 +70,19 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="BoardLookup" Title="Board Lookup">
+  <RestConnector Id="BoardLookup" Title="Board Lookup" Group="Public Data">
     <Parameters>
       <Text Id="BoardId" Title="Board Id or board/slug combo" Debug.DefaultValue="292241532009023790" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/boards/@(Model.BoardId)/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/boards/@(Model.BoardId)/?access_token=@(Model.Authenticator.Token)
         &fields=id,name,url,counts,created_at,creator,description,image,privacy
         ]]>
       </Fetch.Url>
@@ -111,10 +105,12 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="BoardPins" Title="Board Pins">
+  <RestConnector Id="BoardPins" Title="Board Pins" Group="Public Data">
     <Parameters>
       <Text Id="BoardId" Title="Board Id or board/slug combo" Debug.DefaultValue="292241532009023790" Required="true"/>
     </Parameters>
@@ -126,10 +122,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/boards/@(Model.BoardId)/pins/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/boards/@(Model.BoardId)/pins/?access_token=@(Model.Authenticator.Token)
         &fields=id,link,note,url,counts,created_at,creator,media,original_link,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -150,14 +149,16 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyBoards" Title="My Boards">
+  <RestConnector Id="MyBoards" Title="My Boards" Group="Personal Data">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/boards?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/boards?access_token=@(Model.Authenticator.Token)
         &fields=id,name,url,counts,created_at,creator,description,privacy,image
         ]]>
       </Fetch.Url>
@@ -176,10 +177,12 @@
         <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyFollowers" Title="My Followers">
+  <RestConnector Id="MyFollowers" Title="My Followers" Group="Personal Data">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
@@ -188,10 +191,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/followers?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/followers?access_token=@(Model.Authenticator.Token)
         &fields=first_name,id,last_name,url,account_type,bio,counts,created_at,username,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -212,10 +218,12 @@
         <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyFollowings" Title="My Followings">
+  <RestConnector Id="MyFollowings" Title="My Followings" Group="Personal Data">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
@@ -224,10 +232,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/following/users/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/following/users/?access_token=@(Model.Authenticator.Token)
         &fields=first_name,id,last_name,url,account_type,bio,counts,created_at,username,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -248,10 +259,12 @@
         <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyLikedPins" Title="My Liked Pins">
+  <RestConnector Id="MyLikedPins" Title="My Liked Pins" Group="Personal Data">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
@@ -260,10 +273,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/likes/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/likes/?access_token=@(Model.Authenticator.Token)
         &fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -286,10 +302,12 @@
         <JsonPath Expr="creator.url" Id="CreatorUrl" Title="Creator URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyPins" Title="My Pins">
+  <RestConnector Id="MyPins" Title="My Pins" Group="Personal Data">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
@@ -298,10 +316,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/pins/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/pins/?access_token=@(Model.Authenticator.Token)
         &fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -320,10 +341,12 @@
         <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyPinsSearch" Title="My Pins Search">
+  <RestConnector Id="MyPinsSearch" Title="My Pins Search" Group="Personal Data">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="hawaii" Required="true"/>
     </Parameters>
@@ -337,10 +360,13 @@
         <![CDATA[
         https://api.pinterest.com/v1/me/search/pins/
         ?query=@Utils.UrlEncode(Model.Query)
-        &access_token=@(Model.Key)
+        &access_token=@(Model.Authenticator.Token)
         &fields=id,link,note,url,attribution,board,counts,created_at,media,creator,metadata,original_link,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -359,10 +385,12 @@
         <JsonPath Expr="board.url" Id="BoardUrl" Title="Board URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyBoardsSearch" Title="My Boards Search">
+  <RestConnector Id="MyBoardsSearch" Title="My Boards Search" Group="Personal Data">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="hawaii" Required="true"/>
     </Parameters>
@@ -376,10 +404,13 @@
         <![CDATA[
         https://api.pinterest.com/v1/me/search/boards/
         ?query=@Utils.UrlEncode(Model.Query)
-        &access_token=@(Model.Key)
+        &access_token=@(Model.Authenticator.Token)
         &fields=id,name,url,counts,created_at,creator,description,privacy,image
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -397,10 +428,12 @@
         <JsonPath Expr="image..url" Id="ImageUrl" Title="Image URL" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="MyInterests" Title="My Interests">
+  <RestConnector Id="MyInterests" Title="My Interests" Group="Personal Data">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="page.cursor"/>
@@ -409,10 +442,13 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pinterest.com/v1/me/following/interests/?access_token=@(Model.Key)
+        https://api.pinterest.com/v1/me/following/interests/?access_token=@(Model.Authenticator.Token)
         &fields=id,name
         &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && @Model.Cursor != "null" ? "&cursor=" + Model.Cursor : "")
+        @if(Model.PageCursor.Page != 0 && @Model.Cursor != "null")
+        {
+          @: &cursor=@Model.Cursor
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -422,12 +458,14 @@
         <JsonPath Expr="name" Id="Interest Name" Title="Interest Name" Converter="String"/>
       </JsonPath>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
   </RestConnector>
 
-  <RestConnector Id="BoardIdScraper" Title="Board Id from URL">
+  <RestConnector Id="BoardIdScraper" Title="Board Id from URL" HelpText="">
     <Parameters>
-      <Text Id="BoardUrl" Title="Board URL" Debug.DefaultValue="https://www.pinterest.se/tentabi/inspiration/" Required="true"/>
+      <Text Id="BoardUrl" Title="Board URL" DefaultValue="" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -437,7 +475,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Regex Id="BoardId" Expr="board_id=\\&quot;(\d+)\\&quot;" Group="1"/>
+      <Regex Id="BoardId" Expr="&quot;id&quot;:\s&quot;(\d+)&quot;\,\s&quot;" Converter="String" HelpText=""/>
     </Parse>
   </RestConnector>
 

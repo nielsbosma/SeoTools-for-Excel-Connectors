@@ -1,233 +1,99 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Twitter Ads" Id="TwitterAds" Category="Social" RequireVersion="7.0.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TwitterAds.xml" HelpUrl="http://seotoolsforexcel.com/twitter-ads/" HelpText="Documentation">
+<Suite Title="Twitter Ads" Id="TwitterAds" Category="Social" RequireVersion="8.1.35" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TwitterAds.xml" HelpUrl="http://seotoolsforexcel.com/twitter-ads/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/twitter-ads/">
-    <Text Id="OAuthToken" Title="OAuth Token" Required="true" HelpUrl="http://seotoolsforexcel.com/twitter-ads/"/>
-    <Text Id="OAuthTokenSecret" Title="OAuth Token Secret" Required="true"/>
-    <Text Id="OAuthConsumerKey" Title="OAuth Consumer Key" Required="true"/>
-    <Text Id="OAuthConsumerSecret" Title="OAuth Consumer Secret" Required="true"/>
-  </Settings>
+	<SeoToolsAuthenticator StayAuthenticated="false" Key="twitter"/>
 
   <Resources>
-    <Resource Id="CampaignsSortings">
-      <Item Id="created_at-desc" Title="Created Desc"/>
-      <Item Id="created_at-asc" Title="Created Asc"/>
-      <Item Id="updated_at-desc" Title="Updated Desc"/>
-      <Item Id="updated_at-asc" Title="Updated Asc"/>
-      <Item Id="name-desc" Title="Name Desc"/>
-      <Item Id="name-asc" Title="Name Asc"/>
-      <Item Id="start_time-desc" Title="Start Time Desc"/>
-      <Item Id="start_time-asc" Title="Start Time Asc"/>
-      <Item Id="end_time-desc" Title="End Time Desc"/>
-      <Item Id="end_time-asc" Title="End Time Asc"/>
-      <Item Id="bid_amount_local_micro-desc" Title="Bid Amount Desc"/>
-      <Item Id="bid_amount_local_micro-asc" Title="Bid Amount Asc"/>
-    </Resource>
-    <Resource Id="LineItemsSortings">
-      <Item Id="created_at-desc" Title="Created Desc"/>
-      <Item Id="created_at-asc" Title="Created Asc"/>
-      <Item Id="updated_at-desc" Title="Updated Desc"/>
-      <Item Id="updated_at-asc" Title="Updated Asc"/>
-      <Item Id="bid_amount_local_micro-desc" Title="Bid Amount Desc"/>
-      <Item Id="bid_amount_local_micro-asc" Title="Bid Amount Asc"/>
-    </Resource>
-    <Resource Id="PromotedTweetsSortings">
-      <Item Id="created_at-desc" Title="Created Desc"/>
-      <Item Id="created_at-asc" Title="Created Asc"/>
-      <Item Id="updated_at-desc" Title="Updated Desc"/>
-      <Item Id="updated_at-asc" Title="Updated Asc"/>
-    </Resource>
-    <Resource Id="FundingInstrumentsSortings">
-      <Item Id="created_at-desc" Title="Created Desc"/>
-      <Item Id="created_at-asc" Title="Created Asc"/>
-      <Item Id="updated_at-desc" Title="Updated Desc"/>
-      <Item Id="updated_at-asc" Title="Updated Asc"/>
-      <Item Id="start_time-desc" Title="Start Time Desc"/>
-      <Item Id="start_time-asc" Title="Start Time Asc"/>
-      <Item Id="end_time-desc" Title="End Time Desc"/>
-      <Item Id="end_time-asc" Title="End Time Asc"/>
-      <Item Id="funded_amount_local_micro-desc" Title="Funded Amount Desc"/>
-      <Item Id="funded_amount_local_micro-asc" Title="Funded Amount Asc"/>
-    </Resource>
-    <Resource Id="Objectives">
-      <Item Id="none" Title="None"/>
-      <Item Id="APP_ENGAGEMENTS" Title="App Engagements"/>
-      <Item Id="APP_INSTALLS" Title="App Installs"/>
-      <Item Id="AWARENESS" Title="Awareness"/>
-      <Item Id="FOLLOWERS" Title="Followers"/>
-      <Item Id="TWEET_ENGAGEMENTS" Title="Tweet Engagement"/>
-      <Item Id="VIDEO_VIEWS" Title="Video Views"/>
-      <Item Id="WEBSITE_CLICKS" Title="Website Clicks"/>
-      <Item Id="WEBSITE_CONVERSIONS" Title="Website Conversions"/>
-    </Resource>
+    <Resource Id="Params">
+      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="EntityId" Title="Entity to Analyze" Debug.DefaultValue="5bxso" Required="true"/>
+      <Select Id="Granularity" Title="Granularity" DefaultValue="NONE">
+        <DataSource>
+          <Item Id="TOTAL" Title="None"/>
+          <Item Id="DAY" Title="Daily"/>
+          <Item Id="HOUR" Title="Hourly"/>´
+        </DataSource>
+      </Select>
+      <Select Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER">
+        <DataSource>
+          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
+          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
+		</Resource>
+		<Resource Id="PrepareZip">
+			<Prepare>
+				<Connector Id="GetZipUrl" Parameters="AccountId,EntityType,EntityId,Granularity,Placement,DateInterval,MetricType"/>
+			</Prepare>
+		</Resource>
+    <Resource Id="FetchZip">
+			<Fetch>
+				<HttpSettings>
+					<RequestContentType>gzip</RequestContentType>
+				</HttpSettings>
+				<Fetch.Url>
+					<![CDATA[
+						@(Model.GZipUrl)
+					]]>
+				</Fetch.Url>
+			</Fetch>
+		</Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
+      </HttpSettings>
+		</Resource>
+    <Resource Id="Fail">
+		  <Fail>
+				<JsonPath Expr="errors[0].message"/>
+				<JsonPath Expr="error"/>
+			</Fail>
+		</Resource>
   </Resources>
 
-  <RestConnector Id="Accounts" Hidden="true">
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+  <RestConnector Id="Accounts" Hidden="false">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/accounts
+        https://ads-api.twitter.com/5/accounts
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CampaignsHidden" Hidden="true">
+  <RestConnector Id="ListCampaigns" Title="List Campaigns" HelpUrl="">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/campaigns?
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="LineItemsHidden" Hidden="true">
-    <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/line_items?
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PromotedTweetsHidden" Hidden="true">
-    <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/promoted_tweets?
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <Compute Id="TweetUrl" Title="Tweet URL">
-          <Compute.Expr>
-            <![CDATA[
-            /statuses/@(Model.TweetIdInput)/
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="tweet_id" Id="TweetIdInput" Converter="String"/>
-        </Compute>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="FundingInstrumentsHidden" Hidden="true">
-    <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/funding_instruments?
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="Campaigns" Title="Campaigns Overview" HelpUrl="https://dev.twitter.com/ads/reference/get/accounts/account_id/campaigns">
-    <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
-          <Resource Id="CampaignsSortings"/>
+					<Item Id="created_at-desc" Title="Created Desc"/>
+					<Item Id="created_at-asc" Title="Created Asc"/>
+					<Item Id="updated_at-desc" Title="Updated Desc"/>
+					<Item Id="updated_at-asc" Title="Updated Asc"/>
+					<Item Id="name-desc" Title="Name Desc"/>
+					<Item Id="name-asc" Title="Name Asc"/>
+					<Item Id="start_time-desc" Title="Start Time Desc"/>
+					<Item Id="start_time-asc" Title="Start Time Asc"/>
+					<Item Id="end_time-desc" Title="End Time Desc"/>
+					<Item Id="end_time-asc" Title="End Time Asc"/>
+					<Item Id="bid_amount_local_micro-desc" Title="Bid Amount Desc"/>
+					<Item Id="bid_amount_local_micro-asc" Title="Bid Amount Asc"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -237,26 +103,14 @@
         <JsonPath Id="Cursor" Expr="next_cursor"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/campaigns?
+        https://ads-api.twitter.com/4/accounts/@(Model.AccountId)/campaigns?
         count=@(Model.PageCursor.NextTake)
         &sort_by=@(Model.Sort)
-        @if(Model.PageCursor.Page != 0)
-
-        {
-          @: &cursor=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -291,17 +145,20 @@
         <JsonPath Expr="updated_at" Id="Updated" Title="Updated	" Converter="DateTime"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="LineItems" Title="Ad Groups Overview" HelpUrl="https://dev.twitter.com/ads/reference/get/accounts/account_id/line_items">
+  <RestConnector Id="ListLineItems" Title="List Line Items" HelpUrl="">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
-          <Resource Id="LineItemsSortings"/>
+					<Item Id="created_at-desc" Title="Created Desc"/>
+					<Item Id="created_at-asc" Title="Created Asc"/>
+					<Item Id="updated_at-desc" Title="Updated Desc"/>
+					<Item Id="updated_at-asc" Title="Updated Asc"/>
+					<Item Id="bid_amount_local_micro-desc" Title="Bid Amount Desc"/>
+					<Item Id="bid_amount_local_micro-asc" Title="Bid Amount Asc"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -311,25 +168,14 @@
         <JsonPath Id="Cursor" Expr="next_cursor"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/line_items?
+        https://ads-api.twitter.com/4/accounts/@(Model.AccountId)/line_items?
         count=@(Model.PageCursor.NextTake)
         &sort_by=@(Model.Sort)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &cursor=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -368,17 +214,18 @@
         <JsonPath Expr="updated_at" Id="Updated" Title="Updated	" Converter="DateTime"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PromotedTweets" Title="Promoted Tweets Overview" HelpUrl="https://dev.twitter.com/ads/reference/get/accounts/%3Aaccount_id/promoted_tweets">
+  <RestConnector Id="ListPromotedTweets" Title="List Promoted Tweets" HelpUrl="">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
-          <Resource Id="PromotedTweetsSortings"/>
+					<Item Id="created_at-desc" Title="Created Desc"/>
+					<Item Id="created_at-asc" Title="Created Asc"/>
+					<Item Id="updated_at-desc" Title="Updated Desc"/>
+					<Item Id="updated_at-asc" Title="Updated Asc"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -388,25 +235,14 @@
         <JsonPath Id="Cursor" Expr="next_cursor"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/promoted_tweets?
+        https://ads-api.twitter.com/4/accounts/@(Model.AccountId)/promoted_tweets?
         count=@(Model.PageCursor.NextTake)
         &sort_by=@(Model.Sort)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &cursor=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -429,17 +265,24 @@
         <JsonPath Expr="updated_at" Id="Updated" Title="Updated	" Converter="DateTime"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="FundingInstruments" Title="Funding Instruments Overview" HelpUrl="https://dev.twitter.com/ads/reference/get/accounts/%3Aaccount_id/funding_instruments">
+  <RestConnector Id="ListFundingInstruments" Title="List Funding Instruments" HelpUrl="">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
-          <Resource Id="FundingInstrumentsSortings"/>
+					<Item Id="created_at-desc" Title="Created Desc"/>
+					<Item Id="created_at-asc" Title="Created Asc"/>
+					<Item Id="updated_at-desc" Title="Updated Desc"/>
+					<Item Id="updated_at-asc" Title="Updated Asc"/>
+					<Item Id="start_time-desc" Title="Start Time Desc"/>
+					<Item Id="start_time-asc" Title="Start Time Asc"/>
+					<Item Id="end_time-desc" Title="End Time Desc"/>
+					<Item Id="end_time-asc" Title="End Time Asc"/>
+					<Item Id="funded_amount_local_micro-desc" Title="Funded Amount Desc"/>
+					<Item Id="funded_amount_local_micro-asc" Title="Funded Amount Asc"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -449,25 +292,14 @@
         <JsonPath Id="Cursor" Expr="next_cursor"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/funding_instruments?
+        https://ads-api.twitter.com/4/accounts/@(Model.AccountId)/funding_instruments?
         count=@(Model.PageCursor.NextTake)
         &sort_by=@(Model.Sort)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &cursor=@(Model.Cursor)
-        }
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -487,502 +319,280 @@
         <JsonPath Expr="updated_at" Id="Updated" Title="Updated	" Converter="DateTime"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AccountStatistics" Title="Account Statistics" HelpUrl="https://dev.twitter.com/ads/reference/1/get/stats/accounts/account_id">
+  <RestConnector Id="PostRequest" Hidden="true">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="TOTAL" Required="false">
-        <DataSource>
-          <Item Id="DAY" Title="Daily"/>
-          <Item Id="HOUR" Title="Hourly"/>
-          <Item Id="TOTAL" Title="Total"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER" Required="false">
-        <DataSource>
-          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
-          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
-        </DataSource>
-      </Radio>
+      <Text Id="AccountId"/>
+      <Text Id="EntityType"/>
+      <Text Id="EntityId"/>
+      <Text Id="Granularity"/>
+      <Text Id="Placement"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="MetricType"/>
     </Parameters>
-    <Fetch Url="">
+    <Fetch>
       <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
         <OAuth>
           <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
           <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+          <Token>@Model.Authenticator.AccessToken</Token>
+          <TokenSecret>@Model.Authenticator.AccessTokenSecret</TokenSecret>
         </OAuth>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/stats/accounts/@(Model.AccountId)
-        ?entity=ACCOUNT
-				&entity_ids=@(Model.AccountId)
-        &placement=@(Model.Placement)
-        &start_time=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_time=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &granularity=@(Model.Granularity)
-        &metric_groups=ENGAGEMENT
+        https://ads-api.twitter.com/4/stats/jobs/accounts/@(Model.AccountId)
+				?entity=@(Model.EntityType)
+				&entity_ids=@(Model.EntityId)
+        &start_time=@(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end_time=@(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&placement=@(Model.Placement)
+				&granularity=@(Model.Granularity)
+        &metric_groups=@(Model.MetricType)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
-        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.engagements[*]">
-        <JsonPath Expr="." Id="Engagements" Title="Engagements" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
-        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
-        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
-        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
-        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Int"/>
-      </JsonPath>
+      <JsonPath Expr="$.data.id_str" Id="JobId"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CampaignStatistics" Title="Campaign Statistics" HelpUrl="https://dev.twitter.com/ads/reference/1/get/stats/accounts/account_id">
+  <RestConnector Id="GetZipUrl" Hidden="true">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="CampaignId" Title="Campaign Id" DefaultValue="" Debug.DefaultValue="" Required="true" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="TOTAL" Required="false">
-        <DataSource>
-          <Item Id="DAY" Title="Daily"/>
-          <Item Id="HOUR" Title="Hourly"/>
-          <Item Id="TOTAL" Title="Total"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER" Required="false">
-        <DataSource>
-          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
-          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
+      <Text Id="AccountId"/>
+      <Text Id="EntityType"/>
+      <Text Id="EntityId"/>
+      <Text Id="Granularity"/>
+      <Text Id="Placement"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="MetricType"/>
+		</Parameters>
+		<Prepare>
+			<Connector Id="PostRequest" Parameters="AccountId,EntityType,EntityId,Granularity,Placement,DateInterval,MetricType"/>
+		</Prepare>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://ads-api.twitter.com/3/stats/accounts/@(Model.AccountId)
-        ?entity=CAMPAIGN&entity_ids=@(Model.CampaignId)
-        &placement=@(Model.Placement)
-        &start_time=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_time=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &granularity=@(Model.Granularity)
-        &metric_groups=ENGAGEMENT,BILLING
+        https://ads-api.twitter.com/4/stats/jobs/accounts/@(Model.AccountId)?job_ids=@(Model.JobId)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
-        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.qualified_impressions[*]">
-        <JsonPath Expr="." Id="QualifiedImpressions" Title="Qualified Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
-        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
-        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
-        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
-        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.tweets_send[*]">
-        <JsonPath Expr="." Id="TweetsSend" Title="Tweets Send" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.clicks[*]">
-        <JsonPath Expr="." Id="Clicks" Title="Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.url_clicks[*]">
-        <JsonPath Expr="." Id="UrlClicks" Title="URL Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.card_engagements[*]">
-        <JsonPath Expr="." Id="CardEngagements" Title="Card Engagements" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.carousel_swipes[*]">
-        <JsonPath Expr="." Id="CarouselSwipes" Title="Carousel Swipes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_charge_local_micro[*]">
-        <JsonPath Expr="." Id="BilledCharge" Title="BilledCharge" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_engagements[*]">
-        <JsonPath Expr="." Id="BilledEngagements" Title="Billed Engagements" Converter="Int"/>
-      </JsonPath>
+      <JsonPath Expr="$.data[0].url" Id="GZipUrl"/>
     </Parse>
     <Fail>
-      <JsonPath Expr="errors[0].message"/>
+      <JsonPath Expr="$.data[0].status" Fail.If="IsEqual" Fail.ComparedTo="PROCESSING" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="20"/>
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="LineItemsStatistics" Title="Ad Groups Statistics" HelpUrl="https://dev.twitter.com/ads/reference/1/get/stats/accounts/account_id">
+  <RestConnector Id="AnalyticsEngagement" Title="Analytics Engagement" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="LineItemId" Title="Ad Group Id" DefaultValue="" Debug.DefaultValue="" Required="true" Select.Connector="LineItemsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="TOTAL" Required="false">
+      <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
         <DataSource>
-          <Item Id="DAY" Title="Daily"/>
-          <Item Id="HOUR" Title="Hourly"/>
-          <Item Id="TOTAL" Title="Total"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER" Required="false">
-        <DataSource>
-          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
-          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/stats/accounts/@(Model.AccountId)
-        ?entity=LINE_ITEM&entity_ids=@(Model.LineItemId)
-        &placement=@(Model.Placement)
-        &start_time=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_time=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &granularity=@(Model.Granularity)
-        &metric_groups=ENGAGEMENT,BILLING
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
-        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.qualified_impressions[*]">
-        <JsonPath Expr="." Id="QualifiedImpressions" Title="Qualified Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
-        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
-        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
-        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
-        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.tweets_send[*]">
-        <JsonPath Expr="." Id="TweetsSend" Title="Tweets Send" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.clicks[*]">
-        <JsonPath Expr="." Id="Clicks" Title="Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.url_clicks[*]">
-        <JsonPath Expr="." Id="UrlClicks" Title="URL Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.card_engagements[*]">
-        <JsonPath Expr="." Id="CardEngagements" Title="Card Engagements" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.carousel_swipes[*]">
-        <JsonPath Expr="." Id="CarouselSwipes" Title="Carousel Swipes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_charge_local_micro[*]">
-        <JsonPath Expr="." Id="BilledCharge" Title="BilledCharge" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_engagements[*]">
-        <JsonPath Expr="." Id="BilledEngagements" Title="Billed Engagements" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PromotedTweetsStatistics" Title="Promoted Tweets Statistics" HelpUrl="https://dev.twitter.com/ads/reference/1/get/stats/accounts/account_id">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="PromotedTweetId" Title="Promoted Tweet Id" DefaultValue="" Debug.DefaultValue="" Required="true" Select.Connector="PromotedTweetsHidden" Select.IdField="Id" Select.TitleField="TweetUrl"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="TOTAL" Required="false">
-        <DataSource>
-          <Item Id="DAY" Title="Daily"/>
-          <Item Id="HOUR" Title="Hourly"/>
-          <Item Id="TOTAL" Title="Total"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER" Required="false">
-        <DataSource>
-          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
-          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/stats/accounts/@(Model.AccountId)
-        ?entity=PROMOTED_TWEET&entity_ids=@(Model.PromotedTweetId)
-        &placement=@(Model.Placement)
-        &start_time=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_time=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &granularity=@(Model.Granularity)
-        &metric_groups=ENGAGEMENT,BILLING
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
-        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.qualified_impressions[*]">
-        <JsonPath Expr="." Id="QualifiedImpressions" Title="Qualified Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
-        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
-        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
-        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
-        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.tweets_send[*]">
-        <JsonPath Expr="." Id="TweetsSend" Title="Tweets Send" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.clicks[*]">
-        <JsonPath Expr="." Id="Clicks" Title="Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.url_clicks[*]">
-        <JsonPath Expr="." Id="UrlClicks" Title="URL Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.card_engagements[*]">
-        <JsonPath Expr="." Id="CardEngagements" Title="Card Engagements" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.carousel_swipes[*]">
-        <JsonPath Expr="." Id="CarouselSwipes" Title="Carousel Swipes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_charge_local_micro[*]">
-        <JsonPath Expr="." Id="BilledCharge" Title="BilledCharge" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_engagements[*]">
-        <JsonPath Expr="." Id="BilledEngagements" Title="Billed Engagements" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="FundingInstrumentsStatistics" Title="Funding Instruments Statistics" HelpUrl="https://dev.twitter.com/ads/reference/1/get/stats/accounts/account_id">
-    <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="FundingInstrumentId" Title="Funding Instrument Id" DefaultValue="" Debug.DefaultValue="" Required="true" Select.Connector="FundingInstrumentsHidden" Select.IdField="Id" Select.TitleField="Description"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="TOTAL" Required="false">
-        <DataSource>
-          <Item Id="DAY" Title="Daily"/>
-          <Item Id="HOUR" Title="Hourly"/>
-          <Item Id="TOTAL" Title="Total"/>
-        </DataSource>
-      </Radio>
-      <Radio Id="Placement" Title="Placement" DefaultValue="ALL_ON_TWITTER" Required="false">
-        <DataSource>
-          <Item Id="ALL_ON_TWITTER" Title="All on Twitter"/>
-          <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/stats/accounts/@(Model.AccountId)
-        ?entity=FUNDING_INSTRUMENT&entity_ids=@(Model.FundingInstrumentId)
-        &placement=@(Model.Placement)
-        &start_time=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_time=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &granularity=@(Model.Granularity)
-        &metric_groups=ENGAGEMENT,BILLING
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
-        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.qualified_impressions[*]">
-        <JsonPath Expr="." Id="QualifiedImpressions" Title="Qualified Impressions" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
-        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
-        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
-        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
-        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.tweets_send[*]">
-        <JsonPath Expr="." Id="TweetsSend" Title="Tweets Send" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.clicks[*]">
-        <JsonPath Expr="." Id="Clicks" Title="Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.url_clicks[*]">
-        <JsonPath Expr="." Id="UrlClicks" Title="URL Clicks" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.card_engagements[*]">
-        <JsonPath Expr="." Id="CardEngagements" Title="Card Engagements" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.carousel_swipes[*]">
-        <JsonPath Expr="." Id="CarouselSwipes" Title="Carousel Swipes" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_charge_local_micro[*]">
-        <JsonPath Expr="." Id="BilledCharge" Title="BilledCharge" Converter="Int"/>
-      </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_engagements[*]">
-        <JsonPath Expr="." Id="BilledEngagements" Title="Billed Engagements" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PromotableTweets" Title="Promotable Tweets" HelpUrl="https://dev.twitter.com/ads/reference/get/accounts/%3Aaccount_id/scoped_timeline">
-    <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Select Id="Objective" Title="Preferred Objective" Required="false" DefaultValue="none">
-        <DataSource>
-          <Resource Id="Objectives"/>
+          <Item Id="ACCOUNT" Title="Account"/>
+          <Item Id="CAMPAIGN" Title="Campaign"/>
+          <Item Id="PROMOTED_TWEET" Title="Promoted Tweet"/>
+          <Item Id="ORGANIC_TWEET" Title="Organic Tweet"/>
+          <Item Id="FUNDING_INSTRUMENT" Title="Funding Instrument"/>
+          <Item Id="LINE_ITEM" Title="Line Item"/>
+          <Item Id="MEDIA_CREATIVE" Title="Media Creative"/>
         </DataSource>
       </Select>
-      <Checkbox Id="PromotedOnly" Title="Promoted Tweets Only" DefaultValue="false"/>
-      </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="AvaliableRows" Expr="total_count"/>
-        <JsonPath Id="Cursor" Expr="next_cursor"/>
-      </Parse>
-    </Paging>
-    <Fetch Url="">
-      <HttpSettings>
-        <OAuth>
-          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
-          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
-          <Token>@Model.OAuthToken</Token>
-          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
-        </OAuth>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://ads-api.twitter.com/3/accounts/
-        @(Model.AccountId)/scoped_timeline?
-        @if(Model.Objective != "none")
-        {
-          @: objective=@(Model.Objective)
-        }
-        @if(Model.PromotedOnly == true)
-        {
-          @: &scoped_to=none
-        }
-        &objective=WEBSITE_CLICKS
-        &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &cursor=@(Model.Cursor)
-        }
-        ]]>
-      </Fetch.Url>
-    </Fetch>
+      <Text Id="MetricType" DefaultValue="ENGAGEMENT" Hidden="false"/>
+			<Resource Id="Params"/>
+		</Parameters>
+    <Resource Id="PrepareZip"/>
+		<Resource Id="FetchZip"/>
     <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
-        <Compute Id="Url" Title="URL">
+      <JsonPath Expr="$.data[0].id_data[0].metrics.impressions[*]">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
           <Compute.Expr>
             <![CDATA[
-            https://twitter.com/@(Model.ScreenName)/status/@(Model.IdStr)
-            ]]>
+            @AdjustDate()
+						]]>
           </Compute.Expr>
-          <JsonPath Expr="id_str" Id="IdStr" Converter="String"/>
-          <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
+					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
         </Compute>
+			</JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.impressions[*]">
+        <JsonPath Expr="." Id="Impressions" Title="Impressions" Converter="Long"/>
       </JsonPath>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
-        <JsonPath Expr="text" Id="text" Title="Tweet"/>
-        <Compute Id="Source" Title="Source">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-            var temp = Model.Source.Substring(Model.Source.IndexOf("nofollow\">")+10);
-            var stringfinal = temp.Remove(temp.Length-4);
-            }
-            @stringfinal
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="source" Id="Source" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
-        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.engagements[*]">
+        <JsonPath Expr="." Id="Engagements" Title="Engagements" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.retweets[*]">
+        <JsonPath Expr="." Id="Retweets" Title="Retweets" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.likes[*]">
+        <JsonPath Expr="." Id="Likes" Title="Likes" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.replies[*]">
+        <JsonPath Expr="." Id="Replies" Title="Replies" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.clicks[*]">
+        <JsonPath Expr="." Id="Clicks" Title="Clicks" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.url_clicks[*]">
+        <JsonPath Expr="." Id="UrlClicks" Title="URL Clicks" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.app_clicks[*]">
+        <JsonPath Expr="." Id="AppClicks" Title="App Clicks" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.card_engagements[*]">
+        <JsonPath Expr="." Id="CardEngagements" Title="Card Engagements" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.qualified_impressions[*]">
+        <JsonPath Expr="." Id="QualifiedImpressions" Title="Qualified Impressions" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.follows[*]">
+        <JsonPath Expr="." Id="Follows" Title="Follows" Converter="Long"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0].message"/>
-    </Fail>
   </RestConnector>
+
+  <RestConnector Id="AnalyticsBilling" Title="Analytics Billing" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+    <Parameters>
+      <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
+        <DataSource>
+          <Item Id="CAMPAIGN" Title="Campaign"/>
+          <Item Id="PROMOTED_TWEET" Title="Promoted Tweet"/>
+          <Item Id="FUNDING_INSTRUMENT" Title="Funding Instrument"/>
+          <Item Id="LINE_ITEM" Title="Line Item"/>
+          <Item Id="MEDIA_CREATIVE" Title="Media Creative"/>
+        </DataSource>
+      </Select>
+      <Text Id="MetricType" DefaultValue="BILLING" Hidden="false"/>
+      <Resource Id="Params"/>
+		</Parameters>
+    <Resource Id="PrepareZip"/>
+		<Resource Id="FetchZip"/>
+    <Parse>
+      <JsonPath Expr="$.data[0].id_data[0].metrics.billed_charge_local_micro[*]">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @AdjustDate()
+						]]>
+          </Compute.Expr>
+					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_engagements[*]">
+        <JsonPath Expr="." Id="Engagements" Title="Engagements" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.billed_charge_local_micro[*]">
+        <JsonPath Expr="." Id="Spending" Title="Spending" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AnalyticsVideo" Title="Analytics Video" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+    <Parameters>
+      <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
+        <DataSource>
+          <Item Id="CAMPAIGN" Title="Campaign"/>
+          <Item Id="PROMOTED_TWEET" Title="Promoted Tweet"/>
+          <Item Id="ORGANIC_TWEET" Title="Organic Tweet"/>
+          <Item Id="LINE_ITEM" Title="Line Item"/>
+          <Item Id="MEDIA_CREATIVE" Title="Media Creative"/>
+        </DataSource>
+      </Select>
+      <Text Id="MetricType" DefaultValue="VIDEO" Hidden="false"/>
+      <Resource Id="Params"/>
+		</Parameters>
+    <Resource Id="PrepareZip"/>
+		<Resource Id="FetchZip"/>
+    <Parse>
+      <JsonPath Expr="$.data[0].id_data[0].metrics.video_total_views[*]">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @AdjustDate()
+						]]>
+          </Compute.Expr>
+					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_total_views[*]">
+        <JsonPath Expr="." Id="ViewsTotal" Title="Views Total" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_views_25[*]">
+        <JsonPath Expr="." Id="Views25" Title="Views25" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_views_25[*]">
+        <JsonPath Expr="." Id="Views50" Title="Views50" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_views_25[*]">
+        <JsonPath Expr="." Id="Views75" Title="Views75" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_views_25[*]">
+        <JsonPath Expr="." Id="Views100" Title="Views100" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_cta_clicks[*]">
+        <JsonPath Expr="." Id="ClicksCTA" Title="Clicks CTA" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_content_starts[*]">
+        <JsonPath Expr="." Id="ClicksStart" Title="Clicks Start" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.video_mrc_views[*]">
+        <JsonPath Expr="." Id="ViewsMRC" Title="Views MRC" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AnalyticsMedia" Title="Analytics Media" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+    <Parameters>
+      <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
+        <DataSource>
+          <Item Id="CAMPAIGN" Title="Campaign"/>
+          <Item Id="PROMOTED_TWEET" Title="Promoted Tweet"/>
+          <Item Id="ORGANIC_TWEET" Title="Organic Tweet"/>
+          <Item Id="LINE_ITEM" Title="Line Item"/>
+          <Item Id="MEDIA_CREATIVE" Title="Media Creative"/>
+        </DataSource>
+      </Select>
+      <Text Id="MetricType" DefaultValue="MEDIA" Hidden="false"/>
+      <Resource Id="Params"/>
+		</Parameters>
+    <Resource Id="PrepareZip"/>
+		<Resource Id="FetchZip"/>
+    <Parse>
+      <JsonPath Expr="$.data[0].id_data[0].metrics.media_views[*]">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+            @AdjustDate()
+						]]>
+          </Compute.Expr>
+					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.media_views[*]">
+        <JsonPath Expr="." Id="Views" Title="Views" Converter="Long"/>
+      </JsonPath>
+      <JsonPath Expr="$.data[*].id_data[*].metrics.media_engagements[*]">
+        <JsonPath Expr="." Id="Engagements" Title="Engagements" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+		DateTime AdjustDate() {
+			double n = Model.Inp;
+			DateTime output = (DateTime)Model.DateInterval.StartDate;
+			if(Model.Granularity == "DAY")
+				output = output.AddDays(n);
+			else if(Model.Granularity == "HOUR")
+				output = output.AddHours(n);
+			return output;
+		}
+    ]]>
+  </RazorFunctions>
 
 </Suite>

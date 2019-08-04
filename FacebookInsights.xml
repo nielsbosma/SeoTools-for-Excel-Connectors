@@ -1,1399 +1,334 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Facebook Insights" RequireVersion="8.1" Id="FacebookInsights" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookInsights.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-Insights/" HelpText="Documentation">
+<Suite Title="Facebook Insights" RequireVersion="8.1.35" Id="FacebookInsights" Category="Social" SubCategory="Facebook" LoginButton="https://seotoolsforexcel.com/logins/facebook.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookInsights.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-Insights/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-	<BrowserAuthenticator AuthUrl="https://www.facebook.com/v3.1/dialog/oauth?client_id=1860625117511570&amp;response_type=token&amp;scope=manage_pages,read_insights&amp;redirect_uri=https://www.facebook.com/connect/login_success.html" StayAuthenticated="false" QueryParameter="access_token"/>
+	<SeoToolsAuthenticator StayAuthenticated="false" Key="facebook-insights"/>
 
-  <RestConnector Id="GetPageToken" Title="GetPageToken" Hidden="true">
+	<!-- https://developers.facebook.com/docs/graph-api/reference/v3.2/insights -->
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+				<JsonPath Expr="error.error_user_msg"/>
+				<JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+    <Resource Id="Aggregation">
+      <Select Id="AggregationPeriod" Title="Aggregation Period" Required="false" DefaultValue="day">
+        <DataSource>
+          <Item Id="day" Title="Daily"/>
+          <Item Id="week" Title="Weekly"/>
+          <Item Id="days_28" Title="28 Days"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Prepare">
+			<Prepare>
+				<Connector Id="GetPageToken" Parameters="PageId"/>
+			</Prepare>
+    </Resource>
+  </Resources>
+	
+  <RestConnector Id="PagesLookup" Title="Page Lookup" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/">
     <Parameters>
-      <Text Id="PageId" Title="PageId" Required="true" HelpText=""/>
+      <Text Id="Ids" Title="Page Ids or URLs (one per row)" Debug.DefaultValue="155184654533097" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/@(Model.PageId)?fields=access_token
+        https://graph.facebook.com/v3.2/
+				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
+        &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="access_token" Id="PageToken" Title="PageToken" Converter="String" HelpText=""/>
+      <JsonPath Expr="$.*">
+        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
+        <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id"/>
+        <JsonPath Title="Fans" Id="Fans" Expr="fan_count" Converter="Int" Tag="fan_count"/>
+      </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListPages" Title="Pages List" Hidden="true">
+  <RestConnector Id="GetPageToken" Hidden="true">
+    <Parameters>
+      <Text Id="PageId" Title="PageId" Required="true"/>
+    </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/me/accounts?
+        https://graph.facebook.com/v3.2/@(Model.PageId)?fields=access_token
         &access_token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="access_token" Id="PageToken" Title="PageToken" Converter="String"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListPages" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.1/me/accounts?&access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="PageId" Title="Id" Converter="String" HelpText=""/>
-        <JsonPath Expr="name" Id="PageName" Title="Name" Converter="String" HelpText=""/>
+        <JsonPath Expr="id" Id="PageId" Title="Id" Converter="String"/>
+        <JsonPath Expr="name" Id="PageName" Title="Name" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ListPosts" Hidden="true">
     <Parameters>
-      <Text Id="PageId" Title="PageId" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="	" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PageId" Required="true" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/@(Model.PageId)
-        /posts?
+        https://graph.facebook.com/v3.1/@(Model.PageId)/posts?
         &access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String" HelpText=""/>
-        <JsonPath Expr="message" Id="PostName" Title="PostName" Converter="String" HelpText=""/>
+        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
+        <JsonPath Expr="message" Id="PostName" Title="PostName" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListVideos" Hidden="true">
+	<RestConnector Id="PageMetrics" Title="PAGE Metrics">
     <Parameters>
-      <Text Id="PageId" Title="PageId" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/@(Model.PageId)/feed
-				?fields=message,type
-        &access_token=@(Model.Authenticator.Token)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[?(@@.type=='video')]">
-        <JsonPath Expr="id" Id="VideoId" Title="VideoId" Converter="String" HelpText=""/>
-        <JsonPath Expr="message" Id="VideoName" Title="VideoName" Converter="String" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
- <RestConnector Id="PageSummaryMetrics" Title="Page Summary Metrics">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
+			<Resource Id="Aggregation"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
+    <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
+		<Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()?
-        access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
+				https://graph.facebook.com/v3.1/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+							@Model.Inp.AddDays(-1)
+            ]]>
+          </Compute.Expr>
+					<JsonPath Expr="end_time" Id="Inp" Converter="DateTime"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_impressions' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pi" Tag="page_impressions" Title="Impressions" Converter="Int" HelpText="The total number of impressions seen of any content associated with your Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions')].values.*">
-        <JsonPath Expr="value" Id="i" Tag="page_impressions" Title="Impressions" Converter="Int" HelpText="The total number of impressions seen of any content associated with your Page"/>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="piu" Tag="page_impressions_unique" Title="Unique Impressions" Converter="Int" HelpText="The number of people who have seen any content associated with your Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_unique')].values.*">
-        <JsonPath Expr="value" Id="iu" Tag="page_impressions_unique" Title="Impressions Unique" Converter="Int" HelpText="The number of people who have seen any content associated with your Page"/>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_paid' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pip" Tag="page_impressions_paid" Title="Paid Impressions" Converter="Int" HelpText="The number of impressions of a Sponsored Story or Ad pointing to your Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Tag="page_impressions_paid" Title="Paid Impressions" Converter="Int" HelpText="The number of impressions of a Sponsored Story or Ad pointing to your Page"/>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_paid_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pipu" Tag="page_impressions_paid_unique" Title="Paid Unique Impressions" Converter="Int" HelpText="Number of people who saw a sponsored story or Ad about your Page"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="pu" Tag="page_impressions_paid_unique" Title="Paid Impressions Unique" Converter="Int" HelpText="Number of people who saw a sponsored story or Ad about your Page"/>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_organic' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pio" Tag="page_impressions_organic" Title="Organic Impressions" Converter="Int" HelpText="The number of times your posts were seen in News Feed or Ticker or on visits to your Page. These impressions can be Fans or non-Fans"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_consumptions')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_impressions_organic_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="piou" Tag="page_impressions_organic_unique" Title="Organic Unique Impressions" Converter="Int" HelpText="The number of people who visited your Page, or saw your Page or one of its posts in News Feed or Ticker. These impressions can be Fans or non-Fans"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_viral' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="piv" Tag="page_impressions_viral" Title="Viral Impressions" Converter="Int" HelpText="The number of impressions of a story published by a friend about your Page. "/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_impressions_viral_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pivu" Tag="page_impressions_viral_unique" Title="Viral Unique Impressions" Converter="Int" HelpText="The number of people who saw your Page or one of its posts from a story published by a friend."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_engaged_users' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="peu" Tag="page_engaged_users" Title="Engaged Users" Converter="Int" HelpText="The number of people who engaged with your Page. Engagement includes any click"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_consumptions' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
         <JsonPath Expr="value" Id="pc" Tag="page_consumptions" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on any of your content"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_consumptions_unique')].values.*">
+      <JsonPath Expr="data[?(@@.name=='page_consumptions_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
         <JsonPath Expr="value" Id="pcu" Tag="page_consumptions_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked on any of your content"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_negative_feedback')].values.*">
-        <JsonPath Expr="value" Id="nf" Tag="page_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action (e.g., un-liked or hid a post)"/>
+      <JsonPath Expr="data[?(@@.name=='page_consumptions_by_consumption_type' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value.link clicks" Id="lc" Title="Link Clicks" Converter="Int" Tag="page_consumptions_by_consumption_type" HelpText="Clicks on links" DefaultValue="0"/>
+        <JsonPath Expr="value.photo view" Id="pv" Title="Photo Views" Converter="Int" Tag="page_consumptions_by_consumption_type" HelpText="View photos" DefaultValue="0"/>
+        <JsonPath Expr="value.video play" Id="vp" Title="Video Plays" Converter="Int" Tag="page_consumptions_by_consumption_type" HelpText="Play a video" DefaultValue="0"/>
+        <JsonPath Expr="value.button clicks" Id="bc" Title="Button Clicks" Converter="Int" Tag="page_consumptions_by_consumption_type" HelpText="Clicks on buttons" DefaultValue="0"/>
+        <JsonPath Expr="value.other clicks" Id="oc" Title="Other Clicks" Converter="Int" Tag="page_consumptions_by_consumption_type" DefaultValue="0"/>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_like_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Likes" Tag="page_actions_post_reactions_like_total" Title="Likes" Converter="Int" HelpText="The number of times people checked into a place"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_negative_feedback_unique')].values.*">
-        <JsonPath Expr="value" Id="nfu" Tag="page_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" HelpText="The number of people who took a negative action (e.g., un-liked or hid a post)"/>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_love_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Love" Tag="page_actions_post_reactions_love_total" Title="Love" Converter="Int" HelpText="The number of times people checked into a place"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_fan_adds')].values.*">
-        <JsonPath Expr="value" Id="pfa" Tag="page_fan_adds" Title="New Fans" Converter="Int" HelpText="The number of new likes of your Page."/>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_wow_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Wow" Tag="page_actions_post_reactions_wow_total" Title="Wow" Converter="Int" HelpText="The number of times people checked into a place"/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_fan_removes')].values.*">
-        <JsonPath Expr="value" Id="rf" Tag="page_fan_removes" Title="Removed Fans" Converter="Int" HelpText="The number of unlikes of your Page."/>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_haha_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Haha" Tag="page_actions_post_reactions_haha_total" Title="Haha" Converter="Int" HelpText="The number of times people checked into a place"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_sorry_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Sorry" Tag="page_actions_post_reactions_sorry_total" Title="Sorry" Converter="Int" HelpText="The number of times people checked into a place"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_actions_post_reactions_anger_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="Anger" Tag="page_actions_post_reactions_anger_total" Title="Anger" Converter="Int" HelpText="The number of times people checked into a place"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_positive_feedback_by_type' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value.link" Id="sc" Title="Shares" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="Share a story" DefaultValue="0"/>
+        <JsonPath Expr="value.comment" Id="cp" Title="Comments" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="Comment on a story" DefaultValue="0"/>
+        <JsonPath Expr="value.answer" Id="aaq" Title="Answer Questions" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="Answer a question" DefaultValue="0"/>
+        <JsonPath Expr="value.claim" Id="aaq" Title="Claim Offer" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="Claim an offer" DefaultValue="0"/>
+        <JsonPath Expr="value.rsvp" Id="rsvp" Title="RSVP" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="Respond to an event" DefaultValue="0"/>
+        <JsonPath Expr="value.other" Id="other" Title="Other Clicks" Tag="page_positive_feedback_by_type" Converter="Int" HelpText="" DefaultValue="0"/>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_negative_feedback' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pnf" Tag="page_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action (e.g., un-liked or hid a post)"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_negative_feedback_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pnfu" Tag="page_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" HelpText="The number of people who took a negative action (e.g., un-liked or hid a post)"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_negative_feedback_by_type' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value.hide_all_clicks" Id="hac" Title="Negative - Hide All" Tag="page_negative_feedback_by_type" Converter="Int" HelpText="Hide all" DefaultValue="0"/>
+        <JsonPath Expr="value.hide_clicks" Id="hc" Title="Negative - Hide" Tag="page_negative_feedback_by_type" Converter="Int" HelpText="Hide this story" DefaultValue="0"/>
+        <JsonPath Expr="value.unlike_page_clicks" Id="upc" Title="Negative - Unlike Page" Tag="page_negative_feedback_by_type" Converter="Int" HelpText="Unlike a page" DefaultValue="0"/>
+        <JsonPath Expr="value.report_spam_clicks" Id="rs" Title="Negative - Report Spam" Tag="page_negative_feedback_by_type" Converter="Int" HelpText="Report an object as a spam" DefaultValue="0"/>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_places_checkin_total' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="ppct" Tag="page_places_checkin_total" Title="Check-Ins" Converter="Int" HelpText="The number of times people checked into a place"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_places_checkin_total_unique' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="ppctu" Tag="page_places_checkin_total_unique" Title="Check-Ins Unique" Converter="Int" HelpText="The number of people who checked into a place"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_fan_adds' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pfa" Tag="page_fan_adds" Title="New Fans Day" Converter="Int" HelpText="The number of new likes of your Page."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_fan_removes' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pfr" Tag="page_fan_removes" Title="Removed Fans Day" Converter="Int" HelpText="The number of unlikes of your Page."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_fans' &amp;&amp; @@.period=='@(Model.AggregationPeriod)')].values.*">
+        <JsonPath Expr="value" Id="pf" Tag="page_fans" Title="Total Fans Day" Converter="Int" HelpText="The total number of people who have liked your Page."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageImpressions" Title="Page Impressions">
+  <RestConnector Id="PageDemographicsAgeGender" Title="PAGE Demographics Age/Gender">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PageId" Title="Page Id" equired="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Select Id="Metric" Title="Metric" Required="false" DefaultValue="page_impressions_by_age_gender_unique">
+        <DataSource>
+          <Item Id="page_impressions_by_age_gender_unique" Title="Impressions Unique"/>
+          <Item Id="page_fans_gender_age" Title="Fans"/>
+          <Item Id="page_views_by_age_gender_logged_in_unique" Title="Page Views Unique"/>
+          <Item Id="page_content_activity_by_age_gender_unique" Title="People Talking About"/>
+          <Item Id="page_places_checkins_by_age_gender" Title="Check-ins"/>
+        </DataSource>
+      </Select>
       <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="Aggregation"/>
     </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
+    <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()?
-        access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
+        https://graph.facebook.com/v3.1/@(Model.PageId)/insights/@(Model.Metric)?&access_token=@(Model.PageToken)
+				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions')].values.*">
-        <JsonPath Expr="value" Id="i" Tag="page_impressions" Title="Impressions" Converter="Int" HelpText="The total number of impressions seen of any content associated with your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_unique')].values.*">
-        <JsonPath Expr="value" Id="iu" Tag="page_impressions_unique" Title="Unique" Converter="Int" HelpText="The number of people who have seen any content associated with your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Tag="page_impressions_paid" Title="Paid" Converter="Int" HelpText="The number of impressions of a Sponsored Story or Ad pointing to your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="pu" Tag="page_impressions_paid_unique" Title="Paid Unique" Converter="Int" HelpText="Number of people who saw a sponsored story or Ad about your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="page_impressions_organic" Title="Organic" Converter="Int" HelpText="The number of times your posts were seen in News Feed or Ticker or on visits to your Page. These impressions can be Fans or non-Fans"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ou" Tag="page_impressions_organic_unique" Title="Organic Unique" Converter="Int" HelpText="The number of people who visited your Page, or saw your Page or one of its posts in News Feed or Ticker. These impressions can be Fans or non-Fans"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_viral')].values.*">
-        <JsonPath Expr="value" Id="v" Tag="page_impressions_viral" Title="Viral" Converter="Int" HelpText="The number of impressions of a story published by a friend about your Page. "/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_impressions_viral_unique')].values.*">
-        <JsonPath Expr="value" Id="vu" Tag="page_impressions_viral_unique" Title="Viral Unique" Converter="Int" HelpText="The number of people who saw your Page or one of its posts from a story published by a friend."/>
+      <JsonPath Expr="data[0].values[*]">
+        <Compute Id="Created" Title="Created" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+							@Model.Inp.AddDays(-1)
+            ]]>
+          </Compute.Expr>
+					<JsonPath Expr="end_time" Id="Inp" Converter="DateTime"/>
+        </Compute>
+        <JsonPath Expr="value.F\.13-17" Id="Female_13-17" Title="Female_13" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.18-24" Id="Female_17-24" Title="Female_17-24" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.25-34" Id="Female_25-34" Title="Female_25-34" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.35-44" Id="Female_35-44" Title="Female_35-44" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.45-54" Id="Female_45-54" Title="Female_45-54" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.55-64" Id="Female_55-64" Title="Female_55-64" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.F\.65+" Id="Female_65+" Title="Female_65+" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.13-17" Id="Male_13-17" Title="Male_13" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.18-24" Id="Male_17-24" Title="Male_17-24" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.25-34" Id="Male_25-34" Title="Male_25-34" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.35-44" Id="Male_35-44" Title="Male_35-44" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.45-54" Id="Male_45-54" Title="Male_45-54" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.55-64" Id="Male_55-64" Title="Male_55-64" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.M\.65+" Id="Male_65+" Title="Male_65+" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.13-17" Id="Unknown_13-17" Title="Unknown_13" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.18-24" Id="Unknown_17-24" Title="Unknown_17-24" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.25-34" Id="Unknown_25-34" Title="Unknown_25-34" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.35-44" Id="Unknown_35-44" Title="Unknown_35-44" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.45-54" Id="Unknown_45-54" Title="Unknown_45-54" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.55-64" Id="Unknown_55-64" Title="Unknown_55-64" Converter="Int" DefaultValue="0"/>
+        <JsonPath Expr="value.U\.65+" Id="Unknown_65+" Title="Unknown_65+" Converter="Int" DefaultValue="0"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageImpressionsbyStoryType" Title="Page Impressions by Story Type">
+  <RestConnector Id="PageFansLocations" Title="PAGE Fans by Locations">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Checkbox Id="Unique" Title="Unique Impressions" DefaultValue="False" HelpText="Calculates results for unique impressions."/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Select Id="Dimension" Title="Dimension" Required="false" DefaultValue="page_fans_country">
         <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
+          <Item Id="page_fans_country" Title="Country"/>
+          <Item Id="page_fans_city" Title="City"/>
+          <Item Id="page_fans_locale" Title="Locale"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_impressions_by_story_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="value.fan" Id="Fan" Title="Fan" Converter="Int" HelpText="Page likes" DefaultValue="0"/>
-        <JsonPath Expr="value.user post" Id="UserPost" Title="User Post" Converter="Int" HelpText="posts by people on a Page" DefaultValue="0"/>
-        <JsonPath Expr="value.page post" Id="PagePost" Title="Page Post" Converter="Int" HelpText="posts by a Page" DefaultValue="0"/>
-        <JsonPath Expr="value.checkin" Id="CheckIn" Title="Check-In" Converter="Int" HelpText="Page checkins" DefaultValue="0"/>
-        <JsonPath Expr="value.question" Id="Question" Title="Question" Converter="Int" HelpText="question answers" DefaultValue="0"/>
-        <JsonPath Expr="value.coupon" Id="Coupon" Title="Coupon" Converter="Int" HelpText="Offer claims" DefaultValue="0"/>
-        <JsonPath Expr="value.event" Id="Event" Title="Event" Converter="Int" HelpText="RSVPing to event" DefaultValue="0"/>
-        <JsonPath Expr="value.mention" Id="Mention" Title="Mention" Converter="Int" HelpText="Page mentions" DefaultValue="0"/>
-        <JsonPath Expr="value.other" Id="Other" Title="Other" Converter="Int" HelpText="Other story types" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageNegativeFeedbackbyType" Title="Page Negative Feedback by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Checkbox Id="Unique" Title="Unique Impressions" DefaultValue="False" HelpText="Calculates results for unique impressions."/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_negative_feedback_by_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="value.hide_all_clicks" Id="HideAllClicks" Title="Hide All Clicks" Converter="Int" HelpText="Hide all" DefaultValue="0"/>
-        <JsonPath Expr="value.hide_clicks" Id="HideClicks" Title="Hide Clicks" Converter="Int" HelpText="Hide this story" DefaultValue="0"/>
-        <JsonPath Expr="value.unlike_page_clicks" Id="UnlikePageClicks" Title="Unlike Page" Converter="Int" HelpText="Unlike a page" DefaultValue="0"/>
-        <JsonPath Expr="value.report_spam_clicks" Id="ReportSpam" Title="Report Spam" Converter="Int" HelpText="Report an object as a spam" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PagePositiveFeedbackbyType" Title="Page Positive Feedback by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Checkbox Id="Unique" Title="Unique Impressions" DefaultValue="False" HelpText="Calculates results for unique impressions."/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_positive_feedback_by_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText="" DefaultValue="0"/>
-        <JsonPath Expr="value.rsvp" Id="RVSP" Title="RSVP" Converter="Int" HelpText="Respond to an event" DefaultValue="0"/>
-        <JsonPath Expr="value.link" Id="Link" Title="Link" Converter="Int" HelpText="Share a story" DefaultValue="0"/>
-        <JsonPath Expr="value.like" Id="Like" Title="Like" Converter="Int" HelpText="Like a story" DefaultValue="0"/>
-        <JsonPath Expr="value.comment" Id="Comment" Title="Comment" Converter="Int" HelpText="Comment on a story" DefaultValue="0"/>
-        <JsonPath Expr="value.claim" Id="Claim" Title="Claim" Converter="Int" HelpText="Claim an offer" DefaultValue="0"/>
-        <JsonPath Expr="value.answer" Id="Answer" Title="Answer" Converter="Int" HelpText="Answer a question" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageEngagement" Title="Page Engagement">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_engaged_users')].values.*">
-        <JsonPath Expr="value" Id="eu" Tag="page_engaged_users" Title="Engaged Users" Converter="Int" HelpText="The number of people who engaged with your Page. Engagement includes any click"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_consumptions')].values.*">
-        <JsonPath Expr="value" Id="pc" Tag="page_consumptions" Title="Clicks On Content" Converter="Int" HelpText="The number of times people clicked on any of your content"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_consumptions_unique')].values.*">
-        <JsonPath Expr="value" Id="pcu" Tag="page_consumptions_unique" Title="Unique Clicks On Content" Converter="Int" HelpText="The number of people who clicked on any of your content"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_places_checkin_total')].values.*">
-        <JsonPath Expr="value" Id="c" Tag="page_places_checkin_total" Title="Check-Ins" Converter="Int" HelpText="The number of times people checked into a place"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_places_checkin_total_unique')].values.*">
-        <JsonPath Expr="value" Id="cu" Tag="page_places_checkin_total_unique" Title="Check-Ins Unique" Converter="Int" HelpText="The number of people who checked into a place"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_places_checkin_mobile')].values.*">
-        <JsonPath Expr="value" Id="cm" Tag="page_places_checkin_mobile" Title="Check-Ins Mobile" Converter="Int" HelpText="The number of times people checked into a place using mobile phones"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_places_checkin_mobile_unique')].values.*">
-        <JsonPath Expr="value" Id="cmu" Tag="page_places_checkin_mobile_unique" Title="Check-Ins Mobile Unique" Converter="Int" HelpText="The number of people who checked into a place using mobile phones"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_negative_feedback')].values.*">
-        <JsonPath Expr="value" Id="nf" Tag="page_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action (e.g., un-liked or hid a post)"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_negative_feedback_unique')].values.*">
-        <JsonPath Expr="value" Id="nfu" Tag="page_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" HelpText="The number of people who took a negative action (e.g., un-liked or hid a post)"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageClicksbyType" Title="Page Clicks by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Checkbox Id="Unique" Title="Unique Impressions" DefaultValue="False" HelpText="Calculates results for unique impressions."/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_consumptions_by_consumption_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="value.link clicks" Id="LinkClicks" Title="Link Clicks" Converter="Int" HelpText="Clicks on links" DefaultValue="0"/>
-        <JsonPath Expr="value.photo view" Id="PhotoViews" Title="Photo Views" Converter="Int" HelpText="View photos" DefaultValue="0"/>
-        <JsonPath Expr="value.video play" Id="VideoPlay" Title="Video Plays" Converter="Int" HelpText="Play a video" DefaultValue="0"/>
-        <JsonPath Expr="value.button clicks" Id="ButtonClicks" Title="Button Clicks" Converter="Int" HelpText="Clicks on buttons" DefaultValue="0"/>
-        <JsonPath Expr="value.other clicks" Id="OtherClicks" Title="Other Clicks" Converter="Int" HelpText="" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageActivitiesbyStoryType" Title="Page Activities by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_activity,page_activity_by_activity_type
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity')].values.*">
-        <JsonPath Expr="value" Id="StoriesTotal" Title="Stories Total" Converter="Int" HelpText="The number of stories created about your Page (Stories)"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.fan" Id="PageLikes" Title="Page Likes" Converter="Int" HelpText="Page likes"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.user post" Id="UserPosts" Title="User Posts" Converter="Int" HelpText="Posts by people on a Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.page post" Id="PagePosts" Title="Page Posts" Converter="Int" HelpText="Posts by a Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.checkin" Id="CheckIn" Title="Check-In" Converter="Int" HelpText="Page checkins"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.question" Id="Question" Title="Question" Converter="Int" HelpText="Question answers"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.coupon" Id="Coupon" Title="Coupon" Converter="Int" HelpText="Offer claims"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.event" Id="Event" Title="Event" Converter="Int" HelpText="RSVPing to event"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.mention" Id="Mention" Title="Mention" Converter="Int" HelpText="Page mentions"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_activity_by_activity_type')].values.*">
-        <JsonPath Expr="value.other" Id="Other" Title="Other" Converter="Int" HelpText=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageReachbyAgeGender" Title="Page Reach by Age/Gender">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Date Id="DisplayDate" Title="Date" Required="true" Nullable="false"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_impressions_by_age_gender_unique
-        ?&access_token=@(Model.PageToken)
-        @if(Model.DisplayDate.Date == DateTime.Today)
-        {
-          @: &since=@Model.DisplayDate.ToString("yyyy-MM-dd")
-          @: &until=@Model.DisplayDate.ToString("yyyy-MM-dd")
-        }
-        else
-        {
-          @: &since=@Model.DisplayDate.AddDays(1).ToString("yyyy-MM-dd")
-          @: &until=@Model.DisplayDate.AddDays(1).ToString("yyyy-MM-dd")
-        }
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="keys(data[*].values[*].value)">
-        <JsonPath Expr="key" Id="Id" Title="Segment" HelpText="Age/Gender Segment"/>
-        <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" HelpText="Reach of each Age/Gender Segment"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageReachbyLocation" Title="Page Reach by Location">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Radio Id="LocationLevel" Title="Location Level" DefaultValue="country" Required="true">
-        <DataSource>
-          <Item Id="country" Title="Countries"/>
-          <Item Id="city" Title="Cities"/>
-        </DataSource>
-      </Radio>
-      <Date Id="DisplayDate" Title="Date" Required="true" Nullable="false"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @if(Model.LocationLevel == "country")
-        {
-          @: page_impressions_by_country_unique
-        }
-        else
-        {
-          @: page_impressions_by_city_unique
-        }
-        ?&access_token=@(Model.PageToken)
-        @if(Model.DisplayDate.Date == DateTime.Today)
-        {
-          @: &since=@Model.DisplayDate.ToString("yyyy-MM-dd")
-          @: &until=@Model.DisplayDate.ToString("yyyy-MM-dd")
-        }
-        else
-        {
-          @: &since=@Model.DisplayDate.AddDays(1).ToString("yyyy-MM-dd")
-          @: &until=@Model.DisplayDate.AddDays(1).ToString("yyyy-MM-dd")
-        }
-        &period=@(Model.AggregationPeriod)
+        https://graph.facebook.com/v3.1/@(Model.PageId)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
+				&since=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
+				&until=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="keys(data[*].values[*].value)">
-        <JsonPath Expr="key" Id="Id" Title="Location" HelpText="Location"/>
-        <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" HelpText="Reach of each Location"/>
+        <JsonPath Expr="key" Id="Id" Title="Location" Converter="Auto"/>
+        <JsonPath Expr="value" Id="Fans" Title="Fans" Converter="Int"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageLikesbyLocation" Title="Page Likes by Location">
+	<RestConnector Id="PostPageFeed" Title="POSTS Page Feed">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Radio Id="LocationLevel" Title="Location Level" DefaultValue="country" Required="true">
-        <DataSource>
-          <Item Id="country" Title="Countries"/>
-          <Item Id="city" Title="Cities"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @if(Model.LocationLevel == "country")
-        {
-          @: page_fans_country
-        }
-        else
-        {
-          @: page_fans_city
-        }
-        ?&access_token=@(Model.PageToken)
-        &period=lifetime
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="keys(data[0].values[0].value)">
-        <JsonPath Expr="key" Id="Id" Title="Location" HelpText="Location"/>
-        <JsonPath Expr="value" Id="Likes" Title="Likes" Converter="Int" HelpText="Likes of each Location"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageLikesbyAgeGender" Title="Page Likes by Age/Gender">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/page_fans_gender_age
-        ?&access_token=@(Model.PageToken)
-        &period=lifetime
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Parse>
-      <JsonPath Expr="keys(data[0].values[0].value)">
-        <JsonPath Expr="key" Id="Id" Title="Segment" HelpText="Age/Gender Segment"/>
-        <JsonPath Expr="value" Id="Likes" Title="Likes" Converter="Int" HelpText="Likes of each Age/Gender Segment"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageDailyReactions" Title="Page Daily Reactions">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_actions_post_reactions_total
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="value.like" Id="Like" Title="Like" Converter="Int" HelpText="Daily total post LIKE reactions of a page" DefaultValue="0"/>
-        <JsonPath Expr="value.love" Id="Love" Title="Love" Converter="Int" HelpText="Daily total post LOVE reactions of a page" DefaultValue="0"/>
-        <JsonPath Expr="value.wow" Id="Wow" Title="Wow" Converter="Int" HelpText="Daily total post WOW reactions of a page" DefaultValue="0"/>
-        <JsonPath Expr="value.haha" Id="Haha" Title="Haha" Converter="Int" HelpText="Daily total post HAHA reactions of a page" DefaultValue="0"/>
-        <JsonPath Expr="value.sorry" Id="Sorry" Title="Sorry" Converter="Int" HelpText="Daily total post SORRY reactions of a page" DefaultValue="0"/>
-        <JsonPath Expr="value.anger" Id="Anger" Title="Anger" Converter="Int" HelpText="Daily total post ANGER reactions of a page" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostReactionsbyType" Title="Post Reactions by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        post_reactions_by_type_total
-        ?&access_token=@(Model.PageToken))
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="value.like" Id="Like" Title="Like" Converter="Int" HelpText="Total post LIKE reactions" DefaultValue="0"/>
-        <JsonPath Expr="value.love" Id="Love" Title="Love" Converter="Int" HelpText="Total post LOVE reactions" DefaultValue="0"/>
-        <JsonPath Expr="value.wow" Id="Wow" Title="Wow" Converter="Int" HelpText="Total post WOW reactions" DefaultValue="0"/>
-        <JsonPath Expr="value.haha" Id="Haha" Title="Haha" Converter="Int" HelpText="Total post HAHA reactions" DefaultValue="0"/>
-        <JsonPath Expr="value.sorry" Id="Sorry" Title="Sorry" Converter="Int" HelpText="Total post SORRY reactions" DefaultValue="0"/>
-        <JsonPath Expr="value.anger" Id="Anger" Title="Anger" Converter="Int" HelpText="Total post ANGER reactions" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageFansDaily" Title="Page Fans Daily">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_fans')].values.*">
-        <JsonPath Expr="value" Id="tf" Tag="page_fans" Title="Total Fans" Converter="Int" HelpText="The total number of people who have liked your Page."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_fan_adds')].values.*">
-        <JsonPath Expr="value" Id="pfa" Tag="page_fan_adds" Title="New Fans" Converter="Int" HelpText="The number of new likes of your Page."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_fan_removes')].values.*">
-        <JsonPath Expr="value" Id="rf" Tag="page_fan_removes" Title="Removed Fans" Converter="Int" HelpText="The number of unlikes of your Page."/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageViewsbyDevice" Title="Page Views by Device">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        page_views_by_site_logged_in_unique
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=day
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*.values.*">
-        <JsonPath Expr="end_time" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="value.WWW" Id="WWW" Title="WWW" Converter="Int" HelpText="" DefaultValue="0"/>
-        <JsonPath Expr="value.MOBILE" Id="Mobile" Title="Mobile" Converter="Int" HelpText="" DefaultValue="0"/>
-        <JsonPath Expr="value.API" Id="Api" Title="Api" Converter="Int" HelpText="" DefaultValue="0"/>
-        <JsonPath Expr="value.OTHER" Id="Other" Title="Other" Converter="Int" HelpText="" DefaultValue="0"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PageVideoViews" Title="Page Video Views">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views')].values.*">
-        <JsonPath Expr="value" Id="v" Tag="page_video_views" Title="Views" Converter="Int" HelpText="Total number of times page's videos have been viewed for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views_unique')].values.*">
-        <JsonPath Expr="value" Id="vu" Tag="page_video_views_unique" Title="Unique" Converter="Int" HelpText="Total number of times page's promoted videos have been viewed for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Tag="page_video_views_paid" Title="Paid" Converter="Int" HelpText="Total number of times page's promoted videos have been viewed for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="page_video_views_organic" Title="Organic" Converter="Int" HelpText="Total number of times page's videos have been viewed for more than 3 seconds by organic reach"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views_autoplayed')].values.*">
-        <JsonPath Expr="value" Id="a" Tag="page_video_views_autoplayed" Title="Autoplayed" Converter="Int" HelpText="Total number of times page's autoplayed videos have been viewed for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_views_click_to_play')].values.*">
-        <JsonPath Expr="value" Id="c" Tag="page_video_views_click_to_play" Title="Clicked" Converter="Int" HelpText="Total number of times page's videos have been viewed after the user clicks on play for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_repeat_views')].values.*">
-        <JsonPath Expr="value" Id="r" Tag="page_video_repeat_views" Title="Repeated" Converter="Int" HelpText="Total number of times that people replay a page's videos for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s')].values.*">
-        <JsonPath Expr="value" Id="vc" Tag="page_video_complete_views_30s" Title="Views > 30s" Converter="Int" HelpText="Total number of times page's videos have been viewed for more than 30 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_unique')].values.*">
-        <JsonPath Expr="value" Id="vcu" Tag="page_video_complete_views_30s_unique" Title="Views > 30s Unique" Converter="Int" HelpText="Total number of times page's videos have been played for unique people to the end, or viewed for more than 30 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_paid')].values.*">
-        <JsonPath Expr="value" Id="vcp" Tag="page_video_complete_views_30s_paid" Title="Views > 30s Paid" Converter="Int" HelpText="Total number of times page's promoted videos have been viewed to the end, or for more than 30 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_organic')].values.*">
-        <JsonPath Expr="value" Id="vco" Tag="page_video_complete_views_30s_organic" Title="Views > 30s Organic" Converter="Int" HelpText="Total number of times page's videos have been viewed to the end, or viewed for more than 30 seconds by organic reach"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_autoplayed')].values.*">
-        <JsonPath Expr="value" Id="vca" Tag="page_video_complete_views_30s_autoplayed" Title="Views > 30s Autoplayed" Converter="Int" HelpText="Total number of times page's autoplayed videos have been viewed to the end, or viewed for more than 30 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_click_to_play')].values.*">
-        <JsonPath Expr="value" Id="vcc" Tag="page_video_complete_views_30s_click_to_play" Title="Views > 30s Clicked" Converter="Int" HelpText="Total number of times page's videos have been viewed to the end, or viewed after the user clicks on play for more than 30 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_video_complete_views_30s_repeat_views')].values.*">
-        <JsonPath Expr="value" Id="vcr" Tag="page_video_complete_views_30s_repeat_views" Title="Views > 30s Repeated" Converter="Int" HelpText="Total number of times that people replay a page's videos to the end, or for more than 30 seconds"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PagePostImpressions" Title="Page Posts Impressions">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-      <Radio Id="AggregationPeriod" Title="Aggregation Period" DefaultValue="" Required="true">
-        <DataSource>
-          <Item Id="day" Title="Daily"/>
-          <Item Id="week" Title="Weekly"/>
-          <Item Id="days_28" Title="28 Days"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PageId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=@(Model.AggregationPeriod)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions')].values.*">
-        <JsonPath Expr="value" Id="i" Tag="page_posts_impressions" Title="Impressions" Converter="Int" HelpText="The number of impressions that came from all of your posts"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_unique')].values.*">
-        <JsonPath Expr="value" Id="iu" Tag="page_posts_impressions_unique" Title="Unique" Converter="Int" HelpText="The number of people who saw any of your Page posts"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Tag="page_posts_impressions_paid" Title="Paid" Converter="Int" HelpText="The number of impressions of your Page posts in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="pu" Tag="page_posts_impressions_paid_unique" Title="Paid Unique" Converter="Int" HelpText="The number of people who saw your Page posts in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="page_posts_impressions_organic" Title="Organic" Converter="Int" HelpText="The number of impressions of your posts in News Feed or Ticker or on your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ou" Tag="page_posts_impressions_organic_unique" Title="Organic Unique" Converter="Int" HelpText="The number of people who saw your Page posts in News Feed or Ticker, or on your Page's Wall"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_viral')].values.*">
-        <JsonPath Expr="value" Id="v" Title="Viral" Tag="page_posts_impressions_viral" Converter="Int" HelpText="The number of times users saw your posts via stories published by their friends"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_viral_unique')].values.*">
-        <JsonPath Expr="value" Id="vu" Tag="page_posts_impressions_viral_unique" Title="Viral Unique" Converter="Int" HelpText="The number of people who saw your Page posts via a story from a friend"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostImpressionsLookup" Title="Post Impressions Lookup">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[?(@@.name=='post_impressions')].values.*">
-        <JsonPath Expr="value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" HelpText="The number of impressions for your Page post"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_unique')].values.*">
-        <JsonPath Expr="value" Id="iu" Tag="post_impressions_unique" Title="Unique" Converter="Int" HelpText="The number of people who saw your Page post"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_paid')].values.*">
-        <JsonPath Expr="value" Id="p" Title="Paid" Tag="post_impressions_paid" Converter="Int" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="pu" Tag="post_impressions_paid_unique" Title="Paid Unique" Converter="Int" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_fan')].values.*">
-        <JsonPath Expr="value" Id="f" Tag="post_impressions_fan" Title="Fan" Converter="Int" HelpText="The number of impressions for your Page post by people who have liked your Page"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_fan_unique')].values.*">
-        <JsonPath Expr="value" Id="fu" Tag="post_impressions_fan_unique" Title="Fan Unique" Converter="Int" HelpText="The number of people who have like your Page who saw your Page post"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_fan_paid')].values.*">
-        <JsonPath Expr="value" Id="fp" Tag="post_impressions_fan_paid" Title="Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_fan_unique')].values.*">
-        <JsonPath Expr="value" Id="fpu" Tag="post_impressions_fan_unique" Title="Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="post_impressions_organic" Title="Organic" Converter="Int" HelpText="The number of impressions of your post in Newsfeed, Ticker, or on your Page's Wall"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ou" Tag="post_impressions_organic_unique" Title="Organic Unique" Converter="Int" HelpText="The number of people who saw your post in their Newsfeed or Ticker or on your Page's Wall"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_viral')].values.*">
-        <JsonPath Expr="value" Id="v" Tag="post_impressions_viral" Title="Viral" Converter="Int" HelpText="The number of impressions of your Page post in a story generated by a friend"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_impressions_viral_unique')].values.*">
-        <JsonPath Expr="value" Id="vu" Tag="post_impressions_viral_unique" Title="Viral Unique" Converter="Int" HelpText="The number of people who saw your page post in a story from a friend"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostLookupBatch" Title="Post Lookup Batch">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="1843591169257326" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="Ids" Title="Post Ids" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName" HelpText="Separated by newline" Multiline="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/insights/@SelectedFields()
-				?ids=@(FetchIdsBatch())
-				&period=lifetime
-        &access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_impressions')].values.*">
-					<JsonPath Expr="value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" HelpText="The number of impressions for your Page post"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_impressions_unique')].values.*">
-					<JsonPath Expr="value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" HelpText="The number of people who saw your Page post"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_impressions_paid')].values.*">
-					<JsonPath Expr="value" Id="p" Title="Paid Impressions" Tag="post_impressions_paid" Converter="Int" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_impressions_paid_unique')].values.*">
-					<JsonPath Expr="value" Id="pu" Tag="post_impressions_paid_unique" Title="Paid Impressions Unique" Converter="Int" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks')].values.*">
-					<JsonPath Expr="value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks_unique')].values.*">
-					<JsonPath Expr="value" Id="e" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your posts"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_activity_by_action_type')].values.*">
-					<JsonPath Expr="value.share" Id="sh" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" HelpText="Number of Shares"  DefaultValue="0"/>
-					<JsonPath Expr="value.like" Id="li" Tag="post_activity_by_action_type" Title="Likes" Converter="Int" HelpText="Number of Likes"  DefaultValue="0"/>
-					<JsonPath Expr="value.comment" Id="co" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" HelpText="Number of Comments"  DefaultValue="0"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_clicks_by_type')].values.*">
-					<JsonPath Expr="value.link clicks" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" Group="1" HelpText="Clicks on links." DefaultValue="0"/>
-					<JsonPath Expr="value.photo view" Id="PhotoViews" Tag="post_clicks_by_type" Title="Photo Views" Converter="Int" Group="1" HelpText="View a photo." DefaultValue="0"/>
-					<JsonPath Expr="value.video play" Id="VideoPlays" Tag="post_clicks_by_type" Title="Video Plays" Converter="Int" Group="1" HelpText="Playing a video." DefaultValue="0"/>
-					<JsonPath Expr="value.other clicks" Id="OtherClicks" Tag="post_clicks_by_type" Title="Other Clicks" Converter="Int" Group="1" HelpText="" DefaultValue="0"/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[?(@@.name=='post_video_views')].values.*">
-					<JsonPath Expr="value" Id="v" Tag="post_video_views" Title="Video Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
-				</JsonPath>
-				<JsonPath Expr="$.*.data[1]">
-					<Compute Id="PostId" Title="Post Id" DefaultValue="" Converter="String" HelpText="The Id of the Post" Checked="true">
-						<Compute.Expr>
-							<![CDATA[
-							@{
-								Regex regex = new Regex(@"([\d_]+)\/");
-								Match match = regex.Match(Model.PostIdInput);
-								string output = match.Groups[1].Value;
-							}
-							@output
-							]]>
-						</Compute.Expr>
-					<JsonPath Expr="id" Id="PostIdInput" Converter="String"/>
-					</Compute>
-				</JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostEngagementLookup" Title="Post Engagement Lookup">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[?(@@.name=='post_engaged_users')].values.*">
-        <JsonPath Expr="value" Id="e" Tag="post_engaged_users" Title="Engaged Users" Converter="Int" HelpText="The number of people who clicked anywhere in your posts"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_clicks')].values.*">
-        <JsonPath Expr="value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_clicks_unique')].values.*">
-        <JsonPath Expr="value" Id="cu" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" HelpText="The number of people who clicked anywhere in your post without generating a story"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_negative_feedback')].values.*">
-        <JsonPath Expr="value" Id="nf" Tag="post_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action in your post (e.g. hid it)"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_negative_feedback_unique')].values.*">
-        <JsonPath Expr="value" Id="nfu" Tag="post_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" HelpText="The number of people who took a negative action in your post (e.g., hid it)"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_engaged_fan')].values.*">
-        <JsonPath Expr="value" Id="fe" Tag="post_engaged_fan" Title="Fan Engagement" Converter="Int" HelpText="People who have liked your page and engaged with your post."/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="VideoLookup" Title="Video Lookup">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListVideos" Select.IdField="VideoId" Select.TitleField="VideoName"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &period=lifetime
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[?(@@.name=='post_video_length')].values.*">
-        <JsonPath Expr="value" Id="vl" Tag="post_video_length" Title="Video Length (ms)" Converter="Int" HelpText="Length of a video post (in milliseconds)"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_avg_time_watched')].values.*">
-        <JsonPath Expr="value" Id="awt" Tag="post_video_avg_time_watched" Title="Average WatchTime (ms)" Converter="Int" HelpText="The average length of time (in milliseconds) people spent viewing your video"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_view_time')].values.*">
-        <JsonPath Expr="value" Id="twt" Tag="post_video_view_time" Title="Total Watch Time (ms)" Converter="Int" HelpText="The total number of milliseconds your video was watched, including replays and views less than 3 seconds."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_view_time_organic')].values.*">
-        <JsonPath Expr="value" Id="twto" Tag="post_video_view_time_organic" Title="Total Watch Time Organic (ms)" Converter="Int" HelpText="Total time (in milliseconds) video has been viewed without paid promotion"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views')].values.*">
-        <JsonPath Expr="value" Id="v" Tag="post_video_views" Title="Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_unique')].values.*">
-        <JsonPath Expr="value" Id="u" Tag="post_video_views_unique" Title="Unique" Converter="Int" HelpText="The number of distinct people who viewed your video at least once."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_10s_unique')].values.*">
-        <JsonPath Expr="value" Id="c10s" Tag="post_video_views_10s_unique" Title="Views > 10s" Converter="Int" HelpText="Number of unique viewers who watched your video for 10 seconds or to the end, whichever happened first"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_sound_on')].values.*">
-        <JsonPath Expr="value" Id="so" Tag="post_video_views_sound_on" Title="Sound On" Converter="Int" HelpText="Number of times your video was viewed with sound on for 3 seconds or viewed to the end, whichever happened first"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_autoplayed')].values.*">
-        <JsonPath Expr="value" Id="a" Tag="post_video_views_autoplayed" Title="Autoplayed" Converter="Int" HelpText="Number of times your video started automatically playing and people viewed it for more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_clicked_to_play')].values.*">
-        <JsonPath Expr="value" Id="c" Tag="post_video_views_clicked_to_play" Title="Clicked" Converter="Int" HelpText="Number of times people clicked to play your video and viewed it more than 3 seconds"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_organic')].values.*">
-        <JsonPath Expr="value" Id="o" Tag="post_video_views_organic" Title="Organic" Converter="Int" HelpText="The number of times your video was organically viewed for 3 seconds or more"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ou" Tag="post_video_views_organic_unique" Title="Organic Unique" Converter="Int" HelpText="The number of people who viewed at least 3 seconds of your video organically"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_paid')].values.*">
-        <JsonPath Expr="value" Id="op" Tag="post_video_views_paid" Title="Organic Paid" Converter="Int" HelpText="The number of times your video was viewed via paid impression for 3 seconds or more"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="opu" Tag="post_video_views_paid_unique" Title="Organic Paid Unique" Converter="Int" HelpText="The number of people who viewed at least 3 seconds of your video via paid impression"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_complete_views_organic')].values.*">
-        <JsonPath Expr="value" Id="oc" Tag="post_video_complete_views_organic" Title="Organic Complete" Converter="Int" HelpText="The number of times your video was organically viewed from the beginning to 95% of its length"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_complete_views_organic_unique')].values.*">
-        <JsonPath Expr="value" Id="ocu" Tag="post_video_complete_views_organic_unique" Title="Organic Complete Unique" Converter="Int" HelpText="The number of people who viewed your video organically from the beginning to 95% of its length"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_complete_views_paid')].values.*">
-        <JsonPath Expr="value" Id="ocp" Tag="post_video_complete_views_paid" Title="Organic Complete Paid" Converter="Int" HelpText="The number of times your video was viewed via paid impression from the beginning to 95% of its length"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_complete_views_paid_unique')].values.*">
-        <JsonPath Expr="value" Id="ccpu" Tag="post_video_complete_views_paid_unique" Title="Organic Complete Paid Unique" Converter="Int" HelpText="The number of people who viewed your video via paid impression from the beginning to 95% of its length"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="VideoLookupDaily" Title="Video Lookup Daily">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListVideos" Select.IdField="VideoId" Select.TitleField="VideoName"/>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        @SelectedFields()
-        ?&access_token=@(Model.PageToken)
-        &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &until=@(Model.DateInterval.EndDate.AddDays(1).ToString("yyyy-MM-dd"))
-        &period=day
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[0].values.*">
-        <JsonPath Expr="end_time" Id="date" Title="Date" Converter="DateTime" HelpText=""/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views')].values.*">
-        <JsonPath Expr="value" Id="views" Tag="post_video_views" Title="Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_view_time')].values.*">
-        <JsonPath Expr="value" Id="ttw" Tag="post_video_view_time" Title="Total WatchTime (ms)" Converter="Int" HelpText="The total number of milliseconds your video was watched, including replays and views less than 3 seconds."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_view_time_organic')].values.*">
-        <JsonPath Expr="value" Id="tto" Tag="post_video_view_time_organic" Title="Total WatchTime Organic (ms)" Converter="Int" HelpText="Total time (in milliseconds) video has been viewed without paid promotion"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_paid')].values.*">
-        <JsonPath Expr="value" Id="paid" Tag="post_video_views_paid" Title="Paid"  Converter="Int" HelpText="The number of times your video was viewed via paid impression for 3 seconds or more"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='post_video_views_10s_paid')].values.*">
-        <JsonPath Expr="value" Id="paid10s" Tag="post_video_views_10s_paid" Title="Paid > 10s" Converter="Int" HelpText="Number of times your video was viewed for 10 seconds or viewed to the end (whichever happened first) with paid promotion"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostClicksbyType" Title="Post Clicks by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
-      <Checkbox Id="Unique" Title="Unique Clicks" DefaultValue="False" HelpText="Calculates results for unique clicks."/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        post_clicks_by_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Expr="&quot;link\s*clicks&quot;:\s*(\d*)" Id="LinkClicks" Title="Link Clicks" Converter="Int" Group="1" HelpText="Clicks on links." DefaultValue="0"/>
-      <Regex Expr="&quot;photo\s*view&quot;:\s*(\d*)" Id="PhotoViews" Title="Photo Views" Converter="Int" Group="1" HelpText="View a photo." DefaultValue="0"/>
-      <Regex Expr="&quot;video\s*play&quot;:\s*(\d*)" Id="VideoPlays" Title="Video Plays" Converter="Int" Group="1" HelpText="Playing a video." DefaultValue="0"/>
-      <Regex Expr="&quot;other\s*clicks&quot;:\s*(\d*)" Id="OtherClicks" Title="Other Clicks" Converter="Int" Group="1" HelpText="" DefaultValue="0"/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PostActivitiesbyType" Title="Post Activities by Type">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" DefaultValue="" Required="false" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPosts" Select.IdField="PostId" Select.TitleField="PostName"/>
-      <Checkbox Id="Unique" Title="Unique Stories" DefaultValue="False" HelpText="Calculates results for unique post stories."/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="GetPageToken" Parameters="PageId"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.1/
-        @(Model.PostId)
-        /insights/
-        post_activity_by_action_type
-        @(Model.Unique ? "_unique" : "")
-        ?&access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Expr="&quot;like&quot;:\s*(\d*)" Id="Likes" Title="Likes" Converter="Int" Group="1" HelpText="Like post." DefaultValue="0"/>
-      <Regex Expr="&quot;comment&quot;:\s*(\d*)" Id="Comments" Title="Comments" Converter="Int" Group="1" HelpText="Comment post." DefaultValue="0"/>
-      <Regex Expr="&quot;share&quot;:\s*(\d*)" Id="Shares" Title="Shares" Converter="Int" Group="1" HelpText="Sharing post." DefaultValue="0"/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PagePosts" Title="List Page Posts">
-    <Parameters>
-      <Text Id="Id" Title="Page Id" DefaultValue="" Required="true" Debug.DefaultValue="" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
@@ -1401,60 +336,281 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
+    <Resource Id="Prepare"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.1/@(Model.PageId)/posts?access_token=@(Model.PageToken)&period=lifetime
+        &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
+        @PeriodParameters()
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.data.*">
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" Tag="description" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Tag="type" Converter="String"/>
+        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="ip" Title="Impressions Paid" Tag="post_impressions_paid" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pu" Tag="post_impressions_paid_unique" Title="Impressions Paid Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_organic' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="io" Tag="post_impressions_organic" Title="Impressions Organic" Converter="Int" HelpText="The number of impressions of your post in Newsfeed, Ticker, or on your Page's Wall"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_organic_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="ou" Tag="post_impressions_organic_unique" Title="Impression Organic Unique" Converter="Int" HelpText="The number of people who saw your post in their Newsfeed or Ticker or on your Page's Wall"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_viral' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="iv" Tag="post_impressions_viral" Title="Impressions Viral" Converter="Int" HelpText="The number of impressions of your Page post in a story generated by a friend"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_viral_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="ivu" Tag="post_impressions_viral_unique" Title="Impressions Viral Unique" Converter="Int" HelpText="The number of people who saw your page post in a story from a friend"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pif" Tag="post_impressions_fan" Title="Impressions Fan" Converter="Int" HelpText="The number of impressions for your Page post by people who have liked your Page"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pifu" Tag="post_impressions_fan_unique" Title="Impressions Fan Unique" Converter="Int" HelpText="The number of people who have like your Page who saw your Page post"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pifp" Tag="post_impressions_fan_paid" Title="Impressions Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pifpu" Tag="post_impressions_fan_paid_unique" Title="Impressions Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_video_views' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="v" Tag="post_video_views" Title="Video Views" Converter="Int" DefaultValue="0" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_like_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Likes" Tag="post_reactions_like_total" Title="Likes" Converter="Int" DefaultValue="0" HelpText="Total 'like' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_love_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Love" Tag="post_reactions_love_total" Title="Love" Converter="Int" DefaultValue="0" HelpText="Total 'love' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_wow_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Wow" Tag="post_reactions_wow_total" Title="Wow" Converter="Int" DefaultValue="0" HelpText="Total 'wow' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_haha_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Haha" Tag="post_reactions_haha_total" Title="Haha" Converter="Int" DefaultValue="0" HelpText="Total 'haha' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_sorry_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Sorry" Tag="post_reactions_sorry_total" Title="Sorry" Converter="Int" DefaultValue="0" HelpText="Total 'sorry' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_anger_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Anger" Tag="post_reactions_anger_total" Title="Anger" Converter="Int" DefaultValue="0" HelpText="Total 'anger' reactions of a post."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type' &amp;&amp; @@.period=='lifetime')].values[0].value.comment" Id="Comments" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type' &amp;&amp; @@.period=='lifetime')].values[0].value.share" Id="Shares" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" DefaultValue="0" HelpText="Number of shares"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type' &amp;&amp; @@.period=='lifetime')].values[0].value.link clicks" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" DefaultValue="0" HelpText="Clicks on links."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type' &amp;&amp; @@.period=='lifetime')].values[0].value.photo view" Id="PhotoViews" Tag="post_clicks_by_type" Title="Photo Views" Converter="Int" DefaultValue="0" HelpText="View a photo."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type' &amp;&amp; @@.period=='lifetime')].values[0].value.video play" Id="VideoPlays" Tag="post_clicks_by_type" Title="Video Plays" Converter="Int" DefaultValue="0" HelpText="Playing a video."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type' &amp;&amp; @@.period=='lifetime')].values[0].value.other clicks" Id="OtherClicks" Tag="post_clicks_by_type" Title="Other Clicks" Converter="Int" DefaultValue="0"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" DefaultValue="0" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pcu" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_negative_feedback' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pnf" Tag="post_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action in your post (e.g. hid it)"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_negative_feedback_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pnfu" Tag="post_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who took a negative action in your post (e.g., hid it)"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_engaged_users' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="eu" Tag="post_engaged_users" Title="Engaged Users" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_engaged_fan' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="fe" Tag="post_engaged_fan" Title="Fan Engagement" DefaultValue="0" Converter="Int" HelpText="People who have liked your page and engaged with your post."/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="PostsBatchMetrics" Title="POSTS Batch Metrics">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v3.1/
-        @(Model.Id)/posts?
-        fields=@SelectedFields()
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
-        {
-          @: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-          @: &until=@(((DateTime)Model.DateInterval.EndDate.AddDays(1)).UnixTimeStampUtc())
-        }
-        &access_token=@(Model.Token)
-        &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &after=@(Model.Cursor)
-        }
+				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
+        &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
+        &access_token=@(Model.PageToken)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="Post Id" Id="PostId" Expr="id" Converter="String" HelpText=""/>
-        <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time" HelpText=""/>
-        <JsonPath Title="Message" Id="Message" Expr="message" Converter="String" Tag="message" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Type" Id="Type" Expr="type" Converter="String" Tag="type" HelpText=""/>
-        <JsonPath Title="Page Id" Id="AuthorId" Expr="$.from.id" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Page Name" Id="Author" Expr="$.from.name" Converter="String" Tag="from" HelpText="" DefaultValue=""/>
-        <JsonPath Title="Permalink" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" HelpText="" DefaultValue=""/>
-      </JsonPath>
+      <JsonPath Expr="@bool2dim()">
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" Tag="description" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Tag="type" Converter="String"/>
+        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_unique')].values[0].value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid')].values[0].value" Id="ip" Title="Impressions Paid" Tag="post_impressions_paid" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid_unique')].values[0].value" Id="pu" Tag="post_impressions_paid_unique" Title="Impressions Paid Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_organic')].values[0].value" Id="io" Tag="post_impressions_organic" Title="Impressions Organic" Converter="Int" HelpText="The number of impressions of your post in Newsfeed, Ticker, or on your Page's Wall"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_organic_unique')].values[0].value" Id="ou" Tag="post_impressions_organic_unique" Title="Impression Organic Unique" Converter="Int" HelpText="The number of people who saw your post in their Newsfeed or Ticker or on your Page's Wall"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_viral')].values[0].value" Id="iv" Tag="post_impressions_viral" Title="Impressions Viral" Converter="Int" HelpText="The number of impressions of your Page post in a story generated by a friend"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_viral_unique')].values[0].value" Id="ivu" Tag="post_impressions_viral_unique" Title="Impressions Viral Unique" Converter="Int" HelpText="The number of people who saw your page post in a story from a friend"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan')].values[0].value" Id="pif" Tag="post_impressions_fan" Title="Impressions Fan" Converter="Int" HelpText="The number of impressions for your Page post by people who have liked your Page"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_unique')].values[0].value" Id="pifu" Tag="post_impressions_fan_unique" Title="Impressions Fan Unique" Converter="Int" HelpText="The number of people who have like your Page who saw your Page post"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid')].values[0].value" Id="pifp" Tag="post_impressions_fan_paid" Title="Impressions Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid_unique')].values[0].value" Id="pifpu" Tag="post_impressions_fan_paid_unique" Title="Impressions Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_video_views')].values[0].value" Id="v" Tag="post_video_views" Title="Video Views" Converter="Int" DefaultValue="0" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type')].values[0].value.like" Id="Likes" Tag="post_activity_by_action_type" Title="Likes" Converter="Int" DefaultValue="0" HelpText="Number of likes"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type')].values[0].value.comment" Id="Comments" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type')].values[0].value.share" Id="Shares" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" DefaultValue="0" HelpText="Number of shares"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type')].values[0].value.link clicks" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" DefaultValue="0" HelpText="Clicks on links."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type')].values[0].value.photo view" Id="PhotoViews" Tag="post_clicks_by_type" Title="Photo Views" Converter="Int" DefaultValue="0" HelpText="View a photo."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type')].values[0].value.video play" Id="VideoPlays" Tag="post_clicks_by_type" Title="Video Plays" Converter="Int" DefaultValue="0" HelpText="Playing a video."/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type')].values[0].value.other clicks" Id="OtherClicks" Tag="post_clicks_by_type" Title="Other Clicks" Converter="Int" DefaultValue="0"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks')].values[0].value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" DefaultValue="0" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_unique')].values[0].value" Id="pcu" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_negative_feedback')].values[0].value" Id="pnf" Tag="post_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action in your post (e.g. hid it)"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_negative_feedback_unique')].values[0].value" Id="pnfu" Tag="post_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who took a negative action in your post (e.g., hid it)"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_engaged_users')].values[0].value" Id="eu" Tag="post_engaged_users" Title="Engaged Users" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_engaged_fan')].values[0].value" Id="fe" Tag="post_engaged_fan" Title="Fan Engagement" DefaultValue="0" Converter="Int" HelpText="People who have liked your page and engaged with your post."/>
+			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Pages" Title="List Pages">
+  <RestConnector Id="PagePostImpressions" Title="PAGE Posts Impressions">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+			<Resource Id="Aggregation"/>
+    </Parameters>
+    <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
+		<Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.1/me/accounts?
-        &access_token=@(Model.Token)
+				https://graph.facebook.com/v3.1/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="PageId" Title="Id" Converter="String" HelpText=""/>
-        <JsonPath Expr="name" Id="PageName" Title="Name" Converter="String" HelpText=""/>
+      <JsonPath Expr="data[0].values.*">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+							@Model.Inp.AddDays(-1)
+            ]]>
+          </Compute.Expr>
+					<JsonPath Expr="end_time" Id="Inp" Converter="DateTime"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions')].values.*">
+        <JsonPath Expr="value" Id="i" Tag="page_posts_impressions" Title="Impressions" Converter="Int" HelpText="The number of impressions that came from all of your posts"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_unique')].values.*">
+        <JsonPath Expr="value" Id="iu" Tag="page_posts_impressions_unique" Title="Unique Impressions" Converter="Int" HelpText="The number of people who saw any of your Page posts"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_paid')].values.*">
+        <JsonPath Expr="value" Id="p" Tag="page_posts_impressions_paid" Title="Paid Impressions" Converter="Int" HelpText="The number of impressions of your Page posts in an Ad or Sponsored Story"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_paid_unique')].values.*">
+        <JsonPath Expr="value" Id="pu" Tag="page_posts_impressions_paid_unique" Title="Paid Unique Impressions" Converter="Int" HelpText="The number of people who saw your Page posts in an Ad or Sponsored Story"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_organic')].values.*">
+        <JsonPath Expr="value" Id="o" Tag="page_posts_impressions_organic" Title="Organic Impressions" Converter="Int" HelpText="The number of impressions of your posts in News Feed or Ticker or on your Page"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_organic_unique')].values.*">
+        <JsonPath Expr="value" Id="ou" Tag="page_posts_impressions_organic_unique" Title="Organic Unique Impressions" Converter="Int" HelpText="The number of people who saw your Page posts in News Feed or Ticker, or on your Page's Wall"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_served_impressions_organic_unique')].values.*">
+        <JsonPath Expr="value" Id="ou" Tag="page_posts_served_impressions_organic_unique" Title="Organic Unique Served Impressions" Converter="Int" HelpText="The number of people who were served your Page's posts in their News Feed whether it entered their screen or not."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_viral')].values.*">
+        <JsonPath Expr="value" Id="v" Title="Viral Impressions" Tag="page_posts_impressions_viral" Converter="Int" HelpText="The number of times users saw your posts via stories published by their friends"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_viral_unique')].values.*">
+        <JsonPath Expr="value" Id="vu" Tag="page_posts_impressions_viral_unique" Title="Viral Unique Impressions" Converter="Int" HelpText="The number of people who saw your Page posts via a story from a friend"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_nonviral')].values.*">
+        <JsonPath Expr="value" Id="vu" Tag="page_posts_impressions_nonviral" Title="Non-Viral 	Impressions" Converter="Int" HelpText="The number of times your Page's posts entered a person's screen."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='page_posts_impressions_nonviral_unique')].values.*">
+        <JsonPath Expr="value" Id="vu" Tag="page_posts_impressions_nonviral_unique" Title="Non-Viral Unique Impressions" Converter="Int" HelpText="The number of people who had any posts by your Page enter their screen."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
+</RestConnector>
+
+	<RestConnector Id="VideoBatchMetrics" Title="VIDEO Batch Metrics">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Ids" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1923830251066593" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Resource Id="Prepare"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.1/
+				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
+        &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
+        &access_token=@(Model.PageToken)&period=lifetime
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="@bool2dim()">
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Expr="description" Id="Description" Title="Description" Converter="String" Tag="description" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Tag="type" Converter="String"/>
+        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_impressions')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_unique')].values[0].value" Id="u" Tag="post_video_views_unique" Title="Unique Views" Converter="Int" HelpText="The number of distinct people who viewed your video at least once."/>
+        <JsonPath Expr="insights.data[?(@@.title=='Lifetime Organic Video Views')].values[0].value" Id="o" Tag="post_video_views_organic" Title="Organic Views" Converter="Int" HelpText="The number of times your video was organically viewed for 3 seconds or more"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_organic_unique')].values[0].value" Id="ou" Tag="post_video_views_organic_unique" Title="Organic Unique Views" Converter="Int" HelpText="The number of people who viewed at least 3 seconds of your video organically"/>
+        <JsonPath Expr="insights.data[?(@@.title=='Lifetime Paid Video Views')].values[0].value" Id="op" Tag="post_video_views_paid" Title="Paid Views" Converter="Int" HelpText="The number of times your video was viewed via paid impression for 3 seconds or more"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_paid_unique')].values[0].value" Id="opu" Tag="post_video_views_paid_unique" Title="Paid Unique Views" Converter="Int" HelpText="The number of people who viewed at least 3 seconds of your video via paid impression"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_complete_views_organic')].values[0].value" Id="oc" Tag="post_video_complete_views_organic" Title="Organic Complete Views" Converter="Int" HelpText="The number of times your video was organically viewed from the beginning to 95% of its length"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_complete_views_organic_unique')].values[0].value" Id="ocu" Tag="post_video_complete_views_organic_unique" Title="Organic Complete Unique Views" Converter="Int" HelpText="The number of people who viewed your video organically from the beginning to 95% of its length"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_complete_views_paid')].values[0].value" Id="ocp" Tag="post_video_complete_views_paid" Title="Organic Complete Paid Views" Converter="Int" HelpText="The number of times your video was viewed via paid impression from the beginning to 95% of its length"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_complete_views_paid_unique')].values[0].value" Id="ccpu" Tag="post_video_complete_views_paid_unique" Title="Organic Complete Paid Unique Views" Converter="Int" HelpText="The number of people who viewed your video via paid impression from the beginning to 95% of its length"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_length')].values[0].value" Id="vl" Tag="post_video_length" Title="Video Length (ms)" Converter="Int" HelpText="Length of a video post (in milliseconds)"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_avg_time_watched')].values[0].value" Id="awt" Tag="post_video_avg_time_watched" Title="Average WatchTime (ms)" Converter="Int" HelpText="The average length of time (in milliseconds) people spent viewing your video"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_view_time')].values[0].value" Id="twt" Tag="post_video_view_time" Title="Total Watch Time (ms)" Converter="Int" HelpText="The total number of milliseconds your video was watched, including replays and views less than 3 seconds."/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_view_time_organic')].values[0].value" Id="twto" Tag="post_video_view_time_organic" Title="Total Watch Time Organic (ms)" Converter="Int" HelpText="Total time (in milliseconds) video has been viewed without paid promotion"/>
+        <JsonPath Expr="insights.data[?(@@.title=='Lifetime Total Video Views')].values[0].value" Id="v" Tag="post_video_views" Title="Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_10s_unique')].values[0].value" Id="c10s" Tag="post_video_views_10s_unique" Title="Views > 10s" Converter="Int" HelpText="Number of unique viewers who watched your video for 10 seconds or to the end, whichever happened first"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_sound_on')].values[0].value" Id="so" Tag="post_video_views_sound_on" Title="Sound On" Converter="Int" HelpText="Number of times your video was viewed with sound on for 3 seconds or viewed to the end, whichever happened first"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_autoplayed')].values[0].value" Id="a" Tag="post_video_views_autoplayed" Title="Autoplayed" Converter="Int" HelpText="Number of times your video started automatically playing and people viewed it for more than 3 seconds"/>
+        <JsonPath Expr="insights.data[?(@@.name=='post_video_views_clicked_to_play')].values[0].value" Id="c" Tag="post_video_views_clicked_to_play" Title="Clicked" Converter="Int" HelpText="Number of times people clicked to play your video and viewed it more than 3 seconds"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="VideoDailyViews" Title="VIDEO Daily Views">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="PostId" Title="Video Id" Required="true" Debug.DefaultValue="935167936599501_1923830251066593" Select.Connector="ListVideos"/>
+      <DateInterval Id="DateInterval" Title="Interval"/>
+    </Parameters>
+    <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
+    <Resource Id="Prepare"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.1/@(Model.PostId)/insights/@SelectedFields()?&access_token=@(Model.PageToken)
+				@DatePagination()&period=day
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[0].values.*">
+        <Compute Id="Date" Title="Date" Converter="DateTime">
+          <Compute.Expr>
+            <![CDATA[
+							@Model.Inp.AddDays(-1)
+            ]]>
+          </Compute.Expr>
+					<JsonPath Expr="end_time" Id="Inp" Converter="DateTime"/>
+        </Compute>
+			</JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_views')].values.*">
+        <JsonPath Expr="value" Id="v" Tag="post_video_views" Title="Views" Converter="Int" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_views_organic')].values.*">
+        <JsonPath Expr="value" Id="vo" Tag="post_video_views_organic" Title="Organic Views" Converter="Int" HelpText="The number of times your videos played for at least 3 seconds, or for nearly their total length if they're shorter than 3 seconds, by organic reach. During a single instance of a video playing, we'll exclude any time spent replaying the video."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_views_paid')].values.*">
+        <JsonPath Expr="value" Id="p" Tag="post_video_views_paid" Title="Paid Views"  Converter="Int" HelpText="The number of times your video was viewed via paid impression for 3 seconds or more"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_view_time')].values.*">
+        <JsonPath Expr="value" Id="ttw" Tag="post_video_view_time" Title="Total WatchTime (ms)" Converter="Int" HelpText="The total number of milliseconds your video was watched, including replays and views less than 3 seconds."/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_view_time_organic')].values.*">
+        <JsonPath Expr="value" Id="tto" Tag="post_video_view_time_organic" Title="Total WatchTime Organic (ms)" Converter="Int" HelpText="Total time (in milliseconds) video has been viewed without paid promotion"/>
+      </JsonPath>
+      <JsonPath Expr="data[?(@@.name=='post_video_views_10s_paid')].values.*">
+        <JsonPath Expr="value" Id="p10s" Tag="post_video_views_10s_paid" Title="Paid > 10s" Converter="Int" HelpText="Number of times your video was viewed for 10 seconds or viewed to the end (whichever happened first) with paid promotion"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
@@ -1463,9 +619,45 @@
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
       }
+
+      string SelectedInsightsFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+				string strQuery = string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && !defaultFields().Contains(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+        return strQuery.Length > 0 ? ",insights.metric(" + strQuery + ")" : "";
+      }
+
+      string SelectedDefaultFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+				string strQuery = string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && defaultFields().Contains(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+        return strQuery.Length > 0 ? "," + strQuery : "";
+      }
+
+			string[] defaultFields(){
+				return new string[] { "permalink_url","id","created_time","message","description","type","from" };
+			}
+
 			string FetchIdsBatch() {
 				string[] lines = (string[])Model.IdsBatch;
 				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+			}
+
+			string DatePagination() {
+					DateTime dateLbound = Model.DateInterval.StartDate.AddDays(Model.PageCursor.PageSize * Model.PageCursor.Page);
+					DateTime dateUbound = dateLbound.AddDays((Model.PageCursor.PageSize));
+					DateTime dateHandleFullPage = Model.DateInterval.EndDate.AddDays(1) < dateUbound ? Model.DateInterval.EndDate.AddDays(1) : dateUbound;
+					DateTime dateHandleToday = dateHandleFullPage < DateTime.Now.AddDays(1) ? dateHandleFullPage.AddDays(1) : DateTime.Now.AddDays(2);
+					return "&since=" + dateLbound.ToString("yyyy-MM-dd") + "&until=" + dateHandleToday.ToString("yyyy-MM-dd");
+			}
+
+			string PeriodParameters() {
+				string stringReturn = "";
+        if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
+          stringReturn = "&since=" + ((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc() + "&until=" + ((DateTime)Model.DateInterval.EndDate.AddDays(1)).UnixTimeStampUtc();
+				return stringReturn;
+			}
+
+			string bool2dim() {
+				return (Model.Ids.Split('\n').Length > 1 ? "$.*" : "$");
 			}
     ]]>
   </RazorFunctions>

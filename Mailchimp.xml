@@ -1,23 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Email" Title="MailChimp" Id="MailChimp" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Mailchimp.xml" HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="Documentation" >
+<Suite Title="MailChimp" Category="Email" Id="MailChimp" RequireVersion="8.1.35" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Mailchimp.xml" HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="Documentation" >
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
-  <Settings HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="What's this?">
-    <Text Id="ApiKey" Title="API Key" Required="true"/>
-  </Settings>
-
+  <SeoToolsAuthenticator StayAuthenticated="false" Key="mailchimp"/>
+	
   <Resources>
     <Resource Id="Fail">
 			<Fail>
 				<JsonPath Expr="detail"/>
 			</Fail>
     </Resource>
+    <Resource Id="Prepare">
+			<Prepare>
+				<Connector Id="GetBaseUrl"/>
+			</Prepare>	
+    </Resource>		
     <Resource Id="Headers">
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="1" RandomTo="2" IfSame="Host"/>
         <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[apikey @(Model.ApiKey)]]></Header>
+          <Header Name="Authorization">apikey @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
     </Resource>
@@ -37,16 +40,36 @@
       </Radio>
     </Resource>
   </Resources>
+	
+  <RestConnector Id="GetBaseUrl" Hidden="true">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="Authorization">Bearer @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+         https://login.mailchimp.com/oauth2/metadata
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Id="Base" Expr="api_endpoint"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="CampaignsHidden" Hidden="true" HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()campaigns?count=100
+        @(Model.Base)/3.0/campaigns?count=100
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.campaigns.*">
         <JsonPath Title="Id" Id="Id" Expr="id"/>
@@ -61,10 +84,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()lists?count=100
+        @(Model.Base)/3.0/lists?count=100
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.lists.*">
         <JsonPath Title="Id" Id="Id" Expr="id"/>
@@ -73,8 +97,8 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-
-  <RestConnector Id="CampaignsList" Title="Campaigns - List" HelpText="Get all campaigns in an account." HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
+	
+  <RestConnector Id="CampaignsList" Title="Campaigns - List" Group="heeeej" HelpText="Get all campaigns in an account." HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
     <Parameters>
       <Text Id="ListId" Title="Filter by List Id" Required="false" HelpText="Leave Empty to include all Lists" Select.Connector="ListsHidden"/>
       <Select Id="Status" Title="Status" DefaultValue="all" Required="false">
@@ -101,11 +125,12 @@
 			<Resource Id="SortTime"/>
     </Parameters>
 		<Resource Id="Paging"/>
+		<Resource Id="Prepare"/>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()campaigns?
+        @(Model.Base)/3.0/campaigns?
 				@(!string.IsNullOrEmpty(Model.ListId) ? "&list_id=" + Model.ListId : "")
         @if(Model.SentInterval.StartDate != null && Model.SentInterval.EndDate != null)
         {
@@ -145,7 +170,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CampaignsStatistics" Title="Campaigns - Statistics" HelpText="Get detailed campaign reports." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/#read-get_reports">
+  <RestConnector Id="CampaignsStatistics" Title="Campaigns - Statistics" Group="heeeej"  HelpText="Get detailed campaign reports." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/#read-get_reports">
     <Parameters>
       <Select Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
@@ -161,11 +186,12 @@
       <Resource Id="SortTime"/>
     </Parameters>
     <Resource Id="Paging"/>
+		<Resource Id="Prepare"/>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()reports?
+        @(Model.Base)/3.0/reports?
         @if(Model.SentInterval.StartDate != null && Model.SentInterval.EndDate != null)
         {
             @: &since_send_time=@Model.SentInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
@@ -215,10 +241,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()reports/@(Model.CampaignId)/domain-performance
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/domain-performance
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.domains.*">
         <JsonPath Title="Domain" Id="Domain" Expr="domain" Converter="String" HelpText="The name of the domain (gmail.com, hotmail.com, yahoo.com)."/>
@@ -246,10 +273,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()reports/@(Model.CampaignId)/click-details
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/click-details
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.urls_clicked.*">
         <JsonPath Title="URL" Id="Url" Expr="url" Converter="String" HelpText="The URL for the link in the campaign."/>
@@ -271,10 +299,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()reports/@(Model.CampaignId)/abuse-reports
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/abuse-reports
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.abuse_reports.*">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
@@ -293,12 +322,13 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()reports/@(Model.CampaignId)/open-details?
+        @(Model.Base)/3.0/reports/@(Model.CampaignId)/open-details?
         &count=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.members.*">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
@@ -318,12 +348,13 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()reports/@(Model.CampaignId)/locations?
+        @(Model.Base)/3.0/reports/@(Model.CampaignId)/locations?
         &count=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.locations.*">
         <JsonPath Title="Region" Id="Region" Expr="region_name" Converter="String" HelpText="The name of the region, if we have one."/>
@@ -343,12 +374,13 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()reports/@(Model.CampaignId)/unsubscribed?
+        @(Model.Base)/3.0/reports/@(Model.CampaignId)/unsubscribed?
         &count=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.unsubscribes.*">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
@@ -367,10 +399,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()search-campaigns?query=@(Utils.UrlEncode(Model.Query))
+          @(Model.Base)/3.0/search-campaigns?query=@(Utils.UrlEncode(Model.Query))
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.results.*.campaign">
         <JsonPath Title="Id" Id="Id" Expr="id" HelpText="A string that uniquely identifies this campaign."/>
@@ -410,11 +443,12 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()search-members?query=@(Utils.UrlEncode(Model.Query))
+          @(Model.Base)/3.0/search-members?query=@(Utils.UrlEncode(Model.Query))
 					@(!string.IsNullOrEmpty(Model.ListId) ? "&list_id=" + Model.ListId : "")
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.@(Model.MatchType).members.*">
         <JsonPath Title="Email" Id="Email" Expr="email_address" HelpText="Email address for a subscriber."/>
@@ -445,7 +479,7 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @Endpoint()lists?
+        @(Model.Base)/3.0/lists?
         @if(Model.CreatedInterval.StartDate != null && Model.CreatedInterval.EndDate != null)
         {
             @: &since_date_created=@Model.CreatedInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
@@ -458,6 +492,7 @@
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.lists.*">
         <JsonPath Title="Id" Id="Id" Expr="id" HelpText="A string that uniquely identifies this list."/>
@@ -497,7 +532,7 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/members?
+          @(Model.Base)/3.0/lists/@(Model.ListId)/members?
           @(Model.Status != "all" ? "status=" + Model.Status : "")
           @if(Model.OptedInInterval.StartDate != null && Model.OptedInInterval.EndDate != null)
           {
@@ -510,6 +545,7 @@
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.members.*">
         <JsonPath Title="Id" Id="Id" Expr="id" HelpText="The MD5 hash of the lowercase version of the list member’s email address."/>
@@ -537,10 +573,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/activity
+          @(Model.Base)/3.0/lists/@(Model.ListId)/activity
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.activity.*">
         <JsonPath Title="Date" Id="Date" Expr="day" Converter="DateTime" HelpText="Date of activity."/>
@@ -566,10 +603,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/clients
+          @(Model.Base)/3.0/lists/@(Model.ListId)/clients
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.clients.*">
         <JsonPath Title="Client" Id="Client" Expr="client" Converter="String" HelpText="The name of the email client."/>
@@ -587,10 +625,11 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/locations
+          @(Model.Base)/3.0/lists/@(Model.ListId)/locations
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.locations.*">
         <JsonPath Title="Country Code" Id="CountryCode" Expr="cc" Converter="String" HelpText="The ISO 3166 2 digit country code."/>
@@ -610,12 +649,13 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/abuse-reports?
+          @(Model.Base)/3.0/lists/@(Model.ListId)/abuse-reports?
           &count=@(Model.PageCursor.NextTake)
           &offset=@(Model.PageCursor.NextSkip)
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.abuse_reports.*">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
@@ -636,7 +676,7 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/growth-history?
+          @(Model.Base)/3.0/lists/@(Model.ListId)/growth-history?
           &count=@(Model.PageCursor.NextTake)
           &offset=@(Model.PageCursor.NextSkip)
 					&sort_field=month
@@ -644,6 +684,7 @@
           ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.history.*">
         <JsonPath Title="Month" Id="Month" Expr="month" Converter="String" HelpText="The month that the growth history is describing."/>
@@ -665,7 +706,7 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-          @Endpoint()lists/@(Model.ListId)/segments?
+          @(Model.Base)/3.0/lists/@(Model.ListId)/segments?
           @if(Model.CreatedInterval.StartDate != null && Model.CreatedInterval.EndDate != null)
           {
               @: &since_timestamp_opt=@Model.CreatedInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
@@ -676,6 +717,7 @@
         ]]>
       </Fetch.Url>
     </Fetch>
+		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.segments.*">
         <JsonPath Title="Id" Id="Id" Expr="id" Converter="Auto" HelpText="The unique id for the segment."/>
@@ -688,13 +730,5 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-
-  <RazorFunctions>
-		<![CDATA[
-		string Endpoint() {
-			return "https://" + Model.ApiKey.Substring(Model.ApiKey.IndexOf("-")+1) + ".api.mailchimp.com/3.0/";
-		}
-		]]>
-  </RazorFunctions>
 
 </Suite>
