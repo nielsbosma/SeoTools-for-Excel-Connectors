@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="7.1.35" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Title="Account Lookup by Username" Id="AccountLookupUsername">
+  <RestConnector Title="Account Lookup" Id="AccountLookupUsername">
     <Parameters>
       <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        @FetchUserString()
-        ]]>
-      </Fetch.Url>
-		</Fetch>
+		<Fetch Url="@FetchUserString()"/>
     <Parse>
       <Regex Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Id="Followers" Title="Followers"  Group="1" Converter="Int"/>
       <Regex Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Id="Follows" Title="Follows" Group="1" Converter="Int"/>
@@ -28,17 +22,11 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Title="Latest Posts from Account" Id="LatestPosts">
+  <RestConnector Title="Account Latest Posts" Id="LatestPosts">
     <Parameters>
       <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        @FetchUserString()
-        ]]>
-      </Fetch.Url>
-		</Fetch>
+		<Fetch Url="@FetchUserString()"/>
     <Parse>
       <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
 				<Compute Expr="https://www.instagram.com/p/@(Model.PostIdInput)" Id="PostUrl" Title="Post URL" DefaultValue="">
@@ -48,14 +36,9 @@
 			<Regex Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter.SourceFormat="Unix" >
         <Regex Expr=".*" Id="Created" Title="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </Regex>
-			<Regex Expr="typename&quot;:&quot;(\w+)" Group="1" DefaultValue="">
-				<Compute Id="Type" Title="Type" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@Regex.Replace(Model.TypeInput, "Graph", "")
-						]]>
-					</Compute.Expr>
-					<Regex Expr=".*" Group="0" Id="TypeInput" DefaultValue=""/>
+			<Regex Expr="typename&quot;:&quot;Graph(\w+)" Group="1" DefaultValue="">
+				<Compute Expr="@Model.Inp" Id="Type" Title="Type" DefaultValue="">
+					<Regex Expr=".*" Group="0" Id="Inp" DefaultValue=""/>
 				</Compute>
       </Regex>
 			<Regex Expr="edge_liked_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int" DefaultValue="">
@@ -74,59 +57,21 @@
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/BhCZUzgAOhT/"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        @FetchPostString()
-        ]]>
-      </Fetch.Url>
-		</Fetch>
+    <Fetch Url="@FetchPostString()"/>
     <Parse>
-			<Compute Id="Url" Title="URL" DefaultValue="">
-				<Compute.Expr>
-					<![CDATA[
-					@(!string.IsNullOrEmpty(Model.Inp) ? "https://www.instagram.com/p/" + Model.Inp : "")
-					]]>
-				</Compute.Expr>
-				<Regex Id="Inp" Expr="shortcode&quot;:&quot;(.*?)&quot;" DefaultValue=""/>
-			</Compute>
+			<Compute Expr="@FetchPostString()" Id="Url" Title="URL" DefaultValue=""/>
       <Regex Expr="taken_at_timestamp&quot;:(\d+)" Id="Created" Title="Created" Group="1" Converter="DateTime" Converter.SourceFormat="Unix" DefaultValue=""/>
       <Regex Expr="media_preview_like&quot;:{&quot;count&quot;:(\d+)" Id="Likes" Title="Likes" Group="1" Converter="Auto" DefaultValue=""/>
-      <Regex Expr="media_to_comment&quot;:{&quot;count&quot;:(\d+)" Id="Comments" Title="Comments" Group="1" Converter="Auto" DefaultValue=""/>
+      <Regex Expr="media_preview_comment&quot;:{&quot;count&quot;:(\d+)" Id="Comments" Title="Comments" Group="1" Converter="Auto" DefaultValue=""/>
       <Regex Expr="&quot;video_view_count&quot;:(\d+)" Id="VideoViews" Title="Video Views" Group="1" Converter="Auto" DefaultValue=""/>
-			<Compute Id="Type" Title="Type" DefaultValue="">
-				<Compute.Expr>
-					<![CDATA[
-					@Regex.Replace(Model.Inp, "Graph", "")
-					]]>
-				</Compute.Expr>
-				<Regex Expr="typename&quot;:&quot;(\w+)" Id="Inp" Group="1" DefaultValue=""/>
+			<Compute Expr="@Model.Inp" Id="Type" Title="Type" DefaultValue="">
+				<Regex Expr="typename&quot;:&quot;Graph(\w+)" Id="Inp" Group="1" DefaultValue=""/>
 			</Compute>
       <Regex Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Id="ImageUrl" Title="Display URL" Group="1" Converter="String" DefaultValue=""/>
       <XPath Expr="//meta[@@property='instapp:owner_user_id']" Title="User Id" Id="UserId" Attribute="content" Converter="Auto" DefaultValue=""/>
-      <Regex Expr="rel=&quot;canonical&quot;\shref=&quot;https://www.instagram.com/(.*?)/p/" Id="Username" Group="1" Converter="Auto" DefaultValue=""/>
-			<Compute Id="UserUrl" Title="User URL" DefaultValue="">
-				<Compute.Expr>
-					<![CDATA[
-					@(!string.IsNullOrEmpty(Model.Inp) ? "https://www.instagram.com/" + Model.Inp : "")
-					]]>
-				</Compute.Expr>
-      <Regex Id="Inp" Expr="rel=&quot;canonical&quot;\shref=&quot;https://www.instagram.com/(.*?)/p/" Group="1" Converter="Auto" DefaultValue=""/>
-			</Compute>
-			<Compute Id="Avatar" Title="Avatar" DefaultValue="">
-				<Compute.Expr>
-					<![CDATA[
-          @{
-            string body = Model.FetchedResult.Body;
-						string strRegex = Model.Inp + "\",\"is_verified\":\\w+,\"profile_pic_url\":\"(.*?)\"";
-            Regex regex = new Regex(@strRegex);
-            Match match = regex.Match(body);
-          }
-          @(match.Groups[1].Value)
-					]]>
-				</Compute.Expr>
-				<XPath Id="Inp" Expr="//meta[@@property='instapp:owner_user_id']" Attribute="content"/>
-			</Compute>
+			<Compute Expr="@FetchUsername()" Id="Username" Title="Username" Converter="Auto" DefaultValue=""/>
+			<Compute Expr="https://www.instagram.com/@FetchUsername()" Id="UserUrl" Title="User URL" DefaultValue=""/>
+			<Compute Expr="@FetchAvatar()" Id="Avatar" Title="Avatar" DefaultValue=""/>
     </Parse>
   </RestConnector>
 
@@ -134,13 +79,7 @@
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/BhCZUzgAOhT/"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.instagram.com/oembed/?url=@FetchPostString()
-        ]]>
-      </Fetch.Url>
-		</Fetch>
+		<Fetch Url="https://api.instagram.com/oembed/?url=@FetchPostString()"/>
     <Parse>
       <JsonPath Expr="media_id" Id="PostId" Title="Post Id"/>
       <Regex Expr="datetime=\\&quot;(.*?)\\&quot;" Id="Created" Title="Created" Group="1" Converter="DateTime"/>
@@ -212,7 +151,7 @@
 							string output = Model.Inp;
 							string NoPrediction = "";
 							string IntroSentence = "";
-							
+
 							var dictLangs = new Dictionary<string, string>();
 							dictLangs.Add("en", "No photo description,Image may contain: ");
 							dictLangs.Add("sv", "Ingen fotobeskrivning,Bilden kan innehålla: ");
@@ -221,7 +160,7 @@
 							dictLangs.Add("fi", "Kuvan kuvausta ei ole saatavilla.,Kuvan mahdollinen sisältö: ");
 							dictLangs.Add("de", "Keine Fotobeschreibung verfügbar.,Bild könnte enthalten: ");
 							dictLangs.Add("es", "No hay descripción de la foto disponible.,La imagen puede contener: ");
-							
+
 							if (dictLangs.ContainsKey(Model.CaptionLanguage))
 							{
 								NoPrediction = dictLangs[Model.CaptionLanguage].Split(',')[0];
@@ -250,6 +189,16 @@
     string FetchUserString() {
 			return (Model.User.Contains("instagram.com") ? Model.User : "https://www.instagram.com/" + Model.User);
     }
+		
+		string FetchUsername() {
+			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"username\":\"(.*?)\",");
+			return matches[matches.Count - 1].Groups[1].ToString();
+		}
+		
+		string FetchAvatar() {
+			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"profile_pic_url\":\"(.*?)\",");
+			return matches[matches.Count - 1].Groups[1].ToString();
+		}
     ]]>
   </RazorFunctions>
 
