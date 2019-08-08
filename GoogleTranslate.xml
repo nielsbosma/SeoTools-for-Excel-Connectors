@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Language" RequireVersion="8.1.2" Title="Google Translate" Id="GoogleTranslate" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleTranslate.xml" HelpUrl="http://seotoolsforexcel.com/google-translate/" HelpText="Documentation">
+<Suite Category="Language" RequireVersion="7.0.0" Title="Google Translate" Id="GoogleTranslate" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleTranslate.xml" HelpUrl="http://seotoolsforexcel.com/google-translate/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -7,15 +7,7 @@
     <Text Id="APIKey" Title="API Key Id" Required="true" HelpUrl="http://seotoolsforexcel.com/google-translate/"/>
   </Settings>
 
-  <Resources>
-    <Resource Id="Fail">
-			<Fail>
-				<JsonPath Expr="error.message"/>
-			</Fail>
-    </Resource>
-  </Resources>
-
-  <RestConnector Id="Languages" Hidden="true" HelpUrl="https://cloud.google.com/translate/docs/reference/languages">
+  <RestConnector Id="Languages" Title="Languages" Hidden="true" HelpUrl="https://cloud.google.com/translate/docs/reference/languages">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -43,12 +35,14 @@
         <JsonPath Expr="name" Id="Name" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="Detect" Title="Detect" HelpUrl="https://cloud.google.com/translate/docs/reference/detect">
     <Parameters>
-      <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto" Required="true" HelpText="Enter one or more Texts separated by a new line"/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -61,7 +55,9 @@
         <RequestContentType>application/json; charset=utf-8</RequestContentType>
         <RequestBody>
 					<![CDATA[
-					{"q" : "@(FormatData())"}
+						{
+						"q" : "@(Regex.Replace(Regex.Replace(Model.Text, "\"", "\\\""), "<.*?>", String.Empty))"
+						}
 					]]>
 				</RequestBody>
       </HttpSettings>
@@ -71,21 +67,138 @@
 				<Compute Id="Language" Title="Language" Converter="String">
 					<Compute.Expr>
 						<![CDATA[
-						@GetLanguage()
+						@{
+							var dictLangs = new Dictionary<string, string>();
+							string result = "";
+
+							dictLangs.Add("af", "Afrikaans");
+							dictLangs.Add("sq", "Albanian");
+							dictLangs.Add("am", "Amharic");
+							dictLangs.Add("ar", "Arabic");
+							dictLangs.Add("hy", "Armenian");
+							dictLangs.Add("az", "Azerbaijani");
+							dictLangs.Add("eu", "Basque");
+							dictLangs.Add("be", "Belarusian");
+							dictLangs.Add("bn", "Bengali");
+							dictLangs.Add("bs", "Bosnian");
+							dictLangs.Add("bg", "Bulgarian");
+							dictLangs.Add("ca", "Catalan");
+							dictLangs.Add("ceb", "Cebuano");
+							dictLangs.Add("ny", "Chichewa");
+							dictLangs.Add("zh-CN", "Chinese (Simplified)");
+							dictLangs.Add("zh", "Chinese (Simplified)");
+							dictLangs.Add("zh-TW", "Chinese (Traditional)");
+							dictLangs.Add("co", "Corsican");
+							dictLangs.Add("hr", "Croatian");
+							dictLangs.Add("cs", "Czech");
+							dictLangs.Add("da", "Danish");
+							dictLangs.Add("nl", "Dutch");
+							dictLangs.Add("en", "English");
+							dictLangs.Add("eo", "Esperanto");
+							dictLangs.Add("et", "Estonian");
+							dictLangs.Add("tl", "Filipino");
+							dictLangs.Add("fi", "Finnish");
+							dictLangs.Add("fr", "French");
+							dictLangs.Add("fy", "Frisian");
+							dictLangs.Add("gl", "Galician");
+							dictLangs.Add("ka", "Georgian");
+							dictLangs.Add("de", "German");
+							dictLangs.Add("el", "Greek");
+							dictLangs.Add("gu", "Gujarati");
+							dictLangs.Add("ht", "Haitian Creole");
+							dictLangs.Add("ha", "Hausa");
+							dictLangs.Add("haw", "Hawaiian");
+							dictLangs.Add("iw", "Hebrew");
+							dictLangs.Add("hi", "Hindi");
+							dictLangs.Add("hmn", "Hmong");
+							dictLangs.Add("hu", "Hungarian");
+							dictLangs.Add("is", "Icelandic");
+							dictLangs.Add("ig", "Igbo");
+							dictLangs.Add("id", "Indonesian");
+							dictLangs.Add("ga", "Irish");
+							dictLangs.Add("it", "Italian");
+							dictLangs.Add("ja", "Japanese");
+							dictLangs.Add("jw", "Javanese");
+							dictLangs.Add("kn", "Kannada");
+							dictLangs.Add("kk", "Kazakh");
+							dictLangs.Add("km", "Khmer");
+							dictLangs.Add("ko", "Korean");
+							dictLangs.Add("ku", "Kurdish (Kurmanji)");
+							dictLangs.Add("ky", "Kyrgyz");
+							dictLangs.Add("lo", "Lao");
+							dictLangs.Add("la", "Latin");
+							dictLangs.Add("lv", "Latvian");
+							dictLangs.Add("lt", "Lithuanian");
+							dictLangs.Add("lb", "Luxembourgish");
+							dictLangs.Add("mk", "Macedonian");
+							dictLangs.Add("mg", "Malagasy");
+							dictLangs.Add("ms", "Malay");
+							dictLangs.Add("ml", "Malayalam");
+							dictLangs.Add("mt", "Maltese");
+							dictLangs.Add("mi", "Maori");
+							dictLangs.Add("mr", "Marathi");
+							dictLangs.Add("mn", "Mongolian");
+							dictLangs.Add("my", "Myanmar (Burmese)");
+							dictLangs.Add("ne", "Nepali");
+							dictLangs.Add("no", "Norwegian");
+							dictLangs.Add("ps", "Pashto");
+							dictLangs.Add("fa", "Persian");
+							dictLangs.Add("pl", "Polish");
+							dictLangs.Add("pt", "Portuguese");
+							dictLangs.Add("pa", "Punjabi");
+							dictLangs.Add("ro", "Romanian");
+							dictLangs.Add("ru", "Russian");
+							dictLangs.Add("sm", "Samoan");
+							dictLangs.Add("gd", "Scots Gaelic");
+							dictLangs.Add("sr", "Serbian");
+							dictLangs.Add("st", "Sesotho");
+							dictLangs.Add("sn", "Shona");
+							dictLangs.Add("sd", "Sindhi");
+							dictLangs.Add("si", "Sinhala");
+							dictLangs.Add("sk", "Slovak");
+							dictLangs.Add("sl", "Slovenian");
+							dictLangs.Add("so", "Somali");
+							dictLangs.Add("es", "Spanish");
+							dictLangs.Add("su", "Sundanese");
+							dictLangs.Add("sw", "Swahili");
+							dictLangs.Add("sv", "Swedish");
+							dictLangs.Add("tg", "Tajik");
+							dictLangs.Add("ta", "Tamil");
+							dictLangs.Add("te", "Telugu");
+							dictLangs.Add("th", "Thai");
+							dictLangs.Add("tr", "Turkish");
+							dictLangs.Add("uk", "Ukrainian");
+							dictLangs.Add("ur", "Urdu");
+							dictLangs.Add("uz", "Uzbek");
+							dictLangs.Add("vi", "Vietnamese");
+							dictLangs.Add("cy", "Welsh");
+							dictLangs.Add("xh", "Xhosa");
+							dictLangs.Add("yi", "Yiddish");
+							dictLangs.Add("yo", "Yoruba");
+							dictLangs.Add("zu", "Zulu");
+
+							if (dictLangs.ContainsKey(Model.LanguageInput))
+							{
+								result = dictLangs[Model.LanguageInput];
+							}
+						}
+						@result
 						]]>
 					</Compute.Expr>
-					<JsonPath Expr="language" Id="LanguageInput"/>
+					<JsonPath Expr="language" Id="LanguageInput" Converter="String"/>
 				</Compute>
         <JsonPath Expr="confidence" Id="Confidence" Converter="Double"/>
 				<JsonPath Expr="language" Id="LanguageShort" Title="Lang Shortcode" Converter="String" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
   </RestConnector>
 
   <RestConnector Id="Translate" Title="Translate" HelpUrl="https://cloud.google.com/translate/docs/reference/translate">
     <Parameters>
-      <Text Id="Text" Title="Text" Debug.DefaultValue="&quot;Trafikverket och NCC har hävt avtalet i samförstånd.…" Required="true" HelpText="Enter one or more Texts separated by a new line"/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="&quot;Trafikverket och NCC har hävt avtalet i samförstånd.…" Required="true"/>
 			<Text Id="Target" Title="Target" Debug.DefaultValue="en" Required="true" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
 			<Text Id="Source" Title="Source (Optional)" DefaultValue="" HelpText="Returns 'Detected Language' if omitted" Required="false" Select.Connector="Languages" Select.IdField="Language" Select.TitleField="Name"/>
     </Parameters>
@@ -101,7 +214,9 @@
         <RequestContentType>application/json; charset=utf-8</RequestContentType>
         <RequestBody>
 					<![CDATA[
-					{"q" : "@(FormatData())"}
+						{
+						"q" : "@(Regex.Replace(Regex.Replace(Model.Text, "\"", "\\\""), "<.*?>", String.Empty))"
+						}
 					]]>
 				</RequestBody>
       </HttpSettings>
@@ -110,146 +225,139 @@
       <JsonPath Expr="$.data.translations[*]">
         <Compute Id="Result" Converter="String" DefaultValue="">
           <Compute.Expr>
-            <![CDATA[
-						@Utils.HtmlDecode(Model.Inp)
-						]]>
+            <![CDATA[@System.Net.WebUtility.HtmlDecode(Model.Inp)]]>
           </Compute.Expr>
-					<JsonPath Expr="translatedText" Id="Inp" DefaultValue=""/>
+					<JsonPath Expr="translatedText" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-				<Compute Id="Language" Title="Language">
+				<Compute Id="SourceLanguage" Title="Detected Language" Converter="String" Checked="false">
 					<Compute.Expr>
 						<![CDATA[
-						@GetLanguage()
+						@{
+							var dictLangs = new Dictionary<string, string>();
+							string result = "";
+
+							dictLangs.Add("af", "Afrikaans");
+							dictLangs.Add("sq", "Albanian");
+							dictLangs.Add("am", "Amharic");
+							dictLangs.Add("ar", "Arabic");
+							dictLangs.Add("hy", "Armenian");
+							dictLangs.Add("az", "Azerbaijani");
+							dictLangs.Add("eu", "Basque");
+							dictLangs.Add("be", "Belarusian");
+							dictLangs.Add("bn", "Bengali");
+							dictLangs.Add("bs", "Bosnian");
+							dictLangs.Add("bg", "Bulgarian");
+							dictLangs.Add("ca", "Catalan");
+							dictLangs.Add("ceb", "Cebuano");
+							dictLangs.Add("ny", "Chichewa");
+							dictLangs.Add("zh-CN", "Chinese (Simplified)");
+							dictLangs.Add("zh", "Chinese (Simplified)");
+							dictLangs.Add("zh-TW", "Chinese (Traditional)");
+							dictLangs.Add("co", "Corsican");
+							dictLangs.Add("hr", "Croatian");
+							dictLangs.Add("cs", "Czech");
+							dictLangs.Add("da", "Danish");
+							dictLangs.Add("nl", "Dutch");
+							dictLangs.Add("en", "English");
+							dictLangs.Add("eo", "Esperanto");
+							dictLangs.Add("et", "Estonian");
+							dictLangs.Add("tl", "Filipino");
+							dictLangs.Add("fi", "Finnish");
+							dictLangs.Add("fr", "French");
+							dictLangs.Add("fy", "Frisian");
+							dictLangs.Add("gl", "Galician");
+							dictLangs.Add("ka", "Georgian");
+							dictLangs.Add("de", "German");
+							dictLangs.Add("el", "Greek");
+							dictLangs.Add("gu", "Gujarati");
+							dictLangs.Add("ht", "Haitian Creole");
+							dictLangs.Add("ha", "Hausa");
+							dictLangs.Add("haw", "Hawaiian");
+							dictLangs.Add("iw", "Hebrew");
+							dictLangs.Add("hi", "Hindi");
+							dictLangs.Add("hmn", "Hmong");
+							dictLangs.Add("hu", "Hungarian");
+							dictLangs.Add("is", "Icelandic");
+							dictLangs.Add("ig", "Igbo");
+							dictLangs.Add("id", "Indonesian");
+							dictLangs.Add("ga", "Irish");
+							dictLangs.Add("it", "Italian");
+							dictLangs.Add("ja", "Japanese");
+							dictLangs.Add("jw", "Javanese");
+							dictLangs.Add("kn", "Kannada");
+							dictLangs.Add("kk", "Kazakh");
+							dictLangs.Add("km", "Khmer");
+							dictLangs.Add("ko", "Korean");
+							dictLangs.Add("ku", "Kurdish (Kurmanji)");
+							dictLangs.Add("ky", "Kyrgyz");
+							dictLangs.Add("lo", "Lao");
+							dictLangs.Add("la", "Latin");
+							dictLangs.Add("lv", "Latvian");
+							dictLangs.Add("lt", "Lithuanian");
+							dictLangs.Add("lb", "Luxembourgish");
+							dictLangs.Add("mk", "Macedonian");
+							dictLangs.Add("mg", "Malagasy");
+							dictLangs.Add("ms", "Malay");
+							dictLangs.Add("ml", "Malayalam");
+							dictLangs.Add("mt", "Maltese");
+							dictLangs.Add("mi", "Maori");
+							dictLangs.Add("mr", "Marathi");
+							dictLangs.Add("mn", "Mongolian");
+							dictLangs.Add("my", "Myanmar (Burmese)");
+							dictLangs.Add("ne", "Nepali");
+							dictLangs.Add("no", "Norwegian");
+							dictLangs.Add("ps", "Pashto");
+							dictLangs.Add("fa", "Persian");
+							dictLangs.Add("pl", "Polish");
+							dictLangs.Add("pt", "Portuguese");
+							dictLangs.Add("pa", "Punjabi");
+							dictLangs.Add("ro", "Romanian");
+							dictLangs.Add("ru", "Russian");
+							dictLangs.Add("sm", "Samoan");
+							dictLangs.Add("gd", "Scots Gaelic");
+							dictLangs.Add("sr", "Serbian");
+							dictLangs.Add("st", "Sesotho");
+							dictLangs.Add("sn", "Shona");
+							dictLangs.Add("sd", "Sindhi");
+							dictLangs.Add("si", "Sinhala");
+							dictLangs.Add("sk", "Slovak");
+							dictLangs.Add("sl", "Slovenian");
+							dictLangs.Add("so", "Somali");
+							dictLangs.Add("es", "Spanish");
+							dictLangs.Add("su", "Sundanese");
+							dictLangs.Add("sw", "Swahili");
+							dictLangs.Add("sv", "Swedish");
+							dictLangs.Add("tg", "Tajik");
+							dictLangs.Add("ta", "Tamil");
+							dictLangs.Add("te", "Telugu");
+							dictLangs.Add("th", "Thai");
+							dictLangs.Add("tr", "Turkish");
+							dictLangs.Add("uk", "Ukrainian");
+							dictLangs.Add("ur", "Urdu");
+							dictLangs.Add("uz", "Uzbek");
+							dictLangs.Add("vi", "Vietnamese");
+							dictLangs.Add("cy", "Welsh");
+							dictLangs.Add("xh", "Xhosa");
+							dictLangs.Add("yi", "Yiddish");
+							dictLangs.Add("yo", "Yoruba");
+							dictLangs.Add("zu", "Zulu");
+
+							if (dictLangs.ContainsKey(Model.LanguageInput))
+							{
+								result = dictLangs[Model.LanguageInput];
+							}
+						}
+						@result
 						]]>
 					</Compute.Expr>
-					<JsonPath Expr="detectedSourceLanguage" Id="LanguageInput"/>
+					<JsonPath Expr="detectedSourceLanguage" Id="LanguageInput" Converter="String" DefaultValue=""/>
 				</Compute>
-				<JsonPath Expr="detectedSourceLanguage" Id="DetectedLanguageShort" Title="Detected Lang Shortcode" Checked="false"/>
+				<JsonPath Expr="detectedSourceLanguage" Id="DetectedLanguageShort" Title="Detected Lang Shortcode" Converter="String" Checked="false"/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Fail>
+      <JsonPath Expr="error.message"/>
+    </Fail>
   </RestConnector>
-
-  <RazorFunctions>
-    <![CDATA[
-			string FormatData(){
-				string temp1 = Regex.Replace(Model.Text, "\"", "\\\"");
-				return Regex.Replace(temp1, "<.*?>", String.Empty);
-			}
-
-			string GetLanguage() {
-				var dictLangs = new Dictionary<string, string>()
-				{
-					{"af", "Afrikaans"},
-					{"sq", "Albanian"},
-					{"am", "Amharic"},
-					{"ar", "Arabic"},
-					{"hy", "Armenian"},
-					{"az", "Azerbaijani"},
-					{"eu", "Basque"},
-					{"be", "Belarusian"},
-					{"bn", "Bengali"},
-					{"bs", "Bosnian"},
-					{"bg", "Bulgarian"},
-					{"ca", "Catalan"},
-					{"ceb", "Cebuano"},
-					{"ny", "Chichewa"},
-					{"zh-CN", "Chinese (Simplified)"},
-					{"zh", "Chinese (Simplified)"},
-					{"zh-TW", "Chinese (Traditional)"},
-					{"co", "Corsican"},
-					{"hr", "Croatian"},
-					{"cs", "Czech"},
-					{"da", "Danish"},
-					{"nl", "Dutch"},
-					{"en", "English"},
-					{"eo", "Esperanto"},
-					{"et", "Estonian"},
-					{"tl", "Filipino"},
-					{"fi", "Finnish"},
-					{"fr", "French"},
-					{"fy", "Frisian"},
-					{"gl", "Galician"},
-					{"ka", "Georgian"},
-					{"de", "German"},
-					{"el", "Greek"},
-					{"gu", "Gujarati"},
-					{"ht", "Haitian Creole"},
-					{"ha", "Hausa"},
-					{"haw", "Hawaiian"},
-					{"iw", "Hebrew"},
-					{"hi", "Hindi"},
-					{"hmn", "Hmong"},
-					{"hu", "Hungarian"},
-					{"is", "Icelandic"},
-					{"ig", "Igbo"},
-					{"id", "Indonesian"},
-					{"ga", "Irish"},
-					{"it", "Italian"},
-					{"ja", "Japanese"},
-					{"jw", "Javanese"},
-					{"kn", "Kannada"},
-					{"kk", "Kazakh"},
-					{"km", "Khmer"},
-					{"ko", "Korean"},
-					{"ku", "Kurdish (Kurmanji)"},
-					{"ky", "Kyrgyz"},
-					{"lo", "Lao"},
-					{"la", "Latin"},
-					{"lv", "Latvian"},
-					{"lt", "Lithuanian"},
-					{"lb", "Luxembourgish"},
-					{"mk", "Macedonian"},
-					{"mg", "Malagasy"},
-					{"ms", "Malay"},
-					{"ml", "Malayalam"},
-					{"mt", "Maltese"},
-					{"mi", "Maori"},
-					{"mr", "Marathi"},
-					{"mn", "Mongolian"},
-					{"my", "Myanmar (Burmese)"},
-					{"ne", "Nepali"},
-					{"no", "Norwegian"},
-					{"ps", "Pashto"},
-					{"fa", "Persian"},
-					{"pl", "Polish"},
-					{"pt", "Portuguese"},
-					{"pa", "Punjabi"},
-					{"ro", "Romanian"},
-					{"ru", "Russian"},
-					{"sm", "Samoan"},
-					{"gd", "Scots Gaelic"},
-					{"sr", "Serbian"},
-					{"st", "Sesotho"},
-					{"sn", "Shona"},
-					{"sd", "Sindhi"},
-					{"si", "Sinhala"},
-					{"sk", "Slovak"},
-					{"sl", "Slovenian"},
-					{"so", "Somali"},
-					{"es", "Spanish"},
-					{"su", "Sundanese"},
-					{"sw", "Swahili"},
-					{"sv", "Swedish"},
-					{"tg", "Tajik"},
-					{"ta", "Tamil"},
-					{"te", "Telugu"},
-					{"th", "Thai"},
-					{"tr", "Turkish"},
-					{"uk", "Ukrainian"},
-					{"ur", "Urdu"},
-					{"uz", "Uzbek"},
-					{"vi", "Vietnamese"},
-					{"cy", "Welsh"},
-					{"xh", "Xhosa"},
-					{"yi", "Yiddish"},
-					{"yo", "Yoruba"},
-					{"zu", "Zulu"}
-				};
-
-				return dictLangs.ContainsKey(Model.LanguageInput) ? dictLangs[Model.LanguageInput] : "";
-			}
-    ]]>
-  </RazorFunctions>
 
 </Suite>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Twitter" Id="Twitter" Category="Social" RequireVersion="8.1.35" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
+<Suite Title="Twitter" Id="Twitter" Category="Social" RequireVersion="8.1.50" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -62,6 +62,17 @@
 			<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
 			<JsonPath Expr="created_at" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
 			<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
+			<Compute Id="Source" Title="Source">
+				<Compute.Expr>
+					<![CDATA[
+					@{
+					string source = (Model.SourceInput is string) ? Regex.Replace(Model.SourceInput, "<.*?>", string.Empty) : "";
+					}
+					@source
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="source" Id="SourceInput"/>
+			</Compute>
 			<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 			<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
 			<Compute Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue="">
@@ -89,7 +100,7 @@
 				<JsonPath Expr="entities.user_mentions" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
-			<JsonPath Expr="user.screen_name" Id="UserName" Title="Username" Converter="String"/>
+			<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
 			<Compute Id="UserUrl" Title="User URL">
 				<Compute.Expr>
 					<![CDATA[
@@ -99,7 +110,7 @@
 					@url
 					]]>
 				</Compute.Expr>
-				<JsonPath Expr="user.screen_name" Id="UserNameInput" Converter="String"/>
+				<JsonPath Expr="user.screen_name" Id="UsernameInput" Converter="String"/>
 			</Compute>
 			<JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
 			<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String"/>
@@ -122,17 +133,6 @@
 					]]>
 				</Compute.Expr>
 				<JsonPath Expr="user.profile_image_url" Id="AvatarInput"/>
-			</Compute>
-			<Compute Id="Source" Title="Source">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string source = (Model.SourceInput is string) ? Regex.Replace(Model.SourceInput, "<.*?>", string.Empty) : "";
-					}
-					@source
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="source" Id="SourceInput"/>
 			</Compute>
 			<JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
@@ -219,15 +219,12 @@
     <Parameters>
       <Text Id="Ids" Title="Tweet URLs or Ids (One per row)" Multiline="true" Debug.DefaultValue="1088844064236228608" Required="true"/>
     </Parameters>
-
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.twitter.com/1.1/statuses
-				@(Model.Ids.Split('\n').Length == 1 ? "/show.json" : "/lookup.json")
-				?id=@FetchTweetString()
+        https://api.twitter.com/1.1/statuses/lookup.json?id=@FetchTweetString()
         ]]>
       </Fetch.Url>
     </Fetch>
