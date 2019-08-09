@@ -60,19 +60,8 @@
 				<JsonPath Expr="id_str" Id="Id" Converter="String"/>
 			</Compute>
 			<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
-			<JsonPath Expr="created_at" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
 			<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
-			<Compute Id="Source" Title="Source">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string source = (Model.SourceInput is string) ? Regex.Replace(Model.SourceInput, "<.*?>", string.Empty) : "";
-					}
-					@source
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="source" Id="SourceInput"/>
-			</Compute>
 			<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 			<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
 			<Compute Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue="">
@@ -99,13 +88,14 @@
 				</Compute.Expr>
 				<JsonPath Expr="entities.user_mentions" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
+			<JsonPath Expr="entities.media[?(@@.type=='photo')].media_url" Id="PhotoUrl" Title="Photo URL" Converter="String" DefaultValue=""/>
 			<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 			<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
 			<Compute Id="UserUrl" Title="User URL">
 				<Compute.Expr>
 					<![CDATA[
 					@{
-					string url = (Model.UserNameInput is string) ? "https://www.twitter.com/" + Model.UserNameInput + "/" : "";
+					string url = (Model.UsernameInput is string) ? "https://www.twitter.com/" + Model.UsernameInput + "/" : "";
 					}
 					@url
 					]]>
@@ -133,6 +123,17 @@
 					]]>
 				</Compute.Expr>
 				<JsonPath Expr="user.profile_image_url" Id="AvatarInput"/>
+			</Compute>
+			<Compute Id="Source" Title="Source">
+				<Compute.Expr>
+					<![CDATA[
+					@{
+					string source = (Model.SourceInput is string) ? Regex.Replace(Model.SourceInput, "<.*?>", string.Empty) : "";
+					}
+					@source
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="source" Id="SourceInput"/>
 			</Compute>
 			<JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
@@ -224,7 +225,9 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.twitter.com/1.1/statuses/lookup.json?id=@FetchTweetString()
+				https://api.twitter.com/1.1/statuses
+				@(Model.Ids.Split('\n').Length == 1 ? "/show.json" : "/lookup.json")
+				?id=@FetchTweetString()
         ]]>
       </Fetch.Url>
     </Fetch>
