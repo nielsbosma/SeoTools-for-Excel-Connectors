@@ -5,7 +5,7 @@
 
 	<SeoToolsAuthenticator StayAuthenticated="false" Key="facebook-insights"/>
 
-	<!-- https://developers.facebook.com/docs/graph-api/reference/v3.3/insights -->
+	<!-- https://developers.facebook.com/docs/graph-api/reference/v3.2/insights -->
 
   <Resources>
     <Resource Id="Fail">
@@ -37,7 +37,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.PageId)?fields=access_token
+        https://graph.facebook.com/v3.2/@(Model.PageId)?fields=access_token
         &access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
@@ -52,7 +52,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/me/accounts?&access_token=@(Model.Authenticator.Token)&fields=name,website
+        https://graph.facebook.com/v3.2/me/accounts?&access_token=@(Model.Authenticator.Token)&fields=name,website
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -84,7 +84,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.PageId)/posts?
+        https://graph.facebook.com/v3.2/@(Model.PageId)/posts?
         &access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
@@ -109,7 +109,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -242,7 +242,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.PageId)/insights/@(Model.Metric)?&access_token=@(Model.PageToken)
+        https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(Model.Metric)?&access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -298,7 +298,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.PageId)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
+        https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
 				&since=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
 				&until=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
       ]]>
@@ -327,7 +327,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.PageId)/posts?access_token=@(Model.PageToken)&period=lifetime
+        https://graph.facebook.com/v3.2/@(Model.PageId)/posts?access_token=@(Model.PageToken)&period=lifetime
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         @PeriodParameters()
         &limit=@(Model.PageCursor.NextTake)
@@ -337,11 +337,13 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.data.*">
-        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
-        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="PostLink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
         <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
-        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" Tag="type" DefaultValue=""/>
+        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="ip" Title="Impressions Paid" Tag="post_impressions_paid" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
@@ -378,7 +380,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="PostsBatchMetrics" Title="POSTS Batch Metrics">
+	<RestConnector Id="PostsMetrics" Title="POSTS Metrics">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
@@ -388,7 +390,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/
+        https://graph.facebook.com/v3.2/
 				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         &access_token=@(Model.PageToken)
@@ -397,11 +399,13 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="@bool2dim()">
-        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
-        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="PostLink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
         <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
-        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" Tag="type" DefaultValue=""/>
+        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_unique')].values[0].value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions_paid')].values[0].value" Id="ip" Title="Impressions Paid" Tag="post_impressions_paid" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
@@ -444,7 +448,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -507,7 +511,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/
+        https://graph.facebook.com/v3.2/
 				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         &access_token=@(Model.PageToken)&period=lifetime
@@ -516,11 +520,12 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="@bool2dim()">
-        <JsonPath Expr="permalink_url" Id="PostLink" Title="Permalink" Tag="permalink_url" Converter="String"/>
-        <JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="PostLink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
         <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
-        <JsonPath Expr="$.from.name" Id="Page" Title="Page" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_impressions')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_video_views_unique')].values[0].value" Id="u" Tag="post_video_views_unique" Title="Unique Views" Converter="Int" HelpText="The number of distinct people who viewed your video at least once."/>
         <JsonPath Expr="insights.data[?(@@.title=='Lifetime Organic Video Views')].values[0].value" Id="o" Tag="post_video_views_organic" Title="Organic Views" Converter="Int" HelpText="The number of times your video was organically viewed for 3 seconds or more"/>
@@ -556,7 +561,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.3/@(Model.VideoId)/insights/@SelectedFields()?&access_token=@(Model.PageToken)@DatePagination()&period=day
+        https://graph.facebook.com/v3.2/@(Model.VideoId)/insights/@SelectedFields()?&access_token=@(Model.PageToken)@DatePagination()&period=day
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -613,7 +618,7 @@
       }
 
 			string[] defaultFields(){
-				return new string[] { "permalink_url","id","created_time","message","from" };
+				return new string[] { "permalink_url","id","created_time","message","from","type" };
 			}
 
 			string FetchIdsBatch() {
