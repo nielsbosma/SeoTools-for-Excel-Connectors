@@ -1,43 +1,45 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="Social URL Shares" Id="SocialUrlShares" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/UrlShares.xml" HelpUrl="http://seotoolsforexcel.com/urlshares/" HelpText="Documentation">
 
-  <RestConnector Id="FacebookShares" Title="Facebook Shares" AvailableInSpider="true">
-    <Parameters>
-      <Text Id="Url" Title="URL" Required="true"/>
-    </Parameters>
-    <Fetch Url="http://graph.facebook.com/?id=@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute)"/>
-    <Parse>
-      <JsonPath Title="Shares" Id="Shares" Expr="share.share_count" Converter="Int"/>
-    </Parse>
-  </RestConnector>
-
   <RestConnector Id="PinterestPinned" Title="Pinterest Pins" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://google.com" Required="true"/>
     </Parameters>
     <Fetch Url="https://api.pinterest.com/v1/urls/count.json?callback=receiveCount&amp;url=@(Model.Url)"/>
     <Parse>
-      <Regex Title="Pinned" Id="Pinned" Expr="&quot;count&quot;:(\d+)" Converter="Int"/>
+      <Regex Title="Pinned" Id="Pinned" Expr="&quot;count&quot;:(\d+)" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="BufferShares" Title="Buffer Shares" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://google.com" Required="true"/>
     </Parameters>
     <Fetch Url="https://api.bufferapp.com/1/links/shares.json?url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))"/>
     <Parse>
-      <Regex Title="Shares" Id="Buffers" Expr="&quot;shares&quot;:(\d+)" Converter="Int"/>
+      <Regex Title="Shares" Id="Buffers" Expr="&quot;shares&quot;:(\d+)" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="VKShares" Title="VK Shares" AvailableInSpider="true">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://google.com" Required="true"/>
     </Parameters>
-    <Fetch Url="http://vk.com/share.php?act=count&amp;url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))"/>
+		<Fetch>
+		  <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
+          <Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+        http://vk.com/share.php?act=count&url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Url).Absolute))
+        ]]>
+			</Fetch.Url>
+		</Fetch>
     <Parse>
-      <Regex Title="Shares" Id="VKs" Expr="(?&lt;=,\s*)(.*)(?=\))" Converter="Int"/>
+      <Regex Title="Shares" Id="VKs" Expr=",\s(\d+)" Group="1" Converter="Auto" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
