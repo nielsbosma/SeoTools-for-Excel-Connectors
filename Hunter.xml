@@ -8,54 +8,51 @@
   </Settings>
 
   <Resources>
-    <Resource Id="Departments">
-     <Item Id="all" Title="All"/>
-     <Item Id="executive" Title="Executive"/>
-     <Item Id="it" Title="IT"/>
-     <Item Id="finance" Title="Finance"/>
-     <Item Id="management" Title="Management"/>
-     <Item Id="sales" Title="Sales"/>
-     <Item Id="legal" Title="Legal"/>
-     <Item Id="support" Title="Support"/>
-     <Item Id="hr" Title="HR"/>
-     <Item Id="marketing" Title="Marketing"/>
-     <Item Id="communication" Title="Communication"/>
-    </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
+      </HttpSettings>
+		</Resource>
   </Resources>
 
-  <RestConnector Id="DomainSearch" Title="Domain Search" HelpUrl="https://hunter.io/api/v2/docs#domain-search" InfoText="Get every email address found on the internet using a given domain name, with sources.">
+  <RestConnector Id="DomainSearch" Title="Domain Search" HelpUrl="https://hunter.io/api/v2/docs#domain-search" HelpText="Get every email address found on the internet using a given domain name, with sources.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="true"/>
       <Select Id="Department" Title="Department" Required="false" DefaultValue="all">
         <DataSource>
-          <Resource Id="Departments"/>
+					<Item Id="all" Title="All"/>
+					<Item Id="executive" Title="Executive"/>
+					<Item Id="it" Title="IT"/>
+					<Item Id="finance" Title="Finance"/>
+					<Item Id="management" Title="Management"/>
+					<Item Id="sales" Title="Sales"/>
+					<Item Id="legal" Title="Legal"/>
+					<Item Id="support" Title="Support"/>
+					<Item Id="hr" Title="HR"/>
+					<Item Id="marketing" Title="Marketing"/>
+					<Item Id="communication" Title="Communication"/>
         </DataSource>
       </Select>
-      <Radio Id="Type" Title="Type" DefaultValue="all" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
           <Item Id="personal" Title="Personal"/>
           <Item Id="generic" Title="Generic"/>
         </DataSource>
-      </Radio>
+      </Select>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-          https://api.hunter.io/v2/domain-search?
-					domain=@(Model.Domain)
-					@if(Model.Department != "all")
-					{
-						@: &department=@(Model.Department)
-					}
-					@if(Model.Type != "all")
-					{
-						@: &type=@(Model.Type)
-					}
+          https://api.hunter.io/v2/domain-search?api_key=@(Model.Key)
+					&domain=@(Model.Domain)
+					@(Model.Department != "all" ? "&department=" + Model.Department : "")
+					@(Model.Type != "all" ? "&type=" + Model.Type : "")
 					&limit=@(Model.PageCursor.NextTake)
 					&offset=@(Model.PageCursor.NextSkip)
-					&api_key=@(Model.Key)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -77,20 +74,21 @@
       </Fail>
   </RestConnector>
 
-  <RestConnector Id="EmailFinder" Title="Email Finder" HelpUrl="https://hunter.io/api/v2/docs#email-finder" InfoText="Find the email address of someone from his first name, last name and domain name.">
+  <RestConnector Id="EmailFinder" Title="Email Finder" HelpUrl="https://hunter.io/api/v2/docs#email-finder" HelpText="Find the email address of someone from his first name, last name and domain name.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="true"/>
       <Text Id="FirstName" Title="First Name" Debug.DefaultValue="" Required="true"/>
       <Text Id="LastName" Title="Last Name" Debug.DefaultValue="" Required="true"/>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-          https://api.hunter.io/v2/email-finder
-					?domain=@(Model.Domain)
+          https://api.hunter.io/v2/email-finder?api_key=@(Model.Key)
+					&domain=@(Model.Domain)
 					&first_name=@(Model.FirstName)
 					&last_name=@(Model.LastName)
-					&api_key=@(Model.Key)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -110,16 +108,17 @@
       </Fail>
   </RestConnector>
 
-  <RestConnector Id="EmailVerifier" Title="Email Verifier" HelpUrl="https://hunter.io/api/v2/docs#email-verifier" InfoText="Check if a given email address is deliverable and has been found on the internet.">
+  <RestConnector Id="EmailVerifier" Title="Email Verifier" HelpUrl="https://hunter.io/api/v2/docs#email-verifier" HelpText="Check if a given email address is deliverable and has been found on the internet.">
     <Parameters>
       <Text Id="Email" Title="Email" Debug.DefaultValue="" Required="true"/>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-          https://api.hunter.io/v2/email-verifier
-					?email=@(Model.Email)
-					&api_key=@(Model.Key)
+          https://api.hunter.io/v2/email-verifier?api_key=@(Model.Key)
+					&email=@(Model.Email)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -144,15 +143,16 @@
       </Fail>
   </RestConnector>
 
-  <RestConnector Id="EmailCount" Title="Email Count" HelpUrl="https://hunter.io/api/v2/docs#email-count" InfoText="Allows you to know how many email addresses we have for one domain or for one company.">
+  <RestConnector Id="EmailCount" Title="Email Count" HelpUrl="https://hunter.io/api/v2/docs#email-count" HelpText="Allows you to know how many email addresses we have for one domain or for one company.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-          https://api.hunter.io/v2/email-count
-					?domain=@(Model.Domain)
+          https://api.hunter.io/v2/email-count?domain=@(Model.Domain)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -161,19 +161,19 @@
         <JsonPath Expr="total" Id="Total" Title="Total" Converter="Int" DefaultValue=""/>
         <JsonPath Expr="personal_emails" Id="Personal" Title="Personal" Converter="Int" DefaultValue=""/>
         <JsonPath Expr="generic_emails" Id="Generic" Title="Generic" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.executive" Id="Total" Title="Total" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.it" Id="IT" Title="IT" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.finance" Id="Finance" Title="Finance" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.management" Id="Management" Title="Management" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.sales" Id="Sales" Title="Sales" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.legal" Id="Legal" Title="Legal" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.support" Id="Support" Title="Support" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.hr" Id="HR" Title="HR" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.marketing" Id="Marketing" Title="Marketing" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="department.communication" Id="Communication" Title="Communication" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="seniority.junior" Id="Junior" Title="Junior" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="seniority.senior" Id="Senior" Title="Senior" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="seniority.executive" Id="Executive" Title="Executive" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.executive" Id="Department.Executive" Title="Department.Executive" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.it" Id="Department.IT" Title="Department.IT" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.finance" Id="Finance" Title="Department.Finance" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.management" Id="Department.Management" Title="Department.Management" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.sales" Id="Department.Sales" Title="Department.Sales" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.legal" Id="Department.Legal" Title="Department.Legal" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.support" Id="Department.Support" Title="Department.Support" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.hr" Id="Department.HR" Title="Department.HR" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.marketing" Id="Department.Marketing" Title="Department.Marketing" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="department.communication" Id="Department.Communication" Title="Department.Communication" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="seniority.junior" Id="Seniority.Junior" Title="Seniority.Junior" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="seniority.senior" Id="Seniority.Senior" Title="Seniority.Senior" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="seniority.executive" Id="Seniority.Executive" Title="Seniority.Executive" Converter="Int" DefaultValue=""/>
       </JsonPath>
     </Parse>
       <Fail>
@@ -181,8 +181,12 @@
       </Fail>
   </RestConnector>
 
-  <RestConnector Id="AccountInformation" Title="Account Information" HelpUrl="https://hunter.io/api/v2/docs#account" InfoText="Enables you to get information regarding your Hunter account at any time.">
+  <RestConnector Id="AccountInformation" Title="Account Information" HelpUrl="https://hunter.io/api/v2/docs#account" HelpText="Enables you to get information regarding your Hunter account at any time.">
+    <Parameters>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
+    </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
           https://api.hunter.io/v2/account?api_key=@(Model.Key)
