@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="8.1" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/DataForSeo/" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="8.1.50" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/DataForSeo/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -35,13 +35,11 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Locations" Title="Locations" HelpUrl="https://docs.dataforseo.com/#list-of-locations" Hidden="true">
+  <RestConnector Id="Locations" HelpUrl="https://docs.dataforseo.com/v2/cmn#list-of-locations" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/cmn_locations
-				?search_engine=google
-				&country_iso_code=se
+        https://api.dataforseo.com/v2/cmn_locations?search_engine=google
         ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -59,19 +57,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Categories" Title="Categories" HelpUrl="https://docs.dataforseo.com/#list-of-locations" Hidden="true">
+  <RestConnector Id="Categories" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://developers.google.com/adwords/api/docs/appendix/productsservices.csv
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <Csv Separator="," HasHeader="true">
@@ -81,7 +73,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SearchEngines" Title="Search Engines" HelpUrl="https://docs.dataforseo.com/#list-of-search-engines" Hidden="true">
+  <RestConnector Id="SearchEngines" HelpUrl="https://docs.dataforseo.com/v2/cmn#list-of-search-engines" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -145,10 +137,10 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Serp" Title="SERP" HelpUrl="https://docs.dataforseo.com/#setting-serp-tasks" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
+  <RestConnector Id="Serp" Title="Get Results" HelpUrl="https://docs.dataforseo.com/v2/srp#setting-serp-tasks" Group="SERP" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
 		<Parameters>
-			<Text Id="SearchEngineId" Title="Search Engine Id" DefaultValue="" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="SearchEngineId" Title="Search Engine Id" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
     </Parameters>
     <Prepare>
@@ -183,14 +175,13 @@
     </Parse>
     <Fail>
       <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
-      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="results_count" Fail.If="IsEqual" Fail.ComparedTo="0" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+      <JsonPath Expr="error.code" Fail.If="IsEqual" Fail.ComparedTo="201" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="SearchVolume" Title="Search Volume" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search statistics for one or more keywords">
+  <RestConnector Id="SearchVolume" Title="Search Volume" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search statistics for one or more keywords">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
     </Parameters>
     <Fetch>
@@ -234,9 +225,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="SearchVolumeMonthly" Title="Search Volume Monthly" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search volume trends for the last year.">
+  <RestConnector Id="SearchVolumeMonthly" Title="Search Volume Monthly" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search volume trends for the last year.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
     </Parameters>
     <Fetch>
@@ -280,7 +271,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="KeywordsDomain" Title="Keywords for Domain" HelpUrl="https://docs.dataforseo.com/#live-data48" HelpText="Receive keyword statistics for one domain.">
+  <RestConnector Id="KeywordsDomain" Title="Keywords for Domain" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data48" HelpText="Receive keyword statistics for one domain.">
 		<Parameters>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="se" Required="false"/>
@@ -316,9 +307,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="KeywordsKeywords" Title="Keywords for Keywords" HelpUrl="https://docs.dataforseo.com/#live-data53" HelpText="Receive keyword suggestions for one or more keywords.">
+  <RestConnector Id="KeywordsKeywords" Title="Keywords for Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data53" HelpText="Receive keyword suggestions for one or more keywords.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
     </Parameters>
     <Fetch>
@@ -362,10 +353,10 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="KeywordsCategories" Title="Keywords for Categories" HelpUrl="https://docs.dataforseo.com/#live-data58" HelpText="Receive keyword for one product category.">
+  <RestConnector Id="KeywordsCategories" Title="Keywords for Categories" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data58" HelpText="Receive keyword for one product category.">
 		<Parameters>
-			<Text Id="CategoryId" Title="Category Id" DefaultValue="" Required="true" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Criterion ID" Select.TitleField="Category"/>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="CategoryId" Title="Category Id" Required="true" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Criterion ID" Select.TitleField="Category"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -408,9 +399,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="AdsTrafficKeywords" Title="Ads Traffic for Keywords" HelpUrl="https://docs.dataforseo.com/#live-data63" HelpText="Receive Ads stats for daily impressions, CPC and clicks estimation.">
+  <RestConnector Id="AdsTrafficKeywords" Title="Ads Traffic for Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data63" HelpText="Receive Ads stats for daily impressions, CPC and clicks estimation.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
 			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true" HelpText=""/>
       <Radio Id="Match" Title="Match" DefaultValue="exact">
@@ -476,9 +467,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="AdsTrafficPlatforms" Title="Ads Traffic by Platforms" HelpUrl="https://docs.dataforseo.com/#live-data68" HelpText="Receive Ads stats based on one platform.">
+  <RestConnector Id="AdsTrafficPlatforms" Title="Ads Traffic by Platforms" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data68" HelpText="Receive Ads stats based on one platform.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" DefaultValue="" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
 			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true" HelpText=""/>
       <Radio Id="Match" Title="Match" DefaultValue="exact">
@@ -551,7 +542,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="RelatedKeywords" Title="Related Keywords" HelpUrl="https://docs.dataforseo.com/#get-related-keywords" HelpText="Get keywords that are related to a keyword you are going to provide.">
+  <RestConnector Id="RelatedKeywords" Title="Related Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-related-keywords" HelpText="Get keywords that are related to a keyword you are going to provide.">
 		<Parameters>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
@@ -621,7 +612,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="SimilarKeywords" Title="Similar Keywords" HelpUrl="https://docs.dataforseo.com/#get-similar-keywords" HelpText="Receive similar terms for a keyword.">
+  <RestConnector Id="SimilarKeywords" Title="Similar Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-similar-keywords" HelpText="Receive similar terms for a keyword.">
 		<Parameters>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
@@ -691,7 +682,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="RankedKeywords" Title="Ranked Keywords" HelpUrl="https://docs.dataforseo.com/#get-ranked-keywords" HelpText="Get keywords for which a website is ranked.">
+  <RestConnector Id="RankedKeywords" Title="Ranked Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-ranked-keywords" HelpText="Get keywords for which a website is ranked.">
 		<Parameters>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
@@ -764,7 +755,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="RelevantPages" Title="Relevant Pages" HelpUrl="https://docs.dataforseo.com/#get-relevant-pages" HelpText="Get SERP metrics for relevant pages of a website based on a specific location.">
+  <RestConnector Id="RelevantPages" Title="Relevant Pages" Group="SERP" HelpUrl="https://docs.dataforseo.com/#get-relevant-pages" HelpText="Get SERP metrics for relevant pages of a website based on a specific location.">
 		<Parameters>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
@@ -853,7 +844,7 @@
     </Fail>
   </RestConnector>
 
- <RestConnector Id="Subdomains" Title="Subdomains" HelpUrl="https://docs.dataforseo.com/#get-subdomains" HelpText="Get SERP data for subdomains of a website based on a specific location.">
+ <RestConnector Id="Subdomains" Title="Subdomains" Group="SERP" HelpUrl="https://docs.dataforseo.com/#get-subdomains" HelpText="Get SERP data for subdomains of a website based on a specific location.">
 		<Parameters>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
 			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
@@ -942,101 +933,11 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="OnPageInit" Hidden="true" HelpUrl="https://docs.dataforseo.com/#setting-tasks">
-		<Parameters>
-      <Text Id="Site"/>
-      <Text Id="MaxPages"/>
-      <Text Id="MaxDepth"/>
-    </Parameters>
+	<RestConnector Id="AvailableCredits" Title="Available API Credits" HelpUrl="https://docs.dataforseo.com/#get-pages">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/op_tasks_post
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <RequestBody>
-          <![CDATA[
-          {
-            "data":
-            {
-              "@(Utils.NewGuid())": {
-                "site":"@(Model.Site)",
-                "crawl_max_pages":"@(Model.MaxPages)",
-								"crawl_max_depth":"@(Model.MaxDepth)"
-              }
-            }
-          }
-					]]>
-        </RequestBody>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.results.*">
-        <JsonPath Expr="task_id" Id="TaskId"/>
-      </JsonPath>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="OnPageInitVis" Hidden="false" HelpUrl="https://docs.dataforseo.com/#setting-tasks">
-		<Parameters>
-      <Text Id="Site"/>
-      <Text Id="MaxPages"/>
-      <Text Id="MaxDepth"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/op_tasks_post
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <RequestBody>
-          <![CDATA[
-          {
-            "data":
-            {
-              "@(Utils.NewGuid())": {
-                "site":"seotoolsforexcel.com",
-                "crawl_max_pages":"5",
-								"crawl_max_depth":"0"
-              }
-            }
-          }
-					]]>
-        </RequestBody>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.results.*">
-        <JsonPath Expr="task_id" Id="TaskId"/>
-      </JsonPath>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="OnPageSummary" Title="OnPage Summary" HelpUrl="https://docs.dataforseo.com/#get-task-result-summary" HelpText="Get the overall information of a website.">
-		<Parameters>
-			<Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
-			<Number Id="MaxPages" Title="Max Pages" DefaultValue="20" Debug.DefaultValue="4" Required="true"/>
-			<Number Id="MaxDepth" Title="Max Depth" DefaultValue="0" Debug.DefaultValue="0" Required="true"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="OnPageInit" Parameters="Site,MaxPages,MaxDepth"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/op_tasks_get/@(Model.TaskId)
+        https://api.dataforseo.com/v2/cmn_user
         ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -1047,92 +948,8 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <Table DefaultConverter="auto">
-        <JsonPath Id="Headers" Expr="keys($.results[0].summary[0])">
-					<Compute Id="Headers" Title="Headers">
-						<Compute.Expr>
-							<![CDATA[
-							@{
-								string Cleaned = "";
-								string Cleaned2 = "";
-								if(Model.KeyInput is string)
-								{
-									Cleaned = Regex.Replace(Model.KeyInput, "_", " ");
-									Cleaned2 = Utils.Capitalize(Cleaned);
-								}
-							}
-							@Cleaned2
-							]]>
-						</Compute.Expr>
-						<JsonPath Expr="key" Id="KeyInput"/>
-					</Compute>
-        </JsonPath>
-        <JsonPath Id="Cells" Expr="keys($.results[0].summary[0])">
-          <JsonPath Expr="value" />
-        </JsonPath>
-      </Table>
+      <JsonPath Id="Balance" Expr="results[0].balance"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
-      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="$.results[0].status" Fail.If="IsEqual" Fail.ComparedTo="in_queue" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-      <JsonPath Expr="$.results[0].pages" Fail.If="IsEqual" Fail.ComparedTo="[]" Fail.Action="Message" Fail.Message="No Results '{0}.'"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="OnPagePages" Title="OnPage Pages" HelpUrl="https://docs.dataforseo.com/#get-pages" HelpText="Retrieve structured data for each page of a website that has been scanned.">
-		<Parameters>
-			<Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
-			<Number Id="MaxPages" Title="Max Pages" DefaultValue="20" Debug.DefaultValue="4" Required="true"/>
-			<Number Id="MaxDepth" Title="Max Depth" DefaultValue="0" Debug.DefaultValue="0" Required="true"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="OnPageInit" Parameters="Site,MaxPages,MaxDepth"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/op_tasks_get_pages/@(Model.TaskId)
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <Table DefaultConverter="auto">
-        <JsonPath Id="Headers" Expr="keys($.results[0].pages[0)">
-					<Compute Id="Headers" Title="Headers">
-						<Compute.Expr>
-							<![CDATA[
-							@{
-								string Cleaned = "";
-								string Cleaned2 = "";
-								if(Model.KeyInput is string)
-								{
-									Cleaned = Regex.Replace(Model.KeyInput, "_", " ");
-									Cleaned2 = Utils.Capitalize(Cleaned);
-								}
-							}
-							@Cleaned2
-							]]>
-						</Compute.Expr>
-						<JsonPath Expr="key" Id="KeyInput"/>
-					</Compute>
-        </JsonPath>
-        <JsonPath Id="Cells" Expr="keys($.results[0].pages[*])">
-          <JsonPath Expr="value" />
-        </JsonPath>
-      </Table>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
-      <JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="$.results[0].status" Fail.If="IsEqual" Fail.ComparedTo="in_queue" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-    </Fail>
   </RestConnector>
 
   <RazorFunctions>
