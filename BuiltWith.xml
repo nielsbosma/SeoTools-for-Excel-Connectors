@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" Title="BuiltWith" Id="BuiltWith" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/BuiltWith.xml" HelpUrl="http://seotoolsforexcel.com/builtwith/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/builtwith/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="Errors[0].Message"/>
+			</Fail>
+    </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <Cache>True</Cache>
+      </HttpSettings>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Domains" Title="Domains" HelpUrl="https://api.builtwith.com/domain-api#eg1" HelpText="Provides technical information and additional meta data about one or more domains.">
+    <Parameters>
+      <Text Id="Domains" Title="Domains (One per row)" Debug.DefaultValue="builtwith.com" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Domains" Separator="\n" ItemsPerBatch="16"/>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.builtwith.com/v12/api.json?KEY=@(Model.ApiKey)&@FetchDomains()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="Results[*]">
+				<JsonPath Expr="Lookup" Id="Domain" Converter="String" HelpText="The domain that was looked up."/>
+				<JsonPath Expr="Attributes.MJRank" Id="MJRank" Converter="Long" HelpText="Majestic Rank to 1m"/>
+				<JsonPath Expr="Attributes.MJTLDRank" Id="MJTLDRank" Converter="Long" HelpText="Majestic Rank for TLD of Domain to 1m"/>
+				<JsonPath Expr="Attributes.RefSN" Id="RefSN" Converter="Long" HelpText="Referring Subnets to Domain from Majestic"/>
+				<JsonPath Expr="Attributes.RefIP" Id="RefIP" Converter="Long" HelpText="Referring IPs to Domain from Majestic"/>
+				<JsonPath Expr="Attributes.Sitemap" Id="Sitemap" Converter="Long" HelpText="Amount of sites in an indexable sitemap"/>
+				<JsonPath Expr="Attributes.GTMTags" Id="GTMTags" Converter="Long" HelpText="Amount of tags being loaded by Google Tag Manager"/>
+				<JsonPath Expr="Attributes.QubitTags" Id="QubitTags" Converter="Long" HelpText="Amount of tags being loaded by Qubit Tag Manager"/>
+				<JsonPath Expr="Attributes.TealiumTags" Id="TealiumTags" Converter="Long" HelpText="Amount of tags being loaded by Tealium Tag Manager"/>
+				<JsonPath Expr="Attributes.AdobeTags" Id="AdobeTags" Converter="Long" HelpText="Amount of tags being loaded by Adobe Tag Manager"/>
+				<JsonPath Expr="Attributes.CDimensions" Id="CDimensions" Converter="Long" HelpText="Amount of custom dimensions created by Google Analytics"/>
+				<JsonPath Expr="Attributes.CGoals" Id="CGoals" Converter="Long" HelpText="Amount of custom goals created by Google Analytics"/>
+				<JsonPath Expr="Attributes.CMetrics" Id="CMetrics" Converter="Long" HelpText="Amount of custom metrics created by Google Analytics"/>
+				<JsonPath Expr="Meta.CompanyName" Id="CompanyName" Converter="String" HelpText="A valid incorporated company name" DefaultValue=""/>
+				<JsonPath Expr="Meta.City" Id="City" Converter="String" HelpText="A valid city name for supported countries" DefaultValue=""/>
+				<JsonPath Expr="Meta.Country" Id="Country" Converter="String" HelpText="ISO 3166-1 alpha-2 country code for address" DefaultValue=""/>
+				<JsonPath Expr="Meta.Emails[0]" Id="Email" Converter="String" HelpText="Valid domain email" DefaultValue=""/>
+				<JsonPath Expr="Meta.Telephones[0]" Id="Telephone" Converter="String" HelpText="Valid international telephone number" DefaultValue=""/>
+				<Compute Id="Social" Converter="Auto" HelpText="Social presence" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[@Regex.Replace(Model.Inp, @"[""\[\]\r\n]", "")]]>
+					</Compute.Expr>
+					<JsonPath Expr="Meta.Social" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="Meta.Vertical" Id="Vertical" Converter="String" HelpText="Type of category" DefaultValue=""/>
+				<Compute Id="FirstIndexed" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date the technology was first detected on the site by BuiltWith.">
+					<JsonPath Expr="FirstIndexed" Id="Inp" Converter="Long"/>
+				</Compute>
+				<Compute Id="LastIndexed" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date the technology was last detected on the site by BuiltWith. ">
+					<JsonPath Expr="LastIndexed" Id="Inp" Converter="Long"/>
+				</Compute>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Relationships" Title="Relationships" HelpUrl="https://api.builtwith.com/relationships-api" HelpText="Get results of relationships between websites that show what sites are linked together, by what and for how long.">
+    <Parameters>
+      <Text Id="Domains" Title="Domains (One per row)" Debug.DefaultValue="builtwith.com" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Domains" Separator="\n" ItemsPerBatch="16"/>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.builtwith.com/rv1/api.json?KEY=@(Model.ApiKey)&@FetchDomains()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<XPath Expr="//matches">
+				<XPath Expr="../../domain" Id="Domain" Converter="Auto" HelpText="The domain that was looked up."/>
+				<XPath Expr="domain" Id="DomainMatch" DefaultValue="" HelpText="The domain name of the match"/>
+				<XPath Expr="../type" Id="IdeentifierType" Converter="Auto" HelpText="The type of identifier"/>
+				<XPath Expr="../value" Id="IdentifierValue" Converter="Auto" HelpText="The value of the identifier - typically the code of the identifier like an IP address or an account id."/>
+				<Compute Id="IdentifierFirstSeen" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date we first detected this identifier">
+					<XPath Expr="../first" Id="Inp" Converter="Long"/>
+				</Compute>
+				<Compute Id="IdentifieFirstSeen" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date we last detected this identifier">
+					<XPath Expr="../last" Id="Inp" Converter="Long"/>
+				</Compute>
+				<Compute Id="MatchFirstSeen" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date we first detected this on the matched domain">
+					<XPath Expr="first" Id="Inp" Converter="Long"/>
+				</Compute>
+				<Compute Id="MatchFirstSeen" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds(Model.Inp))" Converter="DateTime" HelpText="The date we last detected this on the matched domain">
+					<XPath Expr="last" Id="Inp" Converter="Long"/>
+				</Compute>
+				<XPath Expr="overlap" Id="MatchOverlap" Converter="Bool" DefaultValue="" HelpText="	If this domain used the identifier at the same time as the lookup Domain"/>
+			</XPath>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Keywords" Title="Keywords" HelpUrl="https://api.builtwith.com/keywords-api" HelpText="Allows you to get access to keywords connected to websites.">
+    <Parameters>
+      <Text Id="Domains" Title="Domains (One per row)" Debug.DefaultValue="builtwith.com" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Domains" Separator="\n" ItemsPerBatch="16"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.builtwith.com/kw1/api.json?KEY=@(Model.ApiKey)&@FetchDomains()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//keywords/keywords">
+        <XPath Expr="../domain" Id="Domain" HelpText="The domain name of the match"/>
+        <XPath Expr="." Id="Keyword" HelpText="The keywords found on the domain"/>
+      </XPath>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Trends" Title="Trends" HelpUrl="https://api.builtwith.com/trends-api" HelpText="Provides access to the technology trends data found on BuiltWith Trends.">
+    <Parameters>
+      <Text Id="Tech" Title="Technology" Debug.DefaultValue="Google-Analytics" Required="true" HelpText="The name of a technology, replaces spaces with dashes (-)."/>
+      <Date Id="Date" Title="Date" Required="false" Nullable="true" HelpText="Totals will be the closest to this date - providing the ability to get historical totals."/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.builtwith.com/trends/v6/api.json?KEY=@(Model.ApiKey)&TECH=@Model.Tech
+					@(!Utils.IsNullDate(Model.Date) ? "&DATE=" + Model.Date.ToString("yyyy-MM-dd") : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="Tech.Coverage.TenK" Id="TenK" Converter="Long" HelpText="Amount of sites in current Top 10k Quantcast Rank"/>
+			<JsonPath Expr="Tech.Coverage.HundredK" Id="HundredK" Converter="Long" HelpText="Amount of sites in current Top 100k Quantcast Rank"/>
+			<JsonPath Expr="Tech.Coverage.Mil" Id="Mil" Converter="Long" HelpText="Amount of sites in current 1 million Quantcast Rank"/>
+			<JsonPath Expr="Tech.Coverage.Live" Id="Live" Converter="Long" HelpText="Amount of live sites in our Pro database"/>
+			<JsonPath Expr="Tech.Coverage.Historical" Id="Historical" Converter="Long" HelpText="Amount of historical sites in our Pro database"/>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ComapnyToUrl" Title="Company to URL" HelpUrl="https://api.builtwith.com/company-to-url" HelpText="Get domain name from the company name you supply.">
+    <Parameters>
+      <Text Id="Company" Title="Company Name" Debug.DefaultValue="Microsoft" Required="true"/>
+      <Text Id="TLD" Title="TLD Priority" Required="false" HelpText="Bring back domains in order of priority - the first result is generally the one we think the website is."/>
+      <Number Id="Amount" Title="Amount" DefaultValue="1" Minimum="1" HelpText="Bring back domains in order of priority - the first result is generally the one we think the website is."/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://ctu.builtwith.com/ctu1/api.json?KEY=@(Model.ApiKey)&COMPANY=@Utils.UrlEncode(Model.Company)
+					&AMOUNT=@Model.Amount@(!string.IsNullOrEmpty(Model.TLD) ? "&TLD=" + Model.TLD : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.*">
+        <JsonPath Expr="." Id="Domain"/>
+      </JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchDomains() {
+      string[] lines = (string[])Model.DomainsBatch;
+      return "LOOKUP=" + string.Join(",",lines.Select((e) => Utils.UrlEncode(Utils.UrlProperty(e).Domain)).ToArray());
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>

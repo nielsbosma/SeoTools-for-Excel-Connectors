@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Suite Title="Keyword Tool" Id="KeywordTool" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/KeywordTool.xml" HelpUrl="http://seotoolsforexcel.com/keywordtool/" HelpText="Documentation">
 
-  <Author Name="Tim Wolfe" Url="https://www.linkedin.com/in/WolfeDen/"/>
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
 	<Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/keywordtool/">
 		<Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/keywordtool/"/>
 	</Settings>
 
   <Resources>
-    <Resource Id="Engines">
-      <Item Id="google" Title="Google"/>
-      <Item Id="youtube" Title="YouTube"/>
-      <Item Id="bing" Title="Bing"/>
-      <Item Id="amazon" Title="Amazon"/>
-      <Item Id="ebay" Title="eBay"/>
-      <Item Id="app-store" Title="App Store"/>
+    <Resource Id="Fail">
+		<Fail>
+			<JsonPath Expr="error.message"/>
+		</Fail>
 		</Resource>
   </Resources>
 
@@ -33,14 +30,24 @@
 		<Fetch>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"apikey":"@(Model.ApiKey)",
+							"keyword":@(FetchKeywords()),
+							"metrics_language":["en"],
+							"metrics_network":"@(Model.Network)",
+							"metrics_currency":"USD",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
       </HttpSettings>
 			<Fetch.Url>
 				<![CDATA[
-					http://api.keywordtool.io/v2/search/volume/google?output=json
-					&apikey=@(Model.ApiKey)
-					&keyword=[@(FetchKeywords())]
-					@(!string.IsNullOrEmpty(Model.LocationId) ? "&metrics_location=" + Utils.UrlEncode(Model.LocationId) : "")
-					&metrics_network=@(Model.Network)
+					https://api.keywordtool.io/v2/search/volume/google?output=json
 				]]>
 			</Fetch.Url>
 		</Fetch>
@@ -64,9 +71,7 @@
 				<JsonPath Expr="m12" Id="SearchVolume12" Title="Month 12" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 12 search volume."/>
 			</JsonPath>
 		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
+		<Resource Id="Fail"/>
 	</RestConnector>
 
 	<RestConnector Id="BingSearchVolume" Title="Bing Search Volume" HelpUrl="http://keywordtool.io/api/documentation" HelpText="Returns Bing Keyword Search Volume for up to 800 Keywords per call.">
@@ -108,9 +113,7 @@
 				<JsonPath Expr="m12" Id="SearchVolume12" Title="Month 12" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 12 search volume."/>
 			</JsonPath>
 		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
+		<Resource Id="Fail"/>
 	</RestConnector>
 
 	<RestConnector Id="KeywordSuggestions" Title="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation" HelpText="Returns the autocomplete keyword suggestions from the various search engines.">
@@ -119,7 +122,12 @@
 			<Text Id="LocationId" Title="Location Id" Required="false" HelpUrl="https://keywordtool.io/api/documentation#supported-parameters-metrics-location" HelpText="Click here to generate location Ids."/>
       <Select Id="Engine" Title="Engine" Required="false" DefaultValue="google">
         <DataSource>
-          <Resource Id="Engines"/>
+					<Item Id="google" Title="Google"/>
+					<Item Id="youtube" Title="YouTube"/>
+					<Item Id="bing" Title="Bing"/>
+					<Item Id="amazon" Title="Amazon"/>
+					<Item Id="ebay" Title="eBay"/>
+					<Item Id="app-store" Title="App Store"/>
         </DataSource>
       </Select>
       <Radio Id="Type" Title="Type" DefaultValue="suggestions" Required="false">
@@ -148,9 +156,7 @@
 				<JsonPath Expr="string" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
 			</JsonPath>
 		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
+		<Resource Id="Fail"/>
 	</RestConnector>
 
 	<RazorFunctions>

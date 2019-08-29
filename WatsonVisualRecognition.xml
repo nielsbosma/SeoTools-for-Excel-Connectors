@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Watson Visual Recognition" Id="WatsonVisualRecognition" Category="Image Recognition" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WatsonVisualRecognition.xml" HelpUrl="http://seotoolsforexcel.com/watson-vr/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/watson-vr/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Error">
+      <Fail>
+				<JsonPath Expr="images[0].error.description"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="General" Title="General" HelpUrl="https://cloud.ibm.com/apidocs/visual-recognition#classify-an-image">
+    <Parameters>
+			<Text Id="Url" Title="Image URL" Debug.DefaultValue="https://watson-developer-cloud.github.io/doc-tutorial-downloads/visual-recognition/fruitbowl.jpg" Required="true" HelpText="The URL of an image (.gif, .jpg, .png, .tif). The minimum recommended pixel density is 32X32 pixels, but the service tends to perform better with images that are at least 224 x 224 pixels. The maximum image size is 10 MB. Redirects are followed, so you can use a shortened URL."/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+				</RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://gateway.watsonplatform.net/visual-recognition/api/v3/classify?version=2018-03-19
+				&url=@(Model.Url)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.images[0].classifiers[0].classes.*">
+				<JsonPath Expr="class" Id="Class" Converter="String"/>
+				<JsonPath Expr="score" Id="Score" Converter="Double"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Faces" Title="Faces" HelpUrl="https://cloud.ibm.com/apidocs/visual-recognition#detect-faces-in-an-image">
+    <Parameters>
+			<Text Id="Url" Title="Image URL" Debug.DefaultValue="https://watson-developer-cloud.github.io/doc-tutorial-downloads/visual-recognition/Ginni_Rometty_at_the_Fortune_MPW_Summit_in_2011.jpg" Required="true" HelpText="The URL of an image (.gif, .jpg, .png, .tif). The minimum recommended pixel density is 32X32 pixels, but the service tends to perform better with images that are at least 224 x 224 pixels. The maximum image size is 10 MB. Redirects are followed, so you can use a shortened URL."/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+				</RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://gateway.watsonplatform.net/visual-recognition/api/v3/detect_faces?version=2018-03-19
+				&url=@(Model.Url)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.images[0].faces[*]">
+				<JsonPath Expr="gender.gender_label" Id="Gender" Converter="String"/>
+				<JsonPath Expr="gender.score" Id="GenderScore" Converter="Double"/>
+				<JsonPath Expr="age.min" Id="AgeMin" Converter="Double"/>
+				<JsonPath Expr="age.max" Id="AgeMax" Converter="Double"/>
+				<JsonPath Expr="age.score" Id="AgeScore" Converter="Double"/>
+				<JsonPath Expr="face_location.height" Id="Height" Converter="Double"/>
+				<JsonPath Expr="face_location.width" Id="Width" Converter="Double"/>
+				<JsonPath Expr="face_location.top" Id="Top" Converter="Double"/>
+				<JsonPath Expr="face_location.left" Id="Left" Converter="Double"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Error"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+			string CreateBasicAuth() {
+				return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes("apikey" + ":" + Model.ApiKey));
+			}
+    ]]>
+  </RazorFunctions>
+
+</Suite>

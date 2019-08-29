@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Lead Generation" Title="Dropcontact" Id="Dropcontact" RequireVersion="8.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Dropcontact.xml" HelpUrl="http://seotoolsforexcel.com/dropcontact/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/dropcontact/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/dropcontact/"/>
+  </Settings>
+
+  <RestConnector Id="Dropcontact" Title="Dropcontact" HelpUrl="https://developer.dropcontact.io/#request">
+    <Parameters>
+      <Text Id="Email" Title="Email Address" Debug.DefaultValue="dpalmero@malerba.fr" Required="true"/>
+      <Checkbox Id="Siren" Title="Include SIREN numbers" HelpText="Only French companies have SIREN numbers."/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='X-Access-Token'>@Model.ApiKey</Header>
+        </RequestHeaders>
+        <RequestBody>
+					<![CDATA[
+					{
+						"email": "@(Model.Email)",
+						"siren": "@(Model.Siren)"
+					}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dropcontact.io/clean
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="full_name" Id="FullName" Title="Full Name" DefaultValue=""/>
+			<JsonPath Expr="civility" Id="Civility" Title="Civility" DefaultValue=""/>
+			<JsonPath Expr="first_name" Id="FirstName" Title="First Name" DefaultValue=""/>
+			<JsonPath Expr="last_name" Id="LastName" Title="Last Name" DefaultValue=""/>
+			<JsonPath Expr="company" Id="Company" Title="Company" DefaultValue=""/>
+			<JsonPath Expr="website" Id="Website" Title="Website" DefaultValue=""/>
+			<JsonPath Expr="linkedin" Id="Linkedin" Title="Linkedin" DefaultValue=""/>
+			<JsonPath Expr="facebook" Id="Facebook" Title="Facebook" DefaultValue=""/>
+			<JsonPath Expr="twitter" Id="Twitter" Title="Twitter" DefaultValue=""/>
+			<JsonPath Expr="siren" Id="Siren" Title="Siren" Converter="Auto" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="siret" Id="Siret" Title="Siret" Converter="Auto" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="siret_address" Id="SiretAddress" Title="Siret Address" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="siret_zip" Id="SiretZip" Title="Siret ZIP" Converter="Auto" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="naf5_code" Id="Naf5_code" Title="Naf5 Code" DefaultValue="" Checked="false"/>
+			<JsonPath Expr="naf5_des" Id="naf5_des" Title="Naf5 Des" DefaultValue="" Checked="false"/>
+    </Parse>
+    <Fail>
+      <XPath Expr="//h1" Id="BadRequest" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Bad Request"/>
+    </Fail>
+  </RestConnector>
+
+</Suite>

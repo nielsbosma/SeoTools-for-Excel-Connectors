@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite RequireVersion="8.0" Title="Google Suggest" Category="SEO" Id="GoogleSuggest" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSuggest.xml" HelpUrl="http://seotoolsforexcel.com/google-suggest/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <RestConnector Id="GoogleSuggest" Title="Google Suggest" DefaultView="true">
+    <Parameters>
+      <Text Id="Keywords" Title="List of Keywords (One per row)" Debug.DefaultValue="zlatan" Required="true" Multiline="true"/>
+			<Select Id="Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="500" Minimum="0" Maximum="20000"/>
+    </Parameters>
+		<Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="10"/>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        http://suggestqueries.google.com/complete/search?output=toolbar&hl=@Model.Language
+				&q=@(FetchBatchItem())
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//CompleteSuggestion[1]/suggestion" Id="Suggestion-1" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[2]/suggestion" Id="Suggestion-2" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[3]/suggestion" Id="Suggestion-3" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[4]/suggestion" Id="Suggestion-4" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[5]/suggestion" Id="Suggestion-5" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[6]/suggestion" Id="Suggestion-6" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[7]/suggestion" Id="Suggestion-7" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[8]/suggestion" Id="Suggestion-8" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[9]/suggestion" Id="Suggestion-9" Attribute="data" DefaultValue=""/>
+      <XPath Expr="//CompleteSuggestion[10]/suggestion" Id="Suggestion-10" Attribute="data" DefaultValue=""/>
+    </Parse>
+  </RestConnector>
+
+	<RazorFunctions>
+    <![CDATA[
+    string FetchBatchItem() {
+      string[] lines = (string[])Model.KeywordsBatch;
+      return lines.Select(e => Utils.UrlEncode(e)).First().ToString();
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
