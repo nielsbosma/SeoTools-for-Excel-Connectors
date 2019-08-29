@@ -1,0 +1,456 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" RequireVersion="8.1.25" Title="Bing Webmaster Tools" Id="BingWebmasterTools" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/BingWebmasterTools.xml" HelpUrl="http://seotoolsforexcel.com/bing-webmaster-tools/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/bing-webmaster-tools/">
+    <Text Id="APIKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/bing-webmaster-tools/"/>
+  </Settings>
+
+	<!--
+			https://msdn.microsoft.com/en-us/library/jj572365.aspx
+	-->
+
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="Message"/>
+			</Fail>
+    </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Languages">
+      <Select Id="Language" Title="Language" Required="false" DefaultValue="en-US">
+        <DataSource>
+          <ISOLocaleCodes/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Countries">
+      <Select Id="Country" Title="Country" Required="false" DefaultValue="us">
+        <DataSource>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Sites" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetUserSites?apikey=@(Model.APIKey)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Url" Id="Url"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmissionQuota" Title="Submission Quota" HelpText="Url submission quota for current day and month.">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetUrlSubmissionQuota?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="d.DailyQuota" Id="Daily" Converter="Long"/>
+			<JsonPath Expr="d.MonthlyQuota" Id="Monthly" Converter="Long"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitUrl" Title="Submit URL">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://seotoolsforexcel.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Url" Title="URL to Submit" Debug.DefaultValue="https://seotoolsforexcel.com/connectors" Required="true"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+						"siteUrl":"@(Model.SiteUrl)",
+						"url":"@(Model.Url)"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+				https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl?apikey=@(Model.APIKey)
+				]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <Compute Id="Classification" DefaultValue="Invalid Query">
+        <Compute.Expr>
+          <![CDATA[
+          @{
+            string body = Model.FetchedResult.Body;
+						string result = body.Contains("\"d\"") ? "Ok" : "Error";
+          }
+          @result
+        ]]>
+        </Compute.Expr>
+      </Compute>
+			</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="QueryStats" Title="Query Stats" HelpText="Get detailed traffic statistics for top queries">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetQueryStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Query" Id="Query" Converter="String"/>
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="AvgImpressionPosition" Id="AvgImpressionPosition" Title="Avg Impression Position" Converter="Double"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+        <JsonPath Expr="AvgClickPosition" Id="AvgClickPosition" Title="Avg Click Position" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PageStats" Title="Page Stats" HelpText="Get detailed traffic statistics for top pages">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetPageStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Query" Id="Page" Converter="String"/>
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="AvgImpressionPosition" Id="AvgImpressionPosition" Title="Avg Impression Position" Converter="Double"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+        <JsonPath Expr="AvgClickPosition" Id="AvgClickPosition" Title="Avg Click Position" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RankAndTrafficStats" Title="Rank &amp; Traffic Stats" HelpText="List of site's impressions and clicks for for the last 6 months.">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetRankAndTrafficStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CrawlIssues" Title="Crawl Issues" HelpText="Get list of crawl issues for specific site">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetCrawlIssues?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Url" Id="URL" Converter="String"/>
+        <JsonPath Expr="HttpCode" Id="HttpCode" Title="HTTP Code" Converter="Auto"/>
+        <JsonPath Expr="InLinks" Id="InLinks" Converter="Long"/>
+        <JsonPath Expr="Issues" Id="Issues" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CrawlStats" Title="Crawl Stats" HelpText="List of crawl statistics for the last 6 months.">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetCrawlStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="InLinks" Id="InLinks" Converter="Long"/>
+        <JsonPath Expr="InIndex" Id="InIndex" Converter="Long"/>
+        <JsonPath Expr="CrawledPages" Id="CrawledPages" Title="Crawled Pages" Converter="Long"/>
+        <JsonPath Expr="Code2xx" Id="Code2xx" Title="Code 2xx" Converter="Long"/>
+        <JsonPath Expr="Code301" Id="Code301" Title="Code 301	" Converter="Long"/>
+        <JsonPath Expr="Code302" Id="Code302" Title="Code 302" Converter="Long"/>
+        <JsonPath Expr="Code4xx" Id="Code4xx" Title="Code 4xx" Converter="Long"/>
+        <JsonPath Expr="Code5xx" Id="Code5xx" Title="Code 5xx" Converter="Long"/>
+        <JsonPath Expr="BlockedByRobotsTxt" Id="BlockedByRobotsTxt" Title="Blocked by Robots Txt" Converter="Long"/>
+        <JsonPath Expr="AllOtherCodes" Id="OtherCodes" Title="Other Codes" Converter="Long"/>
+        <JsonPath Expr="ConnectionTimeout" Id="ConnectionTimeout" Title="Connection Timeout" Converter="Long"/>
+        <JsonPath Expr="ContainsMalware" Id="ContainsMalware" Title="Contains Malware" Converter="Long"/>
+        <JsonPath Expr="DnsFailures" Id="DnsFailures" Title="DNS Failures" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="LinkCounts" Title="Link Counts" HelpText="Get list of site pages which has inbound links">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetLinkCounts?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d.Links[*]">
+        <JsonPath Expr="Url" Id="URL" Converter="String"/>
+        <JsonPath Expr="Count" Id="Count" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PageQueryStats" Title="Page Query Stats" HelpText="Get detailed traffic statistics for specific site's page">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Url" Title="Page" Debug.DefaultValue="https://builtvisible.com/" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetPageQueryStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)&page=@(Model.Url)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Query" Id="Query" Converter="String"/>
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="AvgImpressionPosition" Id="AvgImpressionPosition" Title="Avg Impression Position" Converter="Double"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+        <JsonPath Expr="AvgClickPosition" Id="AvgClickPosition" Title="Avg Click Position" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="QueryPageDetailStats" Title="Query Page Detail Stats" HelpText="Get detailed statistics for specific query and page">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Url" Title="Page" Debug.DefaultValue="https://builtvisible.com/" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="built visible" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetQueryPageDetailStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)&page=@(Model.Url)&query=@(Utils.UrlEncode(Model.Query))
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+        <JsonPath Expr="Position" Id="Position" Title="Position" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="QueryPageStats" Title="Query Page Stats" HelpText="Get detailed traffic statistics for specific query">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="built visible" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetQueryPageStats?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)&query=@(Utils.UrlEncode(Model.Query))
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Query" Id="Query" Converter="String"/>
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="AvgImpressionPosition" Id="AvgImpressionPosition" Title="Avg Impression Position" Converter="Double"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+        <JsonPath Expr="AvgClickPosition" Id="AvgClickPosition" Title="Avg Click Position" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordResearch" Title="Keyword Stats" HelpText="Get keyword historical statistics">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Required="true" Debug.DefaultValue="dogs"/>
+			<Resource Id="Countries"/>
+			<Resource Id="Languages"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats?&apikey=@(Model.APIKey)
+					&q=@(Utils.UrlEncode(Model.Keyword))
+					&country=@(Model.Country.ToLower())
+					&language=@(Model.Language)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="BroadImpressions" Id="BroadImpressions" Title="Broad Impressions" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RelatedKeywords" Title="Keywords Related" HelpText="Get keyword impressions for selected period">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Required="true" Debug.DefaultValue="dogs"/>
+			<Resource Id="Countries"/>
+			<Resource Id="Languages"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetRelatedKeywords?&apikey=@(Model.APIKey)
+					&q=@(Utils.UrlEncode(Model.Keyword))
+					&country=@(Model.Country.ToLower())
+					&language=@(Model.Language)
+          &startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+          &endDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d[*]">
+        <JsonPath Expr="Query" Id="Query" Converter="String"/>
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="BroadImpressions" Id="BroadImpressions" Title="Broad Impressions" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlLinks" Title="Url Links" HelpText="Get inbound links for specific site url">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Url" Title="Page" Debug.DefaultValue="https://builtvisible.com/" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetUrlLinks?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)&link=@(Model.Url)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d.Details[*]">
+        <JsonPath Expr="Url" Id="Url" Converter="String"/>
+        <JsonPath Expr="AnchorText" Id="AnchorText" Title="Anchor Text" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UrlTrafficInfo" Title="Url Traffic Info" HelpText="Get index traffic details for single page">
+    <Parameters>
+      <Text Id="SiteUrl" Title="Site URL" Debug.DefaultValue="https://builtvisible.com/" Select.Connector="Sites" Select.IdField="Url" Select.TitleField="Url" Required="true"/>
+      <Text Id="Url" Title="Page" Debug.DefaultValue="https://builtvisible.com/" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://ssl.bing.com/webmaster/api.svc/json/GetUrlTrafficInfo?&apikey=@(Model.APIKey)
+					&siteUrl=@(Model.SiteUrl)&url=@(Model.Url)
+					]]>
+      </Fetch.Url>
+			<Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.d">
+        <JsonPath Expr="Impressions" Id="Impressions" Converter="Long"/>
+        <JsonPath Expr="Clicks" Id="Clicks" Converter="Long"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>

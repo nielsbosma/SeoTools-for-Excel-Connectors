@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Language" RequireVersion="7.0.0" Title="Google Natural Language" Id="GoogleNaturalLanguage" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleTranslate.xml" HelpUrl="http://seotoolsforexcel.com/google-translate/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/google-translate/">
+    <Text Id="APIKey" Title="API Key Id" Required="true" HelpUrl="http://seotoolsforexcel.com/google-translate/"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error.message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Sentiment" Title="Sentiment" HelpUrl="https://cloud.google.com/natural-language/docs/reference/rest/v1/documents/analyzeSentiment">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="I hate this fucking stuff" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://language.googleapis.com/v1/documents:analyzeSentiment?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestBody>
+					{
+						"document": {
+							"type": "PLAIN_TEXT",
+							"content": "@(Model.Text)"
+						},
+						"encodingType": "UTF8",
+					}
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.documentSentiment.score" Id="Score" Title="Score" Converter="Double" HelpText="Sentiment score between -1.0 (negative sentiment) and 1.0 (positive sentiment)."/>
+      <JsonPath Expr="$.documentSentiment.magnitude" Id="Magnitude" Title="Magnitude" Converter="Double" HelpText="A non-negative number which represents the absolute magnitude of sentiment regardless of score"/>
+      <JsonPath Expr="$.language" Id="Language" Title="Language" Converter="String" HelpText="The detected language"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EntitiesSentiment" Title="Entities &amp; Sentiment" HelpUrl="https://cloud.google.com/natural-language/docs/reference/rest/v1/documents/analyzeEntitySentiment">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="President Trump’s proposed budget is expected to include more funds for a wall but spending cuts in other areas." Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://language.googleapis.com/v1/documents:analyzeEntitySentiment?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestBody>
+					{
+						"document": {
+							"type": "PLAIN_TEXT",
+							"content": "@(Model.Text)"
+						},
+						"encodingType": "UTF8",
+					}
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.entities.*">
+				<JsonPath Expr="name" Id="Name" Title="Name" HelpText="The representative name for the entity."/>
+				<JsonPath Expr="type" Id="Type" Title="Type" HelpText="The entity type"/>
+				<JsonPath Expr="salience" Id="Salience" Title="Salience" Converter="Double" HelpText="Provides information about the importance or centrality of that entity to the entire document text."/>
+				<JsonPath Expr="sentiment.score" Id="Sentiment" Title="Sentiment" Converter="Double" HelpText="Sentiment score between -1.0 (negative sentiment) and 1.0 (positive sentiment)."/>
+				<JsonPath Expr="sentiment.magnitude" Id="Magnitude" Title="Magnitude" Converter="Double" HelpText="A non-negative number which represents the absolute magnitude of sentiment regardless of score"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Syntax" Title="Syntax" HelpUrl="https://cloud.google.com/natural-language/docs/reference/rest/v1/documents/analyzeSyntax">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="President Trump’s proposed budget is expected to include more funds for a wall but spending cuts in other areas." Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://language.googleapis.com/v1/documents:analyzeSyntax?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestBody>
+					{
+						"document": {
+							"type": "PLAIN_TEXT",
+							"content": "@(Model.Text)"
+						},
+						"encodingType": "UTF8",
+					}
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.tokens.*">
+				<JsonPath Expr="text.content" Id="Content" Title="Content" HelpText="The content of the output text."/>
+				<JsonPath Expr="text.beginOffset" Id="BeginsOffset" Title="Begins Offset" Converter="Int" HelpText="The beginning offset of the content in the original document."/>
+				<JsonPath Expr="lemma" Id="Lemma" Converter="String" HelpText="The canonical form, dictionary form, or citation form"/>
+				<JsonPath Expr="partOfSpeech.tag" Id="Tag" Title="Tag" HelpText="The part of speech tag."/>
+				<JsonPath Expr="partOfSpeech.aspect" Id="Aspect" HelpText="The grammatical aspect."/>
+				<JsonPath Expr="partOfSpeech.case" Id="Case" HelpText="The grammatical case."/>
+				<JsonPath Expr="partOfSpeech.form" Id="Form" HelpText="The grammatical form."/>
+				<JsonPath Expr="partOfSpeech.gender" Id="Gender" HelpText="The grammatical gender."/>
+				<JsonPath Expr="partOfSpeech.mood" Id="Mood" HelpText="The grammatical mood."/>
+				<JsonPath Expr="partOfSpeech.number" Id="Number" HelpText="The grammatical number."/>
+				<JsonPath Expr="partOfSpeech.person" Id="Person" HelpText="The grammatical person."/>
+				<JsonPath Expr="partOfSpeech.proper" Id="Proper" HelpText="The grammatical properness."/>
+				<JsonPath Expr="partOfSpeech.reciprocity" Id="Reciprocity" HelpText="The grammatical reciprocity."/>
+				<JsonPath Expr="partOfSpeech.tense" Id="Tense" HelpText="The grammatical tense."/>
+				<JsonPath Expr="partOfSpeech.voice" Id="Voice" HelpText="The grammatical voice."/>
+				<JsonPath Expr="dependencyEdge.headTokenIndex" Id="HeadTokenIndex" Title="Head Token Index" Converter="Int" HelpText="Represents the head of this token in the dependency tree."/>
+				<JsonPath Expr="dependencyEdge.label" Id="Label" Title="Dependency Label" HelpText="The parse label for the token."/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Classification" Title="Classification" HelpUrl="https://cloud.google.com/natural-language/docs/reference/rest/v1/documents/classifyText">
+    <Parameters>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="President Trump’s proposed budget is expected to include more funds for a wall but spending cuts in other areas." Required="true"/>
+      <Checkbox Id="Multi" Title="Return Multiple Results" DefaultValue="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://language.googleapis.com/v1/documents:classifyText?key=@(Model.APIKey)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json; charset=utf-8</RequestContentType>
+        <RequestBody>
+					{
+						"document": {
+							"type": "PLAIN_TEXT",
+							"content": "@(Model.Text)"
+						}
+					}
+				</RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.categories[@(Getquery())]">
+				<JsonPath Expr="name" Id="Category" Title="Category" HelpText="The name of the category representing the document"/>
+				<JsonPath Expr="confidence" Id="Confidence" Title="Confidence" HelpText="The classifier's confidence of the category"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+		<![CDATA[
+		string Getquery() {
+			return (Model.Multi == true) ? "*" : "0";
+		}
+		]]>
+  </RazorFunctions>
+
+</Suite>

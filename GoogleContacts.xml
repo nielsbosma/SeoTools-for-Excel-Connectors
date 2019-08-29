@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Google Contacts" Id="GoogleContacts" Category="Social" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleContacts.xml" HelpUrl="http://seotoolsforexcel.com/google-contacts/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/contacts.readonly" StayAuthenticated="true"/>
+
+  <RestConnector Id="GoogleContacts" Title="Google Contacts" HelpUrl="https://developers.google.com/people/api/rest/v1/people.connections/list">
+    <Parameters>
+      <Select Id="Sorting" Title="Sorting" DefaultValue="LAST_MODIFIED_ASCENDING">
+        <DataSource>
+					<Item Id="LAST_MODIFIED_ASCENDING" Title="Last Modified"/>
+					<Item Id="FIRST_NAME_ASCENDING" Title="First Name"/>
+					<Item Id="LAST_NAME_ASCENDING" Title="Last Name"/>
+        </DataSource>
+      </Select>
+		</Parameters>
+    <Paging PageSize="1000" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="totalItems"/>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>
+            <![CDATA[Bearer @(Model.Authenticator.AccessToken)]]>
+          </Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://people.googleapis.com/v1/people/me/connections
+				?personFields=@SelectedFields()
+				&sortOrder=@Model.Sorting
+        &pageSize=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="connections[*]">
+        <JsonPath Expr="emailAddresses[0].value" Id="EmailAddress" Title="Email Address" Tag="emailAddresses" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="names[0].displayName" Id="DisplayName" Title="Display Name" Tag="names" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="names[0].givenName" Id="GivenName" Title="Given Name" Tag="names" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="names[0].familyName" Id="FamilyName" Title="Family Name" Tag="names" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="nicknames[0].value" Id="Nickname" Title="Nickname" Tag="nicknames" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="phoneNumbers[0].value" Id="PhoneNumber" Title="Phone Number" Tag="phoneNumbers" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="organizations[0].name" Id="Organization" Title="Organization" Tag="organizations" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="organizations[0].title" Id="Position" Title="Position" Tag="organizations" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="biographies[0].value" Id="Biography" Title="Biography" Tag="biographies" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="birthdays[0].text" Id="Birthday" Title="Birthday" Tag="birthdays" Converter="Auto" DefaultValue=""/>
+        <JsonPath Expr="addresses[0].streetAddress" Id="StreetAddress" Title="StreetAddress" Tag="addresses" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="addresses[0].city" Id="City" Title="City" Converter="String" Tag="addresses" DefaultValue=""/>
+        <JsonPath Expr="addresses[0].postalCode" Id="PostalCode" Title="Postal Code" Tag="addresses" Converter="Auto" DefaultValue=""/>
+        <JsonPath Expr="addresses[0].country" Id="Country" Title="Country" Tag="addresses" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="urls[0].value" Id="Website" Title="Website" Tag="urls" Converter="String" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+    ]]>
+  </RazorFunctions>
+
+</Suite>

@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Lead Generation" RequireVersion="8.0.0" Title="Lusha" Id="Lusha" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Lusha.xml" HelpUrl="http://seotoolsforexcel.com/lusha/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/lusha/">
+    <Text Id="ApiKey" Title="Api Key" Required="true"/>
+  </Settings>
+
+	<Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="errors.message"/>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+    <Resource Id="Authorization">
+      <HttpSettings>
+				<Cache>True</Cache>
+        <RequestHeaders>
+          <Header Name='api_key'>@(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Person" Title="Person" HelpUrl="https://www.lusha.co/docs/#block-4">
+    <Parameters>
+      <Text Id="FirstName" Title="First Name" Debug.DefaultValue="Rob" Required="true"/>
+      <Text Id="LastName" Title="Last Name" Debug.DefaultValue="Taylor" Required="true"/>
+      <Text Id="Company" Title="Company" Debug.DefaultValue="intercom" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="Authorization"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.lusha.co/person
+				?firstName=@(Model.FirstName)
+				&lastName=@(Model.LastName)
+				&company=@(Model.Company)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data.firstName" Id="FirstName" Title="First Name" Converter="String" DefaultValue="" HelpText="First name of the person."/>
+			<JsonPath Expr="data.lastName" Id="LastName" Title="Last Name" Converter="String" DefaultValue="" HelpText="Last name of the person."/>
+			<JsonPath Expr="data.fullName" Id="FullName" Title="Full Name" Converter="String" DefaultValue="" HelpText="Full name of the person."/>
+			<Compute Id="Emails" Title="Email Addresses" Converter="Auto" HelpText="The email addresses of the person.">
+				<Compute.Expr>
+					<![CDATA[
+					@ConcatArr("email", Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.emailAddresses" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Id="EmailTypes" Title="Email Types" Converter="Auto" HelpText="Type of addresses. Might be work, personal or other.">
+				<Compute.Expr>
+					<![CDATA[
+					@ConcatArr("type", Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.emailAddresses" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Id="PhoneLocalizedNumbers" Title="Phone Localized Numbers" Converter="Auto" HelpText="The localized phone numbers.">
+				<Compute.Expr>
+					<![CDATA[
+					@ConcatArr("localizedNumber", Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.phoneNumbers" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Id="PhoneInternationalNumbers" Title="Phone International Numbers" Converter="Auto" HelpText="The international representation of the phone numbers.">
+				<Compute.Expr>
+					<![CDATA[
+					@ConcatArr("internationalNumber", Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.phoneNumbers" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Id="PhoneTypes" Title="Phone Types" Converter="Auto" HelpText="The type of the phone numbers. It might be work, mobile or other.">
+				<Compute.Expr>
+					<![CDATA[
+					@ConcatArr("type", Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.phoneNumbers" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<JsonPath Expr="data.location.city" Id="City" Title="City" Converter="String" DefaultValue="" HelpText="The city where the person lives."/>
+			<JsonPath Expr="data.location.country" Id="Country" Title="Country" Converter="String" DefaultValue="" HelpText="The country where the person lives."/>
+			<JsonPath Expr="data.location.countryCode" Id="CountryCode" Title="Country Code" Converter="String" DefaultValue="" HelpText="Two digit code of the person’s country."/>
+			<JsonPath Expr="data.location.state" Id="State" Title="State" Converter="String" DefaultValue="" HelpText="Full text of the person’s state."/>
+			<JsonPath Expr="data.location.stateCode" Id="StateCode" Title="State Code" Converter="String" DefaultValue="" HelpText="Two digit code of the person’s state."/>
+			<JsonPath Expr="data.location.lat" Id="Lat" Title="Latitude" Converter="Auto" DefaultValue="" HelpText="The latitude we surmised from the location info we have."/>
+			<JsonPath Expr="data.location.lng" Id="Long" Title="Longitude" Converter="Auto" DefaultValue="" HelpText="The longitude we surmised from the location info we have"/>
+			<JsonPath Expr="data.location.timeZone" Id="TimeZone" Title="Time Zone" Converter="String" DefaultValue="" HelpText="Current time zone based on the person’s location."/>
+			<JsonPath Expr="data.company.name" Id="CompanyName" Title="Company Name" Converter="String" DefaultValue="" HelpText="Name of company."/>
+			<Compute Id="CompanyEmployees" Title="Company Employees" Converter="Auto" HelpText="Approximate number of employees.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.company.numberOfEmployees" Id="Inp1" DefaultValue=""/>
+				<JsonPath Expr="data.company.employees" Id="Inp2" DefaultValue=""/>
+			</Compute>
+			<Compute Id="CompanyOverview" Title="Company Overview" Converter="Auto" HelpText="Description of the company.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.company.overview" Id="Inp1" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="data.company.description" Id="Inp2" Converter="Auto" DefaultValue=""/>
+			</Compute>
+			<JsonPath Expr="data.company.language" Id="CompanyLanguage" Title="Company Language" Converter="String" DefaultValue="" HelpText="Language of the company."/>
+			<Compute Id="CompanyFounded" Title="Company Founded" Converter="Auto" HelpText="The year when the organization was founded.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.company.foundedYear" Id="Inp1" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="data.company.founded" Id="Inp2" Converter="Auto" DefaultValue=""/>
+			</Compute>
+			<JsonPath Expr="data.company.social.linkedIn.url" Id="CompanyLinkedInUrl" Title="Company LinkedIn URL" Converter="String" DefaultValue="" HelpText="URL of the company’s LinkedIn page."/>
+			<JsonPath Expr="data.company.social.facebook.url" Id="CompanyFacebookUrl" Title="Company Facebook URL" Converter="String" DefaultValue="" HelpText="URL of Facebook page of the company."/>
+			<JsonPath Expr="data.company.social.twitter.url" Id="CompanyTwitterUrl" Title="Company Twitter URL" Converter="String" DefaultValue="" HelpText="URL of Twitter page of the company."/>
+			<JsonPath Expr="data.company.logo" Id="CompanyLogo" Title="Company Logo" Converter="String" DefaultValue="" HelpText="Company’s logo URL."/>
+			<JsonPath Expr="data.company.website" Id="CompanyWebsite" Title="Company Website" Converter="String" DefaultValue="" HelpText="URL of the company’s website."/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Company" Title="Company" HelpUrl="https://www.lusha.co/docs/#block-6">
+    <Parameters>
+      <Text Id="Input" Title="Find Company by " Debug.DefaultValue="intercom" Required="true"/>
+      <Radio Id="Type" Title="Input Type" DefaultValue="company">
+        <DataSource>
+          <Item Id="company" Title="Company" />
+          <Item Id="domain" Title="Domain" />
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Fetch>
+			<Resource Id="Authorization"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.lusha.co/company
+				?@(Model.Type)=@(Model.Input)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data.name" Id="Name" Title="Name" Converter="String" DefaultValue="" HelpText="Name of company."/>
+			<Compute Id="Employees" Title="Employees" Converter="Auto" HelpText="Approximate number of employees.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.numberOfEmployees" Id="Inp1" DefaultValue=""/>
+				<JsonPath Expr="data.employees" Id="Inp2" DefaultValue=""/>
+			</Compute>
+			<Compute Id="Overview" Title="Overview" Converter="Auto" HelpText="Description of the company.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.overview" Id="Inp1" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="data.description" Id="Inp2" Converter="Auto" DefaultValue=""/>
+			</Compute>
+			<JsonPath Expr="data.language" Id="Language" Title="Language" Converter="String" DefaultValue="" HelpText="Language of the company."/>
+			<Compute Id="CompanyFounded" Title="Founded" Converter="Auto" HelpText="The year when the organization was founded.">
+				<Compute.Expr>
+					<![CDATA[
+					@(Model.Inp1)@(Model.Inp2)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="data.foundedYear" Id="Inp1" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="data.founded" Id="Inp2" Converter="Auto" DefaultValue=""/>
+			</Compute>
+			<JsonPath Expr="data.social.linkedin.url" Id="LinkedInUrl" Title="LinkedIn URL" Converter="String" DefaultValue="" HelpText="URL of the company’s LinkedIn page."/>
+			<JsonPath Expr="data.social.facebook.url" Id="FacebookUrl" Title="Facebook URL" Converter="String" DefaultValue="" HelpText="URL of Facebook page of the company."/>
+			<JsonPath Expr="data.social.twitter.url" Id="TwitterUrl" Title="Twitter URL" Converter="String" DefaultValue="" HelpText="URL of Twitter page of the company."/>
+			<JsonPath Expr="data.logo" Id="Logo" Title="Logo" Converter="String" DefaultValue="" HelpText="Company’s logo URL."/>
+			<JsonPath Expr="data.domain" Id="Domain" Title="Domain" Converter="String" DefaultValue="" HelpText="Domain of the company"/>
+			<JsonPath Expr="data.website" Id="Website" Title="Website" Converter="String" DefaultValue="" HelpText="URL of the company’s website."/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string ConcatArr(string name, string body) {
+				string expr = "\"" + name + "\": \"(.*?)\"";
+				Regex regex = new Regex(@expr);
+				MatchCollection matchCollection = regex.Matches(body);
+				return string.Join(",", matchCollection.Cast<Match>().Select(m => m.Groups[1].Value));
+      }
+    ]]>
+  </RazorFunctions>
+
+</Suite>

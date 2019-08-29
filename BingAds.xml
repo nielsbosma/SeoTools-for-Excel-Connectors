@@ -1,0 +1,1702 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" Title="Bing Ads" Id="BingAds" RequireVersion="8.1.35" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/BingAds.xml" HelpUrl="http://seotoolsforexcel.com/bing-ads/">
+
+  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://login.live.com/oauth20_authorize.srf?client_id=a688826e-d804-4c17-9317-e898b3508c99&amp;scope=bingads.manage&amp;response_type=token&amp;redirect_uri={0}&amp;state=hf7FD437we89"/>
+
+  <Resources>
+    <Resource Id="AggregationValues">
+      <Select Id="Aggregation" Title="Aggregation" DefaultValue="Monthly">
+        <DataSource>
+					<Item Id="Hourly"/>
+					<Item Id="Daily"/>
+					<Item Id="Weekly"/>
+					<Item Id="Monthly"/>
+					<Item Id="Yearly"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Fetch">
+			<Fetch>
+				<HttpSettings>
+					<RequestContentType>zip</RequestContentType>
+				</HttpSettings>
+				<Fetch.Url>
+					<![CDATA[
+						@(Model.ReportUrl)
+					]]>
+				</Fetch.Url>
+			</Fetch>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <XPath Expr="//operationerror/message"/>
+        <XPath Expr="//errors//message"/>
+        <XPath Expr="//faultstring"/>
+      </Fail>
+    </Resource>
+    <Resource Id="FetchParseFailPolling">
+			<Fetch>
+				<HttpSettings>
+					<RequestHeaders>
+						<Header Name="SOAPAction">PollGenerateReport</Header>
+					</RequestHeaders>
+					<RequestMethod>POST</RequestMethod>
+					<RequestContentType>text/xml; charset=utf-8</RequestContentType>
+					<RequestBody>
+						<![CDATA[
+						 @GeneratePoll()
+						]]>
+					</RequestBody>
+				</HttpSettings>
+				<Fetch.Url>
+					<![CDATA[
+						https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc
+					]]>
+				</Fetch.Url>
+			</Fetch>
+			<Parse>
+				<XPath Expr="//*[name()='reportdownloadurl']" Id="ReportUrl" />
+			</Parse>
+			<Fail>
+				<XPath Expr="//*[name()='Status']" Id="ReportUrlFail" Fail.If="IsEqual" Fail.ComparedTo="Pending" Fail.Action="Retry" Fail.RetryTimes="5" Fail.RetryAfter="3000" />
+				<XPath Expr="//*[name()='ReportDownloadUrl']" Id="ReportUrlFail2" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="No data found with current filters"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Accounts" Title="List Accounts">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">FindAccountsOrCustomersInfo</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+            <s:Header>
+              <h:ApplicationToken i:nil="true" xmlns:h="https://bingads.microsoft.com/Customer/v12" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>
+              <h:AuthenticationToken xmlns:h="https://bingads.microsoft.com/Customer/v12">@(Model.Authenticator.Token)</h:AuthenticationToken>
+              <h:DeveloperToken xmlns:h="https://bingads.microsoft.com/Customer/v12">1193759878590095</h:DeveloperToken>
+            </s:Header>
+            <s:Body>
+              <FindAccountsOrCustomersInfoRequest xmlns="https://bingads.microsoft.com/Customer/v12">
+                <Filter/>
+                <TopN>1000</TopN>
+              </FindAccountsOrCustomersInfoRequest>
+            </s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://clientcenter.api.bingads.microsoft.com/Api/CustomerManagement/v12/CustomerManagementService.svc
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//*[name()='accountinfowithcustomerdata']/*[name()='a:accountinfowithcustomerdata']">
+				<Xpath Expr="./*[name()='a:accountid']" Id="AccountId" Converter="Auto"/>
+        <Xpath Expr="./*[name()='a:accountname']" Id="AccountName"/>
+        <Xpath Expr="./*[name()='a:accountnumber']" Id="AccountNumber" Converter="Auto"/>
+        <Xpath Expr="./*[name()='a:accountlifecyclestatus']" Id="AccountStatus"/>
+        <Xpath Expr="./*[name()='a:customerid']" Id="CustomerId" Converter="Auto"/>
+        <Xpath Expr="./*[name()='a:customername']" Id="CustomerName"/>
+      </Xpath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountsCustomers" Hidden="true">
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">FindAccountsOrCustomersInfo</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+            <s:Header>
+              <h:ApplicationToken i:nil="true" xmlns:h="https://bingads.microsoft.com/Customer/v12" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>
+              <h:AuthenticationToken xmlns:h="https://bingads.microsoft.com/Customer/v12">@(Model.Authenticator.Token)</h:AuthenticationToken>
+              <h:DeveloperToken xmlns:h="https://bingads.microsoft.com/Customer/v12">1193759878590095</h:DeveloperToken>
+            </s:Header>
+            <s:Body>
+              <FindAccountsOrCustomersInfoRequest xmlns="https://bingads.microsoft.com/Customer/v12">
+                <Filter/>
+                <TopN>1000</TopN>
+              </FindAccountsOrCustomersInfoRequest>
+            </s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://clientcenter.api.bingads.microsoft.com/Api/CustomerManagement/v12/CustomerManagementService.svc
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//*[name()='accountinfowithcustomerdata']/*[name()='a:accountinfowithcustomerdata']">
+        <Compute Id="Id" Expr="@(Model.CustomerId)/@(Model.AccId)" DefaultValue="">
+          <Xpath Expr="./*[name()='a:customerid']" Id="CustomerId"/>
+          <Xpath Expr="./*[name()='a:accountid']" Id="AccId"/>
+        </Compute>
+        <Compute Id="Name" Expr="@(Model.CustomerName)-@(Model.AccountName)" DefaultValue="">
+          <Xpath Expr="./*[name()='a:customername']" Id="CustomerName"/>
+          <Xpath Expr="./*[name()='a:accountname']" Id="AccountName"/>
+        </Compute>
+      </Xpath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Campaigns" Title="List Campaigns">
+    <Parameters>
+      <Text Id="AccountId" Debug.DefaultValue="250151008/150145763" Required="true" Select.Connector="AccountsCustomers" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">GetCampaignsByAccountId</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+            <s:Header>
+              <h:ApplicationToken i:nil="true" xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>
+              <h:AuthenticationToken xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.Authenticator.Token)</h:AuthenticationToken>
+              <h:DeveloperToken xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">1193759878590095</h:DeveloperToken>
+              <h:CustomerId	xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.AccountId.Split('/')[0])</h:CustomerId>
+              <h:CustomerAccountId xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.AccountId.Split('/')[1])</h:CustomerAccountId>
+            </s:Header>
+            <s:Body>
+              <GetCampaignsByAccountIdRequest	xmlns="https://bingads.microsoft.com/CampaignManagement/v12">
+					      <AccountId>@(Model.AccountId.Split('/')[1])</AccountId>
+      					<CampaignType>Search</CampaignType>
+								<CampaignType>Shopping</CampaignType>
+								<CampaignType>DynamicSearchAds</CampaignType>
+								<CampaignType>Audience</CampaignType>
+			        </GetCampaignsByAccountIdRequest>
+            </s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//campaigns/*">
+        <XPath Expr="./id" Id="Id" Title="Id" Converter="String" HelpText=""/>
+        <XPath Expr="./name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+        <XPath Expr="./status" Id="Status" Title="Status" Converter="String" HelpText=""/>
+        <XPath Expr="./dailybudget" Id="Dailybudget" Title="Daily Budget" Converter="String" HelpText=""/>
+        <XPath Expr="./description" Id="Description" Title="Description" Converter="String" HelpText=""/>
+        <XPath Expr="./campaigntype" Id="Campaigntype" Title="Campaigntype" Converter="String" HelpText=""/>
+        <XPath Expr="./biddingscheme" Id="Biddingscheme" Title="Bidding Scheme" Converter="String" HelpText=""/>
+        <XPath Expr="./budgettype" Id="Budgettype" Title="Budget Type" Converter="String" HelpText=""/>
+        <XPath Expr="./budgetid" Id="Budgetid" Title="Budgetid" Converter="String" HelpText="" Checked="false"/>
+			</Xpath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdGroups" Title="List Ad Groups">
+    <Parameters>
+      <Text Id="AccountId" Debug.DefaultValue="250151008/150145763" Required="true" Select.Connector="AccountsCustomers" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="CampaignId" Debug.DefaultValue="349338690" Required="true" Select.Connector="Campaigns" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">GetAdGroupsByCampaignId</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+            <s:Header>
+              <h:ApplicationToken i:nil="true" xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>
+              <h:AuthenticationToken xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.Authenticator.Token)</h:AuthenticationToken>
+              <h:DeveloperToken xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">1193759878590095</h:DeveloperToken>
+              <h:CustomerId	xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.AccountId.Split('/')[0])</h:CustomerId>
+              <h:CustomerAccountId xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">@(Model.AccountId.Split('/')[1])</h:CustomerAccountId>
+            </s:Header>
+            <s:Body>
+              <GetAdGroupsByCampaignIdRequest	xmlns="https://bingads.microsoft.com/CampaignManagement/v12">
+								<CampaignId>@(Model.CampaignId)</CampaignId>
+			        </GetAdGroupsByCampaignIdRequest>
+            </s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//AdGroups/*">
+        <XPath Expr="./id" Id="Id"/>
+        <XPath Expr="./name" Id="Name"/>
+        <XPath Expr="./network" Id="Network"/>
+        <XPath Expr="./status" Id="Status"/>
+			</Xpath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- ACCOUNT PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/accountperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="AccountPerformance" Title="Report - Account Performance" HelpText="Use this report to observe long-term account performance and trends.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763" Required="false"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollAccountPerformance" Parameters="AccountId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AccountStatus" Title="AccountStatus [D]" Checked="false" Converter="Auto" HelpText="The account status."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="ClickCalls" Converter="Auto" HelpText="The number of phone calls initiated by clicks."/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="AverageCpc" Converter="Double" HelpText="The average cost per click (CPC). The total cost of all clicks on an ad divided by the number of clicks."/>
+				<Field Id="AverageCpp" Converter="Double" HelpText="The average cost per phone call (CPP)."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="LowQualityClicks" Converter="Double" HelpText="Clicks that exhibit a low likelihood of commercial intent."/>
+				<Field Id="LowQualityClicksPercent" Converter="Double" HelpText="The low-quality clicks as a percentage."/>
+				<Field Id="LowQualityImpressions" Converter="Auto" HelpText="The number of impressions that result from low-quality keyword searches."/>
+				<Field Id="LowQualityImpressionsPercent" Converter="Double" HelpText="The low-quality impressions as a percentage. "/>
+				<Field Id="LowQualityConversions" Converter="Auto" HelpText="The number of conversions that originate from low-quality clicks."/>
+				<Field Id="LowQualityConversionRate" Converter="Double" HelpText="The low-quality conversion rate as a percentage."/>
+				<Field Id="ImpressionSharePercent" Converter="Double" HelpText="The estimated percentage of impressions, out of the total available impressions in the market you were targeting."/>
+				<Field Id="PhoneImpressions" Converter="Auto" HelpText="The number of times your tracked number was shown on all devices."/>
+				<Field Id="PhoneCalls" Converter="Auto" HelpText="The number of total calls to the tracked phone number that showed with your ad."/>
+				<Field Id="ManualCalls" Converter="Auto" HelpText="The number of calls dialed manually from any device to the tracked phone number. "/>
+				<Field Id="Ptr" Converter="Double" HelpText="The phone-through rate (Ptr)."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="ReturnOnAdSpend" Converter="Auto" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Double" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Double" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Double" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+				<Field Id="LowQualityGeneralClicks" Converter="Auto" HelpText="Clicks that are filtered by general methods, such as blacklists and activity-based detection, and that exhibit a low likelihood of commercial intent."/>
+				<Field Id="LowQualitySophisticatedClicks" Converter="Auto" HelpText="Invalid clicks that use sophisticated means to appear valid."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+				<Field Id="CustomerId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a customer."/>
+				<Field Id="CustomerName" Title="CustomerName [D]" Checked="false" HelpText="The customer name."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollAccountPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitAccountPerformance" Parameters="AccountId,Aggregation,DateInterval"/>
+    </Prepare>
+		<Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitAccountPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsAccountPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "TimePeriod";
+					}
+          <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="AccountPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsAccountPerformance, RequiredFields, "AccountPerformance")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId) ? GenerateAccountsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- AD GROUP PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adgroupperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="AdGroupPerformance" Title="Report - Ad Group Performance" HelpText="Compare how well different versions of your ad extensions are performing with each ad.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollAdGroupPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="Status" Title="Status [D]" Converter="Auto" Checked="false" HelpText="The current entity status."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="ClickCalls" Converter="Auto" HelpText="The number of phone calls initiated by clicks."/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="AverageCpc" Converter="Double" HelpText="The average cost per click (CPC). The total cost of all clicks on an ad divided by the number of clicks."/>
+				<Field Id="AverageCpp" Converter="Double" HelpText="The average cost per phone call (CPP)."/>
+				<Field Id="AdRelevance" Converter="Double" HelpText="How closely related your ads is to the customer's search query or other input."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="ImpressionSharePercent" Converter="Double" HelpText="The estimated percentage of impressions, out of the total available impressions in the market you were targeting."/>
+				<Field Id="PhoneImpressions" Converter="Auto" HelpText="The number of times your tracked number was shown on all devices."/>
+				<Field Id="PhoneCalls" Converter="Auto" HelpText="The number of total calls to the tracked phone number that showed with your ad."/>
+				<Field Id="ManualCalls" Converter="Auto" HelpText="The number of calls dialed manually from any device to the tracked phone number. "/>
+				<Field Id="LandingPageExperience" Converter="Auto" HelpText="An aggregate quality assessment of all landing pages on your site."/>
+				<Field Id="ExpectedCtr" Converter="Auto" HelpText="How well your keyword competes against other keywords targeting the same traffic."/>
+				<Field Id="HistoricalAdRelevance" Converter="Auto" HelpText="Historical average of ad relevance scores back as far as 18 months from the current date."/>
+				<Field Id="HistoricalLandingPageExperience" Converter="Auto" HelpText="Historical average of landing page experience scores back as far as 18 months from the current date."/>
+				<Field Id="Ptr" Converter="Double" HelpText="The phone-through rate (Ptr)."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="QualityScore" Converter="Auto" HelpText="The numeric score shows you how competitive your ads are in the marketplace by measuring how relevant your keywords and landing pages are to customers' search terms."/>
+				<Field Id="ReturnOnAdSpend" Converter="Auto" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Double" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Double" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Double" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollAdGroupPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitAdGroupPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitAdGroupPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsAdGroupPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="AdGroupPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsAdGroupPerformance, RequiredFields, "AdGroupPerformance")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- AD PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="AdPerformance" Title="Report - Ad Performance" HelpText="Use this report to help you determine which ads lead to clicks and conversions, and which are not performing.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollAdPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="AdTitle" Title="AdTitle [D]" Converter="Auto" HelpText="The ad title."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AdType" Title="AdType [D]" Converter="Auto" HelpText="The ad type."/>
+				<Field Id="AdStatus" Title="AdStatus [D]" Converter="Auto" HelpText="The ad status."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="ReturnOnAdSpend" Converter="Auto" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Double" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Double" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Double" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+				<Field Id="AdDescription" Title="AdDescription [D]" Checked="false" Converter="Auto" HelpText="The first ad description that appears below the path in your ad."/>
+				<Field Id="DestinationUrl" Title="DestinationUrl [D]" Checked="false" Converter="Auto" HelpText="he destination URL attribute of the ad, keyword, or ad group criterion."/>
+				<Field Id="DisplayUrl" Title="DisplayUrl [D]" Checked="false" Converter="Auto" HelpText="The ad display URL."/>
+				<Field Id="Headline" Title="Headline [D]" Checked="false" Converter="Auto" HelpText="The shorter of two possible responsive ad headlines for Audience campaigns."/>
+				<Field Id="Path1" Title="Path1 [D]" Checked="false" Converter="Auto" HelpText="The path 1 attribute of an ad."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AdId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollAdPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitAdPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitAdPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsAdPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="AdPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsAdPerformance, RequiredFields, "AdPerformance")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- BUDGET SUMMARY
+	https://docs.microsoft.com/en-us/bingads/reporting-service/budgetsummaryreportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="BudgetSummary" Title="Report - Budget Summary" HelpText="Use this report to discover how your campaign's budget is performing day by day.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollBudgetSummary" Parameters="AccountId,CampaignId,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+        <Field Id="AccountName" Title="Account Name" Converter="String" HelpText="The account name."/>
+        <Field Id="CampaignName" Title="Campaign Name" Converter="String" HelpText="The campaign name."/>
+        <Field Id="DailySpend" Title="Daily Spend" Converter="Double" HelpText="The average amount of campaign budget spent per day."/>
+        <Field Id="Date" Title="Date" Converter="DateTime" HelpText="The date for the downloaded report records. The date will be in the time zone of the campaign"/>
+        <Field Id="MonthlyBudget" Title="Monthly Budget" Converter="Double" HelpText="The average amount of campaign budget spent during a calendar month."/>
+				<Field Id="MonthToDateSpend" Title="Month To Date Spend" Converter="Double" HelpText="The amount of money spent to date for the month."/>
+        <Field Id="CurrencyCode" Title="Currency Code" Converter="String" HelpText="The account currency type. For possible values, see Currencies."/>
+        <Field Id="AccountId" Title="Account Id" Converter="String" HelpText="The Bing Ads assigned identifier of an account."/>
+        <Field Id="CampaignId" Title="Campaign Id" Converter="String" HelpText="The Bing Ads assigned identifier of a campaign."/>
+        <Field Id="AccountNumber" Title="Account Number" Converter="String" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollBudgetSummary" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitBudgetSummary" Parameters="AccountId,CampaignId,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitBudgetSummary" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsBudgetSummary"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "AccountName,CampaignName,Date,CurrencyCode,AccountNumber";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="BudgetSummaryReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsBudgetSummary, RequiredFields, "BudgetSummary")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- AGE GENDER AUDIENCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="AgeGenderAudience" Title="Report - Age Gender Audience" HelpText="Use this report to discover how your campaigns and ad groups are resonating with different age groups and genders.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollAgeGenderAudience" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+        <Field Id="Gender" Title="Gender [D]" Converter="Auto" HelpText="The gender (male or female) of the search users to whom the ad was delivered."/>
+        <Field Id="AgeGroup" Title="AgeGroup [D]" Converter="Auto" HelpText="The age group of the audience who viewed the ad."/>
+				<Field Id="AccountStatus" Title="AccountStatus [D]" Checked="false" Converter="Auto" HelpText="The account status."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+        <Field Id="ExtendedCost" Title="ExtendedCost" Converter="Double" HelpText="Cost information that is optionally provided by advertisers, including non-advertising costs, taxes, and shipping."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollAgeGenderAudience" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitAgeGenderAudience" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitAgeGenderAudience" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsAgeGenderAudience"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "AccountName,AdGroupName,AgeGroup,Gender,TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="AgeGenderAudienceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsAgeGenderAudience, RequiredFields, "AgeGenderAudience")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+
+	<!-- GOALS AND FUNNEL
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="GoalsAndFunnels" Title="Report - Goals And Funnels" HelpText="Use this report to discover whether your audience completes each step through the land, browse, prospect, and conversion pages of your website.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollGoalsAndFunnels" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+        <Field Id="Goal" Title="Goal [D]" Converter="Auto" HelpText="The name of your event tracking or campaign analytics goal."/>
+        <Field Id="Keyword" Title="Keyword [D]" Converter="Auto" HelpText="The keyword text."/>
+        <Field Id="GoalType" Title="Goal Type [D]" Checked="false" Converter="Auto" HelpText="The goal type."/>
+        <Field Id="KeywordStatus" Title="KeywordStatus [D]" Checked="false" Converter="Auto" HelpText="The keyword status."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="AccountStatus" Title="AccountStatus [D]" Checked="false" Converter="Auto" HelpText="The account status."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+        <Field Id="GoalId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a goal."/>
+        <Field Id="KeywordId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a keyword."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AdId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollGoalsAndFunnels" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitGoalsAndFunnels" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitGoalsAndFunnels" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsGoalsAndFunnels"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "Goal,TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="GoalsAndFunnelsReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsGoalsAndFunnels, RequiredFields, "GoalsAndFunnels")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+
+	<!-- AUDIENCE PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="AudiencePerformance" Title="Report - Audience Performance" HelpText="Use this report to compare delivery performance statistics by audience, ad group, campaign, or account attributes.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollAudiencePerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="AudienceName" Title="AudienceName [D]" Converter="Auto" HelpText="The audience name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="AssociationStatus" Title="AssociationStatus [D]" Checked="false" Converter="Auto" HelpText="The status of the association between the ad group and remarketing list, which indicates whether ads are eligible to display."/>
+				<Field Id="BidAdjustment" Title="BidAdjustment [D]" Checked="false" Converter="Double" HelpText="This attribute reflects the current value of your ad group's audience bid adjustment"/>
+				<Field Id="TargetingSetting" Title="TargetingSetting [D]" Checked="false" Converter="Auto" HelpText="This attribute reflects the current value of your ad group's audience targeting setting."/>
+				<Field Id="AudienceType" Title="AudienceType [D]" Checked="false" Converter="Auto" HelpText="The audience type."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AudienceId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of the audience"/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollAudiencePerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitAudiencePerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitAudiencePerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsAudiencePerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "AccountId,AudienceId,TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="AudiencePerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsAudiencePerformance, RequiredFields, "AudiencePerformance")
+									</Columns>
+									<Filter/>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- KEYWORD PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adgroupperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="KeywordPerformance" Title="Report - Keyword Performance" HelpText="Use this report to find out which keywords are performing well and those that are not.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+      <Number Id="Rows" Title="Rows" DefaultValue="1000" Minimum="1" HelpText="The top number of data rows to return in the report."/>
+      <Text Id="SortColumn" Title="Sort by Column Name (Optional)"/>
+      <Radio Id="Direction" Title="Direction" DefaultValue="Descending">
+        <DataSource>
+          <Item Id="Descending"/>
+          <Item Id="Ascending"/>
+        </DataSource>
+      </Radio>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollKeywordPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval,Rows,SortColumn,Direction"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+        <Field Id="Keyword" Title="Keyword [D]" Converter="Auto" HelpText="The keyword text."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AdType" Title="AdType [D]" Converter="Auto" HelpText="The ad type."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="BidStrategyType" Title="BidStrategyType [D]" Converter="Auto" Checked="false" HelpText="The bid strategy type."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="AverageCpc" Converter="Auto" HelpText="The average cost per click (CPC). The total cost of all clicks on an ad divided by the number of clicks."/>
+				<Field Id="CurrentMaxCpc" Converter="Auto" HelpText="The maximum cost per click bid that was in effect at the time the report was generated."/>
+				<Field Id="AdRelevance" Converter="Auto" HelpText="How closely related your ads is to the customer's search query or other input."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Auto" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="LandingPageExperience" Converter="Auto" HelpText="An aggregate quality assessment of all landing pages on your site."/>
+				<Field Id="ExpectedCtr" Converter="Auto" HelpText="How well your keyword competes against other keywords targeting the same traffic."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="QualityScore" Converter="Auto" HelpText="The numeric score shows you how competitive your ads are in the marketplace by measuring how relevant your keywords and landing pages are to customers' search terms."/>
+				<Field Id="QualityImpact" Converter="Auto" HelpText="The numeric score that indicates the possible increase in the number of impressions that the keyword could receive if the corresponding QualityScore column would rise above underperforming"/>
+				<Field Id="ReturnOnAdSpend" Converter="Double" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Auto" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Auto" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Auto" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+        <Field Id="KeywordId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a keyword."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AdId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollKeywordPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="Rows"/>
+      <Text Id="SortColumn"/>
+      <Text Id="Direction"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitKeywordPerformance" Parameters="AccountId,CampaignId,AdGroupId,Aggregation,DateInterval,Rows,SortColumn,Direction"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitKeywordPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="Rows"/>
+      <Text Id="SortColumn"/>
+      <Text Id="Direction"/>
+      <Text Id="GetFieldsKeywordPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="KeywordPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsKeywordPerformance, RequiredFields, "KeywordPerformance")
+									</Columns>
+									<Filter/>
+									<MaxRows>@(Model.Rows)</MaxRows>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateSorting()
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- USER LOCATION PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="UserLocationPerformance" Title="Report - User Location Performance" HelpText="Use this report to see where your traffic is coming from broken out by the physical location and the location people are searching for.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+      <Select Id="CountryCode" Title="Filter by Country" DefaultValue="All">
+        <DataSource>
+					<Item Id="All"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="LanguageCode" Title="Filter by Language" DefaultValue="All">
+        <DataSource>
+					<Item Id="All"/>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollUserLocationPerformance" Parameters="AccountId,CampaignId,AdGroupId,CountryCode,LanguageCode,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="Country" Title="Country [D]" Converter="Auto" HelpText="The country where the user was physically located when they clicked the ad."/>
+				<Field Id="City" Title="City [D]" Checked="false" Converter="Auto" HelpText="The city where the user was physically located when they clicked the ad."/>
+				<Field Id="County" Title="County [D]" Checked="false" Converter="Auto" HelpText="The county where the user was physically located when they clicked the ad."/>
+				<Field Id="State" Title="State [D]" Checked="false" Converter="Auto" HelpText="The state where the user was physically located when they clicked the ad."/>
+				<Field Id="MetroArea" Title="MetroArea [D]" Checked="false" Converter="Auto" HelpText="The metro area where the user was physically located when they clicked the ad."/>
+				<Field Id="PostalCode" Title="PostalCode [D]" Checked="false" Converter="Auto" HelpText="The postal code where the user was physically located when they clicked the ad."/>
+				<Field Id="Language" Title="Language [D]" Checked="false" Converter="Auto" HelpText="The language of the country the ad is served in."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AdDistribution" Title="AdDistribution [D]" Converter="Auto" Checked="false" HelpText="The network where you want your ads to show."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="AverageCpc" Converter="Double" HelpText="The average cost per click (CPC). The total cost of all clicks on an ad divided by the number of clicks."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="ReturnOnAdSpend" Converter="Auto" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Double" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Double" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Double" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollUserLocationPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="CountryCode"/>
+      <Text Id="LanguageCode"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitUserLocationPerformance" Parameters="AccountId,CampaignId,AdGroupId,CountryCode,LanguageCode,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitUserLocationPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="CountryCode"/>
+      <Text Id="LanguageCode"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsUserLocationPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "AccountId,TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="UserLocationPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsUserLocationPerformance, RequiredFields, "UserLocationPerformance")
+									</Columns>
+									@GenerateLocationPerformanceFilter()
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<!--SEARCH QUERY PERFORMANCE
+	https://docs.microsoft.com/en-us/bingads/reporting-service/adgroupperformancereportrequest?view=bingads-12
+	-->
+
+  <RestConnector Id="SearchQueryPerformance" Title="Report - Search Query Performance" HelpText="Compare how well different versions of your ad extensions are performing with each ad.">
+    <Parameters>
+      <Text Id="AccountId" Title="Filter by AccountId (Optional)" Debug.DefaultValue="150145763"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id (Optional)" HelpText="Requires AccountId Filter if used" Debug.DefaultValue="349338690"/>
+      <Text Id="AdGroupId" Title="Filter by Ad Group Id (Optional)" HelpText="Requires AccountId and CampaignId Filters if used" Debug.DefaultValue="1288627759634682"/>
+			<Checkbox Id="ExcludeZeroClicks" Title="Exclude Zero Clicks" HelpText="If true, search terms that had one or more ad impressions but resulted in zero clicks will be excluded from the report." DefaultValue="False"/>
+      <Select Id="LanguageCode" Title="Filter by Language" DefaultValue="All">
+        <DataSource>
+					<Item Id="All"/>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Resource Id="AggregationValues"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Nullabe="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="PollSearchQueryPerformance" Parameters="AccountId,CampaignId,AdGroupId,ExcludeZeroClicks,LanguageCode,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="Fetch"/>
+    <Parse>
+      <Csv Separator="," HasHeader="true">
+				<Field Id="AccountName" Title="AccountName [D]" Converter="Auto" HelpText="The account name."/>
+				<Field Id="CampaignName" Title="CampaignName [D]" Converter="Auto" HelpText="The campaign name."/>
+				<Field Id="AdGroupName" Title="AdGroupName [D]" Converter="Auto" HelpText="The ad group name."/>
+				<Field Id="TimePeriod" Title="TimePeriod [D]" Converter="Auto" HelpText="The time period of each report row."/>
+				<Field Id="SearchQuery" Title="SearchQuery [D]" Converter="Auto" HelpText="	The search term used by your potential audience."/>
+        <Field Id="Keyword" Title="Keyword [D]" Checked="false" Converter="Auto" HelpText="The keyword text."/>
+				<Field Id="Language" Title="Language [D]" Checked="false" Converter="Auto" HelpText="The language of the country the ad is served in."/>
+				<Field Id="DeviceType" Title="DeviceType [D]" Checked="false" Converter="Auto" HelpText="The device name attribute of a device OS target bid. The type of device which showed ads."/>
+				<Field Id="Network" Title="Network [D]" Checked="false" Converter="Auto" HelpText="The combined search advertising marketplace made up of Bing, AOL, Yahoo, and partner sites."/>
+				<Field Id="DeliveredMatchType" Title="DeliveredMatchType [D]" Checked="false" Converter="Auto" HelpText="The match type used to deliver an ad."/>
+				<Field Id="AdType" Title="AdType [D]" Converter="Auto" HelpText="The ad type."/>
+				<Field Id="Impressions" Converter="Auto" HelpText="The number of times an ad has been displayed on search results pages. "/>
+				<Field Id="Clicks" Converter="Auto" HelpText="Clicks are what you pay for. Clicks typically include a customer clicking an ad on a search results page or on a website on the search network. "/>
+				<Field Id="Ctr" Converter="Double" HelpText="The click-through rate (CTR) is the number of times an ad was clicked, divided by the number of times the ad was shown (impressions)."/>
+				<Field Id="AverageCpc" Converter="Double" HelpText="The average cost per click (CPC). The total cost of all clicks on an ad divided by the number of clicks."/>
+				<Field Id="Spend" Converter="Auto" HelpText="The cost per click (CPC) summed for each click."/>
+				<Field Id="AveragePosition" Converter="Auto" HelpText="The average position of the ad on a webpage."/>
+				<Field Id="Conversions" Converter="Auto" HelpText="The number of conversions. A conversion is the completion of an action by a customer after viewing your ad."/>
+				<Field Id="ConversionRate" Converter="Double" HelpText="The number of conversions, divided by the total number of clicks."/>
+				<Field Id="CostPerConversion" Converter="Double" HelpText="The formula for calculating the cost per conversion is (Spend / Conversions)."/>
+				<Field Id="Assists" Converter="Auto" HelpText="The number of conversions from other ads within the same account that were preceded by one or more clicks from this ad."/>
+				<Field Id="Revenue" Converter="Auto" HelpText="The revenue optionally reported by the advertiser as a result of conversions."/>
+				<Field Id="ReturnOnAdSpend" Converter="Auto" HelpText="The return on ad spend (ROAS). The formula for calculating the ROAS is (Revenue / Spend)."/>
+				<Field Id="CostPerAssist" Converter="Double" HelpText="The cost per assist. The formula for calculating the cost per assist is (Spend / Assists)."/>
+				<Field Id="RevenuePerConversion" Converter="Double" HelpText="The revenue per conversion. The formula for calculating the revenue per conversion is (Revenue / Conversions)."/>
+				<Field Id="RevenuePerAssist" Converter="Double" HelpText="The revenue per assist. The formula for calculating the revenue per assist is (Revenue / Assists)."/>
+				<Field Id="AccountId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an account."/>
+				<Field Id="CampaignId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of a campaign."/>
+				<Field Id="AdGroupId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad group."/>
+				<Field Id="AdId" Converter="String" Checked="false" HelpText="The Bing Ads assigned identifier of an ad."/>
+				<Field Id="AccountNumber" Converter="String" Checked="false" HelpText="The Bing Ads assigned number of an account."/>
+      </Csv>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PollSearchQueryPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/pollgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="ExcludeZeroClicks"/>
+      <Text Id="LanguageCode"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SubmitSearchQueryPerformance" Parameters="AccountId,CampaignId,AdGroupId,ExcludeZeroClicks,LanguageCode,Aggregation,DateInterval"/>
+    </Prepare>
+    <Resource Id="FetchParseFailPolling"/>
+  </RestConnector>
+
+  <RestConnector Id="SubmitSearchQueryPerformance" Hidden="true" HelpUrl="https://docs.microsoft.com/en-us/bingads/reporting-service/submitgeneratereport?view=bingads-12">
+    <Parameters>
+      <Text Id="AccountId"/>
+      <Text Id="CampaignId"/>
+      <Text Id="AdGroupId"/>
+      <Text Id="ExcludeZeroClicks"/>
+      <Text Id="LanguageCode"/>
+      <Text Id="Aggregation"/>
+      <DateInterval Id="DateInterval"/>
+      <Text Id="GetFieldsSearchQueryPerformance"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name="SOAPAction">SubmitGenerateReport</Header>
+        </RequestHeaders>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>text/xml; charset=utf-8</RequestContentType>
+        <RequestBody>
+          <![CDATA[
+					@{
+						string RequiredFields = "SearchQuery,TimePeriod";
+					}
+           <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+						@GenerateDefaultSubmitHeader()
+            <s:Body>
+							<SubmitGenerateReportRequest xmlns="https://bingads.microsoft.com/Reporting/v12">
+								<ReportRequest i:type="SearchQueryPerformanceReportRequest"	xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+									@GenerateDefaultSubmitOptions()
+									<Aggregation>@(Model.Aggregation)</Aggregation>
+									<Columns>
+										@GenerateReportColumns(Model.GetFieldsSearchQueryPerformance, RequiredFields, "SearchQueryPerformance")
+									</Columns>
+									<Filter>
+										<ExcludeZeroClicks>@(Model.ExcludeZeroClicks.ToString().ToLower())</ExcludeZeroClicks>
+										@GenerateLanguageFilter()
+									</Filter>
+									<Scope>
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											? GenerateAccountsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											? GenerateCampaignsScope() : string.Empty)
+										@(!string.IsNullOrEmpty(Model.AccountId)
+											&& !string.IsNullOrEmpty(Model.CampaignId)
+											&& !string.IsNullOrEmpty(Model.AdGroupId)
+											? GenerateAdGroupsScope() : string.Empty)
+									</Scope>
+									@GenerateTimeScope()
+								</ReportRequest>
+							</SubmitGenerateReportRequest>
+						</s:Body>
+          </s:Envelope>
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+          https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//reportrequestid" Id="ReportId"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string GenerateReportColumns(string Fields, string RequiredFields, string ReportName){
+				string[] arrSelectedFields = Fields.Split(',');
+				string[] arrRequiredFields = RequiredFields.Split(',');
+				string[] arrTotalFields = new string[arrSelectedFields.Length + arrRequiredFields.Length];
+				arrSelectedFields.CopyTo(arrTotalFields, 0);
+				arrRequiredFields.CopyTo(arrTotalFields, arrSelectedFields.Length);
+				return String.Join(" ", arrTotalFields.Distinct().Select(c => String.Format("<{0}>{1}</{0}>", ReportName + "ReportColumn", c)));
+      }
+
+			string GenerateAccountsScope() {
+				return @"
+								<AccountIds xmlns:a1=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"">
+								<a1:long>" + Model.AccountId + "</a1:long>" + @"
+								</AccountIds>";
+			}
+
+			string GenerateCampaignsScope() {
+				return @"
+								<Campaigns>
+									<CampaignReportScope>
+										<AccountId>" + Model.AccountId + "</AccountId>" + @"
+										<CampaignId>" + Model.CampaignId + "</CampaignId>" + @"
+									</CampaignReportScope>
+								</Campaigns>";
+			}
+
+			string GenerateAdGroupsScope() {
+				return @"
+								<AdGroups>
+									<AdGroupReportScope>
+										<AccountId>" + Model.AccountId + "</AccountId>" + @"
+										<CampaignId>" + Model.CampaignId + "</CampaignId>" + @"
+										<AdGroupId>" + Model.AdGroupId + "</AdGroupId>" + @"
+									</AdGroupReportScope>
+								</AdGroups>";
+			}
+
+			string GeneratePoll() {
+				return @"
+           <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"">
+            	<s:Header>
+                <h:ApplicationToken i:nil=""true"" xmlns:h=""https://bingads.microsoft.com/Reporting/v12"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+                <h:AuthenticationToken xmlns:h=""https://bingads.microsoft.com/Reporting/v12"">" + Model.Authenticator.Token + "</h:AuthenticationToken>" + @"
+                <h:CustomerAccountId i:nil=""true""	xmlns:h=""https://bingads.microsoft.com/Reporting/v12""	xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+                <h:CustomerId i:nil=""true"" xmlns:h=""https://bingads.microsoft.com/Reporting/v12"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+                <h:DeveloperToken	xmlns:h=""https://bingads.microsoft.com/Reporting/v12"">1193759878590095</h:DeveloperToken>
+				    </s:Header>
+            <s:Body>
+              <PollGenerateReportRequest xmlns=""https://bingads.microsoft.com/Reporting/v12"">
+                <ReportRequestId>" + Model.ReportId + "</ReportRequestId>" + @"
+              </PollGenerateReportRequest>
+            </s:Body>
+          </s:Envelope>";
+			}
+
+			string GenerateDefaultSubmitHeader() {
+				return @"
+						<s:Header>
+							<h:ApplicationToken i:nil=""true"" xmlns:h=""https://bingads.microsoft.com/Reporting/v12"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+							<h:AuthenticationToken xmlns:h=""https://bingads.microsoft.com/Reporting/v12"">" + Model.Authenticator.Token + "</h:AuthenticationToken>" + @"
+							<h:CustomerAccountId i:nil=""true""	xmlns:h=""https://bingads.microsoft.com/Reporting/v12""	xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+							<h:CustomerId i:nil=""true"" xmlns:h=""https://bingads.microsoft.com/Reporting/v12"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>
+							<h:DeveloperToken	xmlns:h=""https://bingads.microsoft.com/Reporting/v12"">1193759878590095</h:DeveloperToken>
+				    </s:Header>";
+			}
+
+			string GenerateDefaultSubmitOptions() {
+				return @"
+								<ExcludeColumnHeaders>false</ExcludeColumnHeaders>
+								<ExcludeReportFooter>true</ExcludeReportFooter>
+								<ExcludeReportHeader>true</ExcludeReportHeader>
+								<Format>Csv</Format>
+								<Language>English</Language>
+								<ReturnOnlyCompleteData>false</ReturnOnlyCompleteData>";
+			}
+
+			string GenerateTimeScope() {
+				return @"
+					<Time>
+						<CustomDateRangeEnd>" +
+								String.Format("<{0}>{1}</{0}>", "Day", (((DateTime)Model.DateInterval.EndDate).ToString("dd"))) +
+								String.Format("<{0}>{1}</{0}>", "Month", (((DateTime)Model.DateInterval.EndDate).ToString("MM"))) +
+								String.Format("<{0}>{1}</{0}>", "Year", (((DateTime)Model.DateInterval.EndDate).ToString("yyyy"))) + @"
+							</CustomDateRangeEnd>
+							<CustomDateRangeStart>" +
+								String.Format("<{0}>{1}</{0}>", "Day", (((DateTime)Model.DateInterval.StartDate).ToString("dd"))) +
+								String.Format("<{0}>{1}</{0}>", "Month", (((DateTime)Model.DateInterval.StartDate).ToString("MM"))) +
+								String.Format("<{0}>{1}</{0}>", "Year", (((DateTime)Model.DateInterval.StartDate).ToString("yyyy"))) + @"
+							</CustomDateRangeStart>
+						</Time>";
+			}
+
+			string GenerateSorting() {
+				return (string.IsNullOrEmpty(Model.SortColumn)) ? "<Sort/>" : @"
+					<Sort>
+						<KeywordPerformanceReportSort>
+							<SortColumn>" + Model.SortColumn + "</SortColumn>" + @"
+							<SortOrder>" + Model.Direction + "</SortOrder>" + @"
+						</KeywordPerformanceReportSort>
+					</Sort>";
+			}
+
+			string GenerateLocationPerformanceFilter() {
+				if(Model.CountryCode == "All" && Model.LanguageCode == "All")
+					return "<Filter/>";
+
+				return @"
+					<Filter>
+						" + (Model.CountryCode != "All" ? @"<CountryCode xmlns:a1=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"">
+						<a1:string>" + Model.CountryCode.ToUpper() + "</a1:string>" + @"
+						</CountryCode>" : string.Empty) + @"
+						" + (Model.LanguageCode != "All" ? @"<LanguageCode xmlns:a1=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"">
+						<a1:string>" + Model.LanguageCode.ToUpper() + "</a1:string>" + @"
+						</LanguageCode>" : string.Empty) + @"
+					</Filter>";
+			}
+
+			string GenerateLanguageFilter() {
+				if(Model.LanguageCode == "All")
+					return string.Empty;
+
+				return @"
+						<LanguageCode xmlns:a1=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"">
+						<a1:string>" + Model.LanguageCode.ToUpper() + "</a1:string>" + @"
+						</LanguageCode>";
+			}
+
+
+    ]]>
+  </RazorFunctions>
+
+</Suite>
