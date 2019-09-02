@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Twitter" Id="Twitter" Category="Social" RequireVersion="8.1.50" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
+<Suite Title="Twitter" Id="Twitter" Category="Social" RequireVersion="8.2" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -47,17 +47,9 @@
 			</Fail>
 		</Resource>
     <Resource Id="Tweet">
-			<Compute Id="Url" Title="URL">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string url = (Model.Username is string) ? "https://www.twitter.com/" + Model.Username + "/statuses/" + Model.Id + "/" : "";
-					}
-					@url
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="user.screen_name" Id="Username" Converter="String"/>
-				<JsonPath Expr="id_str" Id="Id" Converter="String"/>
+			<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp1 + &quot;/statuses/&quot; + Model.Inp2 + &quot;/&quot;" Id="Url" Title="URL">
+				<JsonPath Expr="user.screen_name" Id="Inp1" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="id_str" Id="Inp2" Converter="String" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
@@ -91,16 +83,8 @@
 			<JsonPath Expr="entities.media[?(@@.type=='photo')].media_url" Id="PhotoUrl" Title="Photo URL" Converter="String" DefaultValue=""/>
 			<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 			<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
-			<Compute Id="UserUrl" Title="User URL">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string url = (Model.UsernameInput is string) ? "https://www.twitter.com/" + Model.UsernameInput + "/" : "";
-					}
-					@url
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="user.screen_name" Id="UsernameInput" Converter="String"/>
+			<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp + &quot;/&quot;)" Id="UserUrl" Title="User URL">
+				<JsonPath Expr="user.screen_name" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
 			<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String"/>
@@ -113,27 +97,11 @@
 			<JsonPath Expr="user.favourites_count" Id="UserLikes" Title="UserLikes" Converter="Int"/>
 			<JsonPath Expr="user.created_at" Id="Registered" Title="Registered" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
 			<JsonPath Expr="user.url" Id="Website" Title="Website" Converter="String"/>
-			<Compute Id="Avatar" Title="Avatar">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string avatar = (Model.AvatarInput is string) ? Regex.Replace(Model.AvatarInput, "_normal", "") : "";
-					}
-					@avatar
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="user.profile_image_url" Id="AvatarInput"/>
+			<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Title="Avatar">
+				<JsonPath Expr="user.profile_image_url" Id="Inp" DefaultValue=""/>
 			</Compute>
-			<Compute Id="Source" Title="Source">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-					string source = (Model.SourceInput is string) ? Regex.Replace(Model.SourceInput, "<.*?>", string.Empty) : "";
-					}
-					@source
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="source" Id="SourceInput"/>
+			<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Source" Title="Source">
+				<JsonPath Expr="source" Id="Inp" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
@@ -144,13 +112,8 @@
 			<JsonPath Expr="place.bounding_box.coordinates" Id="PlaceCoordinates" Title="Place Coordinates" DefaultValue="" Checked="false"/>
 		</Resource>
     <Resource Id="User">
-			<Compute Id="Url" Title="URL">
-				<Compute.Expr>
-					<![CDATA[
-						https://www.twitter.com/@(Model.Inp)/
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="screen_name" Id="Inp"/>
+			<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp + &quot;/&quot;)" Id="Url" Title="URL">
+				<JsonPath Expr="screen_name" Id="Inp" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="id_str" Id="Id" Title="User ID" Converter="String"/>
 			<JsonPath Expr="screen_name" Id="ScreenName" Title="Username"/>
@@ -165,13 +128,8 @@
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Created" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
 			<JsonPath Expr="lang" Id="Language" Title="Language" DefaultValue=""/>
 			<JsonPath Expr="url" Id="Url" Title="URL"/>
-			<Compute Id="Avatar" Title="Avatar">
-				<Compute.Expr>
-					<![CDATA[
-					@Regex.Replace(Model.AvatarInput, "_normal", "")
-					]]>
-				</Compute.Expr>
-				<JsonPath Expr="profile_image_url" Id="AvatarInput"/>
+			<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Title="Avatar">
+				<JsonPath Expr="profile_image_url" Id="Inp" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool"/>
 		</Resource>
@@ -340,10 +298,9 @@
         https://api.twitter.com/1.1/followers/list.json?skip_status=true
         &screen_name=@(Model.ScreenName)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-          @: &cursor=@(Model.NextCursor)
-        else if(Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor))
-          @: &cursor=@(Model.CustomCursor)
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.NextCursor
+					: Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor)
+					? "cursor=" + Model.CustomCursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -373,10 +330,9 @@
         https://api.twitter.com/1.1/friends/list.json?skip_status=true
         &screen_name=@(Model.ScreenName)
         &count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-          @: &cursor=@(Model.NextCursor)
-        else if(Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor))
-          @: &cursor=@(Model.CustomCursor)
+        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.NextCursor
+					: Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor)
+					? "cursor=" + Model.CustomCursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -420,7 +376,7 @@
           <Item Id="user_id" Title="User Ids"/>
         </DataSource>
       </Radio>
-      <Text Id="Ids" Title="List of Users" Debug.DefaultValue="wearebuddler" HelpText="Enter usernames or user ids separated by a new line" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="List of Users" Debug.DefaultValue="BroTommy2" HelpText="Enter usernames or user ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
@@ -434,29 +390,14 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            <![CDATA[
-            https://www.twitter.com/@(Model.Username)/
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="screen_name" Id="Username" Converter="String"/>
-        </Compute>
+				<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp + &quot;/&quot;)" Id="Url" Title="URL">
+					<JsonPath Expr="user.screen_name" Id="Inp" Converter="String" DefaultValue=""/>
+				</Compute>
         <JsonPath Expr="id_str" Id="Id" Title="User ID" Converter="String"/>
         <JsonPath Expr="screen_name" Id="ScreenName" Title="Username"/>
         <JsonPath Expr="name" Id="Name" Title="Name"/>
-        <Compute Id="Connections" Title="Connections">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.ConnectionsInput, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var connectionsstripped = temp2.Substring(1,temp2.Length-2);
-            }
-            @connectionsstripped
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="connections" Id="ConnectionsInput" Converter="String"/>
+        <Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Connections" Title="Connections">
+          <JsonPath Expr="connections" Id="Inp" Converter="String"/>
         </Compute>
       </JsonPath>
     </Parse>

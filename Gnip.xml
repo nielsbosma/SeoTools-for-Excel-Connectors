@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" Title="Gnip" Id="Gnip" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Gnip.xml" HelpUrl="http://seotoolsforexcel.com/gnip/" HelpText="Documentation">
+<Suite Category="Social" Title="Gnip" Id="Gnip" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Gnip.xml" HelpUrl="http://seotoolsforexcel.com/gnip/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -159,61 +159,69 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="results.*">
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            <![CDATA[
-            https://twitter.com/@(Model.ScreenName)/status/@(Model.IdStr)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="id_str" Id="IdStr" Converter="String"/>
-          <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
-        </Compute>
-       <JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
-        <Compute Id="Created" Title="Created" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-							@{
-							long adj = Convert.ToInt32(Model.Timezone)*60;
-							}
-							@Model.CreatedInput.AddMinutes(adj)
-            ]]>
-          </Compute.Expr>
-					<JsonPath Expr="created_at" Id="CreatedInput" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
-        </Compute>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
-				<Compute Id="Source" Title="Source">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.SourceInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="source" Id="SourceInput" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="retweet_count" Id="RetweetCount" Title="Retweets" Converter="Int"/>
-        <JsonPath Expr="favorite_count" Id="FavoriteCount" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="entities.urls[0].expanded_url" Id="AttachedUrl" Title="Attached URL" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="user.screen_name" Id="ScreenName" Title="Username" Converter="String"/>
-        <Compute Id="UserURL" Title="User URL">
-          <Compute.Expr>
-            <![CDATA[
-            https://twitter.com/@(Model.ScreenName)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="user.screen_name" Id="ScreenName" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="user.name" Id="UserName" Title="Full Name" Converter="String"/>
-        <JsonPath Expr="user.location" Id="UserLocation" Title="Location" Converter="String"/>
-        <JsonPath Expr="user.description" Id="UserDescription" Title="Biography" Converter="String"/>
-        <JsonPath Expr="user.followers_count" Id="UserFollowersCount" Title="Followers" Converter="Int"/>
-        <JsonPath Expr="lang" Id="Lang" Title="Language" Converter="String"/>
-        <JsonPath Expr="user.lang" Id="UserLang" Title="User Language" Converter="String"/>
-        <JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="in_reply_to_status_id" Id="RepliedTweet" Title="Replied TweetId" Checked="false"/>
-        <JsonPath Expr="in_reply_to_screen_name" Id="RepliedUser" Title="Replied User" Checked="false"/>
+				<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp1 + &quot;/statuses/&quot; + Model.Inp2 + &quot;/&quot;" Id="Url" Title="URL">
+					<JsonPath Expr="user.screen_name" Id="Inp1" Converter="String" DefaultValue=""/>
+					<JsonPath Expr="id_str" Id="Inp2" Converter="String" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
+				<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
+				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
+				<Compute Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@JoinJsonEntities("text")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="entities.hashtags" Id="Inp" Converter="String" DefaultValue=""/>
+				</Compute>
+				<Compute Id="UrlEntities" Title="Url Entities" Converter="Auto" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@JoinJsonEntities("url")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="entities.urls" Id="Inp" Converter="String" DefaultValue=""/>
+				</Compute>
+				<Compute Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+						@JoinJsonEntities("screen_name")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="entities.user_mentions" Id="Inp" Converter="String" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="entities.media[?(@@.type=='photo')].media_url" Id="PhotoUrl" Title="Photo URL" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
+				<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
+				<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp + &quot;/&quot;)" Id="UserUrl" Title="User URL">
+					<JsonPath Expr="user.screen_name" Id="Inp" Converter="String" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
+				<JsonPath Expr="user.name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
+				<JsonPath Expr="user.description" Id="Bio" Title="Bio" Converter="String"/>
+				<JsonPath Expr="user.friends_count" Id="Follows" Title="Follows" Converter="Int"/>
+				<JsonPath Expr="user.listed_count" Id="Lists" Title="Lists" Converter="Int"/>
+				<JsonPath Expr="user.statuses_count" Id="Tweets" Title="Tweets" Converter="Int"/>
+				<JsonPath Expr="user.lang" Id="Language" Title="Language" Converter="String"/>
+				<JsonPath Expr="user.favourites_count" Id="UserLikes" Title="UserLikes" Converter="Int"/>
+				<JsonPath Expr="user.created_at" Id="Registered" Title="Registered" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+				<JsonPath Expr="user.url" Id="Website" Title="Website" Converter="String"/>
+				<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Title="Avatar">
+					<JsonPath Expr="user.profile_image_url" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Source" Title="Source">
+					<JsonPath Expr="source" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="retweeted_status.id_str" Id="RetweetedTweet" Title="Retweeted TweetId" Converter="String" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="retweeted_status.user.screen_name" Id="RetweetedUser" Title="Retweeted User" Converter="String" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="in_reply_to_status_id" Id="RepliedTweet" Title="Replied TweetId" Checked="false"/>
+				<JsonPath Expr="in_reply_to_screen_name" Id="RepliedUser" Title="Replied User" Checked="false"/>
+				<JsonPath Expr="place.full_name" Id="PlaceFullName" Title="Place Name" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="place.country" Id="PlaceCountry" Title="Place Country" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="place.bounding_box.coordinates" Id="PlaceCoordinates" Title="Place Coordinates" DefaultValue="" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -388,11 +396,21 @@
 
   <RazorFunctions>
     <![CDATA[
-    String CreateBasicAuth()
-    {
+    String CreateBasicAuth() {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
       return AuthString;
     }
+		
+		String JoinJsonEntities(string entity) {
+			string result ="";
+			string pattern = @"""" + entity + @""":\s\""(.*?)""";
+			Regex regex = new Regex(pattern);
+			if(Model.Inp is string) {
+				MatchCollection matchCollection = regex.Matches(Model.Inp);
+				result = string.Join(",", from Match match in matchCollection select match.Groups[1].Value);
+			}
+			return result;
+		}
     ]]>
   </RazorFunctions>
 
