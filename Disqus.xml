@@ -10,24 +10,38 @@
   </Settings>
 
   <Resources>
-    <Resource Id="SortPosts">
-     <Item Id="date" Title="Date"/>
-     <Item Id="priority" Title="Priority"/>
-    </Resource>
+		<Resource Id="SortPosts">
+			<Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="date">
+        <DataSource>
+				 <Item Id="date" Title="Date"/>
+				 <Item Id="priority" Title="Priority"/>
+        </DataSource>
+      </Select>
+		</Resource>
+		<Resource Id="SortDirection">
+			<Select Id="Direction" Title="Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Select>
+		</Resource>
+		<Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="message"/>
+      </Fail>
+		</Resource>
   </Resources>
 
-  <RestConnector Id="PostLookup" Title="Post Lookup" HelpUrl="https://disqus.com/api/docs/posts/details/">
+  <RestConnector Id="PostLookup" Title="Lookup a Post" Group="Post Reports" HelpUrl="https://disqus.com/api/docs/posts/details/">
     <Parameters>
       <Text Id="PostId" Title="Post Id" Debug.DefaultValue="2541231971" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/posts/details.json?
-          post=@(Model.PostId)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
+          https://disqus.com/api/3.0/posts/details.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
+          &post=@(Model.PostId)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -53,27 +67,16 @@
         <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ForumPosts" Title="Forum Posts" HelpUrl="https://disqus.com/api/docs/posts/list/">
+  <RestConnector Id="ForumPosts" Title="Forum Posts" Group="Post Reports" HelpUrl="https://disqus.com/api/docs/posts/list/">
     <Parameters>
       <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="jonkopingsposten" Required="true"/>
       <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Select Id="Sorting" Title="Sort Posts by" Required="false" DefaultValue="date">
-        <DataSource>
-          <Resource Id="SortPosts"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="false">
-        <DataSource>
-          <Item Id="desc" Title="Descending"/>
-          <Item Id="asc" Title="Ascending"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="SortPosts"/>
+      <Resource Id="SortDirection"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -83,27 +86,18 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/posts/list.json?
-          forum=@(Model.ForumName)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
+          https://disqus.com/api/3.0/posts/list.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
+          &forum=@(Model.ForumName)
           &sortType=@(Model.Sorting)
           &order=@(Model.Direction)
           @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
           {
-              @: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-              @: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+						@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+						@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
           }
-          @if(Model.HasLink == true)
-          {
-            @: &filters=2
-          }
+          @(Model.HasLink == true ? "&filters=2" : "")
           &limit=@(Model.PageCursor.PageSize)
-          @if(Model.PageCursor.Page != 0)
-          {
-            @: &cursor=@(Model.Cursor)
-          }
+          @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -129,27 +123,16 @@
         <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ThreadPosts" Title="Thread Posts" HelpUrl="https://disqus.com/api/docs/posts/list/">
+  <RestConnector Id="ThreadPosts" Title="Thread Posts" Group="Post Reports" HelpUrl="https://disqus.com/api/docs/posts/list/">
     <Parameters>
       <Text Id="ThreadId" Title="Thread Id" Debug.DefaultValue="5362095861" Required="true"/>
       <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Select Id="Sorting" Title="Sort Posts by" Required="false" DefaultValue="date">
-        <DataSource>
-          <Resource Id="SortPosts"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="false">
-        <DataSource>
-          <Item Id="desc" Title="Descending"/>
-          <Item Id="asc" Title="Ascending"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="SortPosts"/>
+      <Resource Id="SortDirection"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -159,27 +142,18 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/posts/list.json?
-          thread=@(Model.ThreadId)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
+          https://disqus.com/api/3.0/posts/list.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
+          &thread=@(Model.ThreadId)
           &sortType=@(Model.Sorting)
           &order=@(Model.Direction)
           @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
           {
-              @: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-              @: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+						@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+						@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
           }
-          @if(Model.HasLink == true)
-          {
-            @: &filters=2
-          }
+          @(Model.HasLink == true ? "&filters=2" : "")
           &limit=@(Model.PageCursor.PageSize)
-          @if(Model.PageCursor.Page != 0)
-          {
-            @: &cursor=@(Model.Cursor)
-          }
+          @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -205,21 +179,14 @@
         <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MyPosts" Title="My Posts" HelpUrl="https://disqus.com/api/docs/users/listPosts/">
+  <RestConnector Id="MyPosts" Title="My Posts" Group="Post Reports" HelpUrl="https://disqus.com/api/docs/users/listPosts/">
     <Parameters>
       <Checkbox Id="HasLink" Title="Return Only Posts with Links" DefaultValue="false"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Radio Id="Direction" Title="Sort Threads by Date" DefaultValue="desc" Required="false">
-        <DataSource>
-          <Item Id="desc" Title="Descending"/>
-          <Item Id="asc" Title="Ascending"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="SortDirection"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -229,25 +196,16 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/users/listPosts.json?
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
+          https://disqus.com/api/3.0/users/listPosts.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           &order=@(Model.Direction)
           @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
           {
-              @: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-              @: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+						@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+						@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
           }
-          @if(Model.HasLink == true)
-          {
-            @: &filters=2
-          }
+          @(Model.HasLink == true ? "&filters=2" : "")
           &limit=@(Model.PageCursor.PageSize)
-          @if(Model.PageCursor.Page != 0)
-          {
-            @: &cursor=@(Model.Cursor)
-          }
+          @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -264,23 +222,18 @@
         <JsonPath Expr="forum" Id="Forum" Title="Forum" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserLookup" Title="User Lookup" HelpUrl="https://disqus.com/api/docs/users/details/">
+  <RestConnector Id="UserLookup" Title="Lookup a User" Group="User Reports" HelpUrl="https://disqus.com/api/docs/users/details/">
     <Parameters>
       <Text Id="UserId" Title="User Id" Debug.DefaultValue="3774128" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/users/details.json?
+          https://disqus.com/api/3.0/users/details.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           user=@(Model.UserId)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -301,20 +254,13 @@
         <JsonPath Expr="avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ForumThreads" Title="Forum Threads" HelpUrl="https://disqus.com/api/docs/posts/list/">
+  <RestConnector Id="ForumThreads" Title="Forum Threads" Group="Thread Reports" HelpUrl="https://disqus.com/api/docs/posts/list/">
     <Parameters>
       <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="feber" Required="true"/>
-      <Radio Id="Direction" Title="Sort Threads by Date" DefaultValue="desc" Required="false">
-        <DataSource>
-          <Item Id="desc" Title="Descending"/>
-          <Item Id="asc" Title="Ascending"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="SortDirection"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -324,17 +270,11 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/threads/list.json?
+          https://disqus.com/api/3.0/threads/list.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           forum=@(Model.ForumName)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
           &order=@(Model.Direction)
           &limit=@(Model.PageCursor.PageSize)
-          @if(Model.PageCursor.Page != 0)
-          {
-            @: &cursor=@(Model.Cursor)
-          }
+          @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -351,23 +291,18 @@
         <JsonPath Expr="author" Id="AuthorId" Title="Author Id" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ThreadLookup" Title="Thread Lookup" HelpUrl="https://disqus.com/api/docs/threads/details/">
+  <RestConnector Id="ThreadLookup" Title="Lookup a Thread" Group="Thread Reports" HelpUrl="https://disqus.com/api/docs/threads/details/">
     <Parameters>
       <Text Id="ThreadId" Title="Thread Id" Debug.DefaultValue="5362095861" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/threads/details.json?
+          https://disqus.com/api/3.0/threads/details.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           thread=@(Model.ThreadId)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -383,27 +318,15 @@
         <JsonPath Expr="author" Id="AuthorId" Title="Author Id" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ForumPostsUrl" Title="Forum Posts by URL" HelpUrl="https://disqus.com/api/docs/threads/listPosts/">
+  <RestConnector Id="ForumPostsUrl" Title="Forum Posts by URL" Group="Post Reports" HelpUrl="https://disqus.com/api/docs/threads/listPosts/">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="https://www.jp.se/article/jonkopingsartisten-jag-ar-inte-forvanad-men-sarad/" Required="true"/>
       <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="jonkopingsposten" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Select Id="Sorting" Title="Sort Posts by" Required="false" DefaultValue="date">
-        <DataSource>
-          <Resource Id="SortPosts"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Direction" DefaultValue="desc" Required="false">
-        <DataSource>
-          <Item Id="desc" Title="Descending"/>
-          <Item Id="asc" Title="Ascending"/>
-        </DataSource>
-      </Radio>
+      <Resource Id="SortPosts"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -413,23 +336,17 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/threads/listPosts.json?
+          https://disqus.com/api/3.0/threads/listPosts.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           &thread=link:@(Model.Url)
           &forum=@(Model.ForumName)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
           &order=@(Model.Direction)
           @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
           {
-              @: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-              @: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
+						@: &start=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+						@: &end=@(((DateTime)Model.DateInterval.EndDate).UnixTimeStampUtc())
           }
           &limit=@(Model.PageCursor.PageSize)
-          @if(Model.PageCursor.Page != 0)
-          {
-            @: &cursor=@(Model.Cursor)
-          }
+          @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -455,25 +372,20 @@
         <JsonPath Expr="author.avatar.small.permalink" Id="Avatar" Title="Avatar" Converter="String"/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ThreadLookupUrl" Title="Thread Lookup by URL" HelpUrl="https://disqus.com/api/docs/threads/details/">
+  <RestConnector Id="ThreadLookupUrl" Title="Lookup a Thread by URL" Group="Thread Reports" HelpUrl="https://disqus.com/api/docs/threads/details/">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="https://www.jp.se/article/jonkopingsartisten-jag-ar-inte-forvanad-men-sarad/" Required="true"/>
-      <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="jonkopingsposten" Required="true"/>      
+      <Text Id="ForumName" Title="Forum Name" Debug.DefaultValue="jonkopingsposten" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://disqus.com/api/3.0/threads/details.json?
+          https://disqus.com/api/3.0/threads/details.json?access_token=@(Model.Token)&api_key=@(Model.Key)&api_secret=@(Model.Secret)
           &thread=link:@(Model.Url)
           &forum=@(Model.ForumName)
-          &access_token=@(Model.Token)
-          &api_key=@(Model.Key)
-          &api_secret=@(Model.Secret)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -489,14 +401,12 @@
         <JsonPath Expr="author" Id="AuthorId" Title="Author Id" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-      <Fail>
-        <JsonPath Expr="message"/>
-      </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="NameConverter" Title="Disqus Name from URL" HelpText="">
+  <RestConnector Id="NameConverter" Title="Disqus Name from URL" Group="Converters">
     <Parameters>
-      <Text Id="Url" DefaultValue="" Required="true"/>
+      <Text Id="Url" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -506,7 +416,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Regex Id="Name" Expr="disqus_shortname\s=\s'(\w+)" Converter="String" DefaultValue="" HelpText=""/>
+      <Regex Id="Name" Expr="disqus_shortname\s=\s'(\w+)" Converter="String" DefaultValue=""/>
     </Parse>
   </RestConnector>
 

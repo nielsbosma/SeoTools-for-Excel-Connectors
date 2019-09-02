@@ -6,7 +6,7 @@
 	<Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/discourse/">
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/discourse"/>
     <Text Id="Site" Title="Discourse Site URL" Required="true" HelpUrl="http://seotoolsforexcel.com/discourse"/>
-    <Text Id="Username" Title="Username" Required="true" HelpUrl="http://seotoolsforexcel.com/discourse"/>		
+    <Text Id="Username" Title="Username" Required="true" HelpUrl="http://seotoolsforexcel.com/discourse"/>
   </Settings>
 
   <Resources>
@@ -69,15 +69,23 @@
       <Item Id="page_view_logged_in_mobile_reqs" Title="Logged In"/>
       <Item Id="page_view_anon_mobile_reqs" Title="Anonymous"/>
     </Resource>
-  </Resources>
-
-  <RestConnector Id="PostsLatest" Title="Posts Latest" HelpUrl="https://docs.discourse.org/#tag/Posts%2Fpaths%2F~1posts.json%2Fget">
-    <Fetch>
-      <HttpSettings>
+    <Resource Id="HttpSettings">
+			<HttpSettings>
         <RequestHeaders>
           <Header Name='Accept'>application/json</Header>
         </RequestHeaders>
       </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="errors[0]"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="PostsLatest" Title="Latest Posts" Group="Post Reports" HelpUrl="https://docs.discourse.org/#tag/Posts%2Fpaths%2F~1posts.json%2Fget">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @(Model.Site)/posts
@@ -87,43 +95,37 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.latest_posts.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
+				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
 				<Compute Id="Text" Title="Text" DefaultValue="">
 					<Compute.Expr>
 						<![CDATA[@(Regex.Replace(Model.TextInput, "<.*?>", String.Empty))]]>
 					</Compute.Expr>
 					<JsonPath Expr="cooked" Id="TextInput" Converter="String"/>
 				</Compute>
-				<JsonPath Expr="post_number" Id="Number" Title="Number" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-				<JsonPath Expr="quote_count" Id="Quotes" Title="Quotes" Converter="Long" HelpText=""/>
-				<JsonPath Expr="incoming_link_count" Id="IncomingLinks" Title="Incoming Links" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reads" Id="Reads" Title="Reads" Converter="Long" HelpText=""/>
-				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
-				<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topic_slug" Id="TopicSlug" Title="Topic Slug" Converter="String" HelpText=""/>
-				<JsonPath Expr="hidden" Id="Hidden" Title="Hidden" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="post_number" Id="Number" Title="Number" Converter="Long"/>
+				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+				<JsonPath Expr="quote_count" Id="Quotes" Title="Quotes" Converter="Long"/>
+				<JsonPath Expr="incoming_link_count" Id="IncomingLinks" Title="Incoming Links" Converter="Long"/>
+				<JsonPath Expr="reads" Id="Reads" Title="Reads" Converter="Long"/>
+				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double"/>
+				<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long"/>
+				<JsonPath Expr="topic_slug" Id="TopicSlug" Title="Topic Slug" Converter="String"/>
+				<JsonPath Expr="hidden" Id="Hidden" Title="Hidden" Converter="Bool"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PostLookup" Title="Post Lookup" HelpUrl="https://docs.discourse.org/#tag/Posts%2Fpaths%2F~1posts~1%7Bid%7D%2Fget">
+  <RestConnector Id="PostLookup" Title="Post Lookup" Group="Lookup a Post" HelpUrl="https://docs.discourse.org/#tag/Posts%2Fpaths%2F~1posts~1%7Bid%7D%2Fget">
     <Parameters>
-      <Text Id="PostId" Title="Post Id" DefaultValue="" Debug.DefaultValue="3211" Required="true"/>
+      <Text Id="PostId" Title="Post Id" Debug.DefaultValue="3211" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @(Model.Site)/posts/@(Model.PostId)
@@ -132,142 +134,119 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-			<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
-			<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+			<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
+			<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
 			<Compute Id="Text" Title="Text" DefaultValue="">
 				<Compute.Expr>
 					<![CDATA[@(Regex.Replace(Model.TextInput, "<.*?>", String.Empty))]]>
 				</Compute.Expr>
 				<JsonPath Expr="cooked" Id="TextInput" Converter="String"/>
 			</Compute>
-			<JsonPath Expr="post_number" Id="Number" Title="Number" Converter="Long" HelpText=""/>
-			<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-			<JsonPath Expr="quote_count" Id="Quotes" Title="Quotes" Converter="Long" HelpText=""/>
-			<JsonPath Expr="incoming_link_count" Id="IncomingLinks" Title="Incoming Links" Converter="Long" HelpText=""/>
-			<JsonPath Expr="reads" Id="Reads" Title="Reads" Converter="Long" HelpText=""/>
-			<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText=""/>
-			<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long" HelpText=""/>
-			<JsonPath Expr="topic_slug" Id="TopicSlug" Title="Topic Slug" Converter="String" HelpText=""/>
-			<JsonPath Expr="hidden" Id="Hidden" Title="Hidden" Converter="Bool" HelpText=""/>
+			<JsonPath Expr="post_number" Id="Number" Title="Number" Converter="Long"/>
+			<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+			<JsonPath Expr="quote_count" Id="Quotes" Title="Quotes" Converter="Long"/>
+			<JsonPath Expr="incoming_link_count" Id="IncomingLinks" Title="Incoming Links" Converter="Long"/>
+			<JsonPath Expr="reads" Id="Reads" Title="Reads" Converter="Long"/>
+			<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double"/>
+			<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long"/>
+			<JsonPath Expr="topic_slug" Id="TopicSlug" Title="Topic Slug" Converter="String"/>
+			<JsonPath Expr="hidden" Id="Hidden" Title="Hidden" Converter="Bool"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Categories" Title="Categories" HelpUrl="https://docs.discourse.org/#tag/Categories%2Fpaths%2F~1categories.json%2Fget">
+  <RestConnector Id="Categories" Title="List Categories" Group="Category Reports" HelpUrl="https://docs.discourse.org/#tag/Categories%2Fpaths%2F~1categories.json%2Fget">
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/categories
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/categories?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.category_list.categories.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
-				<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long" HelpText=""/>
-				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="num_featured_topics" Id="FeaturedTopics" Title="Featured Topics" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topics_day" Id="TopicsDay" Title="Topic Day" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topics_month" Id="TopicsMonth" Title="Topic Month" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topics_year" Id="TopicsYear" Title="Topic Year" Converter="Long" HelpText=""/>
-				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topic_url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+				<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long"/>
+				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="num_featured_topics" Id="FeaturedTopics" Title="Featured Topics" Converter="Long"/>
+				<JsonPath Expr="topics_day" Id="TopicsDay" Title="Topic Day" Converter="Long"/>
+				<JsonPath Expr="topics_month" Id="TopicsMonth" Title="Topic Month" Converter="Long"/>
+				<JsonPath Expr="topics_year" Id="TopicsYear" Title="Topic Year" Converter="Long"/>
+				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long"/>
+				<JsonPath Expr="topic_url" Id="Url" Title="URL" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TopicsInCategory" Title="Topics in Category" HelpUrl="https://docs.discourse.org/#tag/Categories%2Fpaths%2F~1c~1%7Bid%7D.json%2Fget">
+  <RestConnector Id="TopicsInCategory" Title="Topics in Category" Group="Category Reports" HelpUrl="https://docs.discourse.org/#tag/Categories%2Fpaths%2F~1c~1%7Bid%7D.json%2Fget">
     <Parameters>
-      <Text Id="CategoryId" Title="Category Id" DefaultValue="" Debug.DefaultValue="5" Required="true" Select.Connector="Categories" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="CategoryId" Title="Category Id" Debug.DefaultValue="5" Required="true" Select.Connector="Categories" Select.IdField="Id" Select.TitleField="Name"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/c/@(Model.CategoryId)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/c/@(Model.CategoryId)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.topic_list.topics.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool"/>
+				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool"/>
+				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool"/>
       </JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TopicsLatest" Title="Topics Latest" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1latest.json%2Fget">
+  <RestConnector Id="TopicsLatest" Title="Latest Topics" Group="Topic Reports" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1latest.json%2Fget">
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/latest
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/latest?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.topic_list.topics.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool"/>
+				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool"/>
+				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool"/>
       </JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TopicsTop" Title="Topics Top" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1top.json%2Fget">
+  <RestConnector Id="TopicsTop" Title="Top Topics" Group="Topic Reports" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1top.json%2Fget">
     <Parameters>
 			<Select Id="Period" Title="Filter by Period" Required="false" DefaultValue="all">
         <DataSource>
@@ -276,79 +255,65 @@
       </Select>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/top/@(Model.Period)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/top/@(Model.Period)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.topic_list.topics.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+				<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long"/>
+				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool"/>
+				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool"/>
+				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+				<JsonPath Expr="unseen" Id="Unseen" Title="Unseen" Converter="Bool"/>
       </JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TopicLookup" Title="Topic Lookup" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1t~1%7Bid%7D.json%2Fget">
+  <RestConnector Id="TopicLookup" Title="Lookup a Topic" Group="Topic Reports" HelpUrl="https://docs.discourse.org/#tag/Topics%2Fpaths%2F~1t~1%7Bid%7D.json%2Fget">
     <Parameters>
-      <Text Id="TopicId" Title="Topic Id" DefaultValue="" Debug.DefaultValue="1273" Required="true"/>
+      <Text Id="TopicId" Title="Topic Id" Debug.DefaultValue="1273" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/t/@(Model.TopicId)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/t/@(Model.TopicId)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-			<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime" HelpText=""/>
-			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-			<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-			<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-			<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-			<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long" HelpText=""/>
-			<JsonPath Expr="word_count" Id="Words" Title="Words" Converter="Long" HelpText=""/>
-			<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool" HelpText=""/>
-			<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool" HelpText=""/>
-			<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
-			<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool" HelpText=""/>
-			<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long" HelpText=""/>
+			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+			<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime"/>
+			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+			<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long"/>
+			<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+			<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+			<JsonPath Expr="views" Id="Views" Title="Views" Converter="Long"/>
+			<JsonPath Expr="word_count" Id="Words" Title="Words" Converter="Long"/>
+			<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool"/>
+			<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool"/>
+			<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+			<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
+			<JsonPath Expr="user_id" Id="UserId" Title="User Id" Converter="Long"/>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Users" Title="Users" HelpUrl="https://docs.discourse.org/#tag/Users%2Fpaths%2F~1admin~1users~1list~1%7Bflag%7D.json%2Fget">
+  <RestConnector Id="Users" Title="List Users" Group="User Reports" HelpUrl="https://docs.discourse.org/#tag/Users%2Fpaths%2F~1admin~1users~1list~1%7Bflag%7D.json%2Fget">
     <Parameters>
 			<Select Id="Usertype" Title="Filter by Type" Required="false" DefaultValue="active">
         <DataSource>
@@ -369,295 +334,236 @@
 		</Parameters>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/users/list/@(Model.Usertype)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/users/list/@(Model.Usertype)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&order=@(Model.Userorder)
 				&show_emails=true
 				&page=@(Model.PageCursor.Page+1)
-				@if(Model.SortOrder == "asc")
-				{
-					@: &ascending=true
-				}
+				@(Model.SortOrder == "asc" ? "&ascending=true" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-				<JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
-				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="time_read" Id="TimeRead" Title="Time Read" Converter="Long" HelpText=""/>
-				<JsonPath Expr="posts_read_count" Id="PostReadCount" Title="Post Read Count" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topics_entered" Id="TopicsEntered" Title="TopicsEntered" Converter="Long" HelpText=""/>
-				<JsonPath Expr="days_visited" Id="DaysVisited" Title="Days Visited" Converter="Long" HelpText=""/>
-				<JsonPath Expr="trust_level" Id="TrustLevel" Title="Trust Level" Converter="Long" HelpText=""/>
-				<JsonPath Expr="flag_level" Id="FlagLevel" Title="Flag Level" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="last_seen_at" Id="LastSeen" Title="Last Seen" Converter="Auto" HelpText="" DefaultValue=""/>
-				<JsonPath Expr="last_emailed_at" Id="LastEmailed" Title="Last Emailed" Converter="Auto" HelpText="" DefaultValue=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+				<JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="time_read" Id="TimeRead" Title="Time Read" Converter="Long"/>
+				<JsonPath Expr="posts_read_count" Id="PostReadCount" Title="Post Read Count" Converter="Long"/>
+				<JsonPath Expr="topics_entered" Id="TopicsEntered" Title="TopicsEntered" Converter="Long"/>
+				<JsonPath Expr="days_visited" Id="DaysVisited" Title="Days Visited" Converter="Long"/>
+				<JsonPath Expr="trust_level" Id="TrustLevel" Title="Trust Level" Converter="Long"/>
+				<JsonPath Expr="flag_level" Id="FlagLevel" Title="Flag Level" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="last_seen_at" Id="LastSeen" Title="Last Seen" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="last_emailed_at" Id="LastEmailed" Title="Last Emailed" Converter="Auto" DefaultValue=""/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserLookup" Title="User Lookup" HelpUrl="https://docs.discourse.org/#tag/Users%2Fpaths%2F~1admin~1users~1%7Bid%7D.json%2Fget">
+  <RestConnector Id="UserLookup" Title="Lookup a User" Group="User Reports" HelpUrl="https://docs.discourse.org/#tag/Users%2Fpaths%2F~1admin~1users~1%7Bid%7D.json%2Fget">
     <Parameters>
-      <Text Id="UserId" Title="User Id" DefaultValue="" Debug.DefaultValue="14" Required="true"/>
+      <Text Id="UserId" Title="User Id" Debug.DefaultValue="14" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/users/@(Model.UserId).json
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/users/@(Model.UserId).json?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-			<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="" DefaultValue=""/>
-			<JsonPath Expr="email" Id="Email" Title="Email" Converter="String" HelpText=""/>
-			<JsonPath Expr="ip_address" Id="IPAddress" Title="IP Address" Converter="String" HelpText="" DefaultValue=""/>
-			<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-			<JsonPath Expr="like_given_count" Id="LikesGiven" Title="Likes Given" Converter="Long" HelpText=""/>
-			<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long" HelpText=""/>
-			<JsonPath Expr="private_topics_count" Id="PrivateTopics" Title="Private Topics" Converter="Long" HelpText=""/>
-			<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-			<JsonPath Expr="time_read" Id="TimeRead" Title="Time Read" Converter="Long" HelpText=""/>
-			<JsonPath Expr="posts_read_count" Id="PostReadCount" Title="Post Read Count" Converter="Long" HelpText=""/>
-			<JsonPath Expr="topics_entered" Id="TopicsEntered" Title="TopicsEntered" Converter="Long" HelpText=""/>
-			<JsonPath Expr="days_visited" Id="DaysVisited" Title="Days Visited" Converter="Long" HelpText=""/>
-			<JsonPath Expr="trust_level" Id="TrustLevel" Title="Trust Level" Converter="Long" HelpText=""/>
-			<JsonPath Expr="flag_level" Id="FlagLevel" Title="Flag Level" Converter="Long" HelpText=""/>
-			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue="" HelpText=""/>
-			<JsonPath Expr="last_seen_at" Id="LastSeen" Title="Last Seen" Converter="Auto" HelpText="" DefaultValue=""/>
-			<JsonPath Expr="last_emailed_at" Id="LastEmailed" Title="Last Emailed" Converter="Auto" HelpText="" DefaultValue=""/>
+			<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+			<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+			<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
+			<JsonPath Expr="ip_address" Id="IPAddress" Title="IP Address" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+			<JsonPath Expr="like_given_count" Id="LikesGiven" Title="Likes Given" Converter="Long"/>
+			<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long"/>
+			<JsonPath Expr="private_topics_count" Id="PrivateTopics" Title="Private Topics" Converter="Long"/>
+			<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long"/>
+			<JsonPath Expr="time_read" Id="TimeRead" Title="Time Read" Converter="Long"/>
+			<JsonPath Expr="posts_read_count" Id="PostReadCount" Title="Post Read Count" Converter="Long"/>
+			<JsonPath Expr="topics_entered" Id="TopicsEntered" Title="TopicsEntered" Converter="Long"/>
+			<JsonPath Expr="days_visited" Id="DaysVisited" Title="Days Visited" Converter="Long"/>
+			<JsonPath Expr="trust_level" Id="TrustLevel" Title="Trust Level" Converter="Long"/>
+			<JsonPath Expr="flag_level" Id="FlagLevel" Title="Flag Level" Converter="Long"/>
+			<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="last_seen_at" Id="LastSeen" Title="Last Seen" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="last_emailed_at" Id="LastEmailed" Title="Last Emailed" Converter="Auto" DefaultValue=""/>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserSearch" Title="User Search" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
+  <RestConnector Id="UserSearch" Title="Search for Users" Group="User Reports" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="excel" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="excel" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/search/query
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/search/query?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&term=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.users.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="" DefaultValue=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PostSearch" Title="Post Search" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
+  <RestConnector Id="PostSearch" Title="Search for Posts" Group="Post Reports" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="excel" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="excel" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/search/query
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/search/query?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&term=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.posts.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="blurb" Id="Text" Title="Text" Converter="String" HelpText=""/>
-				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long" HelpText=""/>
-				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="" DefaultValue=""/>
-				<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="post_number" Id="PostNumber" Title="Post Number" Converter="Long" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="blurb" Id="Text" Title="Text" Converter="String"/>
+				<JsonPath Expr="like_count" Id="Likes" Title="Likes" Converter="Long"/>
+				<JsonPath Expr="username" Id="Username" Title="Username" Converter="String"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="topic_id" Id="TopicId" Title="Topic Id" Converter="Long"/>
+				<JsonPath Expr="post_number" Id="PostNumber" Title="Post Number" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TopicSearch" Title="Topic Search" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
+  <RestConnector Id="TopicSearch" Title="Search for Topics" Group="Topic Reports" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="excel" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="excel" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/search/query
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/search/query?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&term=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.topics.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long" HelpText=""/>
-				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="created_at" Id="Created" Title="Created" Converter="DateTime"/>
+				<JsonPath Expr="last_posted_at" Id="LastPosted" Title="Last Posted" Converter="DateTime"/>
+				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+				<JsonPath Expr="posts_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="reply_count" Id="Replies" Title="Replies" Converter="Long"/>
+				<JsonPath Expr="pinned" Id="Pinned" Title="Pinned" Converter="Bool"/>
+				<JsonPath Expr="visible" Id="Visible" Title="Visible" Converter="Bool"/>
+				<JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool"/>
+				<JsonPath Expr="archived" Id="Archived" Title="Archived" Converter="Bool"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CategorySearch" Title="Category Search" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
+  <RestConnector Id="CategorySearch" Title="Search for Categories" Group="Category Reports" HelpUrl="https://docs.discourse.org/#tag/Search%2Fpaths%2F~1search~1query%2Fget">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="general" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="general" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/search/query
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/search/query?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&term=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.categories.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" HelpText=""/>
-				<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long" HelpText=""/>
-				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long" HelpText=""/>
-				<JsonPath Expr="num_featured_topics" Id="FeaturedTopics" Title="Featured Topics" Converter="Long" HelpText=""/>
-				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" HelpText=""/>
-				<JsonPath Expr="topic_url" Id="Url" Title="URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String"/>
+				<JsonPath Expr="topic_count" Id="Topics" Title="Topics" Converter="Long"/>
+				<JsonPath Expr="post_count" Id="Posts" Title="Posts" Converter="Long"/>
+				<JsonPath Expr="num_featured_topics" Id="FeaturedTopics" Title="Featured Topics" Converter="Long"/>
+				<JsonPath Expr="position" Id="Position" Title="Position" Converter="Long"/>
+				<JsonPath Expr="topic_url" Id="Url" Title="URL" Converter="String"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Badges" Title="Badges" HelpUrl="https://docs.discourse.org/#tag/Badges%2Fpaths%2F~1admin~1badges.json%2Fget">
+  <RestConnector Id="Badges" Title="List Badges" Group="Badge Reports" HelpUrl="https://docs.discourse.org/#tag/Badges%2Fpaths%2F~1admin~1badges.json%2Fget">
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/badges.json
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/badges.json?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.badges.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
 				<Compute Id="Description" Title="Description" DefaultValue="">
 					<Compute.Expr>
 						<![CDATA[@(Regex.Replace(Model.DescriptionInput, "<.*?>", String.Empty))]]>
 					</Compute.Expr>
 					<JsonPath Expr="description" Id="DescriptionInput" Converter="String"/>
 				</Compute>
-				<JsonPath Expr="grant_count" Id="Grants" Title="Grants" Converter="Long" HelpText=""/>
+				<JsonPath Expr="grant_count" Id="Grants" Title="Grants" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BadgesUser" Title="Badges for User" HelpUrl="https://docs.discourse.org/#tag/Badges%2Fpaths%2F~1user-badges~1%7Busername%7D.json%2Fget">
+  <RestConnector Id="BadgesUser" Title="Badges for User" Group="Badge Reports" HelpUrl="https://docs.discourse.org/#tag/Badges%2Fpaths%2F~1user-badges~1%7Busername%7D.json%2Fget">
     <Parameters>
-      <Text Id="Username" Title="Username" DefaultValue="" Debug.DefaultValue="@(Model.Username)" Required="true"/>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="@(Model.Username)" Required="true"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/user-badges/@(Model.Username).json
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/user-badges/@(Model.Username).json?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.badges.*">
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
 				<Compute Id="Description" Title="Description" DefaultValue="">
 					<Compute.Expr>
 						<![CDATA[@(Regex.Replace(Model.DescriptionInput, "<.*?>", String.Empty))]]>
 					</Compute.Expr>
 					<JsonPath Expr="description" Id="DescriptionInput" Converter="String"/>
 				</Compute>
-				<JsonPath Expr="grant_count" Id="Grants" Title="Grants" Converter="Long" HelpText=""/>
+				<JsonPath Expr="grant_count" Id="Grants" Title="Grants" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="StatiticsViews" Title="Statistics Views" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
+  <RestConnector Id="StatiticsViews" Title="Views Stats" Group="Statistics Reports" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
     <Parameters>
 			<Select Id="StatsType" Title="Report Type" Required="false" DefaultValue="page_view_total_reqs">
         <DataSource>
@@ -667,15 +573,10 @@
       <DateInterval Id="DateInterval" Title="Interval"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/reports/@(Model.StatsType)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/reports/@(Model.StatsType)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
 				&end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         ]]>
@@ -683,16 +584,14 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.report.data.*">
-				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long" HelpText=""/>
+				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime"/>
+				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="StatisticsGlobal" Title="Statistics Global" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
+  <RestConnector Id="StatisticsGlobal" Title="Global Stats" Group="Statistics Reports" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
     <Parameters>
 			<Select Id="StatsType" Title="Report Type" Required="false" DefaultValue="visits">
         <DataSource>
@@ -702,15 +601,10 @@
       <DateInterval Id="DateInterval" Title="Interval"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/reports/@(Model.StatsType)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/reports/@(Model.StatsType)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
 				&end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         ]]>
@@ -718,16 +612,14 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.report.data.*">
-				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long" HelpText=""/>
+				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime"/>
+				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="StatisticsHTTP" Title="Statistics HTTP" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
+  <RestConnector Id="StatisticsHTTP" Title="HTTP Stats" Group="Statistics Reports" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
     <Parameters>
 			<Select Id="StatsType" Title="Report Type" Required="false" DefaultValue="http_2xx_reqs">
         <DataSource>
@@ -737,15 +629,10 @@
       <DateInterval Id="DateInterval" Title="Interval"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/reports/@(Model.StatsType)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/reports/@(Model.StatsType)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
 				&end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         ]]>
@@ -753,16 +640,14 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.report.data.*">
-				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long" HelpText=""/>
+				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime"/>
+				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="StatisticsMobile" Title="Statistics Mobile" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
+  <RestConnector Id="StatisticsMobile" Title="Mobile Stats" Group="Statistics Reports" HelpUrl="https://docs.discourse.org/#tag/Reports%2Fpaths%2F~1page_view_total_reqs%2Fget">
     <Parameters>
 			<Select Id="StatsType" Title="Report Type" Required="false" DefaultValue="http_2xx_reqs">
         <DataSource>
@@ -772,15 +657,10 @@
       <DateInterval Id="DateInterval" Title="Interval"/>
 		</Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept'>application/json</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Site)/admin/reports/@(Model.StatsType)
-				?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        @(Model.Site)/admin/reports/@(Model.StatsType)?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
 				&start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
 				&end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
         ]]>
@@ -788,13 +668,11 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$.report.data.*">
-				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long" HelpText=""/>
+				<JsonPath Expr="x" Id="Date" Title="Date" Converter="DateTime"/>
+				<JsonPath Expr="y" Id="Count" Title="Count" Converter="Long"/>
 			</JsonPath>
 		</Parse>
-    <Fail>
-      <JsonPath Expr="errors[0]"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>
