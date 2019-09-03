@@ -207,7 +207,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DomainOrganicSearchKeywords" Group="Domain Reports" Title="Domain Organic Search Keywords" HelpUrl="https://www.semrush.com/api-analytics/#domain_organic" HelpText="Lists keywords that bring users to a domain via Google's top 20 organic search results.">
+  <RestConnector Id="DomainOrganicSearchKeywords" Title="Domain Organic Search Keywords" Group="Domain Reports" HelpUrl="https://www.semrush.com/api-analytics/#domain_organic" HelpText="Lists keywords that bring users to a domain via Google's top 20 organic search results.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
       <Resource Id="SelectDatabase"/>
@@ -652,6 +652,7 @@
     <Parameters>
       <Text Id="Phrase" Title="Phrase" Debug.DefaultValue="test" Required="true"/>
       <Resource Id="SelectDatabase"/>
+			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
@@ -665,6 +666,12 @@
         &database=@Utils.UrlEncode(Model.Database)
         &export_columns=@Model.Fields
         &display_limit=@Model.MaxResults
+				@if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+					@: &display_date=@(Model.DisplayDate.Day <= 15
+						?	Model.DisplayDate.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.AddMonths(0).ToString("yyyyMM15"))
+        }
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -835,7 +842,7 @@
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
-      <Fetch.Url>		
+      <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
         type=backlinks_refips
