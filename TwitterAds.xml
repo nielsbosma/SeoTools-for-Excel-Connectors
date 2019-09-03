@@ -7,7 +7,7 @@
 
   <Resources>
     <Resource Id="Params">
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="EntityId" Title="Entity to Analyze" Debug.DefaultValue="5bxso" Required="true"/>
       <Select Id="Granularity" Title="Granularity" DefaultValue="NONE">
         <DataSource>
@@ -59,7 +59,7 @@
 		</Resource>
   </Resources>
 
-  <RestConnector Id="Accounts" Hidden="false">
+  <RestConnector Id="Accounts" Hidden="true">
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -77,9 +77,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListCampaigns" Title="List Campaigns" HelpUrl="">
+  <RestConnector Id="ListCampaigns" Title="Campaigns" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
@@ -125,17 +125,8 @@
         <JsonPath Expr="end_time" Id="EndTime" Title="End Time" Converter="Auto"/>
         <JsonPath Expr="funding_instrument_id" Id="FundingInstrumentId" Title="Funding Instrument Id" Converter="String"/>
         <JsonPath Expr="servable" Id="Servable" Title="Servable" Converter="Bool"/>
-        <Compute Id="ReasonsNotServable" Title="Reasons not Servable" Converter="String">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.ReasonsNotServableInput, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="reasons_not_servable" Id="ReasonsNotServableInput" Converter="String"/>
+        <Compute Expr="@Utils.FlatArray(Model.Inp)" Id="ReasonsNotServable" Title="Reasons not Servable" Converter="String">
+        <JsonPath Expr="reasons_not_servable" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="duration_in_days" Id="DayDuration" Title="DayDuration" Converter="Int" Defaultvalue=" "/>
         <JsonPath Expr="standard_delivery" Id="StandardDelivery" Title="Standar dDelivery" Converter="Bool"/>
@@ -148,9 +139,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListLineItems" Title="List Line Items" HelpUrl="">
+  <RestConnector Id="ListLineItems" Title="Line Items" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
@@ -188,17 +179,8 @@
         <JsonPath Expr="objective" Id="Objective" Title="Objective" Converter="String"/>
         <JsonPath Expr="bid_amount_local_micro" Id="BidAmount" Title="Bid Amount" Converter="Int"/>
         <JsonPath Expr="total_budget_amount_local_micro" Id="TotalBudgetAmount" Title="Total Budget Amount" Converter="Int"/>
-        <Compute Id="Placements" Title="Placements" Converter="String">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.PlacementsInput, @"\s+", " ");
-              var stripped = temp.Substring(1,temp.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="placements" Id="PlacementsInput" Converter="String"/>
+        <Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Placements" Title="TotalBudgetAmount" Converter="Int">
+        <JsonPath Expr="reasons_not_servable" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="charge_by" Id="ChargeBy" Title="Charge By" Converter="String"/>
         <JsonPath Expr="automatically_select_bid" Id="AutoSelectBid" Title="Auto Select Bid" Converter="String"/>
@@ -217,9 +199,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListPromotedTweets" Title="List Promoted Tweets" HelpUrl="">
+  <RestConnector Id="ListPromotedTweets" Title="Promoted Tweets" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
@@ -253,10 +235,10 @@
         <Compute Id="TweetUrl" Title="Tweet URL">
           <Compute.Expr>
             <![CDATA[
-            http://www.twitter.com/statuses/@(Model.TweetIdInput)/
+            http://www.twitter.com/statuses/@(Model.Inp)/
             ]]>
           </Compute.Expr>
-          <JsonPath Expr="tweet_id" Id="TweetIdInput" Converter="String"/>
+          <JsonPath Expr="tweet_id" Id="Inp" Converter="String"/>
         </Compute>
         <JsonPath Expr="line_item_id" Id="LiteItemId" Title="Lite Item Id" Converter="String"/>
         <JsonPath Expr="approval_status" Id="ApprovedStatus" Title="Approved Status" Converter="String"/>
@@ -268,9 +250,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListFundingInstruments" Title="List Funding Instruments" HelpUrl="">
+  <RestConnector Id="ListFundingInstruments" Title="Funding Instruments" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" DefaultValue="" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce541vf04" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
@@ -390,7 +372,7 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="AnalyticsEngagement" Title="Analytics Engagement" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+  <RestConnector Id="AnalyticsEngagement" Title="Engagement" Group="Analytics" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
     <Parameters>
       <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
         <DataSource>
@@ -410,12 +392,7 @@
 		<Resource Id="FetchZip"/>
     <Parse>
       <JsonPath Expr="$.data[0].id_data[0].metrics.impressions[*]">
-        <Compute Id="Date" Title="Date" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @AdjustDate()
-						]]>
-          </Compute.Expr>
+        <Compute Expr="@AdjustDate()" Id="Date" Title="Date" Converter="DateTime">
 					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
         </Compute>
 			</JsonPath>
@@ -455,7 +432,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AnalyticsBilling" Title="Analytics Billing" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+  <RestConnector Id="AnalyticsBilling" Title="Billing" Group="Analytics" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
     <Parameters>
       <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
         <DataSource>
@@ -473,12 +450,7 @@
 		<Resource Id="FetchZip"/>
     <Parse>
       <JsonPath Expr="$.data[0].id_data[0].metrics.billed_charge_local_micro[*]">
-        <Compute Id="Date" Title="Date" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @AdjustDate()
-						]]>
-          </Compute.Expr>
+        <Compute Expr="@AdjustDate()" Id="Date" Title="Date" Converter="DateTime">
 					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
         </Compute>
 			</JsonPath>
@@ -491,7 +463,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AnalyticsVideo" Title="Analytics Video" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+  <RestConnector Id="AnalyticsVideo" Title="Video" Group="Analytics" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
     <Parameters>
       <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
         <DataSource>
@@ -509,12 +481,7 @@
 		<Resource Id="FetchZip"/>
     <Parse>
       <JsonPath Expr="$.data[0].id_data[0].metrics.video_total_views[*]">
-        <Compute Id="Date" Title="Date" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @AdjustDate()
-						]]>
-          </Compute.Expr>
+        <Compute Expr="@AdjustDate()" Id="Date" Title="Date" Converter="DateTime">
 					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
         </Compute>
 			</JsonPath>
@@ -545,7 +512,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AnalyticsMedia" Title="Analytics Media" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
+  <RestConnector Id="AnalyticsMedia" Title="Media" Group="Analytics" HelpUrl="https://developer.twitter.com/en/docs/ads/analytics/api-reference/asynchronous.html">
     <Parameters>
       <Select Id="EntityType" Title="Entity Type" DefaultValue="CAMPAIGN">
         <DataSource>
@@ -563,12 +530,7 @@
 		<Resource Id="FetchZip"/>
     <Parse>
       <JsonPath Expr="$.data[0].id_data[0].metrics.media_views[*]">
-        <Compute Id="Date" Title="Date" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-            @AdjustDate()
-						]]>
-          </Compute.Expr>
+        <Compute Expr="@AdjustDate()" Id="Date" Title="Date" Converter="DateTime">
 					<JsonPath Expr="row(.)" Id="Inp" Converter="Long"/>
         </Compute>
 			</JsonPath>
