@@ -18,40 +18,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListUsersHidden" Title="Users Hidden" Hidden="True">
-    <Paging PageSize="100" MaxTake="200000">
-      <Parse>
-        <JsonPath Id="AvaliableRows" Expr="$.count"/>
-        <JsonPath Id="NextToken" Expr="$.next_page"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
-      <Fetch.Url>
-        https://@(Model.Subdomain).zendesk.com/api/v2/users.json
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.users.*">
-        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-      </JsonPath>
-    </Parse>
-  </RestConnector>
-
   <RestConnector Id="ListUsers" Title="Users" HelpText="List all users" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/users#list-users">
-    <Paging PageSize="100" MaxTake="200000">
-      <Parse>
-        <JsonPath Id="AvaliableRows" Expr="$.count"/>
-        <JsonPath Id="NextToken" Expr="$.next_page"/>
-      </Parse>
-    </Paging>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -61,12 +28,14 @@
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
+			<![CDATA[
         https://@(Model.Subdomain).zendesk.com/api/v2/users.json
+        ]]> 
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.users.*">
-        <JsonPath Expr="id" Id="Id" Title="ID" Converter="String"/>
+        <JsonPath Expr="id" Id="Id" Title="User Id" Converter="String"/>
         <JsonPath Expr="email" Id="Email" Title="Email" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool"/>
@@ -97,7 +66,7 @@
 
   <RestConnector Id="ListGroups" Title="Groups" HelpText="List all groups" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/groups#list-groups">
     <Parameters>
-      <Checkbox Id="Deleted" Title="Show only deleted" DefaultValue="False" HelpText=""/>
+      <Checkbox Id="Deleted" Title="Show only deleted" DefaultValue="False"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="200000">
       <Parse>
@@ -114,7 +83,9 @@
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
+				<![CDATA[
         https://@(Model.Subdomain).zendesk.com/api/v2/groups.json
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -131,7 +102,7 @@
 
   <RestConnector Id="ListOrganizations" Title="Organizations" HelpText="List all organizations" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/organizations">
     <Parameters>
-      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="200000">
       <Parse>
@@ -181,7 +152,7 @@
 
   <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
     <Parameters>
-      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="UserFilterType" Title="User Filter Type" Required="false" DefaultValue="assigned">
         <DataSource>
           <Item Id="ccd" Title="CC'd"/>
@@ -277,7 +248,7 @@
 
   <RestConnector Id="ListTicketSkips" Title="Ticket Skips" HelpText="List ticket skips (records of when agents skip over tickets without responding)" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_skips">
     <Parameters>
-      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsersHidden" Select.IdField="Id" Select.TitleField="Name" Required="false" HelpText=""/>
+      <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
       <Radio Id="SortDirection" Title="Sort Direction" Required="True" DefaultValue="asc">
         <DataSource>
           <Resource Id="SortOrder"/>
@@ -598,11 +569,11 @@
 
   <RazorFunctions>
     <![CDATA[
-    string CreateBasicAuth()
-    {
+    string CreateBasicAuth() {
       string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.ClientId + "/token:" + Model.ApiKey));
       return AuthString;
     }
     ]]>
   </RazorFunctions>
+
 </Suite>
