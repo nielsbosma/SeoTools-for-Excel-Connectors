@@ -9,8 +9,9 @@
 
   <Resources>
     <Resource Id="SelectDatabase">
-      <Select Id="Database" Title="Database" Required="false" DefaultValue="us">
+      <Select Id="Database" Title="Database" Required="false" DefaultValue="">
         <DataSource>
+					<Item Id="" Title="[all]"/>
 					<Item Id="us" Title="google.com"/>
 					<Item Id="uk" Title="google.co.uk"/>
 					<Item Id="ca" Title="google.ca"/>
@@ -155,15 +156,20 @@
         <Compute>
           <Compute.Expr>
             <![CDATA[
-            @if((Model.Error is string) && !string.IsNullOrEmpty(Model.Error))
-            {
-            @: SEMrush returned: @Model.Error
-            }
+            @if(!string.IsNullOrEmpty(Model.Error))
+							@: SEMrush returned: @Model.Error
             ]]>
           </Compute.Expr>
-          <Regex Id="Error" Expr="^(ERROR.*)"/>
+          <Regex Id="Error" Expr="^(ERROR.*)" DefaultValue=""/>
         </Compute>
       </Fail>
+    </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='User-Agent'>seotools-for-excel</Header>
+        </RequestHeaders>
+      </HttpSettings>
     </Resource>
   </Resources>
 
@@ -173,6 +179,7 @@
       <Resource Id="SelectDatabase"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -183,9 +190,6 @@
         &export_columns=@Model.Fields
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -207,7 +211,7 @@
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
       <Resource Id="SelectDatabase"/>
-      <Radio Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
+      <Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
           <Item Id="new" Title="New"/>
@@ -215,7 +219,7 @@
           <Item Id="rise" Title="Rise"/>
           <Item Id="fall" Title="Fall"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -230,6 +234,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -240,15 +245,9 @@
         &export_columns=@Model.Fields
         &display_limit=@Model.MaxResults
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
-        @if(Model.KeywordType != "all")
-        {
-          @: &display_positions=@Model.KeywordType
-        }
+        @(Model.KeywordType != "all" ? "&display_positions=" + Model.KeywordType : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -272,13 +271,13 @@
   <RestConnector Id="Anchors" Title="Anchors"  Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_anchors" HelpText="Lists anchor texts used in backlinks leading to the queried domain, root domain, or URL. It also includes the number of backlinks and referring domains per anchor.">
     <Parameters>
       <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -295,6 +294,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -307,9 +307,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -326,13 +323,13 @@
   <RestConnector Id="Backlinks" Title="Backlinks" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks" HelpText="Lists backlinks for a domain, root domain, or URL.">
     <Parameters>
       <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -347,6 +344,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -359,9 +357,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -407,6 +402,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -419,9 +415,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -451,6 +444,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -463,9 +457,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -485,7 +476,7 @@
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true"/>
       <Resource Id="SelectDatabase"/>
-      <Radio Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
+      <Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
           <Item Id="new" Title="New"/>
@@ -493,7 +484,7 @@
           <Item Id="rise" Title="Rise"/>
           <Item Id="fall" Title="Fall"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -508,6 +499,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -518,15 +510,9 @@
         &export_columns=@Model.Fields
         &display_limit=@Model.MaxResults
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
-        @if(Model.KeywordType != "all")
-        {
-          @: &display_positions=@Model.KeywordType
-        }
+        @(Model.KeywordType != "all" ? "&display_positions=" + Model.KeywordType : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -554,13 +540,13 @@
   <RestConnector Id="IndexedPages" Title="Indexed Pages" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_pages" HelpText="Shows indexed pages of the queried domain.">
     <Parameters>
       <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -575,6 +561,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -587,9 +574,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -612,6 +596,7 @@
       <Resource Id="SelectDatabase"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -622,9 +607,6 @@
         &export_columns=@Model.Fields
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -645,6 +627,7 @@
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="20"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -655,9 +638,6 @@
         &export_columns=@Model.Fields
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -675,6 +655,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -686,9 +667,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -706,6 +684,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -717,9 +696,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -750,6 +726,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -762,9 +739,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -782,13 +756,13 @@
   <RestConnector Id="ReferringDomains" Title="Referring Domains" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refdomains" HelpText="Lists domains pointing to the queried domain, root domain, or URL.">
     <Parameters>
     <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -805,6 +779,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -817,9 +792,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -839,13 +811,13 @@
   <RestConnector Id="ReferringIPs" Title="Referring IPs" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refips" HelpText="Lists IP addresses where backlinks to a domain, root domain, or URL are coming from.">
     <Parameters>
     <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -862,7 +834,8 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
-      <Fetch.Url>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>		
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
         type=backlinks_refips
@@ -874,9 +847,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -911,6 +881,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -923,9 +894,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -947,6 +915,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -958,9 +927,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -985,6 +951,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -996,9 +963,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1025,6 +989,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/?
@@ -1036,9 +1001,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1062,13 +1024,13 @@
   <RestConnector Id="TLDDistribution" Title="TLD Distribution" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_tld" HelpText="Shows referring domain distributions depending on their top-level domain type.">
     <Parameters>
     <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -1080,6 +1042,7 @@
       </Select>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -1091,9 +1054,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1108,13 +1068,13 @@
   <RestConnector Id="RefDomainsbyCountry" Title="Referring Domains by Country" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_geo" HelpText="Shows referring domain distributions by country (an IP address defines a country).">
     <Parameters>
     <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
-      <Radio Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
+      <Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
         <DataSource>
           <Item Id="root_domain" Title="Root Domain"/>
           <Item Id="domain" Title="Domain"/>
           <Item Id="url" Title="URL"/>
         </DataSource>
-      </Radio>
+      </Select>
       <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
         <DataSource>
           <Item Id="default" Title="Default"/>
@@ -1126,6 +1086,7 @@
       </Select>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/v1/?
@@ -1137,9 +1098,6 @@
         @(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1157,6 +1115,7 @@
       <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://api.semrush.com/analytics/da/v2/?
@@ -1167,9 +1126,6 @@
         &display_limit=@Model.MaxResults
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1192,6 +1148,7 @@
       </Select>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.semrush.com/analytics/ta/v2?type=traffic_summary
@@ -1200,9 +1157,6 @@
 				@(Model.Country != "Global" ? "&country=" + Model.Country : "")
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <Csv Separator=";" HasHeader="true">
@@ -1236,15 +1190,13 @@
 
   <RestConnector Id="AccountAPICredits" Title="Account API Credits" HelpUrl="https://www.semrush.com/api-accounts/#countapiunits" HelpText="Shows the current API balance for a given API key.">
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://www.semrush.com/users/countapiunits.html?
         &key=@Model.ApiKey
         ]]>
       </Fetch.Url>
-      <RequestHeaders>
-        <Header Name='User-Agent'>seotools-for-excel</Header>
-      </RequestHeaders>
     </Fetch>
     <Parse>
       <JsonPath Expr="$" Id="Credits" Title="Credits" Converter="Int"/>
