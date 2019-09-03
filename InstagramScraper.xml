@@ -3,6 +3,56 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+<RestConnector Title="Account Lookup" Id="AccountLookupUsername">
+    <Parameters>
+      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+		<Fetch Url="@FetchUserString()"/>
+    <Parse>
+      <Regex Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Id="Followers" Title="Followers"  Group="1" Converter="Int"/>
+      <Regex Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Id="Follows" Title="Follows" Group="1" Converter="Int"/>
+      <Regex Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Id="Posts" Title="Posts" Group="1" Converter="Int"/>
+      <Regex Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;" Id="UserId" Title="User Id" Group="1" Converter="Auto"/>
+      <Regex Expr="&quot;is_private&quot;:(\w+)" Id="Private" Title="Private"  Group="1" Converter="String"/>
+			<Compute Expr="@System.Text.RegularExpressions.Regex.Unescape(Model.Inp)" Id="Bio" Title="Bio" DefaultValue="">
+				<Regex Expr="&quot;description&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
+			</Compute>
+			<Regex Expr="&quot;external_url&quot;:&quot;(.*?)&quot;" Id="ExternalUrl" Title="External URL" Group="1" Converter="String" DefaultValue=""/>
+      <Regex Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Id="Avatar" Title="Avatar" Group="1" Converter="String"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Title="Account Latest Posts" Id="LatestPosts">
+    <Parameters>
+      <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+		<Fetch Url="@FetchUserString()"/>
+    <Parse>
+      <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
+				<Compute Expr="https://www.instagram.com/p/@(Model.PostIdInput)" Id="PostUrl" Title="Post URL" DefaultValue="">
+					<Regex Expr=".*" Group="0" Id="PostIdInput" DefaultValue=""/>
+				</Compute>
+      </Regex>
+			<Regex Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter.SourceFormat="Unix" >
+        <Regex Expr=".*" Id="Created" Title="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
+      </Regex>
+			<Regex Expr="typename&quot;:&quot;Graph(\w+)" Group="1" DefaultValue="">
+				<Compute Expr="@Model.Inp" Id="Type" Title="Type" DefaultValue="">
+					<Regex Expr=".*" Group="0" Id="Inp" DefaultValue=""/>
+				</Compute>
+      </Regex>
+			<Regex Expr="edge_liked_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int" DefaultValue="">
+        <Regex Expr=".*" Id="Likes" Title="Likes" Group="0" Converter="Long"/>
+      </Regex>
+			<Regex Expr="edge_media_to_comment&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Long" DefaultValue="">
+        <Regex Expr=".*" Id="Comments" Title="Comments" Group="0" Converter="Long"/>
+      </Regex>
+			<Regex Expr="display_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="">
+        <Regex Expr=".*" Id="ImageUrl" Title="Display URL" Group="0" Converter="String"/>
+      </Regex>
+    </Parse>
+  </RestConnector>
+
   <RestConnector Id="PostLookup" Title="Post Lookup">
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/BhCZUzgAOhT/"/>
