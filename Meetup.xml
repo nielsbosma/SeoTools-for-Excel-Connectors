@@ -40,10 +40,10 @@
 
   <RestConnector Id="EventsFind" Title="Events Find" Group="Events" HelpText="The events returned will be based on the hosting groups near the authenticated member's location. To customize, use latitude and longitude." HelpUrl="https://www.meetup.com/meetup_api/docs/find/upcoming_events/">
     <Parameters>
-      <Text Id="Query" Title="Search Query" Required="false" Debug.DefaultValue="" HelpText="Full text search query"/>
-      <Text Id="Topic" Title="Filter by Topic Id" Required="false" Debug.DefaultValue="" Select.Connector="TopicCategories" Select.IdField="Id" Select.TitleField="Name" HelpText="Numeric topic category identifier for filtering recommendations by a topic category"/>
-      <Text Id="Latitude" Title="Latitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target latitude"/>
-      <Text Id="Longitude" Title="Longitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target longitude"/>
+      <Text Id="Query" Title="Search Query" Required="false" HelpText="Full text search query"/>
+      <Text Id="Topic" Title="Filter by Topic Id" Required="false" Select.Connector="TopicCategories" Select.IdField="Id" Select.TitleField="Name" HelpText="Numeric topic category identifier for filtering recommendations by a topic category"/>
+      <Text Id="Latitude" Title="Latitude" Required="false" HelpText="Approximate target latitude"/>
+      <Text Id="Longitude" Title="Longitude" Required="false" HelpText="Approximate target longitude"/>
       <Text Id="Radius" Title="Radius (Miles | Max = 100)" Required="false" HelpText="Radius in miles. May be 0.0-100.0. Defaults to member's preferred radius"/>
       <DateInterval Id="Interval" Title="Filter by Date" Required="false" Nullable="true"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="best" HelpText="'best' orders events by recommendation score, while 'time' orders events by the by the event's start time in increasing order.">
@@ -69,9 +69,7 @@
 					@: &end_date_range=@Model.Interval.EndDate.ToString("yyyy-MM-dd")T00:00:00
 				}
         @if(!string.IsNullOrEmpty(Model.Latitude) && !string.IsNullOrEmpty(Model.Longitude))
-        {
           @: &lat=@(Model.Latitude)&lon=@(Model.Longitude)
-        }
         @if(!string.IsNullOrEmpty(Model.Radius))
           @: &radius=@(Model.Radius)
         @if(!string.IsNullOrEmpty(Model.Query))
@@ -87,18 +85,12 @@
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Description of the event. Email addresses and phone numbers will be masked for non-members">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Time" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.TimeInp))" Converter="DateTime" HelpText="UTC start time of the event">
-          <JsonPath Expr="time" Id="TimeInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Id="Time" Expr="time" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="UTC start time of the event"/>
         <JsonPath Expr="rsvp_limit" Id="RSVPLimit" Title="RSVP Limit" Converter="Long" DefaultValue="" HelpText="The number of 'yes' RSVPS an event has capacity for"/>
         <JsonPath Expr="yes_rsvp_count" Id="YesRSVP" Title="RSVP Yes" Converter="Long" DefaultValue="" HelpText="Number of yes RSVPs including guests"/>
         <JsonPath Expr="waitlist_count" Id="Waitlist" Converter="Long" DefaultValue="Number of members on the waitlist, if one exists"/>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Creation time of the event">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
-        <Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Last modified time for the event">
-          <JsonPath Expr="updated" Id="UpdatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the event"/>
+        <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Last modified time for the event"/>
         <JsonPath Expr="how_to_find_us" Id="HowToFindUs" Title="How to find us" Converter="String" DefaultValue="" HelpText="Additional information on how to find members at a venue when provided by an organizer"/>
         <JsonPath Expr="visibility" Id="Visibility" Converter="String"/>
         <JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to event on meetup.com"/>
@@ -112,9 +104,7 @@
         <JsonPath Expr="group.id" Id="GroupId" Converter="Long" DefaultValue="" HelpText="Numeric identifier for the group"/>
         <JsonPath Expr="group.name" Id="GroupName" Title="Group Name" Converter="String" DefaultValue="" HelpText="Name of the group"/>
         <JsonPath Expr="group.urlname" Id="GroupUrlName" Title="Group URL Name" Converter="String" DefaultValue="" HelpText="Alphanumeric urlname identifier for the group"/>
-        <Compute Id="GroupCreated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.GroupCreatedInp))" Converter="DateTime" HelpText="Creation time of the group">
-          <JsonPath Expr="group.created" Id="GroupCreatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="group.created" Id="GroupCreated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the group"/>
         <JsonPath Expr="group.join_mode" Id="JoinMode" Converter="String" DefaultValue="" HelpText="Indicator of how new members may be able to join"/>
       </JsonPath>
     </Parse>
@@ -154,19 +144,12 @@
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Description of the event. Email addresses and phone numbers will be masked for non-members">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Time" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.TimeInp))" Converter="DateTime" HelpText="UTC start time of the event">
-          <JsonPath Expr="time" Id="TimeInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Id="Time" Expr="time" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="UTC start time of the event"/>
         <JsonPath Expr="rsvp_limit" Id="RSVPLimit" Title="RSVP Limit" Converter="Long" DefaultValue="" HelpText="The number of 'yes' RSVPS an event has capacity for"/>
         <JsonPath Expr="yes_rsvp_count" Id="YesRSVP" Title="RSVP Yes" Converter="Long" DefaultValue="" HelpText="Number of yes RSVPs including guests"/>
         <JsonPath Expr="waitlist_count" Id="Waitlist" Converter="Long" DefaultValue="Number of members on the waitlist, if one exists"/>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Creation time of the event">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
-        <Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Last modified time for the event">
-          <JsonPath Expr="updated" Id="UpdatedInp" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="status" Id="Status" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the event"/>
+        <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Last modified time for the event"/>
         <JsonPath Expr="how_to_find_us" Id="HowToFindUs" Title="How to find us" Converter="String" DefaultValue="" HelpText="Additional information on how to find members at a venue when provided by an organizer"/>
         <JsonPath Expr="visibility" Id="Visibility" Converter="String"/>
         <JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to event on meetup.com"/>
@@ -180,9 +163,7 @@
         <JsonPath Expr="group.id" Id="GroupId" Converter="Long" DefaultValue="" HelpText="Numeric identifier for the group"/>
         <JsonPath Expr="group.name" Id="GroupName" Title="Group Name" Converter="String" DefaultValue="" HelpText="Name of the group"/>
         <JsonPath Expr="group.urlname" Id="GroupUrlName" Title="Group URL Name" Converter="String" DefaultValue="" HelpText="Alphanumeric urlname identifier for the group"/>
-        <Compute Id="GroupCreated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.GroupCreatedInp))" Converter="DateTime" HelpText="Creation time of the group">
-          <JsonPath Expr="group.created" Id="GroupCreatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="group.created" Id="GroupCreated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the group"/>
         <JsonPath Expr="group.join_mode" Id="JoinMode" Converter="String" DefaultValue="" HelpText="Indicator of how new members may be able to join"/>
       </JsonPath>
     </Parse>
@@ -208,19 +189,12 @@
 			<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Description of the event. Email addresses and phone numbers will be masked for non-members">
 				<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
-			<Compute Id="Time" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.TimeInp))" Converter="DateTime" HelpText="UTC start time of the event">
-				<JsonPath Expr="time" Id="TimeInp" Converter="Long"/>
-			</Compute>
+			<JsonPath Id="Time" Expr="time" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="UTC start time of the event"/>
 			<JsonPath Expr="rsvp_limit" Id="RSVPLimit" Title="RSVP Limit" Converter="Long" DefaultValue="" HelpText="The number of 'yes' RSVPS an event has capacity for"/>
 			<JsonPath Expr="yes_rsvp_count" Id="YesRSVP" Title="RSVP Yes" Converter="Long" DefaultValue="" HelpText="Number of yes RSVPs including guests"/>
 			<JsonPath Expr="waitlist_count" Id="Waitlist" Converter="Long" DefaultValue="Number of members on the waitlist, if one exists"/>
-			<Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Creation time of the event">
-				<JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-			</Compute>
-			<Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Last modified time for the event">
-				<JsonPath Expr="updated" Id="UpdatedInp" Converter="Long"/>
-			</Compute>
-			<JsonPath Expr="status" Id="Status" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the event"/>
+			<JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Last modified time for the event"/>
 			<JsonPath Expr="how_to_find_us" Id="HowToFindUs" Title="How to find us" Converter="String" DefaultValue="" HelpText="Additional information on how to find members at a venue when provided by an organizer"/>
 			<JsonPath Expr="visibility" Id="Visibility" Converter="String"/>
 			<JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to event on meetup.com"/>
@@ -234,9 +208,7 @@
 			<JsonPath Expr="group.id" Id="GroupId" Converter="Long" DefaultValue="" HelpText="Numeric identifier for the group"/>
 			<JsonPath Expr="group.name" Id="GroupName" Title="Group Name" Converter="String" DefaultValue="" HelpText="Name of the group"/>
 			<JsonPath Expr="group.urlname" Id="GroupUrlName" Title="Group URL Name" Converter="String" DefaultValue="" HelpText="Alphanumeric urlname identifier for the group"/>
-			<Compute Id="GroupCreated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.GroupCreatedInp))" Converter="DateTime" HelpText="Creation time of the group">
-				<JsonPath Expr="group.created" Id="GroupCreatedInp" Converter="Long"/>
-			</Compute>
+			<JsonPath Expr="group.created" Id="GroupCreated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the group"/>
 			<JsonPath Expr="group.join_mode" Id="JoinMode" Converter="String" DefaultValue="" HelpText="Indicator of how new members may be able to join"/>
     </Parse>
 		<Resource Id="Fail"/>
@@ -261,8 +233,7 @@
 			<Resource Id="Authorization"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.meetup.com/@(Model.GroupUrlName)/events/@(Model.EventId)/attendance
-				?@(Model.Sort)
+        https://api.meetup.com/@(Model.GroupUrlName)/events/@(Model.EventId)/attendance?@(Model.Sort)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -272,9 +243,7 @@
 				<JsonPath Expr="member.name" Id="Name" Converter="String" HelpText="Name of member"/>
 				<JsonPath Expr="rsvp.response" Id="Response" Converter="String" HelpText="Member's original RSVP response"/>
 				<JsonPath Expr="rsvp.guests" Id="Guests" Converter="Long" HelpText="Number of guests when the member rsvped"/>
-				<Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Last modified time of the attendance status">
-					<JsonPath Expr="rsvp.updated" Id="UpdatedInp" Converter="Long"/>
-				</Compute>
+				<JsonPath Expr="rsvp.updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Last modified time for the event"/>
 				<JsonPath Expr="member.event_context.host" Id="Host" Converter="Bool" HelpText="Boolean indicator for whether this member is a host for the event"/>
 				<JsonPath Expr="member.photo.photo_link" Id="Photo" Converter="String" DefaultValue="Link for standard sized photo"/>
 			</JsonPath>
@@ -309,41 +278,32 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id" Converter="Auto" HelpText="A unique alphanumeric identifier for event"/>
-        <JsonPath Expr="name" Id="Name" Converter="String" HelpText="Name of the event"/>
-        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Description of the event. Email addresses and phone numbers will be masked for non-members">
+				<JsonPath Expr="id" Id="Id" Converter="Auto" HelpText="A unique alphanumeric identifier for event"/>
+				<JsonPath Expr="name" Id="Name" Converter="String" HelpText="Name of the event"/>
+				<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Description of the event. Email addresses and phone numbers will be masked for non-members">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
-        </Compute>
-        <Compute Id="Time" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.TimeInp))" Converter="DateTime" HelpText="UTC start time of the event">
-          <JsonPath Expr="time" Id="TimeInp" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="rsvp_limit" Id="RSVPLimit" Title="RSVP Limit" Converter="Long" DefaultValue="" HelpText="The number of 'yes' RSVPS an event has capacity for"/>
-        <JsonPath Expr="yes_rsvp_count" Id="YesRSVP" Title="RSVP Yes" Converter="Long" DefaultValue="" HelpText="Number of yes RSVPs including guests"/>
-        <JsonPath Expr="waitlist_count" Id="Waitlist" Converter="Long" DefaultValue="Number of members on the waitlist, if one exists"/>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Creation time of the event">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
-        <Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Last modified time for the event">
-          <JsonPath Expr="updated" Id="UpdatedInp" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="status" Id="Status" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="how_to_find_us" Id="HowToFindUs" Title="How to find us" Converter="String" DefaultValue="" HelpText="Additional information on how to find members at a venue when provided by an organizer"/>
-        <JsonPath Expr="visibility" Id="Visibility" Converter="String"/>
-        <JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to event on meetup.com"/>
-        <JsonPath Expr="venue.id" Id="VenueId" Converter="Auto" DefaultValue="" HelpText="Unique numeric venue id"/>
-        <JsonPath Expr="venue.name" Id="VenueName" Converter="String" DefaultValue="" HelpText="Venue name"/>
-        <JsonPath Expr="venue.lat" Id="VenueLat" Title="Venue Latitude" Converter="Double" DefaultValue="" HelpText="Approximate latitude"/>
-        <JsonPath Expr="venue.lon" Id="VenueLon" Title="Venue Longitude" Converter="Double" DefaultValue="" HelpText="Approximate longitude"/>
-        <JsonPath Expr="venue.address_1" Id="Address" Converter="String" DefaultValue="" HelpText="Line 1 of venue address"/>
-        <JsonPath Expr="venue.city" Id="City" Converter="String" DefaultValue="" HelpText="City of venue"/>
-        <JsonPath Expr="venue.country" Id="Country" Converter="String" DefaultValue="" HelpText="Country code of venue"/>
-        <JsonPath Expr="group.id" Id="GroupId" Converter="Long" DefaultValue="" HelpText="Numeric identifier for the group"/>
-        <JsonPath Expr="group.name" Id="GroupName" Title="Group Name" Converter="String" DefaultValue="" HelpText="Name of the group"/>
-        <JsonPath Expr="group.urlname" Id="GroupUrlName" Title="Group URL Name" Converter="String" DefaultValue="" HelpText="Alphanumeric urlname identifier for the group"/>
-        <Compute Id="GroupCreated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.GroupCreatedInp))" Converter="DateTime" HelpText="Creation time of the group">
-          <JsonPath Expr="group.created" Id="GroupCreatedInp" Converter="Long"/>
-        </Compute>
-        <JsonPath Expr="group.join_mode" Id="JoinMode" Converter="String" DefaultValue="" HelpText="Indicator of how new members may be able to join"/>
+				</Compute>
+				<JsonPath Id="Time" Expr="time" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="UTC start time of the event"/>
+				<JsonPath Expr="rsvp_limit" Id="RSVPLimit" Title="RSVP Limit" Converter="Long" DefaultValue="" HelpText="The number of 'yes' RSVPS an event has capacity for"/>
+				<JsonPath Expr="yes_rsvp_count" Id="YesRSVP" Title="RSVP Yes" Converter="Long" DefaultValue="" HelpText="Number of yes RSVPs including guests"/>
+				<JsonPath Expr="waitlist_count" Id="Waitlist" Converter="Long" DefaultValue="Number of members on the waitlist, if one exists"/>
+				<JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the event"/>
+				<JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Last modified time for the event"/>
+				<JsonPath Expr="how_to_find_us" Id="HowToFindUs" Title="How to find us" Converter="String" DefaultValue="" HelpText="Additional information on how to find members at a venue when provided by an organizer"/>
+				<JsonPath Expr="visibility" Id="Visibility" Converter="String"/>
+				<JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to event on meetup.com"/>
+				<JsonPath Expr="venue.id" Id="VenueId" Converter="Auto" DefaultValue="" HelpText="Unique numeric venue id"/>
+				<JsonPath Expr="venue.name" Id="VenueName" Converter="String" DefaultValue="" HelpText="Venue name"/>
+				<JsonPath Expr="venue.lat" Id="VenueLat" Title="Venue Latitude" Converter="Double" DefaultValue="" HelpText="Approximate latitude"/>
+				<JsonPath Expr="venue.lon" Id="VenueLon" Title="Venue Longitude" Converter="Double" DefaultValue="" HelpText="Approximate longitude"/>
+				<JsonPath Expr="venue.address_1" Id="Address" Converter="String" DefaultValue="" HelpText="Line 1 of venue address"/>
+				<JsonPath Expr="venue.city" Id="City" Converter="String" DefaultValue="" HelpText="City of venue"/>
+				<JsonPath Expr="venue.country" Id="Country" Converter="String" DefaultValue="" HelpText="Country code of venue"/>
+				<JsonPath Expr="group.id" Id="GroupId" Converter="Long" DefaultValue="" HelpText="Numeric identifier for the group"/>
+				<JsonPath Expr="group.name" Id="GroupName" Title="Group Name" Converter="String" DefaultValue="" HelpText="Name of the group"/>
+				<JsonPath Expr="group.urlname" Id="GroupUrlName" Title="Group URL Name" Converter="String" DefaultValue="" HelpText="Alphanumeric urlname identifier for the group"/>
+				<JsonPath Expr="group.created" Id="GroupCreated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Creation time of the group"/>
+				<JsonPath Expr="group.join_mode" Id="JoinMode" Converter="String" DefaultValue="" HelpText="Indicator of how new members may be able to join"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -351,10 +311,10 @@
 
   <RestConnector Id="CitiesFind" Title="Cities Find" Group="Locations" HelpText="Returns Meetup cities." HelpUrl="https://www.meetup.com/meetup_api/docs/2/cities/">
     <Parameters>
-      <Text Id="Query" Title="Search Query" Required="false" Debug.DefaultValue="" HelpText="Full text search query"/>
-      <Text Id="Country" Title="Country (2 Letter Code)" Required="false" Debug.DefaultValue="" HelpText="A valid country code"/>
-      <Text Id="Latitude" Title="Latitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target latitude"/>
-      <Text Id="Longitude" Title="Longitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target longitude"/>
+      <Text Id="Query" Title="Search Query" Required="false" HelpText="Full text search query"/>
+      <Text Id="Country" Title="Country (2 Letter Code)" Required="false" HelpText="A valid country code"/>
+      <Text Id="Latitude" Title="Latitude" Required="false" HelpText="Approximate target latitude"/>
+      <Text Id="Longitude" Title="Longitude" Required="false" HelpText="Approximate target longitude"/>
       <Text Id="Radius" Title="Radius (Miles | Max = 100)" Required="false" HelpText="Radius in miles. May be 0.0-100.0. Defaults to member's preferred radius"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="best">
         <DataSource>
@@ -375,9 +335,7 @@
         @if(!string.IsNullOrEmpty(Model.Country))
           @: &country=@(Model.Country)
         @if(!string.IsNullOrEmpty(Model.Latitude) && !string.IsNullOrEmpty(Model.Longitude))
-        {
           @: &lat=@(Model.Latitude)&lon=@(Model.Longitude)
-        }
         @if(!string.IsNullOrEmpty(Model.Radius))
           @: &radius=@(Model.Radius)
         @if(!string.IsNullOrEmpty(Model.Query))
@@ -416,9 +374,7 @@
       <JsonPath Expr="$.*">
 				<JsonPath Expr="id" Id="Id" Converter="Auto" HelpText="Comment id"/>
 				<JsonPath Expr="comment" Id="Comment" Converter="String" HelpText="The comment the member left for the event"/>
-				<Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time the comment was posted">
-					<JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-				</Compute>
+				<JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time the comment was posted"/>
 				<JsonPath Expr="like_count" Id="Likes" Converter="Long" HelpText="The number of likes the comment has"/>
 				<JsonPath Expr="link" Id="Link" Converter="String" HelpText="Link to the comment"/>
 				<JsonPath Expr="member.id" Id="MemberId" Converter="Long" HelpText="Numeric member ID"/>
@@ -433,10 +389,10 @@
 
   <RestConnector Id="GroupsFind" Title="Groups Find" Group="Groups" HelpText="Text, location, category and friend-based group searches" HelpUrl="https://www.meetup.com/meetup_api/docs/find/groups/">
     <Parameters>
-      <Text Id="Query" Title="Search Query" Required="false" Debug.DefaultValue="" HelpText="Full text search query"/>
-      <Text Id="Location" Title="Search Location" Required="false" Debug.DefaultValue="" HelpText="Raw text location query"/>
-      <Text Id="Latitude" Title="Latitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target latitude"/>
-      <Text Id="Longitude" Title="Longitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target longitude"/>
+      <Text Id="Query" Title="Search Query" Required="false" HelpText="Full text search query"/>
+      <Text Id="Location" Title="Search Location" Required="false" HelpText="Raw text location query"/>
+      <Text Id="Latitude" Title="Latitude" Required="false" HelpText="Approximate target latitude"/>
+      <Text Id="Longitude" Title="Longitude" Required="false" HelpText="Approximate target longitude"/>
       <Text Id="Radius" Title="Radius (Miles | Max = 100)" Required="false" HelpText="Radius in miles. May be 0.0-100.0. Defaults to member's preferred radius"/>
       <DateInterval Id="Interval" Title="Filter by Date" Required="false" Nullable="true"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="distance">
@@ -462,9 +418,7 @@
 					@: &end_date_range=@Model.Interval.EndDate.ToString("yyyy-MM-dd")T00:00:00
 				}
         @if(!string.IsNullOrEmpty(Model.Latitude) && !string.IsNullOrEmpty(Model.Longitude))
-        {
           @: &lat=@(Model.Latitude)&lon=@(Model.Longitude)
-        }
         @if(!string.IsNullOrEmpty(Model.Radius))
           @: &radius=@(Model.Radius)
         @if(!string.IsNullOrEmpty(Model.Query))
@@ -483,9 +437,7 @@
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Short description of group">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time the group was created">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time the group was created"/>
         <JsonPath Expr="category.id" Id="CategoryId" Converter="Long" HelpText="Numeric category id"/>
         <JsonPath Expr="category.name" Id="CategoryName" Converter="String" HelpText="Display name of the category"/>
         <JsonPath Expr="status" Id="Status" Converter="String" HelpText="Status of the group"/>
@@ -520,9 +472,7 @@
 			<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Short description of group">
 				<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
-			<Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time the group was created">
-				<JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-			</Compute>
+      <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time the group was created"/>
 			<JsonPath Expr="category.id" Id="CategoryId" Converter="Long" HelpText="Numeric category id"/>
 			<JsonPath Expr="category.name" Id="CategoryName" Converter="String" HelpText="Display name of the category"/>
 			<JsonPath Expr="status" Id="Status" Converter="String" HelpText="Status of the group"/>
@@ -557,9 +507,7 @@
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Short description of group">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time the group was created">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time the group was created"/>
         <JsonPath Expr="category.id" Id="CategoryId" Converter="Long" HelpText="Numeric category id"/>
         <JsonPath Expr="category.name" Id="CategoryName" Converter="String" HelpText="Display name of the category"/>
         <JsonPath Expr="status" Id="Status" Converter="String" HelpText="Status of the group"/>
@@ -596,9 +544,7 @@
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Converter="String" DefaultValue="" HelpText="Short description of group">
 					<JsonPath Expr="description" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time the group was created">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time the group was created"/>
         <JsonPath Expr="category.id" Id="CategoryId" Converter="Long" HelpText="Numeric category id"/>
         <JsonPath Expr="category.name" Id="CategoryName" Converter="String" HelpText="Display name of the category"/>
         <JsonPath Expr="status" Id="Status" Converter="String" HelpText="Status of the group"/>
@@ -642,14 +588,10 @@
         <JsonPath Expr="id" Id="Id" Converter="Auto" HelpText="The member's id"/>
         <JsonPath Expr="name" Id="Name" Converter="String" HelpText="The member's name"/>
         <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Bio" Converter="String" DefaultValue="" HelpText="A description of the member">
-				<JsonPath Expr="bio" Id="Inp" Converter="String" DefaultValue=""/>
+					<JsonPath Expr="bio" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
-        <Compute Id="Joined" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.JoinedInp))" Converter="DateTime" HelpText="Date and time a member joined">
-          <JsonPath Expr="joined" Id="JoinedInp" Converter="Long"/>
-        </Compute>
-        <Compute Id="Visited" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.VisitedInp))" Converter="DateTime" HelpText="Date and time of member's last activity">
-          <JsonPath Expr="visited" Id="VisitedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="joined" Id="Joined" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Date and time a member joined"/>
+        <JsonPath Expr="visited" Id="Visited" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Date and time of member's last activity"/>
         <JsonPath Expr="city" Id="City" Converter="String" DefaultValue="" HelpText="City which member has provided"/>
         <JsonPath Expr="hometown" Id="Hometown" Converter="String" DefaultValue="" HelpText="Hometown which member has provided"/>
         <JsonPath Expr="country" Id="Country" Converter="String" DefaultValue="" HelpText="Country which member has provided"/>
@@ -686,12 +628,8 @@
       <JsonPath Expr="$.*">
         <JsonPath Expr="id" Id="Id" Converter="Auto" HelpText="Numeric photo ID"/>
         <JsonPath Expr="caption" Id="Caption" Converter="String" DefaultValue="Photo caption, if defined"/>
-        <Compute Id="Created" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.CreatedInp))" Converter="DateTime" HelpText="Time photo was uploaded">
-          <JsonPath Expr="created" Id="CreatedInp" Converter="Long"/>
-        </Compute>
-        <Compute Id="Updated" Expr="@(DateTimeOffset.FromUnixTimeMilliseconds((long)Model.UpdatedInp))" Converter="DateTime" HelpText="Time photo was last updated">
-          <JsonPath Expr="updated" Id="UpdatedInp" Converter="Long"/>
-        </Compute>
+        <JsonPath Expr="created" Id="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time photo was uploaded"/>
+        <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="Time photo was last updated"/>
         <JsonPath Expr="member.id" Id="MemberId" Converter="Auto" HelpText="Numeric member ID"/>
         <JsonPath Expr="member.name" Id="Member" Converter="Auto" HelpText="Name of member"/>
         <JsonPath Expr="highres_link" Id="HighRes" Converter="String" HelpText="Link for full sized photo"/>
@@ -706,9 +644,9 @@
   <RestConnector Id="VenuesFind" Title="Venues Find" Group="Locations" HelpText="Returns list of venues based on location" HelpUrl="https://www.meetup.com/meetup_api/docs/find/venues/">
     <Parameters>
       <Text Id="Query" Title="Search Query" Required="true" Debug.DefaultValue="Malmö" HelpText="Full text search query"/>
-      <Text Id="Country" Title="Country (2 Letter Code)" Required="false" Debug.DefaultValue="" HelpText="A valid country code"/>
-      <Text Id="Latitude" Title="Latitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target latitude"/>
-      <Text Id="Longitude" Title="Longitude" Required="false" Debug.DefaultValue="" HelpText="Approximate target longitude"/>
+      <Text Id="Country" Title="Country (2 Letter Code)" Required="false" HelpText="A valid country code"/>
+      <Text Id="Latitude" Title="Latitude" Required="false" HelpText="Approximate target latitude"/>
+      <Text Id="Longitude" Title="Longitude" Required="false" HelpText="Approximate target longitude"/>
       <Text Id="Radius" Title="Radius (Miles | Max = 100)" Required="false" HelpText="Radius in miles. May be 0.0-100.0. Defaults to member's preferred radius"/>
       <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="order=rating_count&amp;desc=true" HelpText="The sort order of returned venues.">
         <DataSource>
@@ -732,9 +670,7 @@
         @if(!string.IsNullOrEmpty(Model.Country))
           @: &country=@(Model.Country)
         @if(!string.IsNullOrEmpty(Model.Latitude) && !string.IsNullOrEmpty(Model.Longitude))
-        {
           @: &lat=@(Model.Latitude)&lon=@(Model.Longitude)
-        }
         @if(!string.IsNullOrEmpty(Model.Radius))
           @: &radius=@(Model.Radius)
         @if(!string.IsNullOrEmpty(Model.Query))
