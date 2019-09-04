@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Binance" Id="Binance" Category="Finance" RequireVersion="7.0"
-       SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Binance.xml"
-       HelpUrl="http://seotoolsforexcel.com/binance" HelpText="Documentation">
+<Suite Title="Binance" Id="Binance" Category="Finance" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Binance.xml" HelpUrl="http://seotoolsforexcel.com/binance" HelpText="Documentation">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
@@ -88,12 +86,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.binance.com/api/v1/depth?
-        symbol=@(Model.Symbol)
-        @if(Model.Limit % 5 == 0)
-        {
-          @: &limit=@(Model.Limit)
-        }
+        https://api.binance.com/api/v1/depth?symbol=@(Model.Symbol)
+        @(Model.Limit % 5 == 0 ? "&limit=" + Model.Limit : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -118,12 +112,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.binance.com/api/v1/trades?
-        symbol=@(Model.Symbol)
-        @if(Model.Limit % 5 == 0)
-        {
-          @: &limit=@(Model.Limit)
-        }
+        https://api.binance.com/api/v1/trades?symbol=@(Model.Symbol)
+        @(Model.Limit % 5 == 0 ? "&limit=" + Model.Limit : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -132,20 +122,7 @@
         <JsonPath Expr="id" Id="TradeId" Title="Id" Converter="Int" Checked="False"/>
         <JsonPath Expr="price" Id="Price" Title="Price" Converter="Double"/>
         <JsonPath Expr="qty" Id="Quantity" Title="Quantity" Converter="Double"/>
-        <Compute Id="Time" Title="Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-              @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="time" Id="Inp" DefaultValue=""/>
-        </Compute>
+        <JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isBuyerMaker" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
         <JsonPath Expr="isBestMatch" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
       </JsonPath>
@@ -161,12 +138,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.binance.com/api/v1/aggTrades?
-        symbol=@(Model.Symbol)
-        @if(Model.Limit % 5 == 0)
-        {
-          @: &limit=@(Model.Limit)
-        }
+        https://api.binance.com/api/v1/aggTrades?symbol=@(Model.Symbol)
+        @(Model.Limit % 5 == 0 ? "&limit=" + Model.Limit : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -177,20 +150,7 @@
         <JsonPath Expr="q" Id="Quantity" Title="Quantity" Converter="Double"/>
         <JsonPath Expr="f" Id="FirstTradeId" Title="First Trade Id" Converter="Int" Checked="False"/>
         <JsonPath Expr="l" Id="LastTradeId" Title="Last Trade Id" Converter="Int" Checked="False"/>
-        <Compute Id="Time" Title="Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="T" Id="Inp" DefaultValue=""/>
-        </Compute>
+        <JsonPath Expr="T" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="m" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
         <JsonPath Expr="M" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
       </JsonPath>
@@ -205,8 +165,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.binance.com/api/v1/ticker/24hr
-        ?symbol=@(Model.Symbol)
+        https://api.binance.com/api/v1/ticker/24hr?symbol=@(Model.Symbol)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -230,34 +189,8 @@
       <JsonPath Expr="firstId" Id="FirstId" Title="First Id" Converter="Int" Checked="False"/>
       <JsonPath Expr="lastId" Id="LastId" Title="Last Id" Converter="Int" Checked="False"/>
       <JsonPath Expr="count" Id="Count" Title="Count" Converter="Int"/>
-      <Compute Id="OpenTime" Title="Open Time" Converter="DateTime" Checked="False">
-        <Compute.Expr>
-          <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-        </Compute.Expr>
-        <JsonPath Expr="openTime" Id="Inp" DefaultValue=""/>
-      </Compute>
-      <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
-        <Compute.Expr>
-          <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-        </Compute.Expr>
-        <JsonPath Expr="closeTime" Id="Inp" DefaultValue="" Checked="False"/>
-      </Compute>
+			<JsonPath Expr="openTime" Id="OpenTime" Title="Open Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
+			<JsonPath Expr="closeTime" Id="CloseTime" Title="Close Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
     </Parse>
     <Resource Id="Error"/>
   </RestConnector>
@@ -291,34 +224,8 @@
         <JsonPath Expr="firstId" Id="FirstId" Title="First Id" Converter="Int" Checked="False"/>
         <JsonPath Expr="lastId" Id="LastId" Title="Last Id" Converter="Int" Checked="False"/>
         <JsonPath Expr="count" Id="Count" Title="Count" Converter="Int"/>
-        <Compute Id="OpenTime" Title="Open Time" Converter="DateTime" Checked="False">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="openTime" Id="Inp" DefaultValue=""/>
-        </Compute>
-        <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="closeTime" Id="Inp" DefaultValue="" Checked="False"/>
-        </Compute>
+				<JsonPath Expr="openTime" Id="OpenTime" Title="Open Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
+				<JsonPath Expr="closeTime" Id="CloseTime" Title="Close Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -338,56 +245,26 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.binance.com/api/v1/klines?
-        symbol=@(Model.Symbol)
+        https://api.binance.com/api/v1/klines?symbol=@(Model.Symbol)
         &interval=@(Model.Interval)
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
           @: &startTime=@(((DateTimeOffset)Model.DateInterval.StartDate).ToUnixTimeMilliseconds())
           @: &endTime=@(((DateTimeOffset)Model.DateInterval.EndDate).ToUnixTimeMilliseconds())
         }
-        @if(Model.Limit % 5 == 0)
-        {
-          @: &limit=@(Model.Limit)
-        }
+        @(Model.Limit % 5 == 0 ? "&limit=" + Model.Limit : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*" Id="Trades">
-        <Compute Id="OpenTime" Title="Open Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="$.[0]" Id="Inp" DefaultValue="" Checked="False"/>
-        </Compute>
+				<JsonPath Expr="$.[0" Id="OpenTime" Title="Open Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="$.[5]" Id="Volume" Title="Volume" Converter="Double"/>
         <JsonPath Expr="$.[1]" Id="Open" Title="Open" Converter="Double"/>
         <JsonPath Expr="$.[2]" Id="High" Title="High" Converter="Double"/>
         <JsonPath Expr="$.[3]" Id="Low" Title="Low" Converter="Double"/>
         <JsonPath Expr="$.[4]" Id="Close" Title="Close" Converter="Double"/>
-        <Compute Id="CloseTime" Title="Close Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="$.[6]" Id="Inp" DefaultValue="" Checked="False"/>
-        </Compute>
+				<JsonPath Expr="$.[6]" Id="CloseTime" Title="Close Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="$.[7]" Id="QuoteAssetVolume" Title="Quote Asset Volume" Converter="Double"/>
         <JsonPath Expr="$.[8]" Id="NumberOfTrades" Title="Number of Trades" Converter="Int"/>
         <JsonPath Expr="$.[9]" Id="TakerBuyBaseAssetVolume" Title="Taker Buy Base Asset Volume" Converter="Double"/>
@@ -435,20 +312,7 @@
         <JsonPath Expr="side" Id="Side" Title="Side" Converter="String"/>
         <JsonPath Expr="stopPrice" Id="StopPrice" Title="Stop Price" Converter="Double"/>
         <JsonPath Expr="icebergQty" Id="IcebergQty" Title="Iceberg Quantity" Converter="Double" Checked="False"/>
-        <Compute Id="Time" Title="Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="time" Id="Inp" DefaultValue=""/>
-        </Compute>
+				<JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isWorking" Id="IsWorking" Title="Working" Converter="Bool"/>
       </JsonPath>
     </Parse>
@@ -495,20 +359,7 @@
         <JsonPath Expr="side" Id="Side" Title="Side" Converter="String"/>
         <JsonPath Expr="stopPrice" Id="StopPrice" Title="Stop Price" Converter="Double"/>
         <JsonPath Expr="icebergQty" Id="IcebergQty" Title="Iceberg Quantity" Converter="Double" Checked="False"/>
-        <Compute Id="Time" Title="Time" Converter="DateTime">
-          <Compute.Expr>
-            <![CDATA[
-             @{
-                long epoch = Convert.ToInt64(Model.Inp);
-                System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                dtDateTime = dtDateTime.AddMilliseconds(epoch);
-                string formatted = dtDateTime.ToString();
-              }
-              @(formatted)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="time" Id="Inp" DefaultValue=""/>
-        </Compute>
+				<JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isWorking" Id="IsWorking" Title="Working" Converter="Bool"/>
       </JsonPath>
     </Parse>
