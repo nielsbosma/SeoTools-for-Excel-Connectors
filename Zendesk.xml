@@ -14,10 +14,7 @@
       <Item Id="asc" Title="Ascending"/>
       <Item Id="desc" Title="Descending"/>
     </Resource>
-  </Resources>
-
-  <RestConnector Id="ListUsers" Title="Users" HelpText="List all users" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/users#list-users">
-    <Fetch>
+    <Resource Id="HttpSettings">
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
         <RequestContentType>application/json</RequestContentType>
@@ -25,6 +22,12 @@
           <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
         </RequestHeaders>
       </HttpSettings>
+    </Resource>		
+  </Resources>
+
+  <RestConnector Id="ListUsers" Title="Users List" Group="Users" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/users#list-users">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
 			<![CDATA[
         https://@(Model.Subdomain).zendesk.com/api/v2/users.json
@@ -62,7 +65,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListGroups" Title="Groups" HelpText="List all groups" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/groups#list-groups">
+  <RestConnector Id="ListGroups" Title="Groups List" Group="Groups" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/groups#list-groups">
     <Parameters>
       <Checkbox Id="Deleted" Title="Show only deleted"/>
     </Parameters>
@@ -73,13 +76,7 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
 				<![CDATA[
         https://@(Model.Subdomain).zendesk.com/api/v2/groups.json
@@ -98,7 +95,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListOrganizations" Title="Organizations" HelpText="List all organizations" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/organizations">
+  <RestConnector Id="ListOrganizations" Title="Organizations List" Group="Organizations" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/organizations">
     <Parameters>
       <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
@@ -109,23 +106,11 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://@(Model.Subdomain).zendesk.com/api/v2/
-        @if(!string.IsNullOrEmpty(Model.FilterUser))
-        {
-        @: users/@(Model.FilterUser)/organizations.json
-        }
-        else {
-        @: organizations.json
-        }
+        @(!string.IsNullOrEmpty(Model.FilterUser) ? "users/" + Model.FilterUser + "/organizations.json" : "/organizations.json")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -148,7 +133,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListTickets" Title="Tickets" HelpText="List all support tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
+  <RestConnector Id="ListTickets" Title="Tickets List" Group="Tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/tickets#list-tickets">
     <Parameters>
       <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="UserFilterType" Title="User Filter Type" Required="false" DefaultValue="assigned">
@@ -186,28 +171,17 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.PageCursor.Page != 0)
         {
           @: @(Model.NextToken)
         }
-        else {
+        else
+				{
           @: https://@(Model.Subdomain).zendesk.com/api/v2/
-          if(!string.IsNullOrEmpty(Model.FilterUser))
-          {
-              @: users/@(Model.FilterUser)/tickets/@(Model.UserFilterType).json
-          }
-          else {
-           @: tickets.json
-          }
+					@(!string.IsNullOrEmpty(Model.FilterUser) ? "users/" + Model.FilterUser + "/tickets/" + Model.UserFilterType + ".json" : "tickets.json")
         }
         ]]>
       </Fetch.Url>
@@ -244,7 +218,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListTicketSkips" Title="Ticket Skips" HelpText="List ticket skips (records of when agents skip over tickets without responding)" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_skips">
+  <RestConnector Id="ListTicketSkips" Title="Ticket Skips" Group="Tickets" HelpText="List ticket skips (records of when agents skip over tickets without responding)" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_skips">
     <Parameters>
       <Text Id="FilterUser" Title="Filter by user Id" Select.Connector="ListUsers" Select.IdField="Id" Select.TitleField="Name"/>
       <Radio Id="SortDirection" Title="Sort Direction" Required="True" DefaultValue="asc">
@@ -260,25 +234,17 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.PageCursor.Page != 0)
         {
           @: @(Model.NextToken)
         }
-        else {
+        else 
+				{
           @: https://@(Model.Subdomain).zendesk.com/api/v2/skips.json
-          if(!string.IsNullOrEmpty(Model.FilterUser))
-          {
-            @: &user_id=@(Model.FilterUser)
-          }
+          @(!string.IsNullOrEmpty(Model.FilterUser) ? "&user_id=" + Model.FilterUser : "")
         }
         ]]>
       </Fetch.Url>
@@ -297,7 +263,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListTicketMetrics" Title="Ticket Metrics" HelpText="List ticket metrics" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_metrics">
+  <RestConnector Id="ListTicketMetrics" Title="Ticket Metrics" Group="Tickets" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_metrics">
     <Paging PageSize="100" MaxTake="200000">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="$.count"/>
@@ -305,20 +271,15 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.PageCursor.Page != 0)
         {
           @: @(Model.NextToken)
         }
-        else {
+        else 
+				{
           @: https://@(Model.Subdomain).zendesk.com/api/v2/ticket_metrics.json
         }
         ]]>
@@ -351,7 +312,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ListComments" Title="Ticket Comments" HelpText="List comments for specific ticket" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_comments#list-comments">
+  <RestConnector Id="ListComments" Title="Ticket Comments" Group="Tickets" HelpText="List comments for specific ticket" HelpUrl="https://developer.zendesk.com/rest_api/docs/core/ticket_comments#list-comments">
     <Parameters>
       <Text Id="TicketId" Title="Ticket ID" Debug.DefaultValue="1" Required="true"/>
       <Select Id="SortComments" Title="Sort Order" Required="false" DefaultValue="asc">
@@ -367,13 +328,7 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.PageCursor.Page != 0)
@@ -401,7 +356,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SearchTickets" Title="Search Tickets" HelpText="Search support tickets" HelpUrl="https://support.zendesk.com/hc/en-us/articles/203663206">
+  <RestConnector Id="SearchTickets" Title="Ticket Search" Group="Tickets" HelpText="Search support tickets" HelpUrl="https://support.zendesk.com/hc/en-us/articles/203663206">
     <Parameters>
       <Text Id="FilterSubject" Title="Search ticket subject" Required="false"/>
       <Text Id="FilterDescription" Title="Search ticket description" Required="false"/>
@@ -482,53 +437,32 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.PageCursor.Page != 0)
         {
           @: @(Model.NextToken)
         }
-        else {
+        else 
+				{
           @: https://@(Model.Subdomain).zendesk.com/api/v2/search.json?query=type:ticket%20order_by:@(Model.SortBy)%20sort:@(Model.SortDirection)
           @if(!Utils.IsNullDate(Model.CreatedAfter))
-          {
             @: %20created>@Model.CreatedAfter.ToString("yyy-MM-dd")
-          }
           @if(!Utils.IsNullDate(Model.CreatedBefore))
-          {
             @: %20created<@Model.CreatedBefore.ToString("yyy-MM-dd")
-          }
           @if(!string.IsNullOrEmpty(Model.FilterSubject))
-          {
             @: %20subject:@(Model.FilterSubject)
-          }
           @if(!string.IsNullOrEmpty(Model.FilterDescription))
-          {
             @: %20subject:@(Model.FilterDescription)
-          }
           @if(Model.Status != "all")
-          {
             @: %20status:@(Model.Status)
-          }
           @if(Model.TicketType != "all")
-          {
             @: %20ticket_type:@(Model.TicketType)
-          }
           @if(Model.Priority != "all")
-          {
             @: %20priority:@(Model.Priority)
-          }
           @if(Model.Via != "all")
-          {
             @: %20via:@(Model.Via)
-          }
         }
         ]]>
       </Fetch.Url>
