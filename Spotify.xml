@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Music" Title="_Spotify" Id="_Spotify" RequireVersion="8.1.30" LoginButton="https://seotoolsforexcel.com/logins/spotify.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Spotify.xml" HelpUrl="http://seotoolsforexcel.com/Spotify/" HelpText="Documentation">
+<Suite Category="Music" Title="Spotify" Id="Spotify" RequireVersion="8.2" LoginButton="https://seotoolsforexcel.com/logins/spotify.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Spotify.xml" HelpUrl="http://seotoolsforexcel.com/Spotify/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -20,7 +20,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ArtistSearch" Title="Artist Search" HelpUrl="https://developer.spotify.com/web-api/search-item/">
+  <RestConnector Id="ArtistSearch" Title="Artist Search" Group="Artists" HelpUrl="https://developer.spotify.com/web-api/search-item/">
     <Parameters>
       <Text Id="Query" Title="Search" Debug.DefaultValue="flowers" Required="true"/>
       <Text Id="YearStart" Title="Earliest Year"/>
@@ -42,33 +42,32 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.spotify.com/v1/search?
-        q=@Utils.UrlEncode(Model.Query)
+        https://api.spotify.com/v1/search?q=@Utils.UrlEncode(Model.Query)
         @if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart == Model.YearEnd)
-        {
+				{
           @: %20year:@(Model.YearStart)
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart != Model.YearEnd)
         {
-          @: %20year:@(Model.YearStart)-@(Model.YearEnd)
-        }
+					@: %20year:@(Model.YearStart)-@(Model.YearEnd)
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:@(Model.YearStart)-3000
-        }
+				}
         else if(string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:0-@(Model.YearEnd)
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.Genre) && Model.Genre.Contains(" "))
-        {
+				{
           @: &genre="@Utils.UrlEncode(Model.Genre)"
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.Genre) && !Model.Genre.Contains(" "))
-        {
+				{
           @: &genre=@Utils.UrlEncode(Model.Genre)
-        }
-        &type=artist
+				}
+				&type=artist
         @(Model.CountryCode != "all" ? "&market=" + Model.CountryCode.ToUpper() : "")
         &limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
@@ -81,17 +80,7 @@
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="popularity" Id="Popularity" Title="Popularity" Converter="Int"/>
         <JsonPath Expr="followers.total" Id="Followers" Title="Followers" Converter="Int"/>
-        <Compute Id="Genres" Title="Genres" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+        <Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Genres" Title="Genres" DefaultValue="">
           <JsonPath Expr="genres" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="external_urls.spotify" Id="ArtistLink" Title="Artist Link" Converter="String"/>
@@ -101,7 +90,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AlbumSearch" Title="Album Search" HelpUrl="https://developer.spotify.com/web-api/search-item/">
+  <RestConnector Id="AlbumSearch" Title="Album Search" Group="Albums" HelpUrl="https://developer.spotify.com/web-api/search-item/">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="flowers" Required="true"/>
       <Text Id="ArtistFilter" Title="Filter by Artist Name" Debug.DefaultValue="" Required="false"/>
@@ -126,45 +115,43 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.spotify.com/v1/search?
-        q=@Utils.UrlEncode(Model.Query)
+        https://api.spotify.com/v1/search?q=@Utils.UrlEncode(Model.Query)&type=album
         @if(!string.IsNullOrEmpty(Model.ArtistFilter))
-        {
+				{
           @: %20artist:@Utils.UrlEncode(Model.ArtistFilter)
-        }
+				}
         @if(Model.NewOnly == true)
-        {
+				{
           @: %20tag:new
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart == Model.YearEnd)
-        {
+				{
           @: %20year:@(Model.YearStart)
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart != Model.YearEnd)
-        {
+				{
           @: %20year:@(Model.YearStart)-@(Model.YearEnd)
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:@(Model.YearStart)-3000
-        }
+				}
         else if(string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:0-@(Model.YearEnd)
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.Genre) && Model.Genre.Contains(" "))
-        {
+				{
           @: &genre="@Utils.UrlEncode(Model.Genre)"
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.Genre) && !Model.Genre.Contains(" "))
-        {
-          @: &genre=@Utils.UrlEncode(Model.Genre)
-        }
+				{
+					@: &genre=@Utils.UrlEncode(Model.Genre)
+				}
         @if(Model.Hipster == true)
-        {
+				{
           @: %20tag:hipster
-        }
-        &type=album
+				}
         @(Model.CountryCode != "all" ? "&market=" + Model.CountryCode.ToUpper() : "")
         &limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
@@ -175,17 +162,7 @@
       <JsonPath Expr="albums.items.*">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-        <Compute Id="Markets" Title="Markets" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Markets" Title="Markets" DefaultValue="">
           <JsonPath Expr="available_markets" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="artists[0].id" Id="ArtistId" Title="Artist Id" Converter="String"/>
@@ -197,7 +174,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TrackSearch" Title="Track Search" HelpUrl="https://developer.spotify.com/web-api/search-item/">
+  <RestConnector Id="TrackSearch" Title="Track Search" Group="Tracks" HelpUrl="https://developer.spotify.com/web-api/search-item/">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="flowers" Required="true"/>
       <Text Id="ArtistFilter" Title="Filter by Artist Name" Debug.DefaultValue="" Required="false"/>
@@ -221,40 +198,39 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.spotify.com/v1/search?
-        q=@Utils.UrlEncode(Model.Query)
+        https://api.spotify.com/v1/search?q=@Utils.UrlEncode(Model.Query)
         @if(!string.IsNullOrEmpty(Model.ArtistFilter))
-        {
+				{
           @: %20artist:@Utils.UrlEncode(Model.ArtistFilter)
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.AlbumFilter))
-        {
+				{
           @: %20album:@Utils.UrlEncode(Model.AlbumFilter)
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart == Model.YearEnd)
-        {
+				{
           @: %20year:@(Model.YearStart)
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd) && Model.YearStart != Model.YearEnd)
-        {
+				{
           @: %20year:@(Model.YearStart)-@(Model.YearEnd)
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.YearStart) && string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:@(Model.YearStart)-3000
-        }
+				}
         else if(string.IsNullOrEmpty(Model.YearStart) && !string.IsNullOrEmpty(Model.YearEnd))
-        {
+				{
           @: %20year:0-@(Model.YearEnd)
-        }
+				}
         @if(!string.IsNullOrEmpty(Model.Genre) && Model.Genre.Contains(" "))
-        {
+				{
           @: &genre="@Utils.UrlEncode(Model.Genre)"
-        }
+				}
         else if(!string.IsNullOrEmpty(Model.Genre) && !Model.Genre.Contains(" "))
-        {
+				{
           @: &genre=@Utils.UrlEncode(Model.Genre)
-        }
+				}
         &type=track
         @(Model.CountryCode != "all" ? "&market=" + Model.CountryCode.ToUpper() : "")
         &limit=@(Model.PageCursor.NextTake)
@@ -270,17 +246,7 @@
         <JsonPath Expr="album.artists[0].name" Id="Artist" Title="Artist Name" Converter="String"/>
         <JsonPath Expr="album.id" Id="AlbumId" Title="Album Id" Converter="String"/>
         <JsonPath Expr="album.name" Id="Album" Title="Album Name" Converter="String"/>
-        <Compute Id="Markets" Title="Markets" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Markets" Title="Markets" DefaultValue="">
           <JsonPath Expr="available_markets" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="disc_number" Id="DiscNum" Title="Disc Num" Converter="Int"/>
@@ -291,7 +257,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PlaylistSearch" Title="Playlist Search" HelpUrl="https://developer.spotify.com/web-api/search-item/">
+  <RestConnector Id="PlaylistSearch" Title="Playlist Search" Group="Playlists" HelpUrl="https://developer.spotify.com/web-api/search-item/">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="flowers" Required="true"/>
       <Select Id="CountryCode" Title="Filter by Market" DefaultValue="all">
@@ -334,7 +300,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PlaylistLookup" Title="Playlist Lookup" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlist/">
+  <RestConnector Id="PlaylistLookup" Title="Playlist Lookup" Group="Playlists" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlist/">
     <Parameters>
       <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="2vmCX31v4V3XX931C2CZv9" Required="true"/>
     </Parameters>
@@ -362,7 +328,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TracksLookup" Title="Tracks Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-tracks/">
+  <RestConnector Id="TracksLookup" Title="Tracks Lookup" Group="Tracks" HelpUrl="https://developer.spotify.com/web-api/get-several-tracks/">
     <Parameters>
       <Text Id="Ids" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter Track Ids separated by a new line" Required="true" Multiline="true"/>
       <Select Id="CountryCode" Title="Filter by Market" DefaultValue="all">
@@ -391,17 +357,7 @@
         <JsonPath Expr="album.artists[0].name" Id="Artist" Title="Artist Name" Converter="String"/>
         <JsonPath Expr="album.id" Id="AlbumId" Title="Album Id" Converter="String"/>
         <JsonPath Expr="album.name" Id="Album" Title="Album Name" Converter="String"/>
-        <Compute Id="Markets" Title="Markets" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Markets" Title="Markets" DefaultValue="">
           <JsonPath Expr="available_markets" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="external_urls.spotify" Id="TrackLink" Title="Track Link" Converter="String" DefaultValue=""/>
@@ -410,7 +366,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TrackAudioAnalysis" Title="Track Audio Analysis" HelpUrl="https://developer.spotify.com/web-api/get-audio-analysis/">
+  <RestConnector Id="TrackAudioAnalysis" Title="Track Audio Analysis" Group="Tracks" HelpUrl="https://developer.spotify.com/web-api/get-audio-analysis/">
     <Parameters>
       <Text Id="TrackId" Title="Track Id" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" Required="true"/>
     </Parameters>
@@ -445,7 +401,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="TrackAudioFeatures" Title="Tracks Audio Features" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/tracks/get-several-audio-features/">
+  <RestConnector Id="TrackAudioFeatures" Title="Tracks Audio Features" Group="Tracks" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/tracks/get-several-audio-features/">
     <Parameters>
       <Text Id="Ids" Title="Track Ids" Debug.DefaultValue="3n3Ppam7vgaVa1iaRUc9Lp" HelpText="Enter one or more Track Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
@@ -501,7 +457,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PlaylistsFeatured" Title="Playlists Featured" HelpUrl="https://developer.spotify.com/web-api/get-list-featured-playlists/">
+  <RestConnector Id="PlaylistsFeatured" Title="Playlists Featured" Group="Playlists" HelpUrl="https://developer.spotify.com/web-api/get-list-featured-playlists/">
     <Parameters>
       <Select Id="CountryCode" Title="Filter by Market" DefaultValue="all">
         <DataSource>
@@ -539,7 +495,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PlaylistsFromUser" Title="Playlists From User" HelpUrl="https://developer.spotify.com/web-api/get-list-users-playlists/">
+  <RestConnector Id="PlaylistsFromUser" Title="Playlists From User" Group="Playlists" HelpUrl="https://developer.spotify.com/web-api/get-list-users-playlists/">
     <Parameters>
       <Text Id="UserId" Title="User Id" Debug.DefaultValue="diskborste" Required="true"/>
     </Parameters>
@@ -572,7 +528,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PlaylistTracks" Title="Playlist Tracks" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/">
+  <RestConnector Id="PlaylistTracks" Title="Playlist Tracks" Group="Playlists" HelpUrl="https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/">
     <Parameters>
       <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="1mU2KfxSDmEKwqBjCxXh60" Required="true"/>
     </Parameters>
@@ -611,7 +567,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CheckifUsersFollowsPlaylist" Title="Check if Users Follows Playlist" HelpUrl="https://developer.spotify.com/web-api/check-user-following-playlist/">
+  <RestConnector Id="CheckifUsersFollowsPlaylist" Title="Check if Users Follows Playlist" Group="Playlists" HelpUrl="https://developer.spotify.com/web-api/check-user-following-playlist/">
     <Parameters>
       <Text Id="UserId" Title="User Id of Playlist Owner" Debug.DefaultValue="ericbaffoy" Required="true"/>
       <Text Id="PlaylistId" Title="Playlist Id" Debug.DefaultValue="6dZGF7wrG6oqwNaWZWBBWQ" Required="true"/>
@@ -636,7 +592,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ArtistsLookup" Title="Artists Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-artists/">
+  <RestConnector Id="ArtistsLookup" Title="Artists Lookup" Group="Artists" HelpUrl="https://developer.spotify.com/web-api/get-several-artists/">
     <Parameters>
       <Text Id="Ids" Title="Artist Ids" Debug.DefaultValue="18Zv2g2vUcEGqJf6WnjfXN" HelpText="Enter Artist Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
@@ -656,17 +612,7 @@
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="popularity" Id="Popularity" Title="Popularity" Converter="Int"/>
         <JsonPath Expr="followers.total" Id="Followers" Title="Followers" Converter="Int"/>
-        <Compute Id="Genres" Title="Genres" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Genres" Title="Genres" DefaultValue="">
           <JsonPath Expr="genres" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="external_urls.spotify" Id="ArtistLink" Title="Artist Link" Converter="String"/>
@@ -676,7 +622,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ArtistAlbums" Title="Artist Albums" HelpUrl="https://developer.spotify.com/web-api/get-artists-albums/">
+  <RestConnector Id="ArtistAlbums" Title="Artist Albums" Group="Artists" HelpUrl="https://developer.spotify.com/web-api/get-artists-albums/">
     <Parameters>
       <Text Id="ArtistId" Title="Artist Id" Debug.DefaultValue="48iJCUj0CYA37eYXHiQG0K" Required="true"/>
       <Radio Id="AlbumType" Title="Filter by Album Type" DefaultValue="all" Required="false">
@@ -718,17 +664,7 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="album_type" Id="Type" Title="Type" Converter="String"/>
-        <Compute Id="Markets" Title="Markets" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Markets" Title="Markets" DefaultValue="">
           <JsonPath Expr="available_markets" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="external_urls.spotify" Id="AlbumLink" Title="Album Link" Converter="String"/>
@@ -738,7 +674,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ArtistRelatedArtists" Title="Artist Related Artists" HelpUrl="https://developer.spotify.com/web-api/get-related-artists/">
+  <RestConnector Id="ArtistRelatedArtists" Title="Artist Related Artists" Group="Artists" HelpUrl="https://developer.spotify.com/web-api/get-related-artists/">
     <Parameters>
       <Text Id="ArtistId" Title="Artist Id" Debug.DefaultValue="7dGJo4pcD2V6oG8kP0tJRR" Required="true"/>
     </Parameters>
@@ -757,17 +693,7 @@
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="popularity" Id="Popularity" Title="Popularity" Converter="Int"/>
         <JsonPath Expr="followers.total" Id="Followers" Title="Followers" Converter="Int"/>
-        <Compute Id="Genres" Title="Genres" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Genres" Title="Genres" DefaultValue="">
           <JsonPath Expr="genres" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="external_urls.spotify" Id="ArtistLink" Title="Artist Link" Converter="String"/>
@@ -777,7 +703,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AlbumsLookup" Title="Albums Lookup" HelpUrl="https://developer.spotify.com/web-api/get-several-albums/">
+  <RestConnector Id="AlbumsLookup" Title="Albums Lookup" Group="Albums" HelpUrl="https://developer.spotify.com/web-api/get-several-albums/">
     <Parameters>
       <Text Id="Ids" Title="Album Ids" Debug.DefaultValue="0yCqicy5tGkPiB6gUZCRy4" HelpText="Enter Album Ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
@@ -796,17 +722,7 @@
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="release_date" Id="ReleaseDate" Title="Released" Converter="Auto" DefaultValue=""/>
-        <Compute Id="Markets" Title="Markets" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var stripped = temp2.Substring(1, temp2.Length-2);
-            }
-            @stripped
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Markets" Title="Markets" DefaultValue="">
           <JsonPath Expr="available_markets" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="artists[0].id" Id="ArtistId" Title="Artist Id" Converter="String"/>
@@ -818,7 +734,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AlbumTracks" Title="Album Tracks" HelpUrl="https://developer.spotify.com/web-api/get-albums-tracks/">
+  <RestConnector Id="AlbumTracks" Title="Album Tracks" Group="Albums" HelpUrl="https://developer.spotify.com/web-api/get-albums-tracks/">
     <Parameters>
       <Text Id="AlbumId" Title="Album Id" Debug.DefaultValue="0yCqicy5tGkPiB6gUZCRy4" Required="true"/>
     </Parameters>

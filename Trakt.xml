@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Movies" Title="Trakt" Id="Trakt" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trakt.xml" HelpUrl="http://seotoolsforexcel.com/trakt/" HelpText="Documentation">
+<Suite Category="Movies" Title="Trakt" Id="Trakt" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trakt.xml" HelpUrl="http://seotoolsforexcel.com/trakt/" HelpText="Documentation">
 
   <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://trakt.tv/oauth/authorize?client_id=47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5&amp;redirect_uri={0}&amp;response_type=token"/>
 
   <Resources>
-    <Resource Id="Http">
+    <Resource Id="HttpSettings">
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
         <RequestContentType>application/json</RequestContentType>
@@ -19,17 +19,9 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="WatchedMovies" Title="My Watched Movies" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) movies in the specified time period">
+  <RestConnector Id="WatchedMovies" Title="My Watched Movies" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) movies in the specified time period">
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
-          <Header Name='trakt-api-key'>47d5b449a5618e05435a084d26ae79bc437d1967d494c31d3964b473a1a98fc5</Header>
-          <Header Name='trakt-api-version'>2</Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/sync/watched/movies
@@ -50,9 +42,9 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="WatchedShows" Title="My Watched Shows" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) shows in the specified time period">
+  <RestConnector Id="WatchedShows" Title="My Watched Shows" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watched/get-watched" HelpText="Returns the most watched (unique users) shows in the specified time period">
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/sync/watched/shows
@@ -73,12 +65,11 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MovieStats" Title="Global Movie Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/movies/trending/get-the-most-anticipated-movies">
+  <RestConnector Id="MovieStats" Title="Global Movie Stats" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/movies/trending/get-the-most-anticipated-movies">
     <Parameters>
       <Select Id="Type" Title="Type" DefaultValue="trending" Required="true">
         <DataSource>
           <Item Id="trending" Title="Trending"/>
-          <!--<Item Id="popular" Title="Popular"/>-->
           <Item Id="played" Title="Most Played"/>
           <Item Id="watched" Title="Most Watched (unique users)"/>
           <Item Id="collected" Title="Most Collected"/>
@@ -96,7 +87,7 @@
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         @if(Model.Type == "trending" || Model.Type == "popular" || Model.Type == "anticipated"|| Model.Type == "boxoffice")
@@ -121,7 +112,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Ratings" Title="My Ratings" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-ratings/get-ratings" HelpText="Get a user's ratings filtered by type">
+  <RestConnector Id="Ratings" Title="My Ratings" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-ratings/get-ratings" HelpText="Get a user's ratings filtered by type">
     <Parameters>
       <Select Id="Type" DefaultValue="all">
         <DataSource Id="Types">
@@ -134,7 +125,6 @@
       </Select>
       <Select Id="Rating" DefaultValue="all">
         <DataSource Id="Ratings">
-          <!--multiselect-->
           <Item Id="all" Title="all"/>
           <Item Id="1" Title="1"/>
           <Item Id="2" Title="2"/>
@@ -150,7 +140,7 @@
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/sync/ratings/@(Model.Type)/
@@ -168,13 +158,12 @@
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Int"/>
         <JsonPath Expr="*.title" Id="Title" Title="Title"/>
         <JsonPath Expr="*.year" Id="Year" Title="Year" Converter="Int"/>
-        <!--compute imdb link-->
         <JsonPath Expr="*.ids.imdb" Id="ImdbId" Title="IMDB Id"/>
       </JsonPath>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Watchlist" Title="My Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
+  <RestConnector Id="Watchlist" Title="My Watchlist" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/sync/get-watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
     <Paging PageSize="100" EvenPages="false"/>
     <Parameters>
       <Select Id="Type" DefaultValue="all">
@@ -188,7 +177,7 @@
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/sync/watchlist/@(Model.Type)/?
@@ -209,7 +198,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="UserWatchlist" Title="User's Watchlist" HelpUrl="https://trakt.docs.apiary.io/#reference/users/watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
+  <RestConnector Id="UserWatchlist" Title="User's Watchlist" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/users/watchlist/get-watchlist" HelpText="Returns all items in a user's watchlist filtered by type.">
     <Paging PageSize="100" EvenPages="false"/>
     <Parameters>
       <Text Id="User" Title="Username" Required="True"/>
@@ -224,7 +213,7 @@
       </Select>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/users/@(Model.User)/watchlist/@(Model.Type)/?
@@ -245,12 +234,12 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="UserStats" Title="User's Stats" HelpUrl="https://trakt.docs.apiary.io/#reference/users/stats" HelpText="Returns stats about the movies, shows, and episodes a user has watched, collected, and rated.">
+  <RestConnector Id="UserStats" Title="User's Stats" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/users/stats" HelpText="Returns stats about the movies, shows, and episodes a user has watched, collected, and rated.">
     <Parameters>
       <Text Id="User" Title="Username" Required="True"/>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/users/@(Model.User)/stats
@@ -281,7 +270,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SearchMovies" Title="Search" HelpUrl="https://trakt.docs.apiary.io/#reference/search/get-text-query-results" HelpText="Search all text fields that a media object contains (i.e. title, overview, etc). ">
+  <RestConnector Id="SearchMovies" Title="Search" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/search/get-text-query-results" HelpText="Search all text fields that a media object contains (i.e. title, overview, etc). ">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="tron" Required="True"/>
       <Select Id="Type" Title="Type" DefaultValue="movie,show" Required="true">
@@ -292,7 +281,6 @@
         </DataSource>
       </Select>
       <Select Id="Field" Type="Search field" DefaultValue="all" Required="false">
-        <!--MultiSelect-->
         <DataSource Id="Fields">
           <Item Id="all" Title="all"/>
           <Item Id="title" Title="Title"/>
@@ -305,7 +293,7 @@
     </Parameters>
     <Paging PageSize="100" EvenPages="false"/>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/search/movie,show?query=@(Model.Query)
@@ -333,13 +321,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ShowReleases" Title="Show Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
+  <RestConnector Id="ShowReleases" Title="Show Releases" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
     <Parameters>
       <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
       <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/calendars/all/shows/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
@@ -364,13 +352,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MyShowReleases" Title="My Show Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
+  <RestConnector Id="MyShowReleases" Title="My Show Releases" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-shows/get-shows" HelpText="Returns all shows airing during the time period specified.">
     <Parameters>
       <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
       <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/calendars/my/shows/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
@@ -395,13 +383,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MovieReleases" Title="Movie Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
+  <RestConnector Id="MovieReleases" Title="Movie Releases" Group="Public Statistics" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/all-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
     <Parameters>
       <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
       <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/calendars/all/movies/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
@@ -422,13 +410,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MyMovieReleases" Title="My Movie Releases" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
+  <RestConnector Id="MyMovieReleases" Title="My Movie Releases" Group="Personal Activity" HelpUrl="https://trakt.docs.apiary.io/#reference/calendars/my-movies/get-movies" HelpText="Returns all movies with a release date during the time period specifie.">
     <Parameters>
       <Date Id="StartDate" Title="Start Date" Required="true" Nullable="false"/>
       <Number Id="Days" Title="Days to display" DefaultValue="7" MinValue="1"/>
     </Parameters>
     <Fetch>
-      <Resource Id="Http"/>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.trakt.tv/calendars/my/movies/@(Model.StartDate.ToString("yyyy-MM-dd"))/@(Model.Days)
