@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="8.0.0" Title="FullContact" Id="FullContact" Category="Lead Generation" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Fullcontact.xml" HelpUrl="http://seotoolsforexcel.com/fullcontact" HelpText="Documentation">
+<Suite RequireVersion="8.2" Title="FullContact" Id="FullContact" Category="Lead Generation" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Fullcontact.xml" HelpUrl="http://seotoolsforexcel.com/fullcontact" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -8,13 +8,21 @@
   </Settings>
 
   <Resources>
-    <Resource Id="HttpSettings">
+    <Resource Id="HttpSettingsV2">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name="X-FullContact-APIKey">@Model.Key</Header>
+          <Header Name="Authorization">Bearer @Model.Key</Header>
         </RequestHeaders>
         <IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
       </HttpSettings>
+    </Resource>
+    <Resource Id="HttpSettingsEnrich">
+			<IntervalBetweenRequests RandomFrom="1000" RandomTo="1000" IfSame="Host"/>
+			<RequestContentType>application/json</RequestContentType>
+			<RequestMethod>POST</RequestMethod>
+			<RequestHeaders>
+				<Header Name="Authorization">Bearer @Model.Key</Header>
+			</RequestHeaders>
     </Resource>
     <Resource Id="Fail">
       <Fail>
@@ -23,164 +31,174 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="PersonLookup" Title="Person Lookup">
+  <RestConnector Id="PersonLookupEmail" Group="Persons" Title="Person Lookup by Email" HelpUrl="https://docs.fullcontact.com/#person-enrichment">
     <Parameters>
-      <Select Id="Type" Title="Input Type" DefaultValue="email">
-        <DataSource>
-          <Item Id="email" Title="Email Address"/>
-          <Item Id="phone" Title="Phone Number"/>
-          <Item Id="twitter" Title="Twitter Username"/>
-        </DataSource>
-      </Select>
-      <Text Id="Input" Title="Query" Debug.DefaultValue="zaralarsson" HelpText="Either email, phone or twitter username" Required="true"/>
-      <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="true"/>
+      <Text Id="Email" Title="Email" Debug.DefaultValue="" Required="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<HttpSettings>
+				<Resource Id="HttpSettingsEnrich"/>
+				<RequestBody>
+					<![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("email", Model.Email);
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.fullcontact.com/v2/person.json?@(Model.Type)=@(Model.Input)
+				https://api.fullcontact.com/v3/person.enrich
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
-      <JsonPath Expr="contactInfo.fullName" Id="FullName" Title="Full Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="contactInfo.givenName" Id="GivenName" Title="Given Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="contactInfo.familyName" Id="FamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="demographics.gender" Id="Gender" Title="Gender" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="demographics.age" Id="Age" Title="Age" Converter="Auto" DefaultValue=""/>
-      <JsonPath Expr="demographics.locationGeneral" Id="Location" Title="Location" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="organizations[@(Getquery())]">
-        <JsonPath Expr="name" Id="OrganizationsName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="startDate" Id="StartDate" Title="Org. Start Date" Converter="Auto" DefaultValue=""/>
-        <JsonPath Expr="endDate" Id="EndDate" Title="Org. End Date" Converter="Auto" DefaultValue=""/>
-        <JsonPath Expr="title" Id="Title" Title="Working Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="current" Id="Current" Title="Current Status" Converter="Bool" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="contactInfo.websites[@(Getquery())]">
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='linkedin')].url" Id="LinkedInUrl" Title="LinkedIn URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='twitter')].url" Id="TwitterUrl" Title="Twitter URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='facebook')].url" Id="FacebookUrl" Title="Facebook URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='instagram')].url" Id="InstagramUrl" Title="Instagram URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='flickr')].url" Id="FlickR" Title="FlickR URL" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="fullName" Id="FullName" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="ageRange" Id="Age" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="gender" Id="Gender" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="title" Id="Title" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="organization" Id="Organization" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CompanyDomainLookup" Title="Company Domain Lookup">
+  <RestConnector Id="PersonLookupTwitter" Title="Person Lookup by Twitter" Group="Persons" HelpUrl="https://docs.fullcontact.com/#person-enrichment">
+    <Parameters>
+      <Text Id="Twitter" Title="Twitter" Debug.DefaultValue="" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<HttpSettings>
+				<Resource Id="HttpSettingsEnrich"/>
+				<RequestBody>
+					<![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("twitter", Model.Twitter);
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.fullcontact.com/v3/person.enrich
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="fullName" Id="FullName" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="ageRange" Id="Age" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="gender" Id="Gender" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="title" Id="Title" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="organization" Id="Organization" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CompanyDomainLookup" Title="Company Domain Lookup" Group="Companies" HelpUrl="https://docs.fullcontact.com/#company-enrichment">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="aftonbladet.se" Required="true"/>
-      <Checkbox Id="KeyPeople" Title="Key People" DefaultValue="false" HelpText="If true, a list of Executive and VP level employees at this company will be returned under the keyPeople field."/>
-      <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<HttpSettings>
+				<Resource Id="HttpSettingsEnrich"/>
+				<RequestBody>
+					<![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("domain", Model.Domain);
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.fullcontact.com/v2/company/lookup.json?domain=@Utils.UrlEncode(Model.Domain)
-				&keyPeople=@(Model.KeyPeople)
+				https://api.fullcontact.com/v3/company.enrich
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="website" Id="Website" Title="Website" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="organization.name" Id="OrganizationsName" Title="Organization" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="organization.approxEmployees" Id="Employees" Title="Employees" Converter="Long" DefaultValue=""/>
-      <JsonPath Expr="organization.contactInfo.emailAddresses[@(Getquery())]">
-        <JsonPath Expr="value" Id="Value" Title="Contact Email" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="organization.contactInfo.phoneNumbers[@(Getquery())]">
-        <JsonPath Expr="number" Id="Number" Title="Contact Phone" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="organization.contactInfo.addresses[@(Getquery())]">
-        <JsonPath Expr="addressLine1" Id="Address" Title="Address" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="organization.keyPeople[@(Getquery())]">
-        <JsonPath Expr="name" Id="KeyPeopleName" Title="Key People Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="title" Id="KeyPeopleTitle" Title="Key People Title" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="organization.keywords[@(Getquery())]">
-        <JsonPath Expr="$" Id="Keywords" Title="Keywords" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="industries[@(Getquery())]">
-        <JsonPath Expr="name" Id="IndustryName" Title="Industry Name" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="traffic.ranking[?(@@.locale=='global')].rank" Id="GlobalRank" Title="Traffic Global Ranking" Converter="Int" DefaultValue=""/>
-      <JsonPath Expr="traffic.topCountryRanking[@(Getquery())]">
-        <JsonPath Expr="rank" Id="CountryRank" Title="Country Rank" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="locale" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
-      </JsonPath>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='twitter')].url" Id="TwitterUrl" Title="Twitter URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="socialProfiles[?(@@.typeId=='facebook')].url" Id="FacebookUrl" Title="Facebook URL" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="category[0].name" Id="Category" Title="Category" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="languageLocale" Id="LanguageLocale" Title="Language" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="logo" Id="WebsiteLogo" Title="Wbsite Logo" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="founded" Id="Founded" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="employees" Id="Employees" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="locale" Id="Locale" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="category" Id="Category" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CompanyNameLookup" Title="Company Name Lookup">
+  <RestConnector Id="CompanyNameSearch" Title="Company Name Search" Group="Companies" HelpUrl="https://docs.fullcontact.com/#company-enrichment">
     <Parameters>
       <Text Id="CompanyName" Title="Company Name" Debug.DefaultValue="fullcontact" Required="true" HelpText="The name of the company to search for. Common words like 'Inc.' will be ignored."/>
-      <Text Id="Location" Title="Filter by Location" HelpText="If supplied, only companies matching given location will be returned."/>
-      <Text Id="Country" Title="Filter by Country" HelpText="If supplied, only companies matching given country will be returned."/>
-      <Checkbox Id="FirstResultOnly" Title="First Result Only" DefaultValue="false"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<HttpSettings>
+				<Resource Id="HttpSettingsEnrich"/>
+				<RequestBody>
+					<![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("companyName", Model.CompanyName);
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+					]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.fullcontact.com/v2/company/search.json?companyName=@Utils.UrlEncode(Model.CompanyName)
-				@(!string.IsNullOrEmpty(Model.Location) ? "&location=" + Utils.UrlEncode(Model.Location) : "")
-				@(!string.IsNullOrEmpty(Model.Country) ? "&country=" + Utils.UrlEncode(Model.Country) : "")
+				https://api.fullcontact.com/v3/company.search
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$[@(Getquery())]">
-        <JsonPath Expr="orgName" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="lookupDomain" Id="Domain" Title="Domain" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="location.locality" Id="Location" Title="Location" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="location.country.name" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
-      </JsonPath>
+      <JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="founded" Id="Founded" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="employees" Id="Employees" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="locale" Id="Locale" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="category" Id="Category" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="NameNormalizer" Title="Name Normalizer" HelpText="Takes quasi-structured name data provided as a string and outputs the data in a structured manner.">
-    <Parameters>
-      <Text Id="NameString" Title="Name String" Debug.DefaultValue="mr john (johnny) michael smith jr mba" Required="true"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.fullcontact.com/v2/name/normalizer.json?q=@Utils.UrlEncode(Model.NameString)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.prefixes[0]" Id="Prefixes" Title="Prefixes" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.suffixes[0]" Id="Suffixes" Title="Suffixes" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="nameDetails.nicknames[0]" Id="Nicknames" Title="Nicknames" Converter="String" DefaultValue=""/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="NameEmailDeducer" Title="Email Deducer" HelpText="Takes an email address provided as a string and attempts to deduce a structured name.">
+  <RestConnector Id="NameEmailDeducer" Title="Email Deducer" Group="Deducers" HelpText="Takes an email address provided as a string and attempts to deduce a structured name.">
     <Parameters>
       <Text Id="NameString" Title="Email" Debug.DefaultValue="johndsmith79@business.com" Required="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<Resource Id="HttpSettingsV2"/>
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/name/deducer.json?email=@Utils.UrlEncode(Model.NameString)
@@ -198,12 +216,12 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="NameUsernameDeducer" Title="Username Deducer" HelpText="takes a username provided as a string and attempts to deduce a structured name.">
+  <RestConnector Id="NameUsernameDeducer" Title="Username Deducer" Group="Deducers"  HelpText="takes a username provided as a string and attempts to deduce a structured name.">
     <Parameters>
       <Text Id="NameString" Title="Name String" Debug.DefaultValue="johndsmith79" Required="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<Resource Id="HttpSettingsV2"/>
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/name/deducer.json?username=@Utils.UrlEncode(Model.NameString)
@@ -226,7 +244,7 @@
       <Text Id="Email" Title="Email" Debug.DefaultValue="viktoria.isaksson@missioncouncil.se" Required="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+			<Resource Id="HttpSettingsV2"/>
       <Fetch.Url>
         <![CDATA[
         https://api.fullcontact.com/v2/verification/email?email=@Model.Email
@@ -247,12 +265,29 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RazorFunctions>
-  <![CDATA[
-		string Getquery() {
-			return Model.FirstResultOnly == true ? "0" : "*";
-		}
-  ]]>
-  </RazorFunctions>
+  <RestConnector Id="NameNormalizer" Title="Name Normalizer" HelpText="Takes quasi-structured name data provided as a string and outputs the data in a structured manner.">
+    <Parameters>
+      <Text Id="NameString" Title="Name String" Debug.DefaultValue="mr john (johnny) michael smith jr mba" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettingsV2"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.fullcontact.com/v2/name/normalizer.json?q=@Utils.UrlEncode(Model.NameString)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="likelihood" Id="Likelihood" Title="Likelihood" Converter="Double" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.fullName" Id="NameDetailsFullName" Title="Full Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.givenName" Id="NameDetailsGivenName" Title="Given Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.familyName" Id="NameDetailsFamilyName" Title="Family Name" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.middleNames[0]" Id="MiddleNames" Title="Middle Names" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.prefixes[0]" Id="Prefixes" Title="Prefixes" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.suffixes[0]" Id="Suffixes" Title="Suffixes" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="nameDetails.nicknames[0]" Id="Nicknames" Title="Nicknames" Converter="String" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
 
 </Suite>

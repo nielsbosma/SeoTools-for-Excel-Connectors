@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="TimeZoneDB" Id="TimeZoneDB" RequireVersion="8.1.20" Category="Locations" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TimeZoneDB.xml" HelpUrl="http://seotoolsforexcel.com/TimeZoneDB/" HelpText="Documentation">
+<Suite Title="TimeZoneDB" Id="TimeZoneDB" RequireVersion="8.2" Category="Locations" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TimeZoneDB.xml" HelpUrl="http://seotoolsforexcel.com/TimeZoneDB/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -264,7 +264,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="TimeZoneList" Title="Time Zone List" HelpUrl="https://timezonedb.com/references/list-time-zone">
+  <RestConnector Id="TimeZoneList" Title="Time Zone List" Group="Time Zones" HelpUrl="https://timezonedb.com/references/list-time-zone">
     <Parameters>
       <Text Id="CountryCodeSearch" Title="Filter by Time Zone Name Wildcard Search (*)" Required="false" DefaultValue="" HelpText="Use asterisk (*) for wildcard search."/>
       <Select Id="CountryCode" Title="Filter by Country Code" DefaultValue="all" HelpText="A valid ISO 3166 country code. Only time zones of provided country will list out.">
@@ -288,7 +288,7 @@
         <JsonPath Expr="countryName" Id="CountryName" Title="Country Name" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
         <JsonPath Expr="countryCode" Id="CountryCode" Title="Country Code" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
         <JsonPath Expr="zoneName" Id="ZoneName" Title="Zone Name" Converter="String" Checked="true" HelpText="The time zone name."/>
-        <JsonPath Expr="timestamp" Id="Formatted" Title="DateTime" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText=""/>
+        <JsonPath Expr="timestamp" Id="Formatted" Title="DateTime" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true"/>
         <JsonPath Expr="timestamp" Id="TimeStamp" Title="Timestamp" Converter="Long" Checked="true" HelpText="Current local time in Unix time."/>
         <JsonPath Expr="gmtOffset" Id="GMTOffset" Title="GMT Offset" Converter="Int" Checked="true" HelpText="The time offset in seconds based on UTC time."/>
       </JsonPath>
@@ -298,79 +298,7 @@
     </Fail>
   </RestConnector>
 
- <RestConnector Id="GeoPositionLookup" Title="City Lookup by Geo Position" HelpUrl="https://timezonedb.com/references/get-time-zone">
-    <Parameters>
-      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Required="true" DefaultValue="" Debug.DefaultValue="59.329324" HelpText="Latitude of a city."/>
-      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Required="true" DefaultValue="" Debug.DefaultValue="18.068581" HelpText="Longitude of a city."/>
-      <Date Id="DisplayDate" Title="Date" Required="false" Nullable="true" HelpText="Local Time of the From Time Zone."/>
-    </Parameters>
-  <Fetch>
-    <Fetch.Url>
-      <![CDATA[
-      http://api.timezonedb.com/v2/get-time-zone?&by=position&format=json
-      &key=@(Model.ApiKey)
-      &lat=@(Model.Latitude)
-      &lng=@(Model.Longitude)
-      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + UnixConverter() : "")
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-        <JsonPath Expr="countryName" Id="CountryName" Title="Country Name" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
-        <JsonPath Expr="countryCode" Id="CountryCode" Title="Country Code" Converter="String" Checked="true" HelpText="Country code of the time zone."/>
-        <JsonPath Expr="zoneName" Id="ZoneName" Title="Zone Name" Converter="String" Checked="true" HelpText="The time zone name."/>
-        <JsonPath Expr="formatted" Id="Formatted" Title="DateTime" Converter="DateTime" Checked="true" HelpText="Current local DateTime"/>
-        <JsonPath Expr="timestamp" Id="TimeStamp" Title="Timestamp" Converter="Long" Checked="true" HelpText="Current local time in Unix time."/>
-        <JsonPath Expr="gmtOffset" Id="GMTOffset" Title="GMT Offset" Converter="Int" Checked="true" HelpText="The time offset in seconds based on UTC time."/>
-        <JsonPath Expr="abbreviation" Id="Abbrevation" Title="Abbrevation" Converter="String" Checked="true" HelpText="Abbreviation of the time zone."/>
-        <JsonPath Expr="dst" Id="DST" Title="DST" Converter="Int" Checked="true" HelpText="Whether Daylight Saving Time (DST) is used. Either 0 (No) or 1 (Yes)."/>
-        <JsonPath Expr="dstStart" Id="dstStart" Title="DST Start" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="When current time zone start."/>
-        <JsonPath Expr="dstEnd" Id="dstEnd" Title="DST End" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="when current time zone end."/>
-        <JsonPath Expr="nextAbbreviation" Id="NextAbbrevation" Title="Next Abbrevation" Converter="String" Checked="true" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
- <RestConnector Id="ZoneLookup" Title="City Lookup by Zone" HelpUrl="https://timezonedb.com/references/get-time-zone">
-    <Parameters>
-      <Select Id="TimeZone" Title="Filter by Time Zode" Required="true" DefaultValue="Europe/Monaco" HelpText="A time zone abbreviation or time zone name.">
-        <DataSource>
-          <Resource Id="TimeZones"/>
-        </DataSource>
-      </Select>
-      <Date Id="DisplayDate" Title="Date" Required="false" Nullable="true" HelpText="Local Time of the From Time Zone."/>
-    </Parameters>
-  <Fetch>
-    <Fetch.Url>
-      <![CDATA[
-      http://api.timezonedb.com/v2/get-time-zone?&by=zone&format=json
-      &zone=@(Model.TimeZone)
-      &key=@(Model.ApiKey)
-      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + UnixConverter() : "")
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-        <JsonPath Expr="countryName" Id="CountryName" Title="Country Name" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
-        <JsonPath Expr="countryCode" Id="CountryCode" Title="Country Code" Converter="String" Checked="true" HelpText="Country code of the time zone."/>
-        <JsonPath Expr="zoneName" Id="ZoneName" Title="Zone Name" Converter="String" Checked="true" HelpText="The time zone name."/>
-        <JsonPath Expr="formatted" Id="Formatted" Title="DateTime" Converter="DateTime" Checked="true" HelpText="Current local DateTime"/>
-        <JsonPath Expr="timestamp" Id="TimeStamp" Title="Timestamp" Converter="Long" Checked="true" HelpText="Current local time in Unix time."/>
-        <JsonPath Expr="gmtOffset" Id="GMTOffset" Title="GMT Offset" Converter="Int" Checked="true" HelpText="The time offset in seconds based on UTC time."/>
-        <JsonPath Expr="abbreviation" Id="Abbrevation" Title="Abbrevation" Converter="String" Checked="true" HelpText="Abbreviation of the time zone."/>
-        <JsonPath Expr="dst" Id="DST" Title="DST" Converter="Int" Checked="true" HelpText="Whether Daylight Saving Time (DST) is used. Either 0 (No) or 1 (Yes)."/>
-        <JsonPath Expr="dstStart" Id="dstStart" Title="DST Start" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="When current time zone start."/>
-        <JsonPath Expr="dstEnd" Id="dstEnd" Title="DST End" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="when current time zone end."/>
-        <JsonPath Expr="nextAbbreviation" Id="NextAbbrevation" Title="Next Abbrevation" Converter="String" Checked="true" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
-  </RestConnector>
-
- <RestConnector Id="TimeZoneConverter" Title="Time Zone Converter" HelpUrl="https://timezonedb.com/references/convert-time-zone">
+ <RestConnector Id="TimeZoneConverter" Title="Time Zone Converter" Group="Time Zones" HelpUrl="https://timezonedb.com/references/convert-time-zone">
     <Parameters>
       <Select Id="TimeZoneFrom" Title="From" Required="true" DefaultValue="Europe/Monaco" HelpText="A valid abbreviation or name of time zone to convert from.">
         <DataSource>
@@ -390,7 +318,7 @@
       http://api.timezonedb.com/v2/convert-time-zone?format=json
       &from=@(Model.TimeZoneFrom)
       &to=@(Model.TimeZoneTo)
-      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + UnixConverter() : "")
+      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + Utils.UnixTimeStampUtc(Model.DisplayDate) : "")
       &key=@(Model.ApiKey)
       ]]>
       </Fetch.Url>
@@ -411,15 +339,76 @@
     </Fail>
   </RestConnector>
 
-  <RazorFunctions>
-  <![CDATA[
-    String UnixConverter()
-    {
-      var timestamp = Model.DisplayDate;
-      var unixTimestamp = timestamp.Subtract(new DateTime(1970, 1, 1)).TotalSeconds.ToString();
-      return unixTimestamp;
-    }
-  ]]>
-  </RazorFunctions>
+ <RestConnector Id="GeoPositionLookup" Title="City Lookup by Geo Position" Group="Locations" HelpUrl="https://timezonedb.com/references/get-time-zone">
+    <Parameters>
+      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Required="true" DefaultValue="" Debug.DefaultValue="59.329324" HelpText="Latitude of a city."/>
+      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Required="true" DefaultValue="" Debug.DefaultValue="18.068581" HelpText="Longitude of a city."/>
+      <Date Id="DisplayDate" Title="Date" Required="false" Nullable="true" HelpText="Local Time of the From Time Zone."/>
+    </Parameters>
+  <Fetch>
+    <Fetch.Url>
+      <![CDATA[
+      http://api.timezonedb.com/v2/get-time-zone?&by=position&format=json
+      &key=@(Model.ApiKey)
+      &lat=@(Model.Latitude)
+      &lng=@(Model.Longitude)
+      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + Utils.UnixTimeStampUtc(Model.DisplayDate) : "")
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="countryName" Id="CountryName" Title="Country Name" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
+        <JsonPath Expr="countryCode" Id="CountryCode" Title="Country Code" Converter="String" Checked="true" HelpText="Country code of the time zone."/>
+        <JsonPath Expr="zoneName" Id="ZoneName" Title="Zone Name" Converter="String" Checked="true" HelpText="The time zone name."/>
+        <JsonPath Expr="formatted" Id="Formatted" Title="DateTime" Converter="DateTime" Checked="true" HelpText="Current local DateTime"/>
+        <JsonPath Expr="timestamp" Id="TimeStamp" Title="Timestamp" Converter="Long" Checked="true" HelpText="Current local time in Unix time."/>
+        <JsonPath Expr="gmtOffset" Id="GMTOffset" Title="GMT Offset" Converter="Int" Checked="true" HelpText="The time offset in seconds based on UTC time."/>
+        <JsonPath Expr="abbreviation" Id="Abbrevation" Title="Abbrevation" Converter="String" Checked="true" HelpText="Abbreviation of the time zone."/>
+        <JsonPath Expr="dst" Id="DST" Title="DST" Converter="Int" Checked="true" HelpText="Whether Daylight Saving Time (DST) is used. Either 0 (No) or 1 (Yes)."/>
+        <JsonPath Expr="dstStart" Id="dstStart" Title="DST Start" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="When current time zone start."/>
+        <JsonPath Expr="dstEnd" Id="dstEnd" Title="DST End" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="when current time zone end."/>
+        <JsonPath Expr="nextAbbreviation" Id="NextAbbrevation" Title="Next Abbrevation" Converter="String" Checked="true"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
+
+ <RestConnector Id="ZoneLookup" Title="City Lookup by Zone" Group="Locations" HelpUrl="https://timezonedb.com/references/get-time-zone">
+    <Parameters>
+      <Select Id="TimeZone" Title="Filter by Time Zode" Required="true" DefaultValue="Europe/Monaco" HelpText="A time zone abbreviation or time zone name.">
+        <DataSource>
+          <Resource Id="TimeZones"/>
+        </DataSource>
+      </Select>
+      <Date Id="DisplayDate" Title="Date" Required="false" Nullable="true" HelpText="Local Time of the From Time Zone."/>
+    </Parameters>
+  <Fetch>
+    <Fetch.Url>
+      <![CDATA[
+      http://api.timezonedb.com/v2/get-time-zone?&by=zone&format=json
+      &zone=@(Model.TimeZone)
+      &key=@(Model.ApiKey)
+      @(!Utils.IsNullDate(Model.DisplayDate) ? "&time=" + Utils.UnixTimeStampUtc(Model.DisplayDate) : "")
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="countryName" Id="CountryName" Title="Country Name" Converter="String" Checked="true" HelpText="Country name of the time zone."/>
+        <JsonPath Expr="countryCode" Id="CountryCode" Title="Country Code" Converter="String" Checked="true" HelpText="Country code of the time zone."/>
+        <JsonPath Expr="zoneName" Id="ZoneName" Title="Zone Name" Converter="String" Checked="true" HelpText="The time zone name."/>
+        <JsonPath Expr="formatted" Id="Formatted" Title="DateTime" Converter="DateTime" Checked="true" HelpText="Current local DateTime"/>
+        <JsonPath Expr="timestamp" Id="TimeStamp" Title="Timestamp" Converter="Long" Checked="true" HelpText="Current local time in Unix time."/>
+        <JsonPath Expr="gmtOffset" Id="GMTOffset" Title="GMT Offset" Converter="Int" Checked="true" HelpText="The time offset in seconds based on UTC time."/>
+        <JsonPath Expr="abbreviation" Id="Abbrevation" Title="Abbrevation" Converter="String" Checked="true" HelpText="Abbreviation of the time zone."/>
+        <JsonPath Expr="dst" Id="DST" Title="DST" Converter="Int" Checked="true" HelpText="Whether Daylight Saving Time (DST) is used. Either 0 (No) or 1 (Yes)."/>
+        <JsonPath Expr="dstStart" Id="dstStart" Title="DST Start" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="When current time zone start."/>
+        <JsonPath Expr="dstEnd" Id="dstEnd" Title="DST End" Converter="DateTime" Converter.SourceFormat="Unix" Checked="true" HelpText="when current time zone end."/>
+        <JsonPath Expr="nextAbbreviation" Id="NextAbbrevation" Title="Next Abbrevation" Converter="String" Checked="true"/>
+    </Parse>
+    <Fail>
+      <JsonPath Expr="message"/>
+    </Fail>
+  </RestConnector>
 
 </Suite>
