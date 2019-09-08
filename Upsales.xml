@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Upsales" Id="Upsales" Category="CRM" RequireVersion="6.0"
-       SourceUrl="http://community.seotoolsforexcel.com/users/dovydasm/activity"
-       HelpUrl="http://seotoolsforexcel.com/Upsales" HelpText="Documentation">
+<Suite Title="Upsales" Id="Upsales" Category="CRM" RequireVersion="8.2" SourceUrl="http://community.seotoolsforexcel.com/users/dovydasm/activity" HelpUrl="http://seotoolsforexcel.com/Upsales" HelpText="Documentation">
 
   <Author Name="Dovydas Meilunas" Url="http://community.seotoolsforexcel.com/users/dovydasm/activity"/>
 
@@ -17,31 +15,25 @@
     </Resource>
     <Resource Id="Fail">
       <Fail>
-        <Regex Expr="^Unauthorized$" Group="0"></Regex>
+        <Regex Expr="^Unauthorized$" Fai.If="RegexMatches" Fail.Action="Message" Fail.Message="Unauthorized"/>
+				<JsonPath Expr="$.error"/>
       </Fail>
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListClients" Title="Clients" Hidden="false" HelpText="Returns clients that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/client/">
+  <RestConnector Id="ListClients" Title="Clients" HelpText="Returns clients that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/client/">
     <Parameters>
-      <Checkbox Id="HasOrders" Title="Only with orders" DefaultValue="False" HelpText=""/>
+      <Checkbox Id="HasOrders" Title="Only with orders"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/accounts/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.HasOrders == true)
-                {
-                  @: &order.id=gt:1
-                }
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                ]]>
+				https://integration.upsales.com/api/v2/accounts/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.HasOrders == true ? "&order.id=gt:1" : "")
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -60,29 +52,22 @@
         <JsonPath Expr="hadOrder" Id="HadOrder" Title="Had Order" Converter="Auto" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListContacts" Title="Contacts" Hidden="false" HelpText="Returns contacts that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/contact/">
+  <RestConnector Id="ListContacts" Title="Contacts" HelpText="Returns contacts that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/contact/">
     <Parameters>
-      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Required="false" Multiline="true"/>
+      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" ultiline="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/contacts/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @(FetchClientIdString())
-                ]]>
+				https://integration.upsales.com/api/v2/contacts/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(FetchClientIdString())
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -101,29 +86,22 @@
         <JsonPath Expr="modDate" Id="ModDate" Title="Last Modified" Converter="DateTime" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListOrders" Title="Orders" Hidden="false" HelpText="Returns orders that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/order/">
+  <RestConnector Id="ListOrders" Title="Orders" HelpText="Returns orders that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/order/">
     <Parameters>
-      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Required="false" Multiline="true"/>
+      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Multiline="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/orders/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @(FetchClientIdString())
-                ]]>
+				https://integration.upsales.com/api/v2/orders/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(FetchClientIdString())
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -143,29 +121,22 @@
         <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListActivites" Title="Activities" Hidden="false" HelpText="Returns activities that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/activity/">
+  <RestConnector Id="ListActivites" Title="Activities" HelpText="Returns activities that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/activity/">
     <Parameters>
-      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Required="false" Multiline="true"/>
+      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Multiline="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/activities/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @(FetchClientIdString())
-                ]]>
+				https://integration.upsales.com/api/v2/activities/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(FetchClientIdString())
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -190,29 +161,22 @@
         <JsonPath Expr="opportunity.currency" Id="OpportunityCurrency" Title="Opportunity Currency" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListAppointments" Title="Appointments" Hidden="false" HelpText="Returns appointments that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/appointment/">
+  <RestConnector Id="ListAppointments" Title="Appointments" elpText="Returns appointments that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/appointment/">
     <Parameters>
-      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Required="false" Multiline="true"/>
+      <Text Id="ClientIds" Title="Client (company) Ids" Debug.DefaultValue="1" HelpText="Only show contacts belonging to the following companies (IDs)" Multiline="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/appointments/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @(FetchClientIdString())
-                ]]>
+				https://integration.upsales.com/api/v2/appointments/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(FetchClientIdString())
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -237,60 +201,46 @@
         <JsonPath Expr="opportunity.currency" Id="OpportunityCurrency" Title="Opportunity Currency" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListProducts" Title="Products" Hidden="false" HelpText="Returns products that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/product/">
+  <RestConnector Id="ListProducts" Title="Products" HelpText="Returns products that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/product/">
     <Parameters>
-      <Text Id="ProductCategoryIds" Title="Category IDs" Debug.DefaultValue="1" HelpText="Only show products belonging to the following categories (IDs)" Required="false" Multiline="true"/>
+      <Text Id="ProductCategoryIds" Title="Category IDs" Debug.DefaultValue="1" HelpText="Only show products belonging to the following categories (IDs)" Multiline="true"/>
     </Parameters>
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/products/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @(FetchProductCategoryIdString())
-                ]]>
+				https://integration.upsales.com/api/v2/products/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(FetchProductCategoryIdString())
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
         <JsonPath Expr="id" Id="ProductId" Title="Product Id" Converter="Int" DefaultValue=""/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="listPrice" Id="Price" Title="Price" Converter="Double" HelpText=""/>
+        <JsonPath Expr="listPrice" Id="Price" Title="Price" Converter="Double"/>
         <JsonPath Expr="active" Id="Active" Title="Active" Converter="Bool" DefaultValue=""/>
         <JsonPath Expr="category.id" Id="CategoryId" Title="Category ID" Converter="Int" DefaultValue=""/>
         <JsonPath Expr="category.name" Id="CategoryName" Title="Category Name" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListProjects" Title="Campaigns" Hidden="false" HelpText="Returns campaigns that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/project/">
+  <RestConnector Id="ListProjects" Title="Campaigns" HelpText="Returns campaigns that have been created in the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/project/">
     <Paging PageSize="100" MaxTake="1000"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/projects/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                ]]>
+				https://integration.upsales.com/api/v2/projects/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -311,15 +261,12 @@
         <JsonPath Expr="stats.opportunity" Id="Opportunity" Title="Opportunities" Converter="Int" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListUsers" Title="Users" Hidden="false" HelpText="Returns users from the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/user/">
+  <RestConnector Id="ListUsers" Title="Users" HelpText="Returns users from the portal." HelpUrl="https://api-docs.upsales.com/#/endpoint/user/">
     <Parameters>
-      <Select Id="FilterActive" Title="User status" Required="false" DefaultValue="all">
+      <Select Id="FilterActive" Title="User status" DefaultValue="all">
         <DataSource>
           <Resource Id="UserActive"/>
         </DataSource>
@@ -329,18 +276,11 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-                https://integration.upsales.com/api/v2/users/
-                ?token=@Model.ApiKey
-                &limit=@(Model.PageCursor.NextTake)
-                @if(Model.PageCursor.Page != 0)
-                {
-                  @: &offset=@(Model.PageCursor.NextSkip)
-                }
-                @if(Model.FilterActive != "all")
-                {
-                  @: &active=@(Model.FilterActive)
-                }
-                ]]>
+				https://integration.upsales.com/api/v2/users/?token=@Model.ApiKey
+				&limit=@(Model.PageCursor.NextTake)
+				@(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+				@(Model.FilterActive != "all" ? "&active=" + Model.FilterActive : "")
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -359,10 +299,7 @@
         <JsonPath Expr="userCellPhone" Id="UserCellPhone" Title="Cell Phone" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"></Resource>
-    <Fail>
-      <JsonPath Expr="$.error"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
