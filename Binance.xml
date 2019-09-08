@@ -17,7 +17,7 @@
               @{
                 @if(string.IsNullOrEmpty(Model.ApiKey) || string.IsNullOrEmpty(Model.SecretKey)){
                 throw new Exception("API key required. Click \"Settings\" in the connector and enter your API key");
-                }
+								}
               }
             ]]>
           </Compute.Expr>
@@ -287,14 +287,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        @{
-          string additionalParams = "";
-          if(!string.IsNullOrEmpty(Model.Symbol)){
-           additionalParams  += "&symbol=" + Model.Symbol;
-          }
-        }
         https://api.binance.com/api/v3/openOrders?
-        @GetCompleteQueryString(additionalParams)
+        @GetCompleteQueryString(!string.IsNullOrEmpty(Model.Symbol) ? "&symbol=" + Model.Symbol : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -334,14 +328,8 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        @{
-          string additionalParams = "&limit=" + Model.Limit;
-          if(!string.IsNullOrEmpty(Model.Symbol)){
-           additionalParams  += "&symbol=" + Model.Symbol;
-          }
-        }
         https://api.binance.com/api/v3/allOrders?
-        @GetCompleteQueryString(additionalParams)
+        @GetCompleteQueryString("&limit=" + Model.Limit + "&symbol=" + Model.Symbol)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -426,39 +414,20 @@
   <RazorFunctions>
     <![CDATA[
     string GetCompleteQueryString(string additionalParams = ""){
-      string completeQuery = "";
-      string q = "timestamp=" + GetTimestamp().ToString();
-      q += additionalParams;
-      string signature = GetSignature(q);
-
-      completeQuery += q + "&signature=" + signature;
-      return completeQuery;
+      string query = "timestamp=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString() + additionalParams;
+      return query + "&signature=" + GetHash(query, Model.SecretKey);
     }
 
-    string GetSignature(string q)
-    {
-      string signature = GetHash(q, Model.SecretKey);
-      return signature;
+    public static String GetHash(String text, String key) {
+			ASCIIEncoding encoding = new ASCIIEncoding();
+			Byte[] textBytes = encoding.GetBytes(text);
+			Byte[] keyBytes = encoding.GetBytes(key);
+			Byte[] hashBytes;
+
+			using (System.Security.Cryptography.HMACSHA256 hash = new System.Security.Cryptography.HMACSHA256(keyBytes))
+			hashBytes = hash.ComputeHash(textBytes);
+			return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
-
-    long GetTimestamp(){
-     return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-    }
-
-    public static String GetHash(String text, String key)
-    {
-        ASCIIEncoding encoding = new ASCIIEncoding();
-        Byte[] textBytes = encoding.GetBytes(text);
-        Byte[] keyBytes = encoding.GetBytes(key);
-
-        Byte[] hashBytes;
-
-        using (System.Security.Cryptography.HMACSHA256 hash = new System.Security.Cryptography.HMACSHA256(keyBytes))
-            hashBytes = hash.ComputeHash(textBytes);
-
-        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-    }
-
     ]]>
   </RazorFunctions>
 
