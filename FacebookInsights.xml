@@ -28,7 +28,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="GetPageToken" Hidden="false">
+  <RestConnector Id="GetPageToken" Hidden="true">
     <Parameters>
       <Text Id="PageId" Title="PageId" Required="true"/>
     </Parameters>
@@ -47,7 +47,7 @@
       </Fail>
 		</RestConnector>
 
-  <RestConnector Id="ListPages" Hidden="false">
+  <RestConnector Id="ListPages" Hidden="true">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -99,7 +99,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="PageMetrics" Title="Page Metrics" Group="Page Reports">
+	<RestConnector Id="PageMetrics" Title="Page Lookup" Group="Page Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
@@ -218,7 +218,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageDemographicsAgeGender" Title="Page Demographics Age/Gender" Group="Page Reports">
+  <RestConnector Id="PageDemographicsAgeGender" Title="Page Demographics Age/Gender" Group="Page Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" equired="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Select Id="Metric" Title="Metric" Required="false" DefaultValue="page_impressions_by_age_gender_unique">
@@ -274,7 +274,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageFansLocations" Title="Page Fans by Locations" Group="Page Reports">
+  <RestConnector Id="PageFansLocations" Title="Page Fans by Locations" Group="Page Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Select Id="Dimension" Title="Dimension" Required="false" DefaultValue="page_fans_country">
@@ -304,7 +304,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="PostPageFeed" Title="Posts from Page Feed" Group="Post Reports">
+	<RestConnector Id="PostPageFeed" Title="Posts from Page Feed" Group="Post Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
@@ -371,7 +371,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="PostsMetrics" Title="Post Metrics" Group="Post Reports">
+	<RestConnector Id="PostsMetrics" Title="Posts Lookup" Group="Post Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
@@ -427,69 +427,8 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
-	<RestConnector Id="PostsMetricsNew" Title="Post Metrics New" Group="_New">
-    <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="276624592753" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="276624592753_10157725642847754" Required="true" Multiline="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="Prepare"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.2/insights/@(SelectedFields())
-				?ids=@FetchIdsBatch()
-        &access_token=@(Model.PageToken)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.*">
-				<Compute Id="PostId2" Title="PostId" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"[\d_]+");
-              Match match = regex.Match(Model.Inp);
-            }
-            @(match.Groups[0].Value)
-            ]]>
-          </Compute.Expr>
-					<JsonPath Expr="data[0].id" Id="Inp" DefaultValue=""/>
-				</Compute>
-				<JsonPath Expr="data[?(@@.name=='post_impressions')].values[0].value" Id="i" Tag="post_impressions" Title="Impressions" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post"/>
-				<JsonPath Expr="data[?(@@.name=='post_impressions_unique')].values[0].value" Id="iu" Tag="post_impressions_unique" Title="Impressions Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post"/>
-				<JsonPath Expr="data[?(@@.name=='post_impressions_paid')].values[0].value" Id="ip" Title="Impressions Paid" Tag="post_impressions_paid" Converter="Int" DefaultValue="0" HelpText="The number of impressions for your Page post in an Ad or Sponsored Story"/>
-				<JsonPath Expr="data[?(@@.name=='post_impressions_paid_unique')].values[0].value" Id="pu" Tag="post_impressions_paid_unique" Title="Impressions Paid Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who saw your Page post in an Ad or Sponsored Story"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_organic')].values[0].value" Id="io" Tag="post_impressions_organic" Title="Impressions Organic" Converter="Int" HelpText="The number of impressions of your post in Newsfeed, Ticker, or on your Page's Wall"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_organic_unique')].values[0].value" Id="ou" Tag="post_impressions_organic_unique" Title="Impression Organic Unique" Converter="Int" HelpText="The number of people who saw your post in their Newsfeed or Ticker or on your Page's Wall"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_viral')].values[0].value" Id="iv" Tag="post_impressions_viral" Title="Impressions Viral" Converter="Int" HelpText="The number of impressions of your Page post in a story generated by a friend"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_viral_unique')].values[0].value" Id="ivu" Tag="post_impressions_viral_unique" Title="Impressions Viral Unique" Converter="Int" HelpText="The number of people who saw your page post in a story from a friend"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_fan')].values[0].value" Id="pif" Tag="post_impressions_fan" Title="Impressions Fan" Converter="Int" HelpText="The number of impressions for your Page post by people who have liked your Page"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_fan_unique')].values[0].value" Id="pifu" Tag="post_impressions_fan_unique" Title="Impressions Fan Unique" Converter="Int" HelpText="The number of people who have like your Page who saw your Page post"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_fan_paid')].values[0].value" Id="pifp" Tag="post_impressions_fan_paid" Title="Impressions Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
-        <JsonPath Expr="data[?(@@.name=='post_impressions_fan_paid_unique')].values[0].value" Id="pifpu" Tag="post_impressions_fan_paid_unique" Title="Impressions Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
-				<JsonPath Expr="data[?(@@.name=='post_video_views')].values[0].value" Id="v" Tag="post_video_views" Title="Video Views" Converter="Int" DefaultValue="0" HelpText="The number of times your video was watched for an aggregate of at least 3 seconds, or for nearly its total length, whichever happened first."/>
-				<JsonPath Expr="data[?(@@.name=='post_activity_by_action_type')].values[0].value.like" Id="Likes" Tag="post_activity_by_action_type" Title="Likes" Converter="Int" DefaultValue="0" HelpText="Number of likes"/>
-				<JsonPath Expr="data[?(@@.name=='post_activity_by_action_type')].values[0].value.comment" Id="Comments" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
-				<JsonPath Expr="data[?(@@.name=='post_activity_by_action_type')].values[0].value.share" Id="Shares" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" DefaultValue="0" HelpText="Number of shares"/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks_by_type')].values[0].value.link clicks" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" DefaultValue="0" HelpText="Clicks on links."/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks_by_type')].values[0].value.photo view" Id="PhotoViews" Tag="post_clicks_by_type" Title="Photo Views" Converter="Int" DefaultValue="0" HelpText="View a photo."/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks_by_type')].values[0].value.video play" Id="VideoPlays" Tag="post_clicks_by_type" Title="Video Plays" Converter="Int" DefaultValue="0" HelpText="Playing a video."/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks_by_type')].values[0].value.other clicks" Id="OtherClicks" Tag="post_clicks_by_type" Title="Other Clicks" Converter="Int" DefaultValue="0"/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks')].values[0].value" Id="c" Tag="post_clicks" Title="Clicks" Converter="Int" DefaultValue="0" HelpText="The number of times people clicked on anywhere in your posts without generating a story"/>
-				<JsonPath Expr="data[?(@@.name=='post_clicks_unique')].values[0].value" Id="pcu" Tag="post_clicks_unique" Title="Clicks Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
-				<JsonPath Expr="data[?(@@.name=='post_negative_feedback')].values[0].value" Id="pnf" Tag="post_negative_feedback" Title="Negative Feedback" Converter="Int" HelpText="The number of times people took a negative action in your post (e.g. hid it)"/>
-        <JsonPath Expr="data[?(@@.name=='post_negative_feedback_unique')].values[0].value" Id="pnfu" Tag="post_negative_feedback_unique" Title="Negative Feedback Unique" Converter="Int" DefaultValue="0" HelpText="The number of people who took a negative action in your post (e.g., hid it)"/>
-        <JsonPath Expr="data[?(@@.name=='post_engaged_users')].values[0].value" Id="eu" Tag="post_engaged_users" Title="Engaged Users" Converter="Int" DefaultValue="0" HelpText="The number of people who clicked anywhere in your posts"/>
-        <JsonPath Expr="data[?(@@.name=='post_engaged_fan')].values[0].value" Id="fe" Tag="post_engaged_fan" Title="Fan Engagement" DefaultValue="0" Converter="Int" HelpText="People who have liked your page and engaged with your post."/>
-			</JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
 
-  <RestConnector Id="PagePostImpressions" Title="Page Posts Impressions" Group="Page Reports">
+  <RestConnector Id="PagePostImpressions" Title="Page Posts Impressions" Group="Page Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
@@ -548,7 +487,7 @@
     <Resource Id="Fail"/>
 </RestConnector>
 
-	<RestConnector Id="VideoBatchMetrics" Title="Video Batch Metrics" Group="Video Reports">
+	<RestConnector Id="VideoBatchMetrics" Title="Video Batch Metrics" Group="Post Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="Ids" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1923830251066593" Required="true" Multiline="true"/>
@@ -597,7 +536,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideoDailyViews" Title="Video Daily Views" Group="Video Reports">
+  <RestConnector Id="VideoDailyViews" Title="Video Daily Views" Group="Post Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="935167936599501_1923830251066593"/>
