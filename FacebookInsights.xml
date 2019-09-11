@@ -21,40 +21,16 @@
         </DataSource>
       </Select>
     </Resource>
-    <Resource Id="PreparePage">
+    <Resource Id="Prepare">
 			<Prepare>
-				<Connector Id="GetPageToken" Parameters="PageId"/>
-			</Prepare>
-    </Resource>
-    <Resource Id="PreparePost">
-			<Prepare>
-				<Connector Id="GetPageTokenFromPost" Parameters="PostId"/>
+				<Connector Id="GetPageToken" Parameters="Id"/>
 			</Prepare>
     </Resource>
   </Resources>
 
   <RestConnector Id="GetPageToken" Hidden="true">
     <Parameters>
-      <Text Id="PageId" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.2/me/accounts?access_token=@(Model.Authenticator.Token)&fields=access_token
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.data[?(@@.id=='@(Model.PageId)')].access_token" Id="PageToken" Title="PageToken"/>
-    </Parse>
-      <Fail>
-				<JsonPath Expr="$.data[0].access_token" Id="Inp1" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Access denied. Did you grant the page access in browser authentication? Try Login/Logout."/>
-      </Fail>
-		</RestConnector>
-
-  <RestConnector Id="GetPageTokenFromPost" Hidden="true">
-    <Parameters>
-      <Text Id="PostId" Required="true" Debug.DefaultValue="324952857522514_2209241562426958"/>
+      <Text Id="Id" Required="true" Debug.DefaultValue="324952857522514_2209241562426958"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -103,16 +79,16 @@
 
 	<RestConnector Id="PageMetrics" Title="Page Lookup" Group="Page Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
 			<Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-		<Resource Id="PreparePage"/>
+		<Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				https://graph.facebook.com/v3.2/@(Model.Id)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -228,7 +204,7 @@
 
   <RestConnector Id="PageDemographicsAgeGender" Title="Page Demographics Age/Gender" Group="Page Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" equired="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Id" Title="Page Id" equired="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Select Id="Metric" Title="Metric" Required="false" DefaultValue="page_impressions_by_age_gender_unique">
         <DataSource>
           <Item Id="page_impressions_by_age_gender_unique" Title="Impressions Unique"/>
@@ -242,11 +218,11 @@
       <Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-    <Resource Id="PreparePage"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(Model.Metric)?&access_token=@(Model.PageToken)
+        https://graph.facebook.com/v3.2/@(Model.Id)/insights/@(Model.Metric)?&access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -284,7 +260,7 @@
 
   <RestConnector Id="PageFansLocations" Title="Page Fans by Locations" Group="Page Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Select Id="Dimension" Title="Dimension" Required="false" DefaultValue="page_fans_country">
         <DataSource>
           <Item Id="page_fans_country" Title="Country"/>
@@ -293,11 +269,11 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Resource Id="PreparePage"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
+        https://graph.facebook.com/v3.2/@(Model.Id)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
 				&since=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
 				&until=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
       ]]>
@@ -314,7 +290,7 @@
 
 	<RestConnector Id="PostPageFeed" Title="Posts from Page Feed" Group="Post Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
@@ -322,11 +298,11 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
-    <Resource Id="PreparePage"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PageId)/posts?access_token=@(Model.PageToken)&period=lifetime
+        https://graph.facebook.com/v3.2/@(Model.Id)/posts?access_token=@(Model.PageToken)&period=lifetime
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         @PeriodParameters()
         &limit=@(Model.PageCursor.NextTake)
@@ -381,7 +357,7 @@
 
 	<RestConnector Id="PostComments" Title="Comments to Post" Group="Post Data">
     <Parameters>
-      <Text Id="PostId" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
+      <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
@@ -389,11 +365,11 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
-    <Resource Id="PreparePost"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PostId)/comments?access_token=@(Model.PageToken)&period=lifetime
+        https://graph.facebook.com/v3.2/@(Model.Id)/comments?access_token=@(Model.PageToken)&period=lifetime
         &fields=@(SelectedFields())
         @PeriodParameters()
         &limit=@(Model.PageCursor.NextTake)
@@ -424,7 +400,7 @@
 
 	<RestConnector Id="PostLikes" Title="Likes to Post" Group="Post Data">
     <Parameters>
-      <Text Id="PostId" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
+      <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
@@ -432,11 +408,11 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
-    <Resource Id="PreparePost"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PostId)/likes?access_token=@(Model.PageToken)&period=lifetime
+        https://graph.facebook.com/v3.2/@(Model.Id)/likes?access_token=@(Model.PageToken)&period=lifetime
         &fields=@(SelectedFields())
         @PeriodParameters()
         &limit=@(Model.PageCursor.NextTake)
@@ -449,7 +425,6 @@
         <JsonPath Expr="id" Id="PostId" Title="CommentId" Converter="String"/>
         <JsonPath Expr="name" Id="User" Title="User" Converter="String" Tag="name" DefaultValue=""/>
         <JsonPath Expr="picture.data.url" Id="Avatar" Title="Avatar" Converter="String" Tag="picture" DefaultValue=""/>
-
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -457,16 +432,15 @@
 
 	<RestConnector Id="PostsMetrics" Title="Posts Lookup" Group="Post Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
+      <Text Id="Id" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format). Posts from different pages are not supported" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="PreparePage"/>
+    <Batch Parameter="Id" Separator="\n" ItemsPerBatch="50"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v3.2/
-				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
+				@(Model.Id.Split('\n').Length == 1 ? "?id=" + Model.Id : "?ids=" + FetchIdsBatch())
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         &access_token=@(Model.PageToken)
         ]]>
@@ -514,16 +488,16 @@
 
   <RestConnector Id="PagePostImpressions" Title="Page Posts Impressions" Group="Page Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
 			<Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-		<Resource Id="PreparePage"/>
+		<Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.2/@(Model.PageId)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
+				https://graph.facebook.com/v3.2/@(Model.Id)/insights/@(SelectedFields())?access_token=@(Model.PageToken)
 				@DatePagination()&period=@(Model.AggregationPeriod)
         ]]>
       </Fetch.Url>
@@ -573,16 +547,15 @@
 
 	<RestConnector Id="VideoBatchMetrics" Title="Video Lookup" Group="Post Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="Ids" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1923830251066593" Required="true" Multiline="true"/>
+      <Text Id="Id" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format). Posts from different pages are not supported" Debug.DefaultValue="935167936599501_1923830251066593" Required="true" Multiline="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="PreparePage"/>
+    <Batch Parameter="Id" Separator="\n" ItemsPerBatch="50"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v3.2/
-				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
+				@(Model.Id.Split('\n').Length == 1 ? "?id=" + Model.Id : "?ids=" + FetchIdsBatch())
         &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         &access_token=@(Model.PageToken)&period=lifetime
         ]]>
@@ -622,16 +595,15 @@
 
   <RestConnector Id="VideoDailyViews" Title="Video Daily Views" Group="Post Data">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-      <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="935167936599501_1923830251066593"/>
+      <Text Id="Id" Title="Video Id" Required="true" Debug.DefaultValue="935167936599501_1923830251066593"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-    <Resource Id="PreparePage"/>
+    <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.VideoId)/insights/@SelectedFields()?&access_token=@(Model.PageToken)@DatePagination()&period=day
+        https://graph.facebook.com/v3.2/@(Model.Id)/insights/@SelectedFields()?&access_token=@(Model.PageToken)@DatePagination()&period=day
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -687,8 +659,8 @@
 			}
 
 			string FetchIdsBatch() {
-				string[] lines = (string[])Model.IdsBatch;
-				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+				string[] lines = (string[])Model.IdBatch;
+				return string.Join(",",lines.Select(e => e).ToArray());
 			}
 
 			string DatePagination() {
@@ -707,12 +679,15 @@
 			}
 
 			string bool2dim() {
-				return (Model.Ids.Split('\n').Length > 1 ? "$.*" : "$");
+				return (Model.Id.Split('\n').Length > 1 ? "$.*" : "$");
 			}
 
 			string ExtractPageId() {
-				Regex regex = new Regex(@"\d+");
-				Match match = regex.Match(Model.PostId);
+				if(!Model.Id.Contains("_"))
+					return Model.Id;
+
+				Regex regex = new Regex(@"^\d+");
+				Match match = regex.Match(Model.Id);
 				return match.Value;
 			}
 
