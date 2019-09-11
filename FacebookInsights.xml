@@ -21,16 +21,40 @@
         </DataSource>
       </Select>
     </Resource>
-    <Resource Id="Prepare">
+    <Resource Id="PreparePage">
 			<Prepare>
 				<Connector Id="GetPageToken" Parameters="PageId"/>
+			</Prepare>
+    </Resource>
+    <Resource Id="PreparePost">
+			<Prepare>
+				<Connector Id="GetPageTokenFromPost" Parameters="PostId"/>
 			</Prepare>
     </Resource>
   </Resources>
 
   <RestConnector Id="GetPageToken" Hidden="true">
     <Parameters>
-      <Text Id="PageId" Title="PageId" Required="true"/>
+      <Text Id="PageId" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/me/accounts?access_token=@(Model.Authenticator.Token)&fields=access_token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data[?(@@.id=='@(Model.PageId)')].access_token" Id="PageToken" Title="PageToken"/>
+    </Parse>
+      <Fail>
+				<JsonPath Expr="$.data[0].access_token" Id="Inp1" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Access denied. Did you grant the page access in browser authentication? Try Login/Logout."/>
+      </Fail>
+		</RestConnector>
+
+  <RestConnector Id="GetPageTokenFromPost" Hidden="true">
+    <Parameters>
+      <Text Id="PostId" Required="true" Debug.DefaultValue="324952857522514_2209241562426958"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -40,7 +64,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data[?(@@.id=='@(Model.PageId)')].access_token" Id="PageToken" Title="PageToken"/>
+      <JsonPath Expr="$.data[?(@@.id=='@(ExtractPageId())')].access_token" Id="PageToken" Title="PageToken"/>
     </Parse>
       <Fail>
 				<JsonPath Expr="$.data[0].access_token" Id="Inp1" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Access denied. Did you grant the page access in browser authentication? Try Login/Logout."/>
@@ -62,10 +86,9 @@
 					<Compute.Expr>
             <![CDATA[
 						@{
-							string name = Model.Inp1;
 							string url = !string.IsNullOrEmpty(Model.Inp2) ? "(" + Model.Inp2 + ")" : "";
 						}
-						@name  @url
+						@Model.Inp1  @url
             ]]>
           </Compute.Expr>
 					<JsonPath Expr="name" Id="Inp1" DefaultValue=""/>
@@ -78,27 +101,6 @@
       </Fail>
 		</RestConnector>
 
-  <RestConnector Id="ListPosts" Hidden="true">
-    <Parameters>
-      <Text Id="PageId" Required="true" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.PageId)/posts?
-        &access_token=@(Model.Authenticator.Token)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
-        <JsonPath Expr="message" Id="PostName" Title="PostName" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
 	<RestConnector Id="PageMetrics" Title="Page Lookup" Group="Page Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
@@ -106,7 +108,7 @@
 			<Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-		<Resource Id="Prepare"/>
+		<Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -234,7 +236,7 @@
       <Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -285,7 +287,7 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -314,7 +316,7 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -371,13 +373,89 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+	<RestConnector Id="PostComments" Title="Comments to Post" Group="Post Data">
+    <Parameters>
+      <Text Id="PostId" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="paging.next"/>
+      </Parse>
+    </Paging>
+    <Resource Id="PreparePost"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/@(Model.PostId)/comments?access_token=@(Model.PageToken)&period=lifetime
+        &fields=@(SelectedFields())
+        @PeriodParameters()
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.data.*">
+        <JsonPath Expr="permalink_url" Id="CommentLink" Title="CommentLink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="CommentId" Converter="String"/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int"/>
+        <JsonPath Expr="comment_count" Id="Comments" Title="Comments" Tag="comment_count" Converter="Int"/>
+        <JsonPath Expr="reactions_love.summary.total_count" Id="Love" Title="Love" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
+        <JsonPath Expr="reactions_wow.summary.total_count" Id="Wow" Title="Wow" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
+        <JsonPath Expr="reactions_haha.summary.total_count" Id="Haha" Title="Haha" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
+        <JsonPath Expr="reactions_sad.summary.total_count" Id="Sad" Title="Sad" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
+        <JsonPath Expr="reactions_angry.summary.total_count" Id="Angry" Title="Angry" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
+        <JsonPath Expr="user_likes" Id="UserLikes" Title="UserLikes" Tag="user_likes" Converter="Bool" HelpText="Whether the viewer has liked this comment."/>
+        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="PostLikes" Title="Likes to Post" Group="Post Data">
+    <Parameters>
+      <Text Id="PostId" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="paging.next"/>
+      </Parse>
+    </Paging>
+    <Resource Id="PreparePost"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/@(Model.PostId)/likes?access_token=@(Model.PageToken)&period=lifetime
+        &fields=@(SelectedFields())
+        @PeriodParameters()
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.data.*">
+        <JsonPath Expr="id" Id="PostId" Title="CommentId" Converter="String"/>
+        <JsonPath Expr="name" Id="User" Title="User" Converter="String" Tag="name" DefaultValue=""/>
+        <JsonPath Expr="picture.data.url" Id="Avatar" Title="Avatar" Converter="String" Tag="picture" DefaultValue=""/>
+
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
 	<RestConnector Id="PostsMetrics" Title="Posts Lookup" Group="Post Data">
     <Parameters>
       <Text Id="PageId" Title="Page Id" Required="true" Debug.DefaultValue="935167936599501" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
       <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1979635878819363" Required="true" Multiline="true"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -435,7 +513,7 @@
 			<Resource Id="Aggregation"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-		<Resource Id="Prepare"/>
+		<Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -493,7 +571,7 @@
       <Text Id="Ids" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="935167936599501_1923830251066593" Required="true" Multiline="true"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -543,7 +621,7 @@
       <DateInterval Id="DateInterval" Title="Interval"/>
     </Parameters>
     <Paging PageSize="30" DefaultTake="1000" EvenPages="true"/>
-    <Resource Id="Prepare"/>
+    <Resource Id="PreparePage"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -625,6 +703,13 @@
 			string bool2dim() {
 				return (Model.Ids.Split('\n').Length > 1 ? "$.*" : "$");
 			}
+
+			string ExtractPageId() {
+				Regex regex = new Regex(@"\d+");
+				Match match = regex.Match(Model.PostId);
+				return match.Value;
+			}
+
     ]]>
   </RazorFunctions>
 
