@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="iFunny" Id="IFunny" Category="Social" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/" HelpUrl="http://seotoolsforexcel.com/">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <RestConnector Id="MemesUserFeed" Title="Feed from User" Group="Memes">
+    <Parameters>
+      <Text Id="Username" Title="Username or User URL" Debug.DefaultValue="absnowman" Required="true"/>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="false">
+      <Parse>
+        <XPath Id="NextPageToken" Expr="//li[contains(@@class, 'stream__item')]" Attribute="data-next"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @GetUserRequest()
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: /timeline/@Model.NextPageToken
+          @: ?batch=@(Model.PageCursor.Page+1)
+          @: &mode=grid
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@class='post__media']">
+        <Compute Expr="https://ifunny.co@(Model.Inp)" Id="Url" Title="URL">
+          <XPath Expr="a[contains(@@class, 'grid__link')]" Id="Inp" Attribute="href"/>
+        </Compute>
+				<XPath Expr="a/img" Id="Image" Attribute="data-src" Checked="false"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MemesChannelFeed" Title="Feed from Channel" Group="Memes">
+    <Parameters>
+      <Text Id="Channel" Title="Channel Label" Debug.DefaultValue="iphone" Required="true"/>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="false">
+      <Parse>
+        <XPath Id="NextPageToken" Expr="//li[contains(@@class, 'stream__item')]" Attribute="data-next"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://ifunny.co/channels/@Model.Channel
+        @if(Model.PageCursor.Page != 0)
+        {
+          @: /timeline/@Model.NextPageToken
+          @: ?batch=@(Model.PageCursor.Page+1)
+          @: &mode=grid
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//div[@@class='post__media']">
+        <Compute Expr="https://ifunny.co@(Model.Inp)" Id="Url" Title="URL">
+          <Xpath Expr="a[contains(@@class, 'grid__link')]" Id="Inp" Attribute="href"/>
+        </Compute>
+				<XPath Expr="a/img" Id="Image" Attribute="data-src" Checked="false"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="MemeLookup" Title="Meme Lookup" Group="Memes">
+    <Parameters>
+      <Text Id="Url" Title="Meme URL" Debug.DefaultValue="https://ifunny.co/picture/if-he-accidentally-cums-in-you-just-put-your-pussy-kifv5fz17" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @Model.Url
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Regex Expr="datePublished&quot;:&quot;(.*?)&quot;" Id="Published" Group="1" Converter="DateTime"/>
+			<Regex Expr="initial-smiles=&quot;(\d+)" Id="Smiles" Group="1" Converter="Auto"/>
+			<Regex Expr="initial-count=&quot;(\d+)" Id="Comments" Group="1" Converter="Auto"/>
+			<XPath Expr="//div[@@class='metapanel__tags']" Id="Tags" DefaultValue=""/>
+			<XPath Expr="//div[@@class='metapanel__row']" Id="Caption" DefaultValue=""/>
+			<Regex Expr="author&quot;:&quot;(.*?)&quot;" Id="Username" Group="1" Converter="Auto"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserLookup" Title="User Lookup" Group="Users">
+    <Parameters>
+      <Text Id="Username" Title="Username or User URL" Debug.DefaultValue="absnowman" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @GetUserRequest()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Regex Expr="original_nick&quot;:&quot;(.*?)&quot;" Id="Username" Group="1" Converter="Auto"/>
+			<Regex Expr="subscribers&quot;:(\d+)" Id="Subscribers" Group="1" Converter="Auto"/>
+			<Regex Expr="subscriptions&quot;:(\d+)" Id="Subscriptions" Group="1" Converter="Auto"/>
+			<Regex Expr="total_posts&quot;:(\d+)" Id="Posts" Group="1" Converter="Auto"/>
+			<Regex Expr="created&quot;:(\d+)" Id="Created" Group="1" Converter="Auto"/>
+			<Regex Expr="featured&quot;:(\d+)" Id="Featured" Group="1" Converter="Auto"/>
+			<Regex Expr="total_smiles&quot;:(\d+)" Id="Smiles" Group="1" Converter="Auto"/>
+			<Regex Expr="achievements&quot;:(\d+)" Id="Achievements" Group="1" Converter="Auto"/>
+			<Regex Expr="about&quot;:&quot;(.*?)&quot;," Id="About" Group="1" Converter="Auto"/>
+			<Regex Expr="isVerified&quot;:(\w+)," Id="Verified" Group="1" Converter="Bool"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserSubscribers" Title="Subscribers" Group="Users">
+    <Parameters>
+      <Text Id="Username" Title="Username or User URL" Debug.DefaultValue="absnowman" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <XPath Id="NextPageToken" Expr="//a[contains(@@class, 'users-show-more')]" Attribute="href"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @(Model.PageCursor.Page == 0 ? GetUserRequest() + "/subscribers" : "https://ifunny.co" + Model.NextPageToken)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//li[contains(@@class, 'users-item')]">
+        <Compute Expr="https://ifunny.co@(Model.Inp)" Id="Url" Title="URL">
+          <Xpath Expr="a" Id="Inp" Attribute="href"/>
+        </Compute>
+        <Xpath Expr="a/span[@@class='users__nick']" Id="Username" Converter="Auto"/>
+        <Compute Expr="@GetMemeCount()" Id="Memes" Converter="Int" DefaultValue="0">
+					<Xpath Expr="a/span[@@class='users__stats']" Id="Inp"/>
+        </Compute>
+        <Xpath Expr="a/span/span/img" Id="Avatar" Attribute="data-src" DefaultValue=""/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="UserSubscriptions" Title="Subscriptions" Group="Users">
+    <Parameters>
+      <Text Id="Username" Title="Username or User URL" Debug.DefaultValue="absnowman" Required="true"/>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <XPath Id="NextPageToken" Expr="//a[contains(@@class, 'users-show-more')]" Attribute="href"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @(Model.PageCursor.Page == 0 ? GetUserRequest() + "/subscriptions" : "https://ifunny.co" + Model.NextPageToken)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//li[contains(@@class, 'users-item')]">
+        <Compute Expr="https://ifunny.co@(Model.Inp)" Id="Url" Title="URL">
+          <Xpath Expr="a" Id="Inp" Attribute="href"/>
+        </Compute>
+        <Xpath Expr="a/span[@@class='users__nick']" Id="Username" Converter="Auto"/>
+        <Compute Expr="@GetMemeCount()" Id="Memes" Converter="Int" DefaultValue="0">
+					<Xpath Expr="a/span[@@class='users__stats']" Id="Inp"/>
+        </Compute>
+        <Xpath Expr="a/span/span/img" Id="Avatar" Attribute="data-src" DefaultValue=""/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+ <RazorFunctions>
+    <![CDATA[
+    string GetUserRequest() {
+      if(Model.Username.Contains("/user/"))
+        return Model.Username;
+      return "https://ifunny.co/user/" + Model.Username;
+    }
+
+		string GetMemeCount() {
+			Regex regex = new Regex(@"\d+");
+      return regex.Match(Model.Inp).Value;
+		}
+    ]]>
+  </RazorFunctions>
+
+
+</Suite>
