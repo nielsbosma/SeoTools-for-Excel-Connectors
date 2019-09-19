@@ -26,6 +26,11 @@
 				<JsonPath Expr="statuscodedesc" Id="StatusDescription" Title="Status Description"/>
 			</JsonPath>
     </Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.error"/>
+      </Fail>
+    </Resource>
   </Resources>
 
   <RestConnector Id="TrademarkSearch" Title="Trademark Search">
@@ -58,6 +63,7 @@
     <Parse>
 			<Resource Id="JsonPath"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="DescriptionSearch" Title="Description Search">
@@ -90,6 +96,7 @@
     <Parse>
 			<Resource Id="JsonPath"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ExpirationSearch" Title="Expiration Search">
@@ -115,6 +122,7 @@
     <Parse>
 			<Resource Id="JsonPath"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 	
   <RestConnector Id="SerialnumberSearch" Title="Serial Number Search">
@@ -132,6 +140,32 @@
     <Parse>
 			<Resource Id="JsonPath"/>
     </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="Owner Search" Title="Owner Search">
+    <Parameters>
+      <Text Id="SearchTerm" Title="Search Term" Required="true" Debug.DefaultValue="robust" HelpText="Search term can include asterisks for wildcard search"/>
+    </Parameters>
+    <Paging PageSize="100">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="count"/>
+        <JsonPath Id="NextPageToken" Expr="next"/>
+      </Parse>
+    </Paging>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+          https://www.markerapi.com/api/v2/trademarks/owner/@Model.SearchTerm
+					/start/@(Model.PageCursor.Page != 0 ? Model.NextPageToken : 1)
+					/username/@Model.Username/password/@Model.ApiPassword
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Resource Id="JsonPath"/>
+    </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
