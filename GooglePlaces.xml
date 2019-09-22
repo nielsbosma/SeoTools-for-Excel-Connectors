@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Locations" RequireVersion="8.1.20" Title="Google Places" Id="GooglePlaces" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GooglePlaces.xml" HelpUrl="http://seotoolsforexcel.com/google-places/" HelpText="Documentation">
+<Suite Category="Locations" RequireVersion="8.2" Title="Google Places" Id="GooglePlaces" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GooglePlaces.xml" HelpUrl="http://seotoolsforexcel.com/google-places/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -7,14 +7,54 @@
     <Text Id="ApiKey" Title="ApiKey" Required="true" HelpUrl="http://seotoolsforexcel.com/google-places/"/>
   </Settings>
 
+	<Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.error_message"/>
+      </Fail>
+    </Resource>
+		<Resource Id="Places">
+			<Item Id="bus_station" Title="Bus Station"/>
+			<Item Id="cafe" Title="Cafe"/>
+			<Item Id="campground" Title="Campground"/>
+			<Item Id="car_dealer" Title="Car Dealer"/>
+			<Item Id="car_rental" Title="Car Rental"/>
+			<Item Id="car_repair" Title="Car Repair"/>
+			<Item Id="car_wash" Title="Car Wash"/>
+			<Item Id="casino" Title="Casino"/>
+			<Item Id="cemetery" Title="Cemetery"/>
+			<Item Id="church" Title="Church"/>
+			<Item Id="city_hall" Title="City Hall"/>
+			<Item Id="clothing_store" Title="Clothing Store"/>
+			<Item Id="convenience_store" Title="Convenience Store"/>
+			<Item Id="courthouse" Title="Courthouse"/>
+			<Item Id="dentist" Title="Dentist"/>
+			<Item Id="department_store" Title="Department Store"/>
+			<Item Id="doctor" Title="Doctor"/>
+			<Item Id="drugstore" Title="Drugstore"/>
+			<Item Id="electrician" Title="Electrician"/>
+			<Item Id="electronics_store" Title="Electronics Store"/>
+			<Item Id="embassy" Title="Embassy"/>
+			<Item Id="fire_station" Title="Fire Station"/>
+			<Item Id="florist" Title="Florist"/>
+			<Item Id="funeral_home" Title="Funeral Home"/>
+			<Item Id="furniture_store" Title="Furniture Store"/>
+			<Item Id="gas_station" Title="Gas Station"/>
+			<Item Id="gym" Title="Gym"/>
+			<Item Id="hair_care" Title="Hair Care"/>
+			<Item Id="hardware_store" Title="Hardware Store"/>
+			<Item Id="hindu_temple" Title="Hindu Temple"/>
+		</Resource>
+  </Resources>
+
   <RestConnector Id="SearchText" Title="Search by Text" HelpUrl="https://developers.google.com/places/web-service/search">
     <Parameters>
       <Text Id="Query" Title="Search" Debug.DefaultValue="pizza" Required="true"/>
-      <Checkbox Id="OpenNow" Title="Open Now" DefaultValue="false"/>
-      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" DefaultValue="" Required="false" Debug.DefaultValue="59.34"/>
-      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" DefaultValue="" Required="false" Debug.DefaultValue="17.94"/>
-      <Number Id="Radius" Title="Radius (Meter | Max = 50000)" DefaultValue="10000" Required="false"/>
-      <Select Id="Country" Title="Preferred Country" Required="" DefaultValue="All">
+      <Checkbox Id="OpenNow" Title="Open Now"/>
+      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Debug.DefaultValue="45.3073738"/>
+      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Debug.DefaultValue="-74.6532521"/>
+      <Number Id="Radius" Title="Radius (Meter | Max = 50000)" DefaultValue="10000"/>
+      <Select Id="Country" Title="Preferred Country" DefaultValue="all">
         <DataSource>
 					<Item Id="all" Title="All"/>
           <ISOCountryCodes/>
@@ -26,7 +66,7 @@
       <Fetch.Url>
         <![CDATA[
         https://maps.googleapis.com/maps/api/place/textsearch/json?key=@Model.ApiKey&query=@Model.Query
-        @(Model.Country != "All" ? "&region=" + Model.Country.ToUpper() : "")
+        @(Model.Country != "all" ? "&region=" + Model.Country.ToUpper() : "")
         @(Model.OpenNow == true ? "&opennow=true" : "")
         @if(!string.IsNullOrEmpty(Model.Latitude) && !string.IsNullOrEmpty(Model.Longitude) && Model.Radius >= 0)
         {
@@ -46,35 +86,25 @@
         <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
         <JsonPath Expr="price_level" Id="PriceLevel" Title="Price Level" Converter="Double" DefaultValue=""/>
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" DefaultValue=""/>
-        <Compute Id="Photo" Title="Photo" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"""(.*?)""");
-              Match match = regex.Match(Model.PhotoInput);
-              string output = match.Groups[1].Value;
-            }
-            @output
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="photos[*].html_attributions[0]" Id="PhotoInput" Converter="String" DefaultValue=""/>
+        <Compute Expr="@ReturnPhoto()" Id="Photo" Title="Photo" DefaultValue="">
+					<JsonPath Expr="photos[*].html_attributions[0]" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="opening_hours.open_now" Id="OpenNow" Title="Open Now" Converter="Bool" DefaultValue=""/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="SearchNearby" Title="Search Nearby" HelpUrl="https://developers.google.com/places/web-service/search">
     <Parameters>
-      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" DefaultValue="" Required="true" Debug.DefaultValue="59.34"/>
-      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" DefaultValue="" Required="true" Debug.DefaultValue="17.94"/>
+      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="59.34"/>
+      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="17.94"/>
       <Number Id="Radius" Title="Radius (Meter | Max = 50000)" DefaultValue="10000" Required="true"/>
-      <Text Id="Query" Title="Optional Query" Debug.DefaultValue="pizza" Required="true"/>
-      <Checkbox Id="OpenNow" Title="Open Now" DefaultValue="false"/>
-      <Select Id="Country" Title="Preferred Country" Required="" DefaultValue="All">
+      <Text Id="Keyword" Title="Optional Keyword" Debug.DefaultValue="pizza"/>
+      <Checkbox Id="OpenNow" Title="Open Now"/>
+      <Select Id="Type" Title="Location Type" DefaultValue="all">
         <DataSource>
-					<Item Id="all" Title="All"/>
-          <ISOCountryCodes/>
+          <Resource Id="Places"/>
         </DataSource>
       </Select>
 		</Parameters>
@@ -82,10 +112,11 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=@Model.ApiKey&query=@Model.Query
+        https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=@Model.ApiKey
+				@(!string.IsNullOrEmpty(Model.Keyword) ? "&keyword=" + Model.Keyword : "")
         &location=@(Model.Latitude),@(Model.Longitude)&radius=@(Model.Radius)
-        @(Model.Country != "All" ? "&region=" + Model.Country.ToUpper() : "")
         @(Model.OpenNow == true ? "&opennow=true" : "")
+        @(Model.Type != "all" ? "&type=" + Model.Type : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -100,22 +131,13 @@
         <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
         <JsonPath Expr="price_level" Id="PriceLevel" Title="Price Level" Converter="Double" DefaultValue=""/>
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" DefaultValue=""/>
-        <Compute Id="Photo" Title="Photo" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"""(.*?)""");
-              Match match = regex.Match(Model.PhotoInput);
-              string output = match.Groups[1].Value;
-            }
-            @output
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="photos[*].html_attributions[0]" Id="PhotoInput" Converter="String" DefaultValue=""/>
+        <Compute Expr="@ReturnPhoto()" Id="Photo" Title="Photo" DefaultValue="">
+					<JsonPath Expr="photos[*].html_attributions[0]" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="opening_hours.open_now" Id="OpenNow" Title="Open Now" Converter="Bool" DefaultValue=""/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PlaceDetails" Title="Place Details" HelpUrl="https://developers.google.com/places/web-service/details">
@@ -125,8 +147,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://maps.googleapis.com/maps/api/place/details/json?key=@Model.ApiKey
-        &placeid=@Model.PlaceId
+        https://maps.googleapis.com/maps/api/place/details/json?key=@Model.ApiKey&placeid=@Model.PlaceId
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -144,22 +165,23 @@
         <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
         <JsonPath Expr="price_level" Id="PriceLevel" Title="Price Level" Converter="Double" DefaultValue=""/>
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" DefaultValue=""/>
-        <Compute Id="Photo" Title="Photo" DefaultValue="">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"""(.*?)""");
-              Match match = regex.Match(Model.PhotoInput);
-              string output = match.Groups[1].Value;
-            }
-            @output
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="photos[*].html_attributions[0]" Id="PhotoInput" Converter="String" DefaultValue=""/>
+        <Compute Expr="@ReturnPhoto()" Id="Photo" Title="Photo" DefaultValue="">
+					<JsonPath Expr="photos[*].html_attributions[0]" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="opening_hours.open_now" Id="OpenNow" Title="Open Now" Converter="Bool" DefaultValue=""/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
+
+	<RazorFunctions>
+		<![CDATA[
+		string ReturnPhoto() {
+			Regex regex = new Regex(@"""(.*?)""");
+			Match match = regex.Match(Model.Inp);
+      return match.Groups[1].Value;
+		}
+		]]>
+	</RazorFunctions>
 
 </Suite>
