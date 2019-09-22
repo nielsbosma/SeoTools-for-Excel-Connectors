@@ -1,26 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="7.0" Title="DuckDuckGo" Id="DuckDuckGo" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DuckDuckGo.xml" HelpUrl="http://seotoolsforexcel.com/DuckDuckGo/" HelpText="Documentation">
+<Suite RequireVersion="8.2" Title="DuckDuckGo" Id="DuckDuckGo" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DuckDuckGo.xml" HelpUrl="http://seotoolsforexcel.com/DuckDuckGo/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
-
-  <Resources>
-    <Resource Id="Periods">
-      <Item Id="a" Title="Anytime"/>
-      <Item Id="d" Title="Last Day"/>
-      <Item Id="w" Title="Last Week"/>
-      <Item Id="m" Title="Last Month"/>
-    </Resource>
-  </Resources>
 
   <RestConnector Id="DuckDuckGo" Title="DuckDuckGo">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
-      <Select Id="Period" Title="Filter by Period" Required="false" DefaultValue="a">
+      <Select Id="Period" Title="Filter by Period" DefaultValue="a">
         <DataSource>
-          <Resource Id="Periods"/>
+					<Item Id="a" Title="Anytime"/>
+					<Item Id="d" Title="Last Day"/>
+					<Item Id="w" Title="Last Week"/>
+					<Item Id="m" Title="Last Month"/>
         </DataSource>
       </Select>
     </Parameters>
+    <Paging PageSize="25"/>
     <Fetch>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
@@ -31,24 +26,20 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://duckduckgo.com/html
-				?q=@Utils.UrlEncode(Model.Query)
-				@if(Model.Period != "a")
-				{
-					@: &df=@(Model.Period)
-				}
+        https://duckduckgo.com/html?q=@Utils.UrlEncode(Model.Query)
+				@(Model.Period != "a" ? "&df=" + Model.Period : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <XPath Expr="//h2[@@class='result__title']/a[not(contains(@@class, 'badge--ad'))]/../a[@@class='result__a']">
-        <XPath Id="Title" Title="Title" Expr="." Converter="String" DefaultValue=""/>
+        <XPath Id="Title" Title="Title" Expr="." DefaultValue=""/>
       </XPath>
       <XPath Expr="//a[@@class='result__snippet']">
-        <XPath Id="Snippet" Title="Snippet" Expr="." Converter="String" DefaultValue=""/>
+        <XPath Id="Snippet" Title="Snippet" Expr="." DefaultValue=""/>
       </XPath>
       <XPath Expr="//a[@@class='result__url']">
-        <XPath Id="Url" Title="URL" Expr="." Converter="String" DefaultValue=""/>
+        <XPath Id="Url" Title="URL" Expr="." DefaultValue=""/>
       </XPath>
     </Parse>
   </RestConnector>
