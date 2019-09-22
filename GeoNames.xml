@@ -1,31 +1,37 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="GeoNames" Id="GeoNames" RequireVersion="7.0.2" Category="GEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GeoNames.xml" HelpUrl="http://seotoolsforexcel.com/GeoNames/" HelpText="Documentation">
+<Suite Title="GeoNames" Id="GeoNames" RequireVersion="8.2" Category="GEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GeoNames.xml" HelpUrl="http://seotoolsforexcel.com/geonames/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/GeoNames/">
-    <Text Id="Username" Title="Username" Required="true" HelpUrl="http://seotoolsforexcel.com/GeoNames/"/>
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/geonames/">
+    <Text Id="Username" Title="Username" Required="true" HelpUrl="http://seotoolsforexcel.com/geonames/"/>
   </Settings>
 
   <RestConnector Id="GeoNames" Title="GeoNames" HelpUrl="http://www.geonames.org/export/geonames-search.html">
     <Parameters>
-      <Text Id="Query" Title="Query" Required="true" DefaultValue="" Debug.DefaultValue="jönköping" HelpText="Search place name, country name, continent etc."/>
-      <Text Id="CountryFilter" Title="Filter by Country Codes" Required="false" DefaultValue="" Debug.DefaultValue="" HelpText="Enter one or more Country Codes (ISO-3166) separated by a comma."/>
-      <Radio Id="SearchMode" Title="Search Mode" DefaultValue="default" Required="false" HelpText="Fuzzy means finding results even if the search terms are incorrectly spelled.">
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="jönköping" HelpText="Search place name, country name, continent etc."/>
+      <Select Id="Country" Title="Filter by Country" DefaultValue="all">
         <DataSource>
-          <Item Id="name" Title="Default"/>
-          <Item Id="name_equals" Title="Exact"/>
-          <Item Id="name_starts" Title="Starts With"/>
-          <Item Id="fuzzy" Title="Fuzzy"/>
+					<Item Id="all" Title="All"/>
+          <ISOCountryCodes/>
         </DataSource>
-      </Radio>
-      <Radio Id="Order" Title="Order by" DefaultValue="relevance" Required="false">
+      </Select>
+		 <Select Id="SearchMode" Title="Search Mode" DefaultValue="name">
+        <DataSource>
+          <Item Id="name" Title="Name only"/>
+          <Item Id="name_equals" Title="Exact name"/>
+          <Item Id="name_starts" Title="Nam starts With"/>
+					<Item Id="query" Title="Search all attributes"/>
+        </DataSource>
+      </Select>
+			<Checkbox Id="Fuzzy" Title="Fuzzy" HelpText="Fuzzy means finding results even if the search terms are incorrectly spelled."/>
+      <Select Id="Order" Title="Order by" DefaultValue="relevance">
         <DataSource>
           <Item Id="relevance" Title="Relevance"/>
           <Item Id="population" Title="Population"/>
           <Item Id="elevation" Title="Elevation"/>
         </DataSource>
-      </Radio>
+      </Select>
 		</Parameters>
     <Paging PageSize="100" EvenPages="false">
       <Parse>
@@ -35,23 +41,13 @@
   <Fetch>
     <Fetch.Url>
       <![CDATA[
-      http://api.geonames.org/searchJSON?
-      @if(Model.SearchMode != "fuzzy")
-      {
-        @(Utils.UrlEncode(Model.SearchMode))@: =@(Model.Query)
-      }
-      else
-      {
-        @: q=@(Model.Query)&fuzzy=0
-      }
-      @if(!string.IsNullOrEmpty(Model.CountryFilter))
-      {
-        @: &country=@(Model.CountryFilter)
-      }
+      http://api.geonames.org/searchJSON?username=@(Model.Username)
+			&(Model.SearchMode)=(Utils.UrlEncode(Model.Query))
+      @(Model.Fuzzy ? "&fuzzy=0" : "")
+			@(Model.Country != "all" ? "country=" + Model.Country : "")
       &orderby=@(Model.Order)
       &maxRows=@(Model.PageCursor.PageSize)
       &startRow=@(Model.PageCursor.NextSkip)
-      &username=@(Model.Username)
       ]]>
       </Fetch.Url>
     </Fetch>
