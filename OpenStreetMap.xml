@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="GEO" RequireVersion="8.2" Title="Open Street Map" Id="OpenStreetMap" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/OpenStreetMap.xml" HelpUrl="http://seotoolsforexcel.com/openstreetmap/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+	<Resources>
+		<Resource Id="HttpSettings">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='User-Agent'>Seotools for Excel</Header>
+        </RequestHeaders>
+      </HttpSettings>
+		</Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Geocoding" Title="Geocoding" HelpUrl="https://wiki.openstreetmap.org/wiki/API_v0.6#XML_Format" HelpText="Converts a string address (e.g. '5th Avenue, New York' into geocode information">
+    <Parameters>
+      <Text Id="Address" Title="Address" Debug.DefaultValue="lilla essingen" Required="true"/>
+      <Number Id="Results" Title="Number of Results" Minimum="1" Maximum="100" DefaultValue="1" HelpText="Number between 1 and 100."/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				https://nominatim.openstreetmap.org/search?format=json&q=@Utils.UrlEncode(Model.Address)&limit=@(Model.Results)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.*">
+				<JsonPath Expr="display_name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="lat" Id="Latitude" Title="Road" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="lon" Id="Longitude" Title="Road" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="importance" Id="Importance" Title="Importance" Converter="Double"/>
+				<JsonPath Expr="osm_type" Id="OSMType" Title="OSM Type" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
+				<JsonPath Expr="class" Id="Class" Title="Class" Converter="String"/>
+				<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Box" Title="Box" Converter="Auto" DefaultValue="">
+					<JsonPath Expr="boundingbox" Id="Inp" DefaultValue=""/>
+				</Compute>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ReverseGeocoding" Title="Reverse Geocoding" HelpUrl="https://wiki.openstreetmap.org/wiki/API_v0.6#XML_Format" HelpText="Converts latitude and longitude into geocode information">
+    <Parameters>
+      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="59.34"/>
+      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="17.94"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				https://nominatim.openstreetmap.org/reverse?lat=@(Model.Latitude)&lon=@(Model.Longitude)&format=json
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="display_name" Id="Name" Title="Name" Converter="String"/>
+			<JsonPath Expr="address.country" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.state" Id="State" Title="State" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.county" Id="County" Title="County" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.country_code" Id="CountryCode" Title="Country Code" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.city" Id="City" Title="City" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.postcode" Id="PostCode" Title="Post Code" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="address.suburb" Id="Suburb" Title="Suburb" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="address.road" Id="Road" Title="Road" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="lat" Id="Latitude" Title="Road" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="lon" Id="Longitude" Title="Road" Converter="String" DefaultValue=""/>
+			<Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Box" Title="Box" Converter="Auto" DefaultValue="">
+				<JsonPath Expr="boundingbox" Id="Inp" DefaultValue=""/>
+			</Compute>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
