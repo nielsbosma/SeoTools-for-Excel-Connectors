@@ -3,14 +3,23 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="">
-    <Text Id="Email" Title="Email" Required="true" HelpUrl=""/>
-    <Text Id="Password" Title="Password" Required="true" HelpUrl=""/>
-		<Text Id="Account" Title="Account" Required="true" HelpUrl=""/>
-    <Text Id="Label" Title="Label" Required="true" HelpUrl=""/>
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/gnip/">
+    <Text Id="Email" Title="Email" Required="true"/>
+    <Text Id="Password" Title="Password" Required="true"/>
+		<Text Id="Account" Title="Account" Required="true"/>
+    <Text Id="Label" Title="Label" Required="true"/>
   </Settings>
 
   <Resources>
+    <Resource Id="HttpSettings">
+			<HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+        </RequestHeaders>
+        <IntervalBetweenRequests RandomFrom="800" RandomTo="1000" IfSame="Host"/>
+      </HttpSettings>
+    </Resource>
     <Resource Id="Fail">
       <Fail>
         <JsonPath Expr="error.message"/>
@@ -41,41 +50,14 @@
       <Item Id="ru" Title="Russian"/>
       <Item Id="sv" Title="Swedish"/>
     </Resource>
-    <Resource Id="Timezones">
-			<Item Id="-12" Title="-12 Hours"/>
-			<Item Id="-11" Title="-11 Hours"/>
-			<Item Id="-10" Title="-10 Hours"/>
-			<Item Id="-9" Title="-9 Hours"/>
-			<Item Id="-8" Title="-8 Hours"/>
-			<Item Id="-7" Title="-7 Hours"/>
-			<Item Id="-6" Title="-6 Hours"/>
-			<Item Id="-5" Title="-5 Hours"/>
-			<Item Id="-4" Title="-4 Hours"/>
-			<Item Id="-3" Title="-3 Hours"/>
-			<Item Id="-2" Title="-2 Hours"/>
-			<Item Id="-1" Title="-1 Hours"/>
-			<Item Id="0" Title="0 Hours"/>
-			<Item Id="1" Title="+1 Hours"/>
-			<Item Id="2" Title="+2 Hours (SE,NO,DK)"/>
-			<Item Id="3" Title="+3 Hours (FI)"/>
-			<Item Id="4" Title="+4 Hours"/>
-			<Item Id="5" Title="+5 Hours"/>
-			<Item Id="6" Title="+6 Hours"/>
-			<Item Id="7" Title="+7 Hours"/>
-			<Item Id="8" Title="+8 Hours"/>
-			<Item Id="9" Title="+9 Hours"/>
-			<Item Id="10" Title="+10 Hours"/>
-			<Item Id="11" Title="+11 Hours"/>
-			<Item Id="12" Title="+12 Hours"/>
-    </Resource>
   </Resources>
 
   <RestConnector Id="Search" Title="Search" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="bevakning" Required="false"/>
-      <Text Id="Url" Title="Url" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Text Id="RetweetsOf" Title="Reweets of" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="all">
+      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="true"/>
+      <Text Id="Url" Title="Url"/>
+      <Text Id="RetweetsOf" Title="Reweets of"/>
+      <Select Id="Language" Title="Language">
         <DataSource>
           <Resource Id="Languages"/>
         </DataSource>
@@ -85,7 +67,31 @@
       <Checkbox Id="HasVideo" Title="Tweets with Videos" DefaultValue="false"/>
       <Select Id="Timezone" Title="Adjust Output Time Zone (Default GMT)" Required="false" DefaultValue="0">
         <DataSource>
-          <Resource Id="Timezones"/>
+					<Item Id="-12" Title="-12 Hours"/>
+					<Item Id="-11" Title="-11 Hours"/>
+					<Item Id="-10" Title="-10 Hours"/>
+					<Item Id="-9" Title="-9 Hours"/>
+					<Item Id="-8" Title="-8 Hours"/>
+					<Item Id="-7" Title="-7 Hours"/>
+					<Item Id="-6" Title="-6 Hours"/>
+					<Item Id="-5" Title="-5 Hours"/>
+					<Item Id="-4" Title="-4 Hours"/>
+					<Item Id="-3" Title="-3 Hours"/>
+					<Item Id="-2" Title="-2 Hours"/>
+					<Item Id="-1" Title="-1 Hours"/>
+					<Item Id="0" Title="0 Hours"/>
+					<Item Id="1" Title="+1 Hours"/>
+					<Item Id="2" Title="+2 Hours (SE,NO,DK)"/>
+					<Item Id="3" Title="+3 Hours (FI)"/>
+					<Item Id="4" Title="+4 Hours"/>
+					<Item Id="5" Title="+5 Hours"/>
+					<Item Id="6" Title="+6 Hours"/>
+					<Item Id="7" Title="+7 Hours"/>
+					<Item Id="8" Title="+8 Hours"/>
+					<Item Id="9" Title="+9 Hours"/>
+					<Item Id="10" Title="+10 Hours"/>
+					<Item Id="11" Title="+11 Hours"/>
+					<Item Id="12" Title="+12 Hours"/>
         </DataSource>
       </Select>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
@@ -96,41 +102,17 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <IntervalBetweenRequests RandomFrom="800" RandomTo="1000" IfSame="Host"/>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label).json
         ?query=@(Utils.UrlEncode(Model.Query))
-        @if(!string.IsNullOrEmpty(Model.RetweetsOf))
-        {
-          @: %20retweets_of:@(Model.RetweetsOf)
-        }
-        @if(!string.IsNullOrEmpty(Model.Url))
-        {
-          @: %20url:@Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "")
-        }
-				@if(Model.Language != "all")
-				{
-					@: %20lang:@(Model.Language)
-				}
-				@if(Model.HasLink == true)
-				{
-					@: %20has:links
-				}
-				@if(Model.HasImage == true)
-				{
-					@: %20has:images
-				}
-				@if(Model.HasVideo == true)
-				{
-					@: %20has:videos
-				}
+        @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "%20retweets_of:" + Model.RetweetsOf : "")
+        @(!string.IsNullOrEmpty(Model.Url) ? "%20url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") : "")
+				@(Model.Language != "all" ? "%20lang:" + Model.Language : "")
+				@(Model.HasLink == true ? "%20has:links" : "")
+				@(Model.HasImage == true ? "%20has:images" : "")
+				@(Model.HasVideo == true ? "%20has:videos" : "")
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
 					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
@@ -150,21 +132,20 @@
 					}
         }
         &maxResults=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &next=@Model.NextPageToken
-        }
+        @(Model.PageCursor.Page != 0 ? "&next=" + Model.NextPageToken : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="results.*">
-				<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp1 + &quot;/statuses/&quot; + Model.Inp2 + &quot;/&quot;" Id="Url" Title="URL">
+				<Compute Expr="https://www.twitter.com/@(Model.Inp1)/statuses/@(Model.Inp2)/" Id="Url" Title="URL">
 					<JsonPath Expr="user.screen_name" Id="Inp1" Converter="String" DefaultValue=""/>
 					<JsonPath Expr="id_str" Id="Inp2" Converter="String" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
-				<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+				<Compute Expr="@Model.Inp.AddHours(Int32.Parse(Model.Timezone))" Id="Created" Title="Created" Converter="DateTime" DefaultValue="">
+					<JsonPath Expr="created_at" Id="Inp" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy" DefaultValue=""/>
+				</Compute>
 				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
@@ -195,7 +176,7 @@
 				<JsonPath Expr="entities.media[?(@@.type=='photo')].media_url" Id="PhotoUrl" Title="Photo URL" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 				<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
-				<Compute Expr="@(&quot;https://www.twitter.com/&quot; + Model.Inp + &quot;/&quot;)" Id="UserUrl" Title="User URL">
+				<Compute Expr="https://www.twitter.com/@(Model.Inp)/" Id="UserUrl" Title="User URL">
 					<JsonPath Expr="user.screen_name" Id="Inp" Converter="String" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="user.followers_count" Id="Followers" Title="Followers" Converter="Int"/>
@@ -207,7 +188,9 @@
 				<JsonPath Expr="user.statuses_count" Id="Tweets" Title="Tweets" Converter="Int"/>
 				<JsonPath Expr="user.lang" Id="Language" Title="Language" Converter="String"/>
 				<JsonPath Expr="user.favourites_count" Id="UserLikes" Title="UserLikes" Converter="Int"/>
-				<JsonPath Expr="user.created_at" Id="Registered" Title="Registered" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+				<Compute Expr="@Model.Inp.AddHours(Int32.Parse(Model.Timezone))" Id="Registered" Title="Registered" Converter="DateTime" DefaultValue="">
+					<JsonPath Expr="user.created_at" Id="Inp" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy" DefaultValue=""/>
+				</Compute>
 				<JsonPath Expr="user.url" Id="Website" Title="Website" Converter="String"/>
 				<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Title="Avatar">
 					<JsonPath Expr="user.profile_image_url" Id="Inp" DefaultValue=""/>
@@ -229,62 +212,38 @@
 
   <RestConnector Id="CountGranular" Title="Count Granular" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="almedalen" Required="false"/>
-      <Text Id="Url" Title="Url" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Text Id="RetweetsOf" Title="Reweets of" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Radio Id="Granularity" Title="Granularity" DefaultValue="hour">
+      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="true"/>
+      <Text Id="Url" Title="Url"/>
+      <Text Id="RetweetsOf" Title="Reweets of"/>
+      <Select Id="Granularity" Title="Granularity" DefaultValue="hour">
         <DataSource>
           <Item Id="hour" Title="Hour" />
           <Item Id="minute" Title="Minute" />
           <Item Id="day" Title="Day" />
         </DataSource>
-      </Radio>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="all">
+      </Select>
+      <Select Id="Language" Title="Language" DefaultValue="all">
         <DataSource>
           <Resource Id="Languages"/>
         </DataSource>
       </Select>
-      <Checkbox Id="HasLink" Title="Tweets with Links" DefaultValue="false"/>
-      <Checkbox Id="HasImage" Title="Tweets with Images" DefaultValue="false"/>
-      <Checkbox Id="HasVideo" Title="Tweets with Videos" DefaultValue="false"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
+      <Checkbox Id="HasLink" Title="Tweets with Links"/>
+      <Checkbox Id="HasImage" Title="Tweets with Images"/>
+      <Checkbox Id="HasVideo" Title="Tweets with Videos"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <IntervalBetweenRequests RandomFrom="800" RandomTo="1000" IfSame="Host"/>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label)/counts.json
         ?query=@(Utils.UrlEncode(Model.Query))
-        @if(!string.IsNullOrEmpty(Model.RetweetsOf))
-        {
-          @: %20retweets_of:@(Model.RetweetsOf)
-        }
-        @if(!string.IsNullOrEmpty(Model.Url))
-        {
-          @: %20url:@Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "")
-        }
-				@if(Model.Language != "all")
-				{
-					@: %20lang:@(Model.Language)
-				}
-				@if(Model.HasLink == true)
-				{
-					@: %20has:links
-				}
-				@if(Model.HasImage == true)
-				{
-					@: %20has:images
-				}
-				@if(Model.HasVideo == true)
-				{
-					@: %20has:videos
-				}
+        @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "%20retweets_of:" + Model.RetweetsOf : "")
+        @(!string.IsNullOrEmpty(Model.Url) ? "%20url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") : "")
+				@(Model.Language != "all" ? "%20lang:" + Model.Language : "")
+				@(Model.HasLink == true ? "%20has:links" : "")
+				@(Model.HasImage == true ? "%20has:images" : "")
+				@(Model.HasVideo == true ? "%20has:videos" : "")
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
 					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
@@ -318,55 +277,31 @@
 
   <RestConnector Id="CountTotal" Title="Count Total" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Debug.DefaultValue="almedalen" Required="false"/>
-      <Text Id="Url" Title="Url" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Text Id="RetweetsOf" Title="Reweets of" DefaultValue="" Debug.DefaultValue="" Required="false"/>
-      <Select Id="Language" Title="Language" Required="false" DefaultValue="all">
+      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="true"/>
+      <Text Id="Url" Title="Url"/>
+      <Text Id="RetweetsOf" Title="Reweets of"/>
+      <Select Id="Language" Title="Language" DefaultValue="all">
         <DataSource>
           <Resource Id="Languages"/>
         </DataSource>
       </Select>
-      <Checkbox Id="HasLink" Title="Tweets with Links" DefaultValue="false"/>
-      <Checkbox Id="HasImage" Title="Tweets with Images" DefaultValue="false"/>
-      <Checkbox Id="HasVideo" Title="Tweets with Videos" DefaultValue="false"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
+      <Checkbox Id="HasLink" Title="Tweets with Links"/>
+      <Checkbox Id="HasImage" Title="Tweets with Images"/>
+      <Checkbox Id="HasVideo" Title="Tweets with Videos"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-        <IntervalBetweenRequests RandomFrom="800" RandomTo="1000" IfSame="Host"/>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label)/counts.json
         ?query=@(Utils.UrlEncode(Model.Query))
-        @if(!string.IsNullOrEmpty(Model.RetweetsOf))
-        {
-          @: %20retweets_of:@(Model.RetweetsOf)
-        }
-				@if(Model.Language != "all")
-				{
-					@: %20lang:@(Model.Language)
-				}
-        @if(!string.IsNullOrEmpty(Model.Url))
-        {
-          @: %20url:@Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "")
-        }
-				@if(Model.HasLink == true)
-				{
-					@: %20has:links
-				}
-				@if(Model.HasImage == true)
-				{
-					@: %20has:images
-				}
-				@if(Model.HasVideo == true)
-				{
-					@: %20has:videos
-				}
+        @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "%20retweets_of:" + Model.RetweetsOf : "")
+        @(!string.IsNullOrEmpty(Model.Url) ? "%20url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") : "")
+				@(Model.Language != "all" ? "%20lang:" + Model.Language : "")
+				@(Model.HasLink == true ? "%20has:links" : "")
+				@(Model.HasImage == true ? "%20has:images" : "")
+				@(Model.HasVideo == true ? "%20has:videos" : "")
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
 					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
@@ -397,10 +332,9 @@
   <RazorFunctions>
     <![CDATA[
     String CreateBasicAuth() {
-      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
-      return AuthString;
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
     }
-		
+
 		String JoinJsonEntities(string entity) {
 			string result ="";
 			string pattern = @"""" + entity + @""":\s\""(.*?)""";
