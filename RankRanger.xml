@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Rank Ranger" Identifier="RankRanger" RequireVersion="8.2" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/RankRanger.xml" HelpUrl="http://seotoolsforexcel.com/rank-ranger/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/rank-ranger/">
+    <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/rank-ranger/"/>
+  </Settings>
+
+	<Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<XPath Expr="//error-details"/>
+			</Fail>
+    </Resource>
+	</Resources>
+
+	<RestConnector Id="Profiles" HelpUrl="https://www.rankranger.com/documentation/api-method-get-all-profiles" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?get_all_profiles&key=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//profiles/profile">
+        <XPath Expr="profile_id" Id="Id" Title="Profile Id"/>
+        <XPath Expr="profile_name" Id="Title" Title="Profile Name"/>
+      </XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Packages" HelpUrl="https://www.rankranger.com/documentation/api-method-get-packages-info" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?packages&key=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//packages/package">
+        <XPath Expr="id" Id="Id" Title="Package Id"/>
+        <XPath Expr="plan_name" Id="Title" Title="Package Name"/>
+      </XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="SearchEngines" HelpUrl="https://www.rankranger.com/documentation/api-method-search-engine-list" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?se_list&key=@(Model.ApiKey)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//search_engines/search_engine">
+        <XPath Expr="se_id" Id="Id" Title="Search Engine Id"/>
+				<Compute Expr="@(Model.Url) (@(Model.Name))" Id="Title" Title="URL">
+					<XPath Expr="se_url" Id="Url" DefaultValue=""/>
+					<XPath Expr="se_name" Id="Name" DefaultValue=""/>
+				</Compute>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Campaigns" HelpUrl="https://www.rankranger.com/documentation/api-method-get-all-campaigns-in-a-profile" Hidden="true">
+    <Parameters>
+      <Text Id="ProfileId" Debug.DefaultValue="1" Required="true" Select.Connector="Profiles"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?get_profile_campaigns&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//campaigns/campaign">
+        <XPath Expr="campaign_id" Id="Id" Title="Campaign Id"/>
+        <XPath Expr="campaign_name" Id="Title" Title="Campaign Name"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Domains" Title="Domains in Campaign" Group="Account Data" HelpUrl="https://www.rankranger.com/documentation/api-method-get-campaign-info">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="66617" Required="true" Select.Connector="Campaigns"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?get_campaign_info&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result/domains/domain">
+        <XPath Expr="." Id="Domain"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Keywords" Title="Keywords in Campaign" Group="Account Data" HelpUrl="https://www.rankranger.com/documentation/api-method-get-campaign-info">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="66617" Required="true" Select.Connector="Campaigns"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?get_campaign_info&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result/keywords/keyword">
+        <XPath Expr="." Id="Keyword"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Rank" Title="Rank" Group="Rank Data Methods" HelpUrl="https://www.rankranger.com/documentation/api-method-rank" HelpText="Returns ranking data for the selected domain (including landing page) within a selected date range (limited to a 31 day period).">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="68378" Required="true" Select.Connector="Campaigns"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="atlascopco.com" Required="true" Select.Connector="Domains" HelpText="Top level domain requested. This can be the primary domain or one of the competitor domains."/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="false" HelpText="There is a 31-day limit to the date range"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?rank&key=@(Model.ApiKey)&output=json
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+				&domain=@(Model.Domain)
+				&start_date=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end_date=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result">
+        <XPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
+        <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
+        <XPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+				<XPath Expr="url" Id="Url" Title="URL"/>
+        <XPath Expr="lp" Id="Path" Title="Path" Converter="Auto" DefaultValue=""/>
+        <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
+        <XPath Expr="se_name" Id="SearchEngineName" Title="Search Engine Name"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="RankStats" Title="Rank Stats" Group="Rank Data Methods" HelpUrl="https://www.rankranger.com/documentation/api-method-rank-stats" HelpText="Returns ranking data for all keywords in a campaign for a specific date.">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="68378" Required="true" Select.Connector="Campaigns"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="atlascopco.com" Required="true" Select.Connector="Domains" HelpText="Top level domain requested. This can be the primary domain or one of the competitor domains."/>
+      <Date Id="DisplayDate" Title="Display Date" Required="false" OffsetDays="-1" Nullable="false"/>
+      <Checkbox Id="BestRank" Title="Include Best Rank" Required="false" HelpText="Display the best rank an individual keyword has achieved since Rank Ranger began tracking it."/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?rank_stats&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+				&domain=@(Model.Domain)
+				&date=@Model.DisplayDate.ToString("yyyy-MM-dd")
+				@(Model.BestRank ? "&include_best_rank=true" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result">
+        <XPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
+        <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
+        <XPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+        <XPath Expr="best_rank" Id="BestRank" Title="Best Rank" Converter="Int" Checked="false"/>
+        <XPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Int"/>
+				<XPath Expr="url" Id="Url" Title="URL"/>
+        <XPath Expr="lp" Id="Path" Title="Path" Converter="Auto" DefaultValue=""/>
+        <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
+        <XPath Expr="se_name" Id="SearchEngineName" Title="Search Engine Name"/>
+        <XPath Expr="csv(tags/tag)" Id="Tags" Title="Tags"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="RankAverage" Title="Rank Average" Group="Rank Data Methods" HelpUrl="https://www.rankranger.com/documentation/api-method-average-rank" HelpText="Returns ranking data for the selected domain within a specific date range with minimum, maximum and average rank.">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="68378" Required="true" Select.Connector="Campaigns"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="atlascopco.com" Required="true" Select.Connector="Domains" HelpText="Top level domain requested. This can be the primary domain or one of the competitor domains."/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="false"/>
+      <Text Id="Tag" Title="Filter by Tag (Optional)" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?average&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+				&domain=@(Model.Domain)
+				&start_date=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end_date=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				@(string.IsNullOrEmpty(Model.Tag) ? "&tag_filter=" + Model.Tag : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result">
+        <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
+				<XPath Expr="min_rank" Id="MinRank" Title="Min Rank" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="max_rank" Id="MaxRank" Title="Max Rank" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="avg_rank" Id="AvgRank" Title="Avg Rank" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="url" Id="Url" Title="URL"/>
+        <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
+        <XPath Expr="se_name" Id="SearchEngineName" Title="Search Engine Name"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="VisibilityTrend" Title="Visibility Trend" Group="Rank Data Methods" HelpUrl="https://www.rankranger.com/documentation/api-method-get-visibility-trend" HelpText="Returns date and visibility score per search engine, per day according to the selected date range for a single domain.">
+    <Parameters>
+      <Text Id="ProfileId" Title="Profile Id" Debug.DefaultValue="2" Required="true" Select.Connector="Profiles"/>
+      <Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="68378" Required="true" Select.Connector="Campaigns"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="atlascopco.com" Required="true" Select.Connector="Domains" HelpText="Top level domain requested. This can be the primary domain or one of the competitor domains."/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="false" HelpText="There is a 31-day limit to the date range"/>
+      <Text Id="Tag" Title="Filter by Tag (Optional)" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?get_visibility_trend&key=@(Model.ApiKey)
+				&profile_id=@(Model.ProfileId)
+				&campaign_id=@(Model.CampaignId)
+				&domain=@(Model.Domain)
+				&start_date=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+        &end_date=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				@(string.IsNullOrEmpty(Model.Tag) ? "&tag_filter=" + Model.Tag : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//result">
+        <XPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
+        <XPath Expr="visibility_score" Id="Visibility" Title="Visibility" Converter="Double"/>
+				<XPath Expr="url" Id="Url" Title="URL"/>
+        <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
+        <XPath Expr="se_name" Id="SearchEngineName" Title="Search Engine Name"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="CompetitorResearch" Title="Competitor Research" Group="Research Methods" HelpUrl="https://www.rankranger.com/documentation/competitor-research-api" HelpText="Provides a list of up to 100 competitor domains.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="atlascopco.se" Required="true"/>
+      <Text Id="PackageId" Title="Package Id" Debug.DefaultValue="18919" Required="true" Select.Connector="Packages"/>
+      <Text Id="SearchEngine" Title="Search Engine" Debug.DefaultValue="162" Required="true" Select.Connector="SearchEngines"/>
+      <Select Id="Type" Title="Type" DefaultValue="organic">
+        <DataSource>
+          <Item Id="organic" Title="Organic"/>
+          <Item Id="paid" Title="Paid"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?competitor_research_api&key=@(Model.ApiKey)
+				&package_id=@(Model.PackageId)
+				&domain=@(Model.Domain)
+				&se_id=@(Model.SearchEngine)
+				&index_type=@(Model.Type)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//results/result">
+        <XPath Expr="competitor" Id="Competitor" Title="Competitor"/>
+        <XPath Expr="organic_keywords" Id="OrganicKeywords" Title="Organic Keywords" Converter="Auto" DefaultValue=""/>
+        <XPath Expr="common_keywords" Id="CommonKeywords" Title="Common Keywords" Converter="Auto" DefaultValue=""/>
+        <XPath Expr="common_keywords_percent" Id="CommonKeywordsPercent" Title="Common Keywords Percent" Converter="Double"/>
+        <XPath Expr="competitor_unique" Id="CompetiorUnique" Title="Competior Unique" Converter="Auto" DefaultValue=""/>
+        <XPath Expr="domain_unique" Id="DomainUnique" Title="Domain Unique" Converter="Auto" DefaultValue=""/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="KeywordResearch" Title="Keyword Research" Group="Research Methods" HelpUrl="https://www.rankranger.com/documentation/keyword-research-api" HelpText="Provides a list of keyword suggestions.">
+    <Parameters>
+      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="machine" Required="true"/>
+      <Text Id="PackageId" Title="Package Id" Debug.DefaultValue="18919" Required="false" Select.Connector="Packages"/>
+      <Text Id="SearchEngine" Title="Search Engine" Debug.DefaultValue="162" Required="false" Select.Connector="SearchEngines"/>
+      <Select Id="Type" Title="Type" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="All Types"/>
+          <Item Id="related" Title="Related"/>
+          <Item Id="questions" Title="Questions"/>
+          <Item Id="topics" Title="Topics"/>
+        </DataSource>
+      </Select>
+			<Number Id="TypeLimit" Title="Results Limit per Type" DefaultValue="0" HelpText="0 means unlimited"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?keyword_research_api&key=@(Model.ApiKey)
+				&package_id=@(Model.PackageId)
+				&keyword=@(Utils.UrlEncode(Model.Keyword))
+				&se_id=@(Model.SearchEngine)
+				@(Model.Type != "all" ? "&keyword_res_filter=" + Model.Type : "")
+				@(Model.TypeLimit != 0 ? "&results_limit_per_type=" + Model.TypeLimit : "")
+				&keyword_res_filter=none
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//results/result">
+        <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
+        <XPath Expr="type" Id="Type" Title="Type"/>
+        <XPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Auto"/>
+        <XPath Expr="avg_cpc" Id="AverageCPC" Title="Average CPC" Converter="Double"/>
+        <XPath Expr="relevance" Id="Relevance" Title="Relevance" Converter="Double"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="KeywordVolume" Title="Keyword Volume" Group="Research Methods" HelpUrl="https://www.rankranger.com/documentation/keyword-volume-api">
+    <Parameters>
+      <Text Id="Keywords" Title="Keywords" Debug.DefaultValue="machine" Multiline="true" Required="true" HelpText="Enter one or more keywords separated by a new line"/>
+      <Text Id="PackageId" Title="Package Id" Debug.DefaultValue="18919" Required="false" Select.Connector="Packages"/>
+      <Select Id="Country" Title="Country Filter" DefaultValue="disabled" HelpText="Code can be added to the request if local search volume has been configured.">
+        <DataSource>
+					<Item Id="disabled" Title="Disabled"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+    </Parameters>
+		<Batch Parameter="Keywords" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.rankranger.com/api/v2/?keyword_volume_api&key=@(Model.ApiKey)
+				&package_id=@(Model.PackageId)
+				&keyword=@(FetchKeywords())
+				@(Model.Country != "disabled" ? "&ccode=" + Model.Country : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//results/result">
+        <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
+        <XPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Auto"/>
+        <XPath Expr="avg_cpc" Id="AverageCPC" Title="Average CPC" Converter="Double"/>
+        <XPath Expr="competition" Id="Competition" Title="Competition" Converter="Double"/>
+			</XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchKeywords() {
+      string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+      return string.Join(",",lines);
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
