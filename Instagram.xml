@@ -5,6 +5,14 @@
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://api.instagram.com/oauth/authorize/?client_id=d46344c0534a4f2c8c6498325ee25cb6&amp;redirect_uri={0}&amp;response_type=token&amp;scope=basic"/>
 
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error_message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+	
   <RestConnector Id="Media" Title="Media" HelpText="Get the most recent media published by the owner" HelpUrl="https://www.instagram.com/developer/endpoints/users/">
     <Paging PageSize="25" EvenPages="false">
       <Parse>
@@ -30,27 +38,20 @@
         <JsonPath Title="Text" Id="Text" Expr="caption.text" Converter="String" DefaultValue=""/>
         <JsonPath Title="Likes" Id="Likes" Expr="likes.count" Converter="Int"/>
         <JsonPath Title="Comments" Id="Comments" Expr="comments.count" Converter="Int"/>
-        <Compute Expr="@Utils.FlatArray(Model.Inp)" Id="Hashtags" Title="Hashtags" DefaultValue="">
-        <JsonPath Id="Inp" Expr="tags" Converter="String" DefaultValue=""/>
-        </Compute>
+        <JsonPath Expr="csv(tags)" Id="Hashtags" Title="Hashtags" DefaultValue=""/>
         <JsonPath Title="Thumbnail" Id="ImageUrl" Expr="images.thumbnail.url" Converter="String" Checked="true"/>
         <JsonPath Title="Filter" Id="Filter" Expr="filter" Converter="String" Checked="true"/>
         <JsonPath Title="Author" Id="User" Expr="user.username" Converter="String"/>
-          <Compute Id="UserUrl" Title="Author URL">
-            <Compute.Expr>
-              <![CDATA[https://www.instagram.com/@(Model.Username)]]>
-            </Compute.Expr>
-            <JsonPath Expr="user.username" Id="Username" Converter="String"/>
-          </Compute>
+				<Compute Expr="https://www.instagram.com/@(Model.Inp)" Id="UserUrl" Title="Author URL">
+					<JsonPath Expr="user.username" Id="Inp"/>
+				</Compute>
         <JsonPath Title="Location Id" Id="LocationId" Expr="location.id" Converter="String" DefaultValue=""/>
         <JsonPath Title="Location Name" Id="LocationName" Expr="location.name" Converter="String" DefaultValue=""/>
         <JsonPath Title="Latitude" Id="Latitude" Expr="location.latitude" Converter="Double" DefaultValue=""/>
         <JsonPath Title="Longitude" Id="Longitude" Expr="location.longitude" Converter="Double" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error_message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Account" Title="Account" HelpText="Get information about the owner" HelpUrl="https://www.instagram.com/developer/endpoints/users/">
@@ -75,9 +76,7 @@
 				<JsonPath Title="Profile Picture" Id="ProfilePicture" Expr="profile_picture" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error_message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="Comments" Title="Comments" HelpText="Get a list of recent comments on your media object." HelpUrl="https://www.instagram.com/developer/endpoints/comments/">
@@ -100,10 +99,7 @@
 				<JsonPath Title="User" Id="Author" Expr="from.username" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error_message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
-
 
 </Suite>
