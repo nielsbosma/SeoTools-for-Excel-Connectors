@@ -14,8 +14,8 @@
 					<Item Id="m" Title="Last Month"/>
         </DataSource>
       </Select>
+			<Checkbox Id="FirstResultOnly" Title="First Result Only"/>
     </Parameters>
-    <Paging PageSize="25"/>
     <Fetch>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
@@ -32,16 +32,29 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//h2[@@class='result__title']/a[not(contains(@@class, 'badge--ad'))]/../a[@@class='result__a']">
-        <XPath Id="Title" Title="Title" Expr="." DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//a[@@class='result__snippet']">
-        <XPath Id="Snippet" Title="Snippet" Expr="." DefaultValue=""/>
-      </XPath>
-      <XPath Expr="//a[@@class='result__url']">
-        <XPath Id="Url" Title="URL" Expr="." DefaultValue=""/>
-      </XPath>
+			<XPath Expr="//div[@@class='results']/div[@(GetNodesCount())]">
+				<XPath Id="Title" Expr="div/h2/a" DefaultValue=""/>
+				<Compute Id="URL" DefaultValue="">
+					<Compute.Expr>
+						<![CDATA[
+							@Utils.UrlDecode(Regex.Replace(Model.Inp,".*(?=http)",""))
+						]]>
+					</Compute.Expr>
+					<XPath Id="Inp" Expr="div/div[1]/div/a" Attribute="href" DefaultValue=""/>
+				</Compute>
+				<XPath Id="Snippet" Expr="div/a"/>
+			</XPath>
     </Parse>
   </RestConnector>
+
+
+  <RazorFunctions>
+    <![CDATA[
+    string GetNodesCount() {
+			return Model.FirstResultOnly ? "1" : "*";
+		}
+    ]]>
+  </RazorFunctions>
+
 
 </Suite>
