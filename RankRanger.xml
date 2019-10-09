@@ -157,7 +157,9 @@
       <XPath Expr="//result">
         <XPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
         <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
-        <XPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+				<Compute Expr="@HandleEmpty()" Id="Rank" Title="Rank">
+					<XPath Expr="rank" Id="Inp" DefaultValue=""/>
+				</Compute>
 				<XPath Expr="url" Id="Url" Title="URL"/>
         <XPath Expr="lp" Id="Path" Title="Path" Converter="Auto" DefaultValue=""/>
         <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
@@ -191,8 +193,12 @@
       <XPath Expr="//result">
         <XPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
         <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
-        <XPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
-        <XPath Expr="best_rank" Id="BestRank" Title="Best Rank" Converter="Int" Checked="false"/>
+				<Compute Expr="@HandleEmpty()" Id="Rank" Title="Rank" Converter="Auto">
+					<XPath Expr="rank" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@HandleEmpty()" Id="BestRank" Title="Best Rank" Converter="Auto" Checked="false">
+					<XPath Expr="best_rank" Id="Inp" DefaultValue=""/>
+				</Compute>
         <XPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Int"/>
 				<XPath Expr="url" Id="Url" Title="URL"/>
         <XPath Expr="lp" Id="Path" Title="Path" Converter="Auto" DefaultValue=""/>
@@ -228,9 +234,15 @@
     <Parse>
       <XPath Expr="//result">
         <XPath Expr="keyword" Id="Keyword" Title="Keyword"/>
-				<XPath Expr="min_rank" Id="MinRank" Title="Min Rank" Converter="Auto" DefaultValue=""/>
-				<XPath Expr="max_rank" Id="MaxRank" Title="Max Rank" Converter="Auto" DefaultValue=""/>
-				<XPath Expr="avg_rank" Id="AvgRank" Title="Avg Rank" Converter="Auto" DefaultValue=""/>
+				<Compute Expr="@HandleEmpty()" Id="MinRank" Title="Min Rank" Converter="Auto">
+					<XPath Expr="min_rank" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@HandleEmpty()" Id="MaxRank" Title="Max Rank" Converter="Auto">
+					<XPath Expr="max_rank" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@HandleEmpty()" Id="AvgRank" Title="Avg Rank" Converter="Auto">
+					<XPath Expr="avg_rank" Id="Inp" DefaultValue=""/>
+				</Compute>
 				<XPath Expr="url" Id="Url" Title="URL"/>
         <XPath Expr="se" Id="SearchEngine" Title="Search Engine"/>
         <XPath Expr="se_name" Id="SearchEngineName" Title="Search Engine Name"/>
@@ -387,6 +399,12 @@
       string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
       return string.Join(",",lines);
     }
+
+		string HandleEmpty() {
+			return !string.IsNullOrEmpty(Model.Inp) && Model.Inp != "0"
+				? Model.Inp
+				: "-";
+		}
     ]]>
   </RazorFunctions>
 
