@@ -17,6 +17,45 @@
           <Item Id="video" Title="Video"/>
         </DataSource>
       </Select>
+      <ListBox Id="Sources" Title="Sources to Include" AllChecked="true" Required="true">
+        <DataSource>
+					<Item Id="24&#47;7%20Wall%20Street" Title="24&#47;7 Wall Street"/>
+					<Item Id="Benzinga" Title="Benzinga"/>
+					<Item Id="Bloomberg%20markets%20and%20finance" Title="Bloomberg Markets and Finance"/>
+					<Item Id="Bloomberg%20technology" Title="Bloomberg Technology"/>
+					<Item Id="Business%20insider" Title="Business Insider"/>
+					<Item Id="CNBC" Title="CNBC"/>
+					<Item Id="CNBC%20International%20TV" Title="CNBC International TV"/>
+					<Item Id="CNBC%20Television" Title="CNBC Television"/>
+					<Item Id="CNET" Title="CNET"/>
+					<Item Id="CNN" Title="CNN"/>
+					<Item Id="CNN%20Business" Title="CNN Business"/>
+					<Item Id="Digital%20Trends" Title="Digital Trends"/>
+					<Item Id="Deadline" Title="Deadline"/>
+					<Item Id="Engadget" Title="Engadget"/>
+					<Item Id="ETF%20Trends" Title="ETF Trends"/>
+					<Item Id="Forbes" Title="Forbes"/>
+					<Item Id="Fox%20Business" Title="Fox Business"/>
+					<Item Id="GeekWire" Title="GeekWire"/>
+					<Item Id="GlobeNewsWire" Title="Globe News Wire"/>
+					<Item Id="GuruFocus" Title="GuruFocus"/>
+					<Item Id="Investopedia" Title="Investopedia"/>
+					<Item Id="Investors%20Business%20Daily" Title="Investors Business Daily"/>
+					<Item Id="InvestorPlace" Title="Investor Place"/>
+					<Item Id="Iris" Title="Iris"/>
+					<Item Id="Market%20Watch" Title="Market Watch"/>
+					<Item Id="New%20York%20Post" Title="New York Post"/>
+					<Item Id="NYTimes" Title="New York Times"/>
+					<Item Id="Reuters" Title="Reuters"/>
+					<Item Id="See%20It%20Market" Title="See It Market"/>
+					<Item Id="TechCrunch" Title="TechCrunch"/>
+					<Item Id="The%20Motley%20Fool" Title="The Motley Fool"/>
+					<Item Id="The%20Street" Title="The Street"/>
+					<Item Id="Wall%20Street%20Journal" Title="Wall Street Journal"/>
+					<Item Id="Yahoo%20Finance" Title="Yahoo Finance"/>
+					<Item Id="Zacks%20Investment%20Research" Title="Zacks Investment Research"/>
+        </DataSource>
+      </ListBox>
       <Select Id="Sentiment" Title="Filter by Sentiment" DefaultValue="all">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -39,6 +78,7 @@
           https://stocknewsapi.com/api/v1?token=@(Model.Token)&tickers=@(FetchTickers())
 					&items=50&page=@(Model.PageCursor.Page+1)
 					@(Model.Type != "all" ? "&type=" + Model.Type : "")
+					@(!Model.Sources.IsAllChecked ? "&source=" + Model.Sources.Values : "")
 					@(Model.Sentiment != "all" ? "&sentiment=" + Model.Sentiment : "")
 					@(Model.Sorting != "latest" ? "&sortby=trending" : "")
         ]]>
@@ -57,14 +97,17 @@
         <JsonPath Expr="tickers[0]" Id="Ticker" Title="Ticker" Converter="String"/>
       </JsonPath>
     </Parse>
+		<Fail>
+      <JsonPath Expr="$.message"/>
+		</Fail>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-    string FetchTickers() {
-      string[] lines = ((string)Model.Tickers).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-			return string.Join(",",lines.ToArray());
-    }
+			string FetchTickers() {
+				string[] lines = ((string)Model.Tickers).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+				return string.Join(",",lines.ToArray());
+			}
     ]]>
   </RazorFunctions>
 
