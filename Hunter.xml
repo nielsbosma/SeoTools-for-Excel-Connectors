@@ -22,10 +22,9 @@
 
   <RestConnector Id="DomainSearch" Title="Domain Search" HelpUrl="https://hunter.io/api/v2/docs#domain-search" HelpText="Get every email address found on the internet using a given domain name, with sources.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
-      <Select Id="Department" Title="Department" Required="false" DefaultValue="all">
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true"/>
+      <ListBox Id="Department" Title="Filter by Departments" Required="false">
         <DataSource>
-					<Item Id="all" Title="All"/>
 					<Item Id="executive" Title="Executive"/>
 					<Item Id="it" Title="IT"/>
 					<Item Id="finance" Title="Finance"/>
@@ -37,7 +36,14 @@
 					<Item Id="marketing" Title="Marketing"/>
 					<Item Id="communication" Title="Communication"/>
         </DataSource>
-      </Select>
+      </ListBox>
+      <ListBox Id="Seniority" Title="Filter by Seniority" Required="false">
+        <DataSource>
+					<Item Id="junior" Title="Junior"/>
+					<Item Id="senior" Title="Senior"/>
+					<Item Id="executive" Title="Executive"/>
+        </DataSource>
+      </ListBox>
       <Select Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -54,7 +60,8 @@
         <![CDATA[
           https://api.hunter.io/v2/domain-search?api_key=@(Model.Key)
 					&domain=@(Model.Domain)
-					@(Model.Department != "all" ? "&department=" + Model.Department : "")
+					@(!Model.Department.IsAllChecked && !string.IsNullOrEmpty(Model.Department.Values) ? "&department=" + Model.Department.Values : "")
+					@(!Model.Seniority.IsAllChecked && !string.IsNullOrEmpty(Model.Seniority.Values) ? "&seniority=" + Model.Seniority.Values : "")
 					@(Model.Type != "all" ? "&type=" + Model.Type : "")
 					&limit=@(Model.PageCursor.NextTake)
 					&offset=@(Model.PageCursor.NextSkip)
@@ -70,8 +77,9 @@
 				<JsonPath Expr="last_name" Id="LastName" Title="Last Name" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="position" Id="Position" Title="Position" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="phone_number" Id="Phone" Title="Phone" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="sources[0].domain" Id="Domain0" Title="Domain0" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="sources[0].uri" Id="URI0" Title="URI0" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="sources[0].department" Id="Department" Title="Department" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="sources[0].domain" Id="Domain" Title="Domain" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="sources[0].uri" Id="URI" Title="URI" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -179,11 +187,7 @@
   </RestConnector>
 
   <RestConnector Id="AccountInformation" Title="Account Information" HelpUrl="https://hunter.io/api/v2/docs#account" HelpText="Enables you to get information regarding your Hunter account at any time.">
-    <Parameters>
-			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
-    </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
           https://api.hunter.io/v2/account?api_key=@(Model.Key)
