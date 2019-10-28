@@ -31,6 +31,23 @@
     </Resource>
   </Resources>
 
+  <RestConnector Id="CommonEventsHidden" Hidden="True">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://mixpanel.com/api/2.0/events/names?type=general&limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Regex Expr="&quot;(.*?)&quot;" Group="1" DefaultValue="">
+        <Regex Expr=".*" Group="0" Id="EventNames"/>
+      </Regex>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
   <RestConnector Id="EventTopPropertiesHidden" Hidden="true">
     <Parameters>
       <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Select.TitleField="EventNames" Required="false"/>
@@ -46,23 +63,6 @@
     <Parse>
       <Regex Expr="&quot;(.*?)&quot;:\s\{&quot;count&quot;" Group="1" DefaultValue="">
         <Regex Expr=".*" Group="0" Id="PropertyNames"/>
-      </Regex>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-	
-  <RestConnector Id="CommonEventsHidden" Hidden="True">
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://mixpanel.com/api/2.0/events/names?type=general&limit=100
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Regex Expr="&quot;(.*?)&quot;" Group="1" DefaultValue="">
-        <Regex Expr=".*" Group="0" Id="EventNames"/>
       </Regex>
     </Parse>
 		<Resource Id="Fail"/>
@@ -191,8 +191,8 @@
   <RestConnector Id="EventPropertiesStatistics" Title="Properties in Event" Group="Properties" HelpText="Get unique, total, or average data for of a single event and property over days, weeks, or months."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#properties">
     <Parameters>
       <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames"/>
-      <Text Id="Property" Title="Property" Select.Connector="EventTopPropertiesHidden" Select.IdField="PropertyNames" Required="true"/>
-      <Text Id="Values" Title="Values" Select.Connector="PropertiesTopValuesHidden" Select.IdField="Values" Required="true"/>
+      <Text Id="Property" Title="Property" Select.Connector="EventTopPropertiesHidden" Select.IdField="PropertyNames" Required="true" Parent.Id="Event" Parent.Label="Event"/>
+      <Text Id="Values" Title="Values" Select.Connector="PropertiesTopValuesHidden" Select.IdField="Values" Required="true" Parent.Id="Property" Parent.Label="Property"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
       <Select Id="Unit" Title="Unit" Required="false" DefaultValue="day">
         <DataSource>
@@ -260,7 +260,7 @@
   <RestConnector Id="PropertiesTopValues" Title="Properties Top Values" Group="Properties" HelpText="Get the top values for a property."  HelpUrl="https://mixpanel.com/help/reference/data-export-api#properties">
     <Parameters>
       <Text Id="Event" Title="Event" Select.Connector="CommonEventsHidden" Select.IdField="EventNames" Required="true"/>
-      <Text Id="Property" Title="Property" Select.Connector="EventTopPropertiesHidden" Select.IdField="PropertyNames" Required="true"/>
+      <Text Id="Property" Title="Property" Select.Connector="EventTopPropertiesHidden" Select.IdField="PropertyNames" Required="true" Parent.Id="Event" Parent.Label="Event"/>
       <Number Id="Limit" Title="Limit" DefaultValue="100" Required="false"/>
     </Parameters>
     <Fetch>
