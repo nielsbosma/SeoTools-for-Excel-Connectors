@@ -42,8 +42,8 @@
 		</Resource>
     <Resource Id="Fail">
 		  <Fail>
+				<JsonPath Expr="errors[0].code" Fail.If="RegexMatches" Fail.ComparedTo="34" Fail.Action="EmptyResult"/>
 				<JsonPath Expr="errors[0].message"/>
-				<JsonPath Expr="error"/>
 			</Fail>
 		</Resource>
     <Resource Id="Tweet">
@@ -178,7 +178,7 @@
     <Parameters>
       <Text Id="Ids" Title="Tweet URLs or Ids (One per row)" Multiline="true" Debug.DefaultValue="1088844064236228608" Required="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100" EvenPages="false"/>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -197,9 +197,9 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserTweets" Title="User Tweets" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline.html">
+  <RestConnector Id="UserTweets" Title="Tweets from Users" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/timelines/api-reference/get-statuses-user_timeline.html">
     <Parameters>
-      <Text Id="Username" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="nielsbosma" Required="true" Multiline="true"/>
       <Checkbox Id="IncludeRts" Title="Include Retweets" DefaultValue="true"/>
     </Parameters>
     <Paging PageSize="200" EvenPages="false">
@@ -209,6 +209,7 @@
         </Compute>
       </Parse>
     </Paging>
+		<Batch Parameter="Username" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -231,9 +232,10 @@
 
   <RestConnector Id="TweetRetweets" Title="Tweets Retweets" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/get-statuses-retweets-id">
     <Parameters>
-    <Text Id="Tweet" Title="Tweet Id or URL" Debug.DefaultValue="900341109343363072" HelpText="Returns up to 100 latest retweets of a tweet." Required="true"/>
+    <Text Id="Tweet" Title="Tweet Id or URL" Debug.DefaultValue="900341109343363072" HelpText="Returns up to 100 latest retweets of a tweet." Required="true" Multiline="true"/>
     </Parameters>
-    <Paging PageSize="100" MaxTake="100"/>
+    <Paging PageSize="100" MaxTake="100" EvenPages="false"/>
+		<Batch Parameter="Tweet" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -254,7 +256,7 @@
 
   <RestConnector Id="UserSearch" Title="Users Search" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-users-search">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
     </Parameters>
     <Paging PageSize="20" EvenPages="false"/>
     <Fetch>
@@ -279,7 +281,7 @@
   <RestConnector Id="Followers" Title="User Followers" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-followers-list">
     <Parameters>
       <Text Id="ScreenName" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
-      <Text Id="CustomCursor" Title="Custom Cursor" Debug.DefaultValue="" Required="false"/>
+      <Text Id="CustomCursor" Title="Custom Cursor" Required="false"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -311,7 +313,7 @@
   <RestConnector Id="Following" Title="User Following" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-friends-list">
     <Parameters>
       <Text Id="ScreenName" Title="User Lookup" Debug.DefaultValue="nielsbosma" Required="true"/>
-      <Text Id="CustomCursor" Title="Custom Cursor" Debug.DefaultValue="" Required="false"/>
+      <Text Id="CustomCursor" Title="Custom Cursor" Required="false"/>
     </Parameters>
     <Paging PageSize="200">
       <Parse>
@@ -344,7 +346,7 @@
     <Parameters>
       <Text Id="Ids" Title="Usernames (One per row)" Debug.DefaultValue="zaralarsson" Multiline="true" Required="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100" EvenPages="false"/>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -373,7 +375,7 @@
       </Radio>
       <Text Id="Ids" Title="List of Users" Debug.DefaultValue="BroTommy2" HelpText="Enter usernames or user ids separated by a new line" Required="true" Multiline="true"/>
     </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100" EvenPages="false"/>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -460,14 +462,24 @@
   <RazorFunctions>
     <![CDATA[
     string FetchUserString() {
-      string[] lines = (string[])Model.IdsBatch;
+			string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
 
     string FetchTweetString() {
-      string[] lines = (string[])Model.IdsBatch;
+			string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
       return string.Join(",",lines.Select((e, i) => Regex.Replace(e, @"(\w*)\/status", string.Empty)).Select((e, i) => Regex.Replace(e, @"[^\d]", string.Empty)).ToArray());
     }
+
+		string FetchSingleTweet() {
+			Regex regex = new Regex(@"/status(es)?/(\d+)");
+
+			if(!regex.IsMatch(Model.Tweet))
+				return Model.Tweet;
+
+			Match match = regex.Match(Model.Tweet);
+			return match.Groups[1].Value;
+		}
 
 		string JoinJsonEntities(string entity) {
 			string result ="";

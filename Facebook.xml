@@ -6,14 +6,15 @@
 	<SeoToolsAuthenticator StayAuthenticated="false" Key="facebook"/>
 
   <Resources>
-    <Resource Id="Fail">
-      <Fail>
-				<JsonPath Expr="error.message"/>
-      </Fail>
+		<Resource Id="Fail">
+		  <Fail>
+				<JsonPath Expr="errors.code" Fail.If="RegexMatches" Fail.ComparedTo="803" Fail.Action="EmptyResult"/>
+				<JsonPath Expr="errors.message"/>
+			</Fail>
     </Resource>
   </Resources>
 
-  <RestConnector Id="PageLookup" Title="Page Lookup" Group="Page Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/">
+  <RestConnector Id="PageLookup" Title="Pages Lookup" Group="Page Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/">
     <Parameters>
       <Text Id="Ids" Title="Page Ids or URLs (one per row)" Debug.DefaultValue="155184654533097" Required="true" Multiline="true"/>
     </Parameters>
@@ -50,7 +51,7 @@
 				<JsonPath Title="Link" Id="Link" Expr="link" Converter="String" Tag="link"/>
       </JsonPath>
     </Parse>
-    <Resource Id="Fail"/>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="PageSearch" Title="Page Search" Group="Page Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/">
@@ -83,15 +84,50 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageLocations" Title="Locations of Page" Group="Location Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/v3.2/page/locations#updatepost">
+	<RestConnector Id="PlaceSearch" Title="Places Search" Group="Location Data" HelpUrl="https://developers.facebook.com/docs/places/web/search/">
     <Parameters>
-      <Text Id="PageId" Title="Page Id" Debug.DefaultValue="150148968379312" Required="true"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="Stureplan" Required="true"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
 				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
       </Parse>
     </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/search?type=place
+        &q=@Utils.UrlEncode(Model.Query)
+        &access_token=@(Model.Authenticator.Token)
+        &fields=@SelectedFields()
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Title="Place Id" Id="PlaceId" Expr="id" Converter="String" Tag="id"/>
+        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
+        <JsonPath Title="Checkins" Id="Checkins" Expr="checkins" Converter="Int" Tag="checkins"/>
+        <JsonPath Title="Country" Id="Country" Expr="location.country" Converter="String" Tag="location" DefaultValue=""/>
+        <JsonPath Title="City" Id="City" Expr="location.city" Converter="String" Tag="location" DefaultValue=""/>
+        <JsonPath Title="Place URL" Id="PlaceUrl" Expr="link" Converter="String" Tag="link" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PageLocations" Title="Pages Locations" Group="Location Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/v3.2/page/locations#updatepost">
+    <Parameters>
+      <Text Id="PageId" Title="Page Id" Debug.DefaultValue="150148968379312" Required="true" Multiline="true"/>
+    </Parameters>
+    <Paging PageSize="25" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
+    <Batch Parameter="PageId" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -106,9 +142,9 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-				<JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
-				<JsonPath Title="Location Name" Id="NameLocation" Expr="name_with_location_descriptor" Converter="String" Tag="name_with_location_descriptor" DefaultValue=""/>
-				<JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id"/>
+				<JsonPath Title="Location Id" Id="LocationId" Expr="id" Converter="String" Tag="id"/>
+				<JsonPath Title="Location Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
+				<JsonPath Title="Location Name Detailed" Id="NameLocation" Expr="name_with_location_descriptor" Converter="String" Tag="name_with_location_descriptor" DefaultValue=""/>
 				<JsonPath Title="Category" Id="Category" Expr="category" Converter="String" Tag="category"/>
 				<JsonPath Title="About" Id="About" Expr="about" Converter="String" Tag="about" DefaultValue=""/>
 				<JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" DefaultValue=""/>
@@ -122,6 +158,8 @@
 				<JsonPath Title="Phone" Id="Phone" Expr="phone" Converter="String" Tag="phone" DefaultValue=""/>
 				<JsonPath Title="Address" Id="Address" Expr="single_line_address" Converter="String" Tag="single_line_address" DefaultValue=""/>
 				<JsonPath Title="Location URL" Id="LocationUrl" Expr="link" Converter="String" Tag="link" DefaultValue=""/>
+        <JsonPath Title="Parent Page Name" Id="PageName" Expr="parent_page.name" Converter="String" Tag="parent_page"/>
+        <JsonPath Title="Parent Page Id" Id="PageId" Expr="parent_page.id" Converter="String" Tag="parent_page"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -165,15 +203,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageAlbums" Title="Albums of Page" Group="Album Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/albums/">
+  <RestConnector Id="PageAlbums" Title="Albums from Pages" Group="Album Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/albums/">
     <Parameters>
-      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303" Multiline="true"/>
     </Parameters>
     <Paging PageSize="25">
       <Parse>
-    <JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -202,14 +241,16 @@
         <JsonPath Title="Angry" Id="Angry" Expr="reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Album Link" Id="AlbumLink" Expr="link" Converter="String" Tag="link"/>
+        <JsonPath Title="Page Name" Id="PageName" Expr="from.name" Converter="String" Tag="from"/>
+        <JsonPath Title="Page Id" Id="PageId" Expr="from.id" Converter="String" Tag="from"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageFeed" Title="Post from Page Feed" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/feed">
+  <RestConnector Id="PageFeed" Title="Posts from Page Feeds" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/feed">
     <Parameters>
-      <Text Id="Id" Title="Page Id or URL" Required="true" Debug.DefaultValue=""/>
+      <Text Id="Id" Title="Page Id or URL" Debug.DefaultValue="80741817522" Required="true" Multiline="true"/>
       <Radio Id="PostType" Title="Post Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="feed" Title="Feed"/>
@@ -223,6 +264,7 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -260,13 +302,8 @@
 				<JsonPath Title="Author Fans" Id="AuthorFans" Expr="from.fan_count" Converter="Long" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
 				<JsonPath Title="Author Bio" Id="AuthorBio" Expr="from.about" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
 				<JsonPath Title="Author Location" Id="AuthorLocation" Expr="from.location.city" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
-				<Compute Id="Avatar" Title="Avatar" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						http://graph.facebook.com/@(Model.AuthorIdInput)/picture?type=large
-						]]>
-					</Compute.Expr>
-					<JsonPath Id="AuthorIdInput" Expr="from.id"/>
+				<Compute Expr="http://graph.facebook.com/@(Model.Inp)/picture?type=large" Id="Avatar" Title="Avatar" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue="">
+					<JsonPath Id="Inp" Expr="from.id"/>
 				</Compute>
         <JsonPath Title="Permalink" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
 				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
@@ -282,14 +319,15 @@
 					<JsonPath Id="Url" Expr="$.attachments.data..target.url" DefaultValue=""/>
 				</Compute>
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" DefaultValue=""/>
+        <Compute Title="Page Id" Id="PageId" Expr="@Model.Id"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Page Videos" Title="Video Feed of Page" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/videos/">
+  <RestConnector Id="Page Videos" Title="Videos from Page Feeds" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/videos/">
     <Parameters>
-      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="25">
@@ -297,6 +335,7 @@
     <JsonPath Id="Cursor" Expr="paging.cursors.after"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -327,29 +366,26 @@
         <JsonPath Title="Sad" Id="Sad" Expr="$.reactions_sad.summary.total_count" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
         <JsonPath Title="Angry" Id="Angry" Expr="$.reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
         <JsonPath Title="Length" Id="Length" Expr="length" Converter="Double" Tag="length" DefaultValue=""/>
-        <Compute Id="VideoLink" Title="Video Link" Tag="permalink_url">
-          <Compute.Expr>
-            <![CDATA[
-            https://www.facebook.com@(Model.PermalinkInput)
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="permalink_url" Id="PermalinkInput" Converter="String"/>
+        <Compute Expr="https://www.facebook.com@(Model.Inp)" Id="VideoLink" Title="Video Link" Tag="permalink_url">
+          <JsonPath Expr="permalink_url" Id="Inp"/>
         </Compute>
+        <Compute Title="Page Id" Id="PageId" Expr="@Model.Id"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PagePhotos" Title="Photos of Page" Group="Album Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/photos/">
+  <RestConnector Id="PagePhotos" Title="Photos from Pages" Group="Album Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/photos/">
     <Parameters>
-      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303"/>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
-    <JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -380,20 +416,23 @@
         <JsonPath Title="Angry" Id="Angry" Expr="reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
         <JsonPath Title="Permalink" Id="PostLink" Expr="link" Converter="String" Tag="link" DefaultValue=""/>
         <JsonPath Title="Picture Link" Id="PictureLink" Expr="picture" Converter="String" Tag="picture" DefaultValue=""/>
+        <JsonPath Title="Page Name" Id="PageName" Expr="from.name" Converter="String" Tag="from"/>
+        <JsonPath Title="Page Id" Id="PageId" Expr="from.id" Converter="String" Tag="from"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Comments" Title="Comments to Post" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/object/comments">
+  <RestConnector Id="Comments" Title="Comments to Posts" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/object/comments">
     <Parameters>
-      <Text Id="Id" Title="Post Id or Event Id" Required="true" Debug.DefaultValue="56796081303_10155832978701304"/>
+      <Text Id="Id" Title="Post Id" Required="true" Debug.DefaultValue="56796081303_10155832978701304" Multiline="true"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
 				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -408,7 +447,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data.*">
-        <JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" Tag="Id"/>
+        <JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
         <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count"/>
@@ -421,12 +460,13 @@
         <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Title="User Name" Id="Username" Expr="from.name" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
+        <Compute Title="Post Id" Id="PostId" Expr="@Model.Id"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PostLookup" Title="Post Lookup" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/v3.2/post">
+  <RestConnector Id="PostLookup" Title="Posts Lookup" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/v3.2/post">
     <Parameters>
       <Text Id="Ids" Title="Post Ids (One per row)" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="56796081303_10155832978701304" Required="true" Multiline="true"/>
     </Parameters>
@@ -461,13 +501,8 @@
 				<JsonPath Title="Author Fans" Id="AuthorFans" Expr="from.fan_count" Converter="Long" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
 				<JsonPath Title="Author Bio" Id="AuthorBio" Expr="from.about" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
 				<JsonPath Title="Author Location" Id="AuthorLocation" Expr="from.location.city" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue=""/>
-				<Compute Id="Avatar" Title="Avatar" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						http://graph.facebook.com/@(Model.AuthorIdInput)/picture?type=large
-						]]>
-					</Compute.Expr>
-					<JsonPath Id="AuthorIdInput" Expr="from.id"/>
+				<Compute Expr="http://graph.facebook.com/@(Model.Inp)/picture?type=large" Id="Avatar" Title="Avatar" Converter="String" Tag="from{name,id,fan_count,about,location}" DefaultValue="">
+					<JsonPath Id="Inp" Expr="from.id"/>
 				</Compute>
         <JsonPath Title="Permalink" Id="Permalink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
 				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
@@ -488,7 +523,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CommentLookup" Title="Comment Lookup" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/comment/">
+  <RestConnector Id="CommentLookup" Title="Comments Lookup" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/comment/">
     <Parameters>
       <Text Id="Ids" Title="Comment Ids (One per row)" HelpText="(Use 'PostId_CommentId' Format)" Debug.DefaultValue="10155853039491304_10155868458001304" Required="true" Multiline="true"/>
     </Parameters>
@@ -518,42 +553,6 @@
         <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="PlaceSearch" Title="Places Search" Group="Location Data" HelpUrl="https://developers.facebook.com/docs/places/web/search/">
-    <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="Stureplan" Required="true"/>
-    </Parameters>
-    <Paging PageSize="25" EvenPages="false">
-      <Parse>
-				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.2/search?type=place
-        &q=@Utils.UrlEncode(Model.Query)
-        &access_token=@(Model.Authenticator.Token)
-        &fields=@SelectedFields()
-        &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data.*">
-        <JsonPath Title="Place Id" Id="PlaceId" Expr="id" Converter="String" Tag="id"/>
-        <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
-        <JsonPath Title="Checkins" Id="Checkins" Expr="checkins" Converter="Int" Tag="checkins"/>
-        <JsonPath Title="Country" Id="Country" Expr="location.country" Converter="String" Tag="location" DefaultValue=""/>
-        <JsonPath Title="City" Id="City" Expr="location.city" Converter="String" Tag="location" DefaultValue=""/>
-        <JsonPath Title="Place URL" Id="PlaceUrl" Expr="link" Converter="String" Tag="link" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -596,9 +595,9 @@
 			}
 
 			string FetchIdsBatch() {
-				string[] lines = (string[])Model.IdsBatch;
-				return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
-			}
+				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+				return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
+			}	
     ]]>
   </RazorFunctions>
 
