@@ -73,7 +73,7 @@
 			<RequestHeaders>
 				<Header Name='User-Agent'>SeoToolsForExcel</Header>
 			</RequestHeaders>
-		</Resource>		
+		</Resource>
   </Resources>
 
   <RestConnector Id="Metrics" Title="Metrics" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/url-metrics" AvailableInSpider="true">
@@ -83,15 +83,11 @@
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        @{
-          long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
-          string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
-        }
-        http://lsapi.seomoz.com/linkscape/url-metrics/?
-        Cols=@BitFlags()
+        http://lsapi.seomoz.com/linkscape/url-metrics/
+				?Cols=@BitFlags()
+        &Expires=@DateTime.Now.AddMinutes(5).UnixTimeStampUtc()
         &AccessID=@(Model.AccessId)
-        &Expires=@(expires)
-        &Signature=@(signature)
+        &Signature=@(Signature())
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -113,7 +109,7 @@
 
   <RestConnector Id="TopPages" Title="Top Pages" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/top-pages" HelpText="Requires Paid Moz Subscription">
     <Parameters>
-      <Text Id="Subdomain" Title="Subdomain" DefaultValue="" Required="true"/>
+      <Text Id="Url" Title="URL(s)" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" Multiline="true"/>
       <Select Id="Sort" Title="Sort" DefaultValue="page_authority">
         <DataSource>
           <Item Id="page_authority" Title="Page Authority"/>
@@ -132,26 +128,19 @@
       </Select>
     </Parameters>
     <Paging PageSize="50" MaxTake="100000"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        @{
-          long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
-          string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
-        }
-        http://lsapi.seomoz.com/linkscape/top-pages/@(Utils.UrlEncode(Model.Subdomain))?
-
-        Cols=@BitFlags()
-
+        http://lsapi.seomoz.com/linkscape/top-pages/@(Utils.UrlEncode(Model.Url))
+				?Cols=@BitFlags()
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-
         &Sort=@(Model.Sort)
         &Filter=@(Model.Filter)
-
+        &Expires=@DateTime.Now.AddMinutes(5).UnixTimeStampUtc()
         &AccessID=@(Model.AccessId)
-        &Expires=@(expires)
-        &Signature=@(signature)
+        &Signature=@(Signature())
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -169,8 +158,8 @@
 
   <RestConnector Id="Links" Title="Backlinks" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/link-metrics">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
-      <Text Id="SourceDomain" Title="Source Domain" DefaultValue="" Required="false"/>
+      <Text Id="Url" Title="URL(s)" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" Multiline="true"/>
+      <Text Id="SourceDomain" Title="Source Domain" Required="false"/>
       <Select Id="Scope" Title="Scope" DefaultValue="page_to_page">
         <DataSource>
           <Item Id="page_to_page" Title="Page to Page"/>
@@ -193,36 +182,26 @@
           <Item Id="by_spam_score" Title="By Spam Score"/>
         </DataSource>
       </Select>
-      <Text Id="Filter" Title="Filter" DefaultValue="" Required="false" HelpText="Options:external,follow,nofollow,nonequity,relcanonical,301,302"/>
+      <Text Id="Filter" Title="Filter" HelpText="Options:external,follow,nofollow,nonequity,relcanonical,301,302"/>
     </Parameters>
     <Paging PageSize="50"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        @{
-          long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
-          string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
-        }
-
-        http://lsapi.seomoz.com/linkscape/links/@(Utils.UrlEncode(Model.Url))?
-
-        SourceCols=@BitFlagsByGroup("Source")
+        http://lsapi.seomoz.com/linkscape/links/@(Utils.UrlEncode(Model.Url))
+				?SourceCols=@BitFlagsByGroup("Source")
         &TargetCols=@BitFlagsByGroup("Target")
         &LinkCols=@BitFlagsByGroup("Link")
-
         &Scope=@(Model.Scope)
         &Sort=@(Model.Sort)
-
         @(string.IsNullOrEmpty(Model.SourceDomain) ? "" : "&SourceDomain=" + Model.SourceDomain)
         @(string.IsNullOrEmpty(Model.Filter) ? "" : "&Filter=" + Model.Filter)
-
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-
+        &Expires=@DateTime.Now.AddMinutes(5).UnixTimeStampUtc()
         &AccessID=@(Model.AccessId)
-        &Expires=@(expires)
-        &Signature=@(signature)
-
+        &Signature=@(Signature())
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -336,26 +315,15 @@
         <JsonPath Expr="lufid" Title="Target/Subdomains Linking to Subdomain" Id="lufid" Tag="Target:4096" Checked="FALSE" Converter="Int" HelpText="The number of subdomains with any pages linking to the subdomain of the URL."/>
         <JsonPath Expr="luftw" Title="Target/Twitter Handle" Id="luftw" Tag="Target:134217728" Checked="FALSE" Converter="String" HelpText="Twitter handle for the page's subdomain."/>
         <JsonPath Expr="luufq" Title="Target/Subdomain" Id="luufq" Tag="Target:8" Checked="FALSE" Converter="String" HelpText="The subdomain of the URL."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AnchorTexts" Title="Anchor Texts" HelpUrl="https://moz.com/help/guides/moz-api/mozscape/api-reference/anchor-text-metrics" HelpText="Requires Paid Moz Subscription">
-    <RazorFunctions>
-    <![CDATA[
-      string Prefix() {
-        return Model.Scope=="page_to_page" ? "apu" :
-               Model.Scope=="phrase_to_subdomain" ? "apf" :
-               Model.Scope=="phrase_to_domain" ? "app" :
-               Model.Scope=="term_to_page" ? "atu" :
-               Model.Scope=="term_to_subdomain" ? "atf" :
-               /*term_to_domain*/ "atp";
-      }
-   ]]>
-    </RazorFunctions>
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Required="true"/>
+      <Text Id="Url" Title="URL(s)" DefaultValue="https://seotoolsforexcel.com" Required="true" Multiline="true"/>
       <Select Id="Scope" Title="Scope" DefaultValue="term_to_page">
         <DataSource>
           <Item Id="term_to_page" Title="Term to Page" HelpText="Returns terms found in links to the target URL"/>
@@ -365,24 +333,18 @@
       </Select>
     </Parameters>
     <Paging PageSize="50"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        @{
-          long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
-          string signature = Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
-        }
-        http://lsapi.seomoz.com/linkscape/anchor-text/@(Utils.UrlEncode(Model.Url))?
-        Cols=@BitFlagsByGroup("Cols")
-
+        http://lsapi.seomoz.com/linkscape/anchor-text/@(Utils.UrlEncode(Model.Url))
+				?Cols=@BitFlagsByGroup("Cols")
         &Scope=@(Model.Scope)
-
         &Limit=@(Model.PageCursor.NextTake)
         &Offset=@(Model.PageCursor.NextSkip)
-
+        &Expires=@DateTime.Now.AddMinutes(5).UnixTimeStampUtc()
         &AccessID=@(Model.AccessId)
-        &Expires=@(expires)
-        &Signature=@(signature)
+        &Signature=@(Signature())
       ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -397,11 +359,12 @@
         <JsonPath Expr="@Prefix()ef" Title="External Subdomains Linking" Id="ef" Tag="Cols:64" Checked="True" Converter="Int" HelpText="The number of external subdomains with at least one link to the target URL containing this term or phrase."/>
         <JsonPath Expr="@Prefix()ep" Title="External Root domains Linking" Id="ep" Tag="Cols:128" Checked="True" Converter="Int" HelpText="The number of external root domains with at least one link to the target URL containing this term or phrase."/>
         <JsonPath Expr="@Prefix()emp" Title="External MozRank Passed" Id="emp" Tag="Cols:512" Checked="True" Converter="Double" HelpText="The amount of MozRank passed over all external links with this term or phrase (on a normalized 10-point scale)."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RazorFunctions>
     <![CDATA[
     long BitFlagsByGroup(string group) {
@@ -419,6 +382,20 @@
         .Select(e => long.Parse(e.Tag))
         .Aggregate(0L, (x, y) => x | y);
     }
+
+		string Signature() {
+			long expires = DateTime.Now.AddMinutes(5).UnixTimeStampUtc();
+      return Utils.UrlEncode(Utils.HmacSha1((Model.AccessId+"\n"+expires), Model.SecretKey));
+		}
+
+		string Prefix() {
+			return Model.Scope=="page_to_page" ? "apu" :
+				Model.Scope=="phrase_to_subdomain" ? "apf" :
+				Model.Scope=="phrase_to_domain" ? "app" :
+				Model.Scope=="term_to_page" ? "atu" :
+				Model.Scope=="term_to_subdomain" ? "atf" :
+				/*term_to_domain*/ "atp";
+		}
 
     int IntervalBetweenRequests() {
       return Model.AccountType=="free" ? 10000 : 0;

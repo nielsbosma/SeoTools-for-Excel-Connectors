@@ -3,7 +3,7 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-<RestConnector Title="Account Lookup" Id="AccountLookupUsername" Group="Accounts">
+	<RestConnector Title="Account Lookup" Id="AccountLookupUsername" Group="Accounts">
     <Parameters>
       <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
@@ -22,10 +22,11 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Title="Account Latest Posts" Id="LatestPosts" Group="Accounts">
+  <RestConnector Title="Accounts Latest Posts" Id="LatestPosts" Group="Accounts">
     <Parameters>
-      <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson"/>
+      <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson" Multiline="true"/>
     </Parameters>
+		<Batch Parameter="User" Separator="\n"/>
 		<Fetch Url="@FetchUserString()"/>
     <Parse>
       <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
@@ -49,6 +50,9 @@
       </Regex>
 			<Regex Expr="display_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="">
         <Regex Expr=".*" Id="ImageUrl" Title="Display URL" Group="0" Converter="String"/>
+      </Regex>
+      <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
+				<Compute Expr="@Model.User" Id="User" Title="User"/>
       </Regex>
     </Parse>
   </RestConnector>
@@ -189,7 +193,6 @@
     string FetchUserString() {
 			return (Model.User.Contains("instagram.com") ? Model.User : "https://www.instagram.com/" + Model.User);
     }
-
 		string FetchUsername() {
 			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"username\":\"(.*?)\",");
 			return matches.Count > 0 ? matches[matches.Count - 1].Groups[1].ToString() : "";
