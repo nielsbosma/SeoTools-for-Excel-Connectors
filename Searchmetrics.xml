@@ -137,12 +137,13 @@
 
   <RestConnector Id="ResearchOrganicGetListCompetitors" Title="Competitors in Organic Search" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListCompetitors" HelpText="Competitor domains in the organic search.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
       <Resource Id="SelectCurrency"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -166,6 +167,7 @@
         <JsonPath Expr="costs" Id="Costs" Title="Costs" Converter="Double" HelpText="Value of the Competitor Traffic Index if it was bought via AdWords in EUR."/>
         <JsonPath Expr="total_kw_count" Id="TotalKWCount" Title="Total Keyword Count" Converter="Int" HelpText="Total number of keyword rankings of the competitor domain in the organic search."/>
         <JsonPath Expr="diff_keywords" Id="DiffKeywords" Title="Diff Keywords" Converter="Int" HelpText="Number of keyword rankings of the competitor domain in the organic search that are not shared with the given domain."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -228,11 +230,12 @@
 
   <RestConnector Id="ResearchOrganicGetListSubdomains" Title="Subdomains for Domain" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSubdomains" HelpText="Subdomains for one given domain">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -246,22 +249,22 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="response.*">
-        <JsonPath Expr="spi_aboslute" Id="SPIAbsolute" Title="SPI Absolute" Converter="Int" HelpText="Subdomain visibility"/>
         <JsonPath Expr="spi_percent" Id="SPIPercent" Title="SPI Percentage" Converter="Double" HelpText="Subdomain visibility in percent"/>
         <JsonPath Expr="host" Id="Host" Title="Host" Converter="String" HelpText="Subdomain"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-
   <RestConnector Id="ResearchOrganicGetListRankingsDomain" Title="Domain Keyword Rankings" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListRankingsDomain" HelpText="Keyword rankings for a given domain in organic search results.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain"/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain" Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -288,19 +291,21 @@
         <JsonPath Expr="traffic" Id="Traffic" Title="Traffic" Converter="Double" HelpText="Estimation of traffic based on search volume and position."/>
         <JsonPath Expr="adbudget" Id="AdBudget" Title="Ad Budget" Converter="Double" HelpText="AdWords budget spent on the keyword in the last month in our database."/>
         <JsonPath Expr="potential" Id="Potential" Title="Potential" Converter="Int" HelpText="Traffic potential in absolute clicks in relation with top ranking position 1."/>
-      </JsonPath>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
+     </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ResearchOrganicGetListRankingsKeyword" Title="Keyword Rankings" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListRankingsKeyword" HelpText="Rankings for a given keyword in organic search results.">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="dogs" Required="true"/>
+      <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="dogs" Required="true" Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -323,6 +328,7 @@
         <JsonPath Expr="trend.trend" Id="Trend" Title="Trend" Converter="Int"/>
         <JsonPath Expr="trend.abs" Id="Abs" Title="Trend Absolute Change" Converter="Int" HelpText="The absolute change in the visibility in comparison to the previous week."/>
         <JsonPath Expr="trend.per" Id="Per" Title="Trend Relative Change" Converter="Double" HelpText="The relative/percentual change in the visibility in comparison to the previous week."/>
+        <Compute Expr="@Model.Keyword" Id="Input" Title="Input Keyword" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -426,10 +432,11 @@
 
   <RestConnector Id="ResearchLinksGetListBacklinks" Title="Backlinks for Domain" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListBacklinks" HelpText="Number of backlinks for a given domain, subdomain or URL.">
     <Parameters>
-      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -457,6 +464,7 @@
         <JsonPath Expr="ccode" Id="CCode" Title="Country Code" Converter="String" HelpText="Country code of the server location of the backlink page."/>
         <JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText="	Country name of the server location of the backlink page."/>
         <JsonPath Expr="city" Id="City" Title="City" Converter="String" HelpText="City of the server location of the backlink page."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -561,11 +569,12 @@
 
   <RestConnector Id="ResearchKeywordsGetListLosers" Title="Loser-Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListLosers" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -589,6 +598,7 @@
         <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>
         <JsonPath Expr="traffic_monthly" Id="TrafficMonthly" Title="Traffic Monthly" Converter="Int" HelpText="Estimated current monthly traffic of the given domain from Google via the respective keyword."/>
         <JsonPath Expr="traffic_monthly_last" Id="TrafficMonthlyLast" Title="Traffic Monthly Last" Converter="Int" HelpText="Estimated monthly traffic last month of the given domain from Google via the respective keyword."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -596,12 +606,13 @@
 
   <RestConnector Id="ResearchKeywordsGetListLosersHistoric" Title="Losers-Keywords History" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListLosersHistoric" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain for a given date">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
     <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -626,6 +637,7 @@
         <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>
         <JsonPath Expr="traffic_monthly" Id="TrafficMonthly" Title="Traffic Monthly" Converter="Int" HelpText="Estimated current monthly traffic of the given domain from Google via the respective keyword."/>
         <JsonPath Expr="traffic_monthly_last" Id="TrafficMonthlyLast" Title="Traffic Monthly Last" Converter="Int" HelpText="Estimated monthly traffic last month of the given domain from Google via the respective keyword."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -633,11 +645,12 @@
 
   <RestConnector Id="ResearchKeywordsGetListWinners" Title="Winner-Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListWinners" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -661,6 +674,7 @@
         <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>
         <JsonPath Expr="traffic_monthly" Id="TrafficMonthly" Title="Traffic Monthly" Converter="Int" HelpText="Estimated current monthly traffic of the given domain from Google via the respective keyword."/>
         <JsonPath Expr="traffic_monthly_last" Id="TrafficMonthlyLast" Title="Traffic Monthly Last" Converter="Int" HelpText="Estimated monthly traffic last month of the given domain from Google via the respective keyword."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -668,12 +682,13 @@
 
   <RestConnector Id="ResearchKeywordsGetListWinnersHistoric" Title="Winner-Keywords History" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListWInnersHistoric" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain with access to historic data">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -698,6 +713,7 @@
         <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the respective keyword."/>
         <JsonPath Expr="traffic_monthly" Id="TrafficMonthly" Title="Traffic Monthly" Converter="Int" HelpText="Estimated current monthly traffic of the given domain from Google via the respective keyword."/>
         <JsonPath Expr="traffic_monthly_last" Id="TrafficMonthlyLast" Title="Traffic Monthly Last" Converter="Int" HelpText="Estimated monthly traffic last month of the given domain from Google via the respective keyword."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -705,11 +721,12 @@
 
   <RestConnector Id="ResearchPaidGetListAdVariations" Title="Ad Variations" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetListAdVariations" HelpText="Get a list of different ad variations">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -725,6 +742,7 @@
       <JsonPath Expr="response.*">
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the ad"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Display URL of the ad"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -755,11 +773,12 @@
 
   <RestConnector Id="ResearchKeywordsGetListSimilarKeywords" Title="Similar Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListSimilarKeywords" HelpText="List of keywords that contain a selected keyword.">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="boat" Required="true"/>
+      <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="boat" Required="true" Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -780,6 +799,7 @@
         <JsonPath Expr="advertiser_count" Id="AdvertiserCount" Title="Advertiser Count" Converter="Int" HelpText="Number of advertisers bidding on the keyword."/>
         <JsonPath Expr="integration" Id="Integration" Title="Integration" Converter="String" HelpText="Universal search items that can be found in the search results for this keyword (e.g. news,video,images etc.)."/>
         <JsonPath Expr="adbudget" Id="AdBudget" Title="Ad Budget" Converter="Double" HelpText="Monthly Google AdWords ad budget that is spent on the keyword."/>
+        <Compute Expr="@Model.Keyword" Id="Input" Title="Input Keyword" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -808,11 +828,12 @@
 
   <RestConnector Id="ResearchPaidGetListKeywords" Title="Paid Keywords for Domain" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/api-calls/service/ResearchPaidGetListKeywords" HelpText="Paid keywords with advertisements for a given domain.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -834,6 +855,7 @@
         <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Int" HelpText="An indicator for the advertising competition on the keyword. The higher it is the stronger is the competition. Minimum is 0, maximum is 100."/>
         <JsonPath Expr="search_volume_monthly" Id="SearchVolumeMonthly" Title="Search Volume Monthly" Converter="Int" HelpText="Current monthly search volume in Google."/>
         <JsonPath Expr="adbudget_monthly" Id="AdBudgetMonthly" Title="Adbudget Monthly" Converter="Double" HelpText="Monthly Google AdWords ad budget that is spent on the keyword."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -841,12 +863,13 @@
 
   <RestConnector Id="ResearchPaidGetListCompetitors" Title="Competitors in Paid Search" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetListCompetitors" HelpText="Competitor domains in the paid search.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
       <Resource Id="SelectCurrency"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -870,6 +893,7 @@
         <JsonPath Expr="costs" Id="Costs" Title="Costs" Converter="Double" HelpText="Value of the Competitor Traffic Index if it was bought via AdWords."/>
         <JsonPath Expr="total_kw_count" Id="TotalKwCount" Title="Total Keyword Count" Converter="Int" HelpText="Total number of keyword rankings of the competitor domain in the organic search."/>
         <JsonPath Expr="diff_keywords" Id="DiffKeywords" Title="Diff Keywords" Converter="Int" HelpText="Number of keyword rankings of the competitor domain in the organic search that are not shared with the given domain."/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -1018,10 +1042,11 @@
 
   <RestConnector Id="ResearchLinksGetListLinkedPages" Title="Linked Pages for URL" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListLinkedPages" HelpText="List of pages of a given URL with links from external pages.">
     <Parameters>
-      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
 		<Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -1038,6 +1063,7 @@
         <JsonPath Expr="frequency" Id="Frequency" Title="External links" Converter="Int" HelpText="Number of external links pointing to the respective target page."/>
         <JsonPath Expr="percentage" Id="Percentage" Title="Percentage" Converter="Double" HelpText="Percentage of links pointing to the target page in relation to all links pointing to the belonging domain."/>
         <JsonPath Expr="refdoms" Id="RefDoms" Title="Referring domains" Converter="Int" HelpText="Number of referring domains pointing to the respective target page."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input Url" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -1045,10 +1071,11 @@
 
   <RestConnector Id="ResearchLinksGetListLinktext" Title="Most Frequent Anchor Texts" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListLinktext" HelpText="Most frequently used link anchor texts for a given URL.">
     <Parameters>
-      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -1065,6 +1092,7 @@
         <JsonPath Expr="frequency" Id="frequency" Title="Frequency" Converter="String" HelpText="Absolute total frequency of the anchor text."/>
         <JsonPath Expr="percentage" Id="percentage" Title="Percentage" Converter="Double" HelpText="Percentual frequency of the anchor text in relation to all anchor texts."/>
         <JsonPath Expr="refdoms" Id="refdoms" Title="Referring Domains" Converter="Int" HelpText="Number of referring domains with the respective anchor text."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input Url" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -1072,11 +1100,12 @@
 
   <RestConnector Id="ResearchContentGetListLoserUrls" Title="Loser-URLs for Domain" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetListLoserUrls" HelpText="Get the list of the loser urls of a given domain.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -1100,6 +1129,7 @@
         <JsonPath Expr="trend_average_position.abs" Id="TrendAvgPositionAbs" Title="Trend Avg Position Abs" Converter="Int" HelpText="The absolute change in the position in comparison to the previous week."/>
         <JsonPath Expr="trend_total_visibility.abs" Id="TrendVisibilityAbs" Title="Trend Visibility Abs" Converter="Int" HelpText="The absolute change in the visibility in comparison to the previous week."/>
         <JsonPath Expr="average_cpc" Id="AverageCPC" Title="Average CPC" Converter="Double" HelpText="Average cpc of the url"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -1107,11 +1137,12 @@
 
   <RestConnector Id="ResearchContentGetListWinnerUrls" Title="Winner-URLs for Domain" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetListWinnerUrls" HelpText="Get the list of the winner urls of a given domain.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -1135,6 +1166,7 @@
         <JsonPath Expr="trend_average_position.abs" Id="TrendAvgPositionAbs" Title="Trend Avg Position Abs" Converter="Int" HelpText="The absolute change in the position in comparison to the previous week."/>
         <JsonPath Expr="trend_total_visibility.abs" Id="TrendVisibilityAbs" Title="Trend Visibility Abs" Converter="Int" HelpText="The absolute change in the visibility in comparison to the previous week."/>
         <JsonPath Expr="average_cpc" Id="AverageCPC" Title="Average CPC" Converter="Double" HelpText="Average cpc of the url"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
