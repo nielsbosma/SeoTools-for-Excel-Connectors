@@ -1,26 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="W3C Validate" Id="W3CValidate" RequireVersion="6.1.10" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/W3CValidate.xml" HelpUrl="http://seotoolsforexcel.com/W3CValidate/" HelpText="Documentation">
+<Suite Category="SEO" Title="W3C Validate" Id="W3CValidate" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/W3CValidate.xml" HelpUrl="http://seotoolsforexcel.com/W3CValidate/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+  <Resources>
+    <Resource Id="HttpSettings">
+			<HttpSettings>
+				<IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
+				<RequestHeaders>
+					<Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
+					<Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
+				</RequestHeaders>
+			</HttpSettings>
+		</Resource>
+  </Resources>
+
   <RestConnector Id="Validate" Title="Validate">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
     </Parameters>
     <Fetch>
-		<HttpSettings>
-			<IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
-			<RequestHeaders>
-				<Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
-				<Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
-			</RequestHeaders>
-		</HttpSettings>
-
-    <Fetch.Url>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
       <![CDATA[
-      https://validator.w3.org/nu/
-      ?doc=@(Utils.UrlEncode(Model.Url))
-      &out=json
+      https://validator.w3.org/nu/?doc=@(Utils.UrlEncode(Model.Url))&out=json
       ]]>
       </Fetch.Url>
     </Fetch>
@@ -32,51 +35,29 @@
 
   <RestConnector Id="Items" Title="Items">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="true" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
-      <Checkbox Id="ErrorsOnly" Title="Only Show Errors" DefaultValue="false"/>
+      <Text Id="Url" Title="URL(s)" Required="true" Debug.DefaultValue="http://www.seotoolsforexcel.com" Multiline="true"/>
+      <Checkbox Id="ErrorsOnly" Title="Only Show Errors"/>
     </Parameters>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
-		<HttpSettings>
-			<IntervalBetweenRequests RandomFrom="1500" RandomTo="2000" IfSame="Host"/>
-			<RequestHeaders>
-				<Header Name='Cache-Control'><![CDATA[no-cache]]></Header>
-				<Header Name='User-Agent'><![CDATA[Mozilla/5.0 (Windows NT 6.1; rv:25.0) Gecko/20100101 Firefox/25.0]]></Header>
-			</RequestHeaders>
-		</HttpSettings>
-    <Fetch.Url>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
       <![CDATA[
-      https://validator.w3.org/nu/
-      ?doc=@(Utils.UrlEncode(Model.Url))
-      @if(Model.ErrorsOnly == true)
-      {
-        @: &level=error
-      }
-      &out=json
+      https://validator.w3.org/nu/?doc=@(Utils.UrlEncode(Model.Url))&out=json
+      @(Model.ErrorsOnly == true ? "&level=error" : "")
       ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="messages[*]">
-        <Compute Id="Type" Title="Type" Converter="String">
-          <Compute.Expr>
-              <![CDATA[
-              @if(Model.Type == "error")
-              {
-                @: Error
-              }
-              else
-              {
-                @: Warning
-              }
-              ]]>
-          </Compute.Expr>
         <JsonPath Expr="type" Id="Type" Converter="String"/>
-        </Compute>
-        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String"/>
-        <JsonPath Expr="lastLine" Id="LastLine" Title="Last Line" Converter="Int"/>
-        <JsonPath Expr="lastColumn" Id="LastColumn" Title="Last Column" Converter="Int"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" DefaultValue="" HelpText="Represents a paragraph of text that is the message stated succinctly in natural language."/>
+        <JsonPath Expr="extract" Id="Extract" Title="Extract" Converter="String" DefaultValue="" HelpText="Represents an extract of the document source from around the point in source designated for the message by the 'line' and 'column' numbers."/>
+        <JsonPath Expr="lastLine" Id="LastLine" Title="Last Line" Converter="Int" HelpText="Indicates the last line (inclusive) onto which the source range associated with the message falls."/>
+        <JsonPath Expr="lastColumn" Id="LastColumn" Title="Last Column" Converter="Int" HelpText="Indicates the last column (inclusive) onto which the source range associated with the message falls on the last line onto which is falls."/>
         <JsonPath Expr="hiliteStart" Id="HiliteStart" Title="Hilite Start" Converter="Int"/>
         <JsonPath Expr="hiliteLength" Id="HiliteLength" Title="Hilite Length" Converter="Int"/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
       </JsonPath>
     </Parse>
   </RestConnector>
