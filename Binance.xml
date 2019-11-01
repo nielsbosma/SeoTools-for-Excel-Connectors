@@ -80,9 +80,10 @@
 
   <RestConnector Id="OrderBook" Title="Order Book" Group="Market Data" HelpText="List of open orders for specified symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Debug.DefaultValue="ETHBTC" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="100" Minimum="5" Maximum="1000" Required="false"/>
+      <Text Id="Symbol" Title="Trading pair symbols (e.g. ETHBTC)" Debug.DefaultValue="ETHBTC" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Multiline="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Minimum="5" Maximum="1000" HelpText="Increments of 5"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -99,6 +100,7 @@
       <JsonPath Expr="$.asks.*" Id="Asks">
         <JsonPath Expr="$[0]" Id="AskPrice" Title="Ask Price" Converter="Double"/>
         <JsonPath Expr="$[1]" Id="AskQty" Title="Ask Qty" Converter="Double"/>
+        <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -106,9 +108,10 @@
 
   <RestConnector Id="RecentTradesList" Title="Recent Trades List" Group="Market Data" HelpText="List recently made trades for specific symbol" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#recent-trades-list">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false"/>
+      <Text Id="Symbol" Title="Trading pair symbols (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC" Multiline="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Minimum="5" Maximum="1000" HelpText="Increments of 5"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -125,6 +128,7 @@
         <JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isBuyerMaker" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
         <JsonPath Expr="isBestMatch" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
+	      <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -132,9 +136,10 @@
 
   <RestConnector Id="AggregateTradesList" Title="Aggregate Trades List" Group="Market Data" HelpText="List compressed, aggregate trades" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#compressedaggregate-trades-list">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false"/>
+      <Text Id="Symbol" Title="Trading pair symbols (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC" Multiline="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Minimum="5" Maximum="1000" HelpText="Increments of 5"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -153,6 +158,7 @@
         <JsonPath Expr="T" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="m" Id="BuyerIsMaker" Title="Buyer is Maker" Converter="Bool"/>
         <JsonPath Expr="M" Id="IsBestMatch" Title="Best Match" Converter="Bool"/>
+	      <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -233,15 +239,16 @@
 
   <RestConnector Id="CandlesticData" Title="Candlestick Data" HelpText="Kline/candlestick bars for a symbol" Group="Market Data" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC"/>
+      <Text Id="Symbol" Title="Trading pair symbols (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="ETHBTC" Multiline="true"/>
       <Select Id="Interval" Title="Chart interval" Required="true" DefaultValue="1m">
         <DataSource>
           <Resource Id="Intervals"/>
         </DataSource>
       </Select>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="false"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="100" Minimum="5" Maximum="1000" HelpText="Increments of 5"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -269,6 +276,7 @@
         <JsonPath Expr="$.[8]" Id="NumberOfTrades" Title="Number of Trades" Converter="Int"/>
         <JsonPath Expr="$.[9]" Id="TakerBuyBaseAssetVolume" Title="Taker Buy Base Asset Volume" Converter="Double"/>
         <JsonPath Expr="$.[10]" Id="TakerBuyQuoteAssetVolume" Title="Taker Buy Quote Asset Volume" Converter="Double"/>
+	      <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -276,8 +284,9 @@
 
   <RestConnector Id="OpenOrders" Title="Open Orders" HelpText="Get all currently open orders" Group="Account" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#current-open-orders-user_data">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC"/>
+      <Text Id="Symbol" Title="Trading pair symbols (e.g. ETHBTC)" Required="false" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC" Multiline="true"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -308,6 +317,7 @@
         <JsonPath Expr="icebergQty" Id="IcebergQty" Title="Iceberg Quantity" Converter="Double" Checked="False"/>
 				<JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isWorking" Id="IsWorking" Title="Working" Converter="Bool"/>
+	      <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="ApiKeyRequired"/>
@@ -316,9 +326,10 @@
 
   <RestConnector Id="AllOrders" Title="All Orders" Group="Account" HelpText="Get all account orders; active, canceled, or filled." HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#all-orders-user_data">
     <Parameters>
-      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC"/>
-      <Number Id="Limit" Title="Limit (increments of 5)" DefaultValue="500" Minimum="5" Maximum="500" Required="true" HelpText="Limit of records to retrieve"/>
+      <Text Id="Symbol" Title="Trading pair symbol (e.g. ETHBTC)" Required="true" Select.Connector="ListSymbolsHidden" Select.IdField="Symbol" Select.TitleField="SymbolName" Debug.DefaultValue="BNBBTC" Multiline="true"/>
+      <Number Id="Limit" Title="Limit" DefaultValue="500" Minimum="5" Maximum="500" Required="true" HelpText="Increments of 5"/>
     </Parameters>
+		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -349,6 +360,7 @@
         <JsonPath Expr="icebergQty" Id="IcebergQty" Title="Iceberg Quantity" Converter="Double" Checked="False"/>
 				<JsonPath Expr="time" Id="Time" Title="Time" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="isWorking" Id="IsWorking" Title="Working" Converter="Bool"/>
+	      <Compute Expr="@Model.Symbol" Id="InputSymbol" Title="Input Symbol" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="ApiKeyRequired"/>
