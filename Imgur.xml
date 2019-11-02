@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Imgur" RequireVersion="8.0" Id="Imgur" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Imgur.xml" HelpUrl="http://seotoolsforexcel.com/Imgur/" HelpText="Documentation">
+<Suite Title="Imgur" RequireVersion="8.2" Id="Imgur" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Imgur.xml" HelpUrl="http://seotoolsforexcel.com/Imgur/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/imgur/">
-    <Text Id="ClientId" Title="Client Id" Required="true" HelpUrl="http://seotoolsforexcel.com/imgur/"/>
-  </Settings>
+	<DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://api.imgur.com/oauth2/authorize?client_id=0041ebe79217588&amp;redirect_uri={0}&amp;response_type=token"/>
 
   <Resources>
     <Resource Id="Fail">
@@ -16,16 +14,17 @@
     <Resource Id="HttpSettings">
       <HttpSettings>
         <RequestHeaders>
-          <Header Name='Authorization'>Client-ID @Model.ClientId</Header>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
       </HttpSettings>
     </Resource>
 	</Resources>
 
-  <RestConnector Id="ImagesFromAlbum" Title="Images From Album" Group="Images" HelpUrl="https://apidocs.imgur.com/#7dde894b-a967-4419-9be2-082fbf379109" HelpText="Return all of the images in the album.">
+  <RestConnector Id="ImagesFromAlbum" Title="Images From Albums" Group="Images" HelpUrl="https://apidocs.imgur.com/#7dde894b-a967-4419-9be2-082fbf379109" HelpText="Return all of the images in the album.">
     <Parameters>
-      <Text Id="Id" Title="Album Id" Debug.DefaultValue="iifyAVo" Required="true"/>
+      <Text Id="Id" Title="Album Id(s)" Debug.DefaultValue="iifyAVo" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Id" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -50,6 +49,7 @@
         <JsonPath Expr="has_sound" Id="HasSound" Title="Has Sound" Converter="Bool"/>
         <JsonPath Expr="in_most_viral" Id="InMostViral" Title="In Most Viral" Converter="Bool"/>
         <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <Compute Expr="@Model.Id" Id="Input" Title="Input Album Id" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -145,10 +145,11 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AlbumsFromAccount" Title="Albums From Account" Group="Albums" HelpUrl="https://apidocs.imgur.com/#a9931b00-47ab-4144-b058-a15906bf3e15" HelpText="Get all the albums associated with the account.">
+  <RestConnector Id="AlbumsFromAccount" Title="Albums From Accounts" Group="Albums" HelpUrl="https://apidocs.imgur.com/#a9931b00-47ab-4144-b058-a15906bf3e15" HelpText="Get all the albums associated with the account.">
     <Parameters>
-      <Text Id="Username" Title="Username" Debug.DefaultValue="Death2Pixels" Required="true"/>
+      <Text Id="Username" Title="Username(s)" Debug.DefaultValue="Death2Pixels" Required="true" Multiline="true"/>
     </Parameters>
+    <Batch Parameter="Username" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -171,16 +172,18 @@
         <JsonPath Expr="layout" Id="Layout" Title="Layout" Converter="String"/>
         <JsonPath Expr="nsfw" Id="NSFW" Title="NSFW" Converter="Bool"/>
         <JsonPath Expr="link" Id="Link" Title="Link" Converter="String"/>
+        <Compute Expr="@Model.Username" Id="Input" Title="Input Username" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CommentsFromAccount" Title="Comments From Account" Group="Comments" HelpUrl="https://apidocs.imgur.com/#a1813588-ec93-46c4-985b-9e53d7b1c316" HelpText="Return the comments the user has created.">
+  <RestConnector Id="CommentsFromAccount" Title="Comments From Accounts" Group="Comments" HelpUrl="https://apidocs.imgur.com/#a1813588-ec93-46c4-985b-9e53d7b1c316" HelpText="Return the comments the user has created.">
     <Parameters>
-      <Text Id="Username" Title="Username" Debug.DefaultValue="Death2Pixels" Required="true"/>
+      <Text Id="Username" Title="Username(s)" Debug.DefaultValue="Death2Pixels" Required="true" Multiline="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="true"/>
+    <Batch Parameter="Username" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -201,6 +204,7 @@
         <JsonPath Expr="points" Id="Points" Title="Points" Converter="Int"/>
         <JsonPath Expr="platform" Id="Platform" Title="Platform" Converter="String"/>
         <JsonPath Expr="author" Id="Author" Title="Author" Converter="String"/>
+        <Compute Expr="@Model.Username" Id="Input" Title="Input Username" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
