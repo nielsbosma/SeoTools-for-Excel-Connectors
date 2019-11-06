@@ -149,30 +149,9 @@
 				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
 				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
-				<Compute Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@JoinJsonEntities("text")
-						]]>
-					</Compute.Expr>
-					<JsonPath Expr="entities.hashtags" Id="Inp" Converter="String" DefaultValue=""/>
-				</Compute>
-				<Compute Id="UrlEntities" Title="Url Entities" Converter="Auto" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@JoinJsonEntities("url")
-						]]>
-					</Compute.Expr>
-					<JsonPath Expr="entities.urls" Id="Inp" Converter="String" DefaultValue=""/>
-				</Compute>
-				<Compute Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@JoinJsonEntities("screen_name")
-						]]>
-					</Compute.Expr>
-					<JsonPath Expr="entities.user_mentions" Id="Inp" Converter="String" DefaultValue=""/>
-				</Compute>
+				<JsonPath Expr="csv(entities.hashtags[*].text)" Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="csv(entities.urls[*].url)" Id="UrlEntities" Title="URL Entities" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="csv(entities.user_mentions[*].screen_name)" Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue=""/>
 				<JsonPath Expr="entities.media[?(@@.type=='photo')].media_url" Id="PhotoUrl" Title="Photo URL" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 				<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
@@ -334,17 +313,6 @@
     String CreateBasicAuth() {
       return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
     }
-
-		String JoinJsonEntities(string entity) {
-			string result ="";
-			string pattern = @"""" + entity + @""":\s\""(.*?)""";
-			Regex regex = new Regex(pattern);
-			if(Model.Inp is string) {
-				MatchCollection matchCollection = regex.Matches(Model.Inp);
-				result = string.Join(",", from Match match in matchCollection select match.Groups[1].Value);
-			}
-			return result;
-		}
     ]]>
   </RazorFunctions>
 
