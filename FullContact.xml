@@ -155,7 +155,15 @@
   <RestConnector Id="CompanyNameSearch" Title="Company Name Search" Group="Companies" HelpUrl="https://docs.fullcontact.com/#company-enrichment">
     <Parameters>
       <Text Id="CompanyName" Title="Company Name" Debug.DefaultValue="fullcontact" Required="true" HelpText="The name of the company to search for. Common words like 'Inc.' will be ignored."/>
+      <Select Id="Sort" Title="Sort results by" DefaultValue="traffic">
+        <DataSource>
+          <Item Id="traffic" Title="Traffic"/>
+          <Item Id="relevance" Title="Relevance"/>
+          <Item Id="employees" Title="Employees"/>
+        </DataSource>
+      </Select>
     </Parameters>
+		<Paging PageSize="1"/>
     <Fetch>
 			<HttpSettings>
 				<Resource Id="HttpSettingsEnrich"/>
@@ -164,6 +172,7 @@
 						@{
 							var dict = new Dictionary<string, object>();
 							dict.Add("companyName", Model.CompanyName);
+							dict.Add("sort", Model.Sort);
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
 						@output
@@ -177,18 +186,13 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="founded" Id="Founded" Converter="Auto" DefaultValue=""/>
-      <JsonPath Expr="employees" Id="Employees" Converter="Auto" DefaultValue=""/>
-      <JsonPath Expr="locale" Id="Locale" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="category" Id="Category" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="$[*]">
+				<JsonPath Expr="lookupDomain" Id="Domain" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="orgName" Id="Name" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="location.locality" Id="Locality" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="location.region.name" Id="Region" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="location.country.name" Id="Country" Converter="String" DefaultValue=""/>
+			</JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
