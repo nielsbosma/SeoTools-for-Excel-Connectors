@@ -23,8 +23,8 @@
 
   <RestConnector Id="Mails" Title="Mail List" Group="Lists">
     <Parameters>
-      <Text Id="Query" Title="Query (optional)" Required="false" Debug.DefaultValue=""/>
-      <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash" DefaultValue="False"/>
+      <Text Id="Query" Title="Query (optional)"/>
+      <Checkbox Id="IncludeSpamTrash" Title="Include Spamtrash"/>
     </Parameters>
     <Paging PageSize="100">
       <Parse>
@@ -35,23 +35,22 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/gmail/v1/users/me/messages?
-        &maxResults=@(Model.PageCursor.NextTake)
-        &includeSpamTrash=@(Model.IncludeSpamTrash ? "true" : "false")
+        https://www.googleapis.com/gmail/v1/users/me/messages
+        ?maxResults=@(Model.PageCursor.NextTake)
+        @(Model.IncludeSpamTrash ? "&includeSpamTrash=true" : "")
         @(!string.IsNullOrEmpty(Model.Query) ? "&q=" + Utils.UrlEncode(Model.Query) : "")
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken)
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.messages.*">
+      <JsonPath Expr="$.messages[*]">
         <JsonPath Expr="id" Id="MailId" Title="Mail Id" Converter="String"/>
         <JsonPath Expr="threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-
 
   <RestConnector Id="SentBool" Title="Have I Sent to?" Group="Queries">
     <Parameters>
@@ -68,18 +67,12 @@
           @: after:@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy/MM/dd"))%20
           @: before:@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy/MM/dd"))%20
         }
-        in:sent%20to:
-        @(Utils.UrlEncode(Model.Query))
+        in:sent%20to:@(Utils.UrlEncode(Model.Query))
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Compute Id="MailIdFetch" Title="MailIdFetch" Converter="String">
-        <Compute.Expr>
-        <![CDATA[
-        @(!string.IsNullOrEmpty(Model.Inp))
-        ]]>
-				</Compute.Expr>
+      <Compute Expr="@(!string.IsNullOrEmpty(Model.Inp))" Id="MailIdFetch">
         <JsonPath Expr="messages[0].id" Id="Inp" DefaultValue=""/>
       </Compute>
     </Parse>
@@ -106,12 +99,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Compute Id="MailIdFetch" Title="MailIdFetch" Converter="String">
-        <Compute.Expr>
-        <![CDATA[
-        @(!string.IsNullOrEmpty(Model.Inp))
-        ]]>
-      </Compute.Expr>
+      <Compute Expr="@(!string.IsNullOrEmpty(Model.Inp))" Id="MailIdFetch">
         <JsonPath Expr="messages[0].id" Id="Inp" DefaultValue=""/>
       </Compute>
     </Parse>
@@ -131,14 +119,12 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.">
-        <JsonPath Expr="id" Id="MailId" Title="Mail Id" Converter="String"/>
-        <JsonPath Expr="threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
-        <JsonPath Expr="internalDate" Id="Date" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
-        <JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
-        <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
-        <JsonPath Expr="payload.headers[?(@@.name=='From')].value" Id="From" Title="From" Converter="String"/>
-      </JsonPath>
+			<JsonPath Expr="id" Id="MailId" Title="Mail Id" Converter="String"/>
+			<JsonPath Expr="threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
+			<JsonPath Expr="internalDate" Id="Date" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
+			<JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
+			<JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
+			<JsonPath Expr="payload.headers[?(@@.name=='From')].value" Id="From" Title="From" Converter="String"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
@@ -166,7 +152,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.threads.*">
+      <JsonPath Expr="$.threads[*]">
         <JsonPath Expr="id" Id="ThreadId" Title="Thread Id" Converter="String"/>
         <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
       </JsonPath>
@@ -187,7 +173,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.messages.*">
+      <JsonPath Expr="$.messages[*]">
         <JsonPath Expr="id" Id="MailId" Title="Mail Id" Converter="String"/>
         <JsonPath Expr="internalDate" Id="Date" Title="Date" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
         <JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
@@ -208,7 +194,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.labels.*">
+      <JsonPath Expr="$.labels[*]">
         <JsonPath Expr="id" Id="LabelId" Title="Label Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="messageListVisibility" Id="Visibility" Title="Visibility" Converter="String"/>
@@ -231,16 +217,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.">
-        <JsonPath Expr="id" Id="LabelId" Title="Label Id" Converter="String"/>
-        <JsonPath Expr="name" Id="LabelName" Title="Label Name" Converter="String"/>
-        <JsonPath Expr="messagesTotal" Id="Emails" Title="Emails" Converter="Int"/>
-        <JsonPath Expr="messagesUnread" Id="UnreadEmails" Title="Unread Emails" Converter="Int"/>
-        <JsonPath Expr="threadsTotal" Id="Threads" Title="Threads" Converter="Int"/>
-        <JsonPath Expr="threadsUnread" Id="UnreadThreads" Title="Unread Threads" Converter="Int"/>
-        <JsonPath Expr="messageListVisibility" Id="Visibility" Title="Visibility" Converter="String"/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
-      </JsonPath>
+			<JsonPath Expr="id" Id="LabelId" Title="Label Id" Converter="String"/>
+			<JsonPath Expr="name" Id="LabelName" Title="Label Name" Converter="String"/>
+			<JsonPath Expr="messagesTotal" Id="Emails" Title="Emails" Converter="Int"/>
+			<JsonPath Expr="messagesUnread" Id="UnreadEmails" Title="Unread Emails" Converter="Int"/>
+			<JsonPath Expr="threadsTotal" Id="Threads" Title="Threads" Converter="Int"/>
+			<JsonPath Expr="threadsUnread" Id="UnreadThreads" Title="Unread Threads" Converter="Int"/>
+			<JsonPath Expr="messageListVisibility" Id="Visibility" Title="Visibility" Converter="String"/>
+			<JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
