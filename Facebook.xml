@@ -68,7 +68,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
         <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="City" Id="City" Expr="location.city" Converter="String" Tag="location" DefaultValue=""/>
@@ -106,7 +106,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Place Id" Id="PlaceId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
         <JsonPath Title="Checkins" Id="Checkins" Expr="checkins" Converter="Int" Tag="checkins"/>
@@ -141,7 +141,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
 				<JsonPath Title="Location Id" Id="LocationId" Expr="id" Converter="String" Tag="id"/>
 				<JsonPath Title="Location Name" Id="Name" Expr="name" Converter="String" Tag="name"/>
 				<JsonPath Title="Location Name Detailed" Id="NameLocation" Expr="name_with_location_descriptor" Converter="String" Tag="name_with_location_descriptor" DefaultValue=""/>
@@ -190,7 +190,6 @@
 				<JsonPath Title="Checkins" Id="checkins" Expr="checkins" Converter="Int" Tag="checkins"/>
 				<JsonPath Title="Rating" Id="Rating" Expr="overall_star_rating" Converter="Double" Tag="overall_star_rating" DefaultValue=""/>
 				<JsonPath Title="Rating Count" Id="RatingCount" Expr="rating_count" Converter="Int" Tag="rating_count" DefaultValue="" />
-				<JsonPath Title="Profile Picture" Id="ProfilePicture" Expr="picture.data.url" Converter="String" Tag="picture" DefaultValue=""/>
 				<JsonPath Title="Cover Photo Link" Id="CoverPhotoLink" Expr="cover.source" Converter="String" Tag="cover" DefaultValue=""/>
 				<JsonPath Title="Website" Id="Website" Expr="website" Converter="String" Tag="website" DefaultValue=""/>
 				<JsonPath Title="Phone" Id="Phone" Expr="phone" Converter="String" Tag="phone" DefaultValue=""/>
@@ -226,13 +225,13 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Album Id" Id="AlbumId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="Name" Id="Name" Expr="name" Converter="String" Tag="name" DefaultValue=""/>
         <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" DefaultValue=""/>
         <JsonPath Title="Photo Count" Id="PhotoCount" Expr="photo_count" Converter="Int" Tag="photo_count"/>
         <JsonPath Title="Video Count" Id="VideoCount" Expr="video_count" Converter="Int" Tag="video_count"/>
-        <JsonPath Title="Likes" Id="LikesTotal" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" DefaultValue="0"/>
+        <JsonPath Title="Likes" Id="LikesTotal" Expr="likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" DefaultValue="0"/>
         <JsonPath Title="Comments" Id="Comments" Expr="comments.summary.total_count" Converter="Int" Tag="comments.filter(stream).limit(0).summary(true)" DefaultValue="0"/>
         <JsonPath Title="Love" Id="Love" Expr="reactions_love.summary.total_count" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
         <JsonPath Title="Wow" Id="Wow" Expr="reactions_wow.summary.total_count" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
@@ -250,7 +249,7 @@
 
   <RestConnector Id="PageFeed" Title="Posts from Page Feeds" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/feed">
     <Parameters>
-      <Text Id="Id" Title="Page Id or URL" Debug.DefaultValue="80741817522" Required="true" Multiline="true"/>
+      <Text Id="Id" Title="Page Ids" Debug.DefaultValue="80741817522" Required="true" Multiline="true"/>
       <Radio Id="PostType" Title="Post Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="feed" Title="Feed"/>
@@ -306,18 +305,6 @@
 					<JsonPath Id="Inp" Expr="from.id"/>
 				</Compute>
         <JsonPath Title="Permalink" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@{
-							Regex regex = new Regex(@"php\?u\=(.*?)&h\=");
-							Match match = regex.Match(Model.Url);
-						}
-						@Utils.UrlDecode(match.Groups[1].Value)
-						]]>
-					</Compute.Expr>
-					<JsonPath Id="Url" Expr="$.attachments.data[0].target.url" DefaultValue=""/>
-				</Compute>
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" DefaultValue=""/>
         <Compute Title="Page Id" Id="PageId" Expr="@Model.Id"/>
       </JsonPath>
@@ -327,7 +314,7 @@
 
   <RestConnector Id="Page Videos" Title="Videos from Page Feeds" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/videos/">
     <Parameters>
-      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="56796081303" Multiline="true"/>
+      <Text Id="Id" Title="Page Ids" Required="true" Debug.DefaultValue="56796081303" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="25">
@@ -354,7 +341,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Video Id" Id="VideoId" Expr="id" Converter="String"/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Description" Id="Description" Expr="description" Converter="String" Tag="description" DefaultValue=""/>
@@ -404,7 +391,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Post Id" Id="PostId" Expr="id" Converter="String"/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Likes" Id="Likes" Expr="$.likes.summary.total_count" Converter="Int" Tag="likes.summary(true)" DefaultValue="0"/>
@@ -425,7 +412,7 @@
 
   <RestConnector Id="Comments" Title="Comments to Posts" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/object/comments">
     <Parameters>
-      <Text Id="Id" Title="Post Id" Required="true" Debug.DefaultValue="56796081303_10155832978701304" Multiline="true"/>
+      <Text Id="Id" Title="Post Id" Required="true" Debug.DefaultValue="124292684247609_2990711654272350" Multiline="true"/>
     </Parameters>
     <Paging PageSize="25" EvenPages="false">
       <Parse>
@@ -446,7 +433,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.*">
+      <JsonPath Expr="data[*]">
         <JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
@@ -505,18 +492,6 @@
 					<JsonPath Id="Inp" Expr="from.id"/>
 				</Compute>
         <JsonPath Title="Permalink" Id="Permalink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-				<Compute Id="AttachmentUrl" Title="Attachment URL" Converter="String" Tag="attachments" DefaultValue="">
-					<Compute.Expr>
-						<![CDATA[
-						@{
-							Regex regex = new Regex(@"php\?u\=(.*?)&h\=");
-							Match match = regex.Match(Model.Url);
-						}
-						@Utils.UrlDecode(match.Groups[1].Value)
-						]]>
-					</Compute.Expr>
-					<JsonPath Id="Url" Expr="$.attachments.data..target.url" DefaultValue=""/>
-				</Compute>
 				<JsonPath Title="Picture URL" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" DefaultValue=""/>
       </JsonPath>
     </Parse>
