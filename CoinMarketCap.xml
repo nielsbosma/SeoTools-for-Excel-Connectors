@@ -28,15 +28,15 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="CurrencyMetadata" Title="Metadata" Group="Cryptocurrency" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyInfo" HelpText="Returns all static metadata for one or more cryptocurrencies including name, symbol, logo, and its various registered URLs.">
+  <RestConnector Id="CurrencyMetadata" Title="Metadata" Group="Free" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyInfo" HelpText="Returns all static metadata for one or more cryptocurrencies including name, symbol, logo, and its various registered URLs.">
     <Parameters>
-      <Text Id="Symbol" Title="Symbols" Debug.DefaultValue="BTC,ETH" HelpText="One or more currency symbols, separated by comma"/>
+      <Text Id="Symbol" Title="Symbol(s)" Debug.DefaultValue="BTC" HelpText="One or more currency symbols, separated by comma" Multiline="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://@(Model.Environment)-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=@(Model.Symbol)
+        https://@(Model.Environment)-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=@FetchBatch()
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -48,23 +48,24 @@
         <JsonPath Expr="category" Id="Category" Title="Category" Converter="string"/>
         <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="string"/>
         <JsonPath Expr="logo" Id="Logo" Title="Logo" Converter="string"/>
-        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="string"/>
+        <JsonPath Expr="csv(tags)" Id="Tags" Title="Tags" Converter="string"/>
         <JsonPath Expr="platform" Id="Platform" Title="Platform" Converter="string"/>
-        <JsonPath Expr="urls.website[0]" Id="UrlsWebsite" Title="Website" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.explorer[0]" Id="UrlsExplorer" Title="Explorer" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.source_code[0]" Id="UrlsSourceCode" Title="Source Code" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.message_board[0]" Id="UrlsMessageBoard" Title="Message Board" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.chat[0]" Id="UrlsChat" Title="Chat" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.announcement[0]" Id="UrlsAnnouncement" Title="Announcements URL" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.reddit[0]" Id="UrlsReddit" Title="Reddit" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.twitter[0]" Id="UrlsTwitter" Title="Twitter" Converter="string" Checked="false"/>
+        <JsonPath Expr="urls.website[0]" Id="UrlsWebsite" Title="Website" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.explorer[0]" Id="UrlsExplorer" Title="Explorer" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.source_code[0]" Id="UrlsSourceCode" Title="Source Code" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.message_board[0]" Id="UrlsMessageBoard" Title="Message Board" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.chat[0]" Id="UrlsChat" Title="Chat" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.announcement[0]" Id="UrlsAnnouncement" Title="Announcements URL" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.reddit[0]" Id="UrlsReddit" Title="Reddit" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.twitter[0]" Id="UrlsTwitter" Title="Twitter" Converter="string" Checked="false" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListCryptocurrencies" Title="List Latest" Group="Cryptocurrency" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyListingsLatest" HelpText="Get a list of all cryptocurrencies with latest market data.">
+  <RestConnector Id="ListCryptocurrencies" Title="List Latest" Group="Free" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyListingsLatest" HelpText="Get a list of all cryptocurrencies with latest market data.">
     <Parameters>
+			<Text Id="Symbol" Title="Convert to Symbol" HelpText="Blank/Default converts to USD"/>
       <Select Id="Type" DefaultValue="all">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -105,14 +106,15 @@
         https://@(Model.Environment)-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?
         &cryptocurrency_type=@(Model.Type)
         &sort=@(Model.Sort)
+				@(!string.IsNullOrEmpty(Model.Symbol) ? "&convert=" + Model.Symbol : "")
         &sort_dir=@(Model.SortDir)
         &start=@(Model.PageCursor.NextSkip+1)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data.*">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
+      <JsonPath Expr="$.data[*]">
+        <JsonPath Expr="id" Id="Id" Title="Id" Converter="Int"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="symbol" Id="Symbol" Title="Symbol" Converter="string"/>
         <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="string"/>
@@ -123,29 +125,22 @@
         <JsonPath Expr="max_supply" Id="MaxSupply" Title="Max Supply" Converter="double"/>
         <JsonPath Expr="last_updated" Id="LastUpdated" Title="Last Updated" Converter="DateTime"/>
         <JsonPath Expr="date_added" Id="DateAdded" Title="Date Added" Converter="DateTime"/>
-        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="string" Checked="false"/>
-        <JsonPath Expr="platform.name" Id="Platform" Title="Platform" Converter="string"/>
-        <JsonPath Expr="platform.token_address" Id="TokenAddress" Title="Token Address" Converter="string"/>
-        <JsonPath Expr="quote.USD.price" Id="QuoteUSDPrice" Title="Price" Converter="double"/>
-        <JsonPath Expr="quote.USD.volume_24h" Id="QuoteUSDVolume24h" Title="Volume 24h" Converter="double"/>
-        <JsonPath Expr="quote.USD.percent_change_1h" Id="QuoteUSDPercentChange1h" Title="Percent Change 1h" Converter="double"/>
-        <JsonPath Expr="quote.USD.percent_change_24h" Id="QuoteUSDPercentChange24h" Title="Percent Change 24h" Converter="double"/>
-        <JsonPath Expr="quote.USD.percent_change_7d" Id="QuoteUSDPercentChange7d" Title="Percent Change 7d" Converter="double"/>
-        <JsonPath Expr="quote.USD.market_cap" Id="QuoteUSDMarketCap" Title="Market Cap" Converter="double" HelpText="Market cap (latest trade price x circulating supply)."/>
-        <JsonPath Expr="quote.USD.last_updated" Id="QuoteUSDLastUpdated" Title="Last Updated" Converter="DateTime"/>
-        <JsonPath Expr="quote.BTC.price" Id="QuoteBTCPrice" Title="Quote BTC Price" Converter="double"/>
-        <JsonPath Expr="quote.BTC.volume_24h" Id="QuoteBTCVolume24h" Title="Quote BTC Volume 24h" Converter="double"/>
-        <JsonPath Expr="quote.BTC.percent_change_1h" Id="QuoteBTCPercentChange1h" Title="Quote BTC Percent Change 1h" Converter="double"/>
-        <JsonPath Expr="quote.BTC.percent_change_24h" Id="QuoteBTCPercentChange24h" Title="Quote BTC Percent Change 24h" Converter="double"/>
-        <JsonPath Expr="quote.BTC.percent_change_7d" Id="QuoteBTCPercentChange7d" Title="Quote BTC Percent Change 7d" Converter="double"/>
-        <JsonPath Expr="quote.BTC.market_cap" Id="QuoteBTCMarketCap" Title="Quote BTC Market Cap" Converter="double" HelpText="Market cap (latest trade price x circulating supply)."/>
-        <JsonPath Expr="quote.BTC.last_updated" Id="QuoteBTCLastUpdated" Title="Quote BTC Last Updated" Converter="DateTime"/>
+        <JsonPath Expr="csv(tags)" Id="Tags" Title="Tags" Converter="string"/>
+        <JsonPath Expr="platform.name" Id="Platform" Title="Platform" Converter="string" DefaultValue=""/>
+        <JsonPath Expr="platform.token_address" Id="TokenAddress" Title="Token Address" Converter="string" DefaultValue=""/>
+        <JsonPath Expr="quote...price" Id="QuotePrice" Title="Quote Price" Converter="double"/>
+        <JsonPath Expr="quote...volume_24h" Id="QuoteVolume24h" Title="Quote Volume 24h" Converter="double"/>
+        <JsonPath Expr="quote...percent_change_1h" Id="QuotePercentChange1h" Title="Quote Percent Change 1h" Converter="double"/>
+        <JsonPath Expr="quote...percent_change_24h" Id="QuotePercentChange24h" Title="Quote Percent Change 24h" Converter="double"/>
+        <JsonPath Expr="quote...percent_change_7d" Id="QuotePercentChange7d" Title="Quote Percent Change 7d" Converter="double"/>
+        <JsonPath Expr="quote...market_cap" Id="QuoteMarketCap" Title="Quote Market Cap" Converter="double" HelpText="Market cap (latest trade price x circulating supply)."/>
+        <JsonPath Expr="quote...last_updated" Id="QuoteLastUpdated" Title="Quote Last Updated" Converter="DateTime"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MarketPairs" Title="Latest (Standard+)" Group="Market Pairs" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyMarketpairsLatest" HelpText="Lists all market pairs for the specified cryptocurrency with associated stats.">
+  <RestConnector Id="MarketPairs" Title="Latest" Group="Standard+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyMarketpairsLatest" HelpText="Lists all market pairs for the specified cryptocurrency with associated stats.">
     <Parameters>
       <Text Id="Symbol" Title="Symbols" Debug.DefaultValue="NANO" HelpText="One or more currency symbols, separated by comma"/>
     </Parameters>
@@ -160,10 +155,10 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data.market_pairs.*">
-        <JsonPath Expr="exchange.id" Id="ExchangeId" Title="Exchange Id" Converter="int" Checked="false"/>
+      <JsonPath Expr="$.data.market_pairs[*]">
+        <JsonPath Expr="exchange.id" Id="ExchangeId" Title="Exchange Id" Converter="int"/>
         <JsonPath Expr="exchange.name" Id="ExchangeName" Title="Exchange Name" Converter="string"/>
-        <JsonPath Expr="exchange.slug" Id="ExchangeSlug" Title="Exchange Slug" Converter="string" Checked="false"/>
+        <JsonPath Expr="exchange.slug" Id="ExchangeSlug" Title="Exchange Slug" Converter="string"/>
         <JsonPath Expr="market_pair" Id="MarketPair" Title="Market Pair" Converter="string"/>
         <JsonPath Expr="market_pair_base.currency_id" Id="MarketPairBaseCurrencyId" Title="Base Id" Converter="int" Checked="false"/>
         <JsonPath Expr="market_pair_base.currency_symbol" Id="MarketPairBaseCurrencySymbol" Title="Base Symbol" Converter="string"/>
@@ -183,7 +178,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MarketChartData" Title="Latest Market Chart Data (Startup+)" Group="OHLCV" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyOhlcvLatest" HelpText="Return the latest OHLCV (Open, High, Low, Close, Volume) market values for one or more cryptocurrencies in the currently UTC day.">
+  <RestConnector Id="MarketChartData" Title="Latest Market Chart Data" Group="Startup+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyOhlcvLatest" HelpText="Return the latest OHLCV (Open, High, Low, Close, Volume) market values for one or more cryptocurrencies in the currently UTC day.">
     <Parameters>
       <Text Id="Symbol" Title="Symbol" Debug.DefaultValue="BTC,ETH" HelpText="Cryptocurrency symbol, e.g. BTC"/>
     </Parameters>
@@ -196,7 +191,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data.*">
+      <JsonPath Expr="$.data[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="int"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="string"/>
         <JsonPath Expr="symbol" Id="Symbol" Title="Symbol" Converter="string"/>
@@ -214,7 +209,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MarketChartDataHistorical" Title="Historical Market Chart Data (Standard+)" Group="OHLCV" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyOhlcvHistorical" HelpText="Return an interval of historic OHLCV (Open, High, Low, Close, Volume) market quotes for a cryptocurrency.">
+  <RestConnector Id="MarketChartDataHistorical" Title="Historical Market Chart Data" Group="Standard+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyOhlcvHistorical" HelpText="Return an interval of historic OHLCV (Open, High, Low, Close, Volume) market quotes for a cryptocurrency.">
     <Parameters>
       <Text Id="Symbol" Title="Symbol" Debug.DefaultValue="BTC" HelpText="Cryptocurrency symbol, e.g. BTC"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -277,7 +272,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MarketQuotesHistorical" Title="Historical Market Quotes (Standard+)" Group="Quotes" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesHistorical" HelpText="Returns an interval of historic market quotes for any cryptocurrency based on time and interval parameters.">
+  <RestConnector Id="MarketQuotesHistorical" Title="Historical Market Quotes" Group="Standard+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesHistorical" HelpText="Returns an interval of historic market quotes for any cryptocurrency based on time and interval parameters.">
     <Parameters>
       <Text Id="Symbol" Title="Symbol" Debug.DefaultValue="BTC" HelpText="Cryptocurrency symbol, e.g. BTC"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -319,7 +314,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data.quotes.*">
+      <JsonPath Expr="$.data[0].quotes.*">
         <JsonPath Expr="quote.USD.price" Id="Price" Converter="double"/>
         <JsonPath Expr="quote.USD.volume_24h" Id="Volume" Title="24h Volume" Converter="double"/>
         <JsonPath Expr="quote.USD.market_cap" Id="MarketCap" Title="Market Cap" Converter="double"/>
@@ -329,7 +324,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MarketQuotesLatest" Title="Latest Market Quotes" Group="Quotes" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesLatest" HelpText="Get the latest market quote for 1 or more cryptocurrencies.">
+  <RestConnector Id="MarketQuotesLatest" Title="Latest Market Quotes" Group="Free" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyQuotesLatest" HelpText="Get the latest market quote for 1 or more cryptocurrencies.">
     <Parameters>
       <Text Id="Symbols" Title="Symbols" Debug.DefaultValue="BTC,ETH" HelpText="Cryptocurrency symbols, comma separated"/>
     </Parameters>
@@ -365,15 +360,15 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ExchangeMetadata" Title="Exchange Metadata (Startup+)" Group="Exchange" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1ExchangeInfo" HelpText="Returns all static metadata for one or more exchanges including logo and homepage URL.">
+  <RestConnector Id="ExchangeMetadata" Title="Exchange Metadata" Group="Startup+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1ExchangeInfo" HelpText="Returns all static metadata for one or more exchanges including logo and homepage URL.">
     <Parameters>
-      <Text Id="Symbol" Title="Symbols" Debug.DefaultValue="BTC,ETH" HelpText="One or more currency symbols, separated by comma"/>
+      <Text Id="Symbol" Title="Symbol(s)" Debug.DefaultValue="BTC" HelpText="One or more currency symbols, separated by comma" Multiline="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://@(Model.Environment)-api.coinmarketcap.com/v1/exchange/info?symbol=@(Model.Symbol)
+        https://@(Model.Environment)-api.coinmarketcap.com/v1/exchange/info?symbol=@FetchBatch()
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -385,22 +380,22 @@
         <JsonPath Expr="category" Id="Category" Title="Category" Converter="string"/>
         <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="string"/>
         <JsonPath Expr="logo" Id="Logo" Title="Logo" Converter="string"/>
-        <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="string"/>
-        <JsonPath Expr="platform" Id="Platform" Title="Platform" Converter="string"/>
-        <JsonPath Expr="urls.website[0]" Id="UrlsWebsite" Title="Website" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.explorer[0]" Id="UrlsExplorer" Title="Explorer" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.source_code[0]" Id="UrlsSourceCode" Title="Source Code" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.message_board[0]" Id="UrlsMessageBoard" Title="Message Board" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.chat[0]" Id="UrlsChat" Title="Chat" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.announcement[0]" Id="UrlsAnnouncement" Title="Announcements URL" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.reddit[0]" Id="UrlsReddit" Title="Reddit" Converter="string" Checked="false"/>
-        <JsonPath Expr="urls.twitter[0]" Id="UrlsTwitter" Title="Twitter" Converter="string" Checked="false"/>
+        <JsonPath Expr="csv(tags)" Id="Tags" Title="Tags" Converter="string"/>
+        <JsonPath Expr="platform" Id="Platform" Title="Platform" Converter="string" DefaultValue=""/>
+        <JsonPath Expr="urls.website[0]" Id="UrlsWebsite" Title="Website" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.explorer[0]" Id="UrlsExplorer" Title="Explorer" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.source_code[0]" Id="UrlsSourceCode" Title="Source Code" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.message_board[0]" Id="UrlsMessageBoard" Title="Message Board" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.chat[0]" Id="UrlsChat" Title="Chat" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.announcement[0]" Id="UrlsAnnouncement" Title="Announcements URL" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.reddit[0]" Id="UrlsReddit" Title="Reddit" Converter="string" Checked="false" DefaultValue=""/>
+        <JsonPath Expr="urls.twitter[0]" Id="UrlsTwitter" Title="Twitter" Converter="string" Checked="false" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListExchanges" Title="Latest Exchanges (Startup+)" Group="Exchange" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1ExchangeListingsLatest" HelpText="Get a list of all cryptocurrency exchanges including the latest aggregate market data for each exchange.">
+  <RestConnector Id="ListExchanges" Title="Latest Exchanges" Group="Startup+" HelpUrl="https://coinmarketcap.com/api/documentation/v1/#operation/getV1ExchangeListingsLatest" HelpText="Get a list of all cryptocurrency exchanges including the latest aggregate market data for each exchange.">
     <Parameters>
       <Select Id="Sort" DefaultValue="volume_24h">
         <DataSource>
@@ -430,7 +425,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data.*">
+      <JsonPath Expr="$.data[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="string"/>
@@ -449,5 +444,14 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchBatch() {
+			string[] lines = ((string)Model.Symbol).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+      return string.Join(",",lines);
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
