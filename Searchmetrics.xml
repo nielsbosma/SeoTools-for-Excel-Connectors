@@ -90,7 +90,7 @@
       <Fetch.Url>
         <![CDATA[
         http://api.searchmetrics.com/v3/ResearchOrganicGetCountDomainKeyword
-				@(!string.IsNullOrEmpty(Model.FilterMonth) ? "Historic" : "").json?access_token=@(Model.Authorization)
+				@(!string.IsNullOrEmpty(Model.FilterMonth) ? "Filter" : "").json?access_token=@(Model.Authorization)
         &countrycode=@(Model.Country)
         &url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host))
 				@(!string.IsNullOrEmpty(Model.FilterMonth) ? "&year_month=" + Model.FilterMonth : "")
@@ -103,43 +103,10 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListCommonKeywords" Title="Common Keywords between Domains" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListCommonKeywords" HelpText="Overview comparison of the most relevant shared keywords (comeptititve keywords) for two URLs in organic search results.">
-    <Parameters>
-      <Text Id="Domain1" Title="First Domain" Debug.DefaultValue="google.com" Required="true" HelpText="Either a domain or a subdomain."/>
-      <Text Id="Domain2" Title="Second Domain" Debug.DefaultValue="bing.com" Required="true" HelpText="Either a domain or a subdomain."/>
-      <Resource Id="SelectCountry"/>
-    </Parameters>
-    <Resource Id="Prepare"/>
-    <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListCommonKeywords.json?access_token=@(Model.Authorization)
-        &url_1=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain1).Host)
-        &url_2=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain2).Host)
-        &countrycode=@Model.Country
-        &limit=@(Model.PageCursor.PageSize)
-        &offset=@(Model.PageCursor.NextSkip)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="response.*">
-        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Common keyword"/>
-        <JsonPath Expr="dom1_pos" Id="Url1Pos" Title="URL1 Position" Converter="Int" HelpText="Position of the first URL"/>
-        <JsonPath Expr="dom2_pos" Id="Url2Pos" Title="URL2 Position" Converter="Int" HelpText="Position of second URL"/>
-        <JsonPath Expr="dom1_traffic" Id="Url1AvgTraffic" Title="Url1 Avg Traffic" Converter="Double" HelpText="Average traffic for the first URL"/>
-        <JsonPath Expr="dom2_traffic" Id="Url2AvgTraffic" Title="Url2 Avg Traffic" Converter="Double" HelpText="Average traffic for the second URL"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
   <RestConnector Id="ResearchOrganicGetListCompetitors" Title="Competitors in Organic Search" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListCompetitors" HelpText="Competitor domains in the organic search.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
-      <Resource Id="SelectCurrency"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
@@ -150,14 +117,13 @@
         http://api.searchmetrics.com/v3/ResearchOrganicGetListCompetitors.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
-        &currency=@(Model.Currency)
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String"/>
         <JsonPath Expr="avg_position_1" Id="AVGPosition1" Title="Avg Position 1" Converter="Double" HelpText="The average position of the given domain with the shared keywords with the respective competitor domain."/>
         <JsonPath Expr="avg_position_2" Id="AVGposition2" Title="Avg Position 2" Converter="Double" HelpText="The average position of the respective competitor domain with the shared keywords with the given domain."/>
@@ -190,7 +156,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="category" Id="CategoryId" Title="Category Id" Converter="Int" HelpText="ID of the industry sector"/>
         <Compute Id="Category" Title="Category">
           <Compute.Expr>
@@ -248,7 +214,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="spi_percent" Id="SPIPercent" Title="SPI Percentage" Converter="Double" HelpText="Subdomain visibility in percent"/>
         <JsonPath Expr="host" Id="Host" Title="Host" Converter="String" HelpText="Subdomain"/>
         <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
@@ -277,7 +243,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Ranking position in Google's organic search."/>
         <JsonPath Expr="page" Id="Page" Title="Page" Converter="Int" HelpText="Ranking Page in Google's organic search."/>
         <JsonPath Expr="last_months_count" Id="LastMonthsCount" Title="Last Months Count" Converter="Int" HelpText="Local Google search volume in Google (exact match)."/>
@@ -320,7 +286,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the search engine entry."/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the search engine entry."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="SERP = search engine ranking position."/>
@@ -348,7 +314,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="country_code" Id="CountryCode" Title="Country Code" Converter="String" HelpText="A two letter country code as specified in ISO 3166-1 Format: US, GB, DE etc."/>
         <JsonPath Expr="visibility" Id="Visibility" Title="Visibility" Converter="Int" HelpText="Searchmetrics Organic Visibility"/>
       </JsonPath>
@@ -370,7 +336,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="host" Id="Host" Title="Host" Converter="String" HelpText="Domain or subdomain"/>
         <JsonPath Expr="difference" Id="Difference" Title="Difference" Converter="Int" HelpText="Absolute difference in Searchmetrics visibility between current and previous wek"/>
         <JsonPath Expr="seo_visibility_actual" Id="SeoVisibilityActual" Title="Visibility" Converter="Int" HelpText="Current Searchmetrics Organic Visibility"/>
@@ -395,7 +361,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="host" Id="Host" Title="Host" Converter="String" HelpText="Domain or subdomain"/>
         <JsonPath Expr="difference" Id="Difference" Title="Difference" Converter="Int" HelpText="Absolute difference in Searchmetrics visibility between current and previous wek"/>
         <JsonPath Expr="seo_visibility_actual" Id="SeoVisibilityActual" Title="Visibility" Converter="Int" HelpText="Current Searchmetrics Organic Visibility"/>
@@ -448,7 +414,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="backlinkpage" Id="BacklinkPage" Title="Backlink Page" Converter="String" HelpText="URL on which the backlink was found."/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Page title of the page on which the backlink was found."/>
         <JsonPath Expr="linktext" Id="LinkText" Title="Link Text" Converter="String" HelpText="Anchor text."/>
@@ -507,7 +473,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText="Domain for which the SEORank is queried"/>
         <JsonPath Expr="visibility" Id="Visibility" Title="Visibility" Converter="Int" HelpText="Searchmetrics SEO Visibility"/>
         <JsonPath Expr="id" Id="Id" Title="SEO Rank" Converter="Int" HelpText="SEORank"/>
@@ -553,7 +519,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="cpc" Id="Cpc" Title="Cpc" Converter="Double" HelpText="Estimated CPC in AdWords for the specific keyword."/>
         <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Int" HelpText="This is an indicator for the competion for the given keyword in the Paid Index. The higher it is the more domains that have placed AdWords ads for the keyword."/>
         <JsonPath Expr="search_volume" Id="SearchVolume" Title="Search Volume" Converter="Int" HelpText="Current monthly search volume in Google."/>
@@ -587,7 +553,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
@@ -626,7 +592,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
@@ -663,7 +629,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
@@ -702,7 +668,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is shown."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the indexed landing page."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Actual position of the given domain for the respective keyword in Google's organic search index."/>
@@ -739,7 +705,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the ad"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Display URL of the ad"/>
         <Compute Expr="@Model.Domain" Id="Input" Title="Input Domain" Checked="false"/>
@@ -846,7 +812,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" HelpText="Keyword for which the data is returned."/>
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" HelpText="Keyword position in Google's paid search."/>
         <JsonPath Expr="page" Id="Page" Title="Page" Converter="Int" HelpText="Result page in Google's paid search."/>
@@ -883,7 +849,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="domain" Id="dDain" Title="Domain" Converter="String" HelpText="Competitor domain"/>
         <JsonPath Expr="avg_position_1" Id="AvgPosition1" Title="Avg Position 1" Converter="Double" HelpText="The average position of the given domain with the shared keywords with the respective competitor domain."/>
         <JsonPath Expr="avg_position_2" Id="Avgposition2" Title="Avg Position 2" Converter="Double" HelpText="The average position of the respective competitor domain with the shared keywords with the given domain."/>
@@ -942,7 +908,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText="Domain for which the PaidRank is queried."/>
         <JsonPath Expr="visibility" Id="Visibility" Title="Visibility" Converter="Int" HelpText="Searchmetrics Paid Visibility."/>
         <JsonPath Expr="id" Id="Id" Title="Paid Rank" Converter="Int"/>
@@ -1010,7 +976,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="domainpopularity" Id="DomainPopularity" Title="Domain Popularity" Converter="Int" HelpText="Number of referring domains"/>
       </JsonPath>
     </Parse>
@@ -1031,7 +997,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="ip" Id="Ip" Title="IPs" Converter="Int" HelpText="Number of referring IPs."/>
         <JsonPath Expr="class_b" Id="ClassB" Title="Class B" Converter="Int" HelpText="Number of referring IPs with a different B-class."/>
         <JsonPath Expr="class_c" Id="ClassC" Title="Class C" Converter="Int" HelpText="Number of referring IPs with a different C-class."/>
@@ -1058,7 +1024,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="linkedpage" Id="LinkedPage" Title="Linked page" Converter="String" HelpText="URL of the target page."/>
         <JsonPath Expr="frequency" Id="Frequency" Title="External links" Converter="Int" HelpText="Number of external links pointing to the respective target page."/>
         <JsonPath Expr="percentage" Id="Percentage" Title="Percentage" Converter="Double" HelpText="Percentage of links pointing to the target page in relation to all links pointing to the belonging domain."/>
@@ -1087,7 +1053,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="anchortext" Id="anchortext" Title="Anchor Text" Converter="String"/>
         <JsonPath Expr="frequency" Id="frequency" Title="Frequency" Converter="String" HelpText="Absolute total frequency of the anchor text."/>
         <JsonPath Expr="percentage" Id="percentage" Title="Percentage" Converter="Double" HelpText="Percentual frequency of the anchor text in relation to all anchor texts."/>
@@ -1119,7 +1085,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="A url of the given domain"/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the url"/>
         <JsonPath Expr="total_traffic_index" Id="TotalTrafficIndex" Title="Traffic Index" Converter="Int" HelpText="Traffic index"/>
@@ -1156,7 +1122,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="A url of the given domain"/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of the url"/>
         <JsonPath Expr="total_traffic_index" Id="TotalTrafficIndex" Title="Traffic Index" Converter="Int" HelpText="Traffic index"/>
@@ -1278,7 +1244,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="project_id" Id="ProjectId" Title="Project Id" Converter="Long"/>
         <JsonPath Expr="project_name" Id="ProjectName" Title="Project Name" Converter="String"/>
         <JsonPath Expr="project_url" Id="ProjectName" Title="Project Name" Converter="String"/>
@@ -1303,7 +1269,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="response.*">
+      <JsonPath Expr="response[*]">
         <JsonPath Expr="engine_id" Id="EngineId" Title="Engine Id" Converter="Long"/>
       </JsonPath>
     </Parse>
