@@ -54,11 +54,11 @@
     </Fetch>
     <Parse>
       <Table DefaultConverter="auto">
-        <JsonPath Id='Headers' Expr="dataset_data.column_names.*">
-          <JsonPath Expr="."/>
+        <JsonPath Id='Headers' Expr="dataset_data.column_names[*]">
+          <JsonPath Expr="$"/>
         </JsonPath>
-        <JsonPath Id='Cells' Expr="dataset_data.data.*.*">
-          <JsonPath Expr="."/>
+        <JsonPath Id='Cells' Expr="dataset_data.data[*][*]">
+          <JsonPath Expr="$"/>
         </JsonPath>
       </Table>
     </Parse>
@@ -83,7 +83,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.datasets.*">
+      <JsonPath Expr="$.datasets[*]">
         <JsonPath Expr="database_code" Id="Database" Title="Database" Converter="String" HelpText="A short code for the database"/>
         <JsonPath Expr="dataset_code" Id="Dataset" Title="Dataset" Converter="String" HelpText="A short code for the dataset"/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the database"/>
@@ -105,7 +105,7 @@
 
   <RestConnector Id="DatabaseInfo" Title="Database Info" HelpUrl="https://docs.quandl.com/docs/in-depth-usage#section-metadata-fields" HelpText="Retrieve metadata for a specified time-series database.">
     <Parameters>
-      <Text Id="Database" Title="Database Code" Debug.DefaultValue="FB" Required="true" HelpText="Code identifying the database to which the dataset belongs."/>
+      <Text Id="Database" Title="Database Code" Debug.DefaultValue="WIKI" Required="true" HelpText="Code identifying the database to which the dataset belongs."/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -116,16 +116,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.database	">
-        <JsonPath Expr="database_code" Id="Database" Title="Database" Converter="String" HelpText="A short code for the database"/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="The name of the database"/>
-        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Title="Description" HelpText="A description of the database">
-          <JsonPath Expr="description" Id="Inp"/>
-        </Compute>
-        <JsonPath Expr="datasets_count" Id="Datasets" Title="Datasets" Converter="Long" HelpText="The number of distinct time-series datasets in the database"/>
-        <JsonPath Expr="downloads" Id="Downloads" Title="Downloads" Converter="Long" HelpText="The number of times a time-series from this database has been downloaded"/>
-        <JsonPath Expr="premium" Id="Premium" Title="Premium" Converter="Bool" HelpText="Whether this time-series database is premium"/>
-      </JsonPath>
+			<JsonPath Expr="$.database.database_code" Id="Database" Title="Database" Converter="String" HelpText="A short code for the database"/>
+			<JsonPath Expr="$.database.name" Id="Name" Title="Name" Converter="String" HelpText="The name of the database"/>
+			<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Title="Description" HelpText="A description of the database">
+				<JsonPath Expr="$.database.description" Id="Inp"/>
+			</Compute>
+			<JsonPath Expr="$.database.datasets_count" Id="Datasets" Title="Datasets" Converter="Long" HelpText="The number of distinct time-series datasets in the database"/>
+			<JsonPath Expr="$.database.downloads" Id="Downloads" Title="Downloads" Converter="Long" HelpText="The number of times a time-series from this database has been downloaded"/>
+			<JsonPath Expr="$.database.premium" Id="Premium" Title="Premium" Converter="Bool" HelpText="Whether this time-series database is premium"/>
     </Parse>
     <Fail>
       <JsonPath Expr="quandl_error.message"/>
