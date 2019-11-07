@@ -7,25 +7,16 @@
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/" />
   </Settings>
 
+
   <Resources>
     <Resource Id="Fetch">
 			<Fetch>
 				<HttpSettings>
-					<RequestMethod>POST</RequestMethod>
-					<RequestContentType>application/json</RequestContentType>
 					<Cache>@Model.Cache</Cache>
-					<RequestBody>
-						<![CDATA[
-							@{
-								string query = "{url:\"" + Model.Url + "\",renderType:\"html\"}";
-							}
-							@query
-						]]>
-					</RequestBody>
 				</HttpSettings>
 				<Fetch.Url>
 					<![CDATA[
-						https://PhantomJsCloud.com/api/browser/v2/@(Model.ApiKey)/
+						https://PhantomJsCloud.com/api/browser/v2/@(Model.ApiKey)/?request=@CreateRequestArr()
 					]]>
 				</Fetch.Url>
 			</Fetch>
@@ -34,7 +25,7 @@
 
   <RestConnector Id="XPath" Title="XPath" HelpUrl="https://phantomjscloud.com/docs/http-api/index.html">
     <Parameters>
-      <Text Id="Url" Title="URL" Required="false" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Text Id="Url" Title="URL" Required="false" Debug.DefaultValue="https://www.seotoolsforexcel.com"/>
       <Text Id="XPath" Title="XPath" Required="true" Debug.DefaultValue="//a"/>
       <Text Id="Attribute" Title="Attribute" Required="false"/>
       <Checkbox Id="Cache" Title="Cache" DefaultValue="true"/>
@@ -61,5 +52,16 @@
       </Regex>
     </Parse>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateRequestArr() {
+			var dict = new Dictionary<string, string>();
+			dict.Add("url", Model.Url);
+			dict.Add("renderType", "html");
+			return Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));							
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
