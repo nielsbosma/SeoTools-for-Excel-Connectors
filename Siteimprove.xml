@@ -21,52 +21,26 @@
     </Resource>
     <Resource Id="Fail">
 			<Fail>
+				<Try Fail.If="EmptyResponse" Fail.Action="Message" Fail.Message="Something went wrong. Check API Key."/>
 				<JsonPath Expr="message"/>
 			</Fail>
     </Resource>
   </Resources>
 
-  <RestConnector Id="Sites" Title="List Sites" Group="General Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/General/get_sites" HelpText="Get a list of sites for this account.">
+  <RestConnector Id="Sites" HelpUrl="https://api.siteimprove.com/v2/documentation#!/General/get_sites" Hidden="true">
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-					https://api.siteimprove.com/v2/sites
+					https://api.siteimprove.com/v2/sites?page_size=500
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
-        <JsonPath Expr="id" Id="Id" Title="Site Id" Converter="String"/>
-        <JsonPath Expr="site_name" Id="Site" Title="Site Name" Converter="String"/>
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-        <JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Int"/>
-        <JsonPath Expr="policies" Id="Policies" Title="Policies" Converter="Int"/>
-        <JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Int"/>
+      <JsonPath Expr="$.items[*]">
+        <JsonPath Expr="id" Id="Id" Title="Site Id"/>
+        <JsonPath Expr="site_name" Id="Site" Title="Site Name"/>
       </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="SiteLookup" Title="Lookup a Site" Group="General Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/General/get_sites_site_id" HelpText="Get a specific site for this account.">
-    <Parameters>
-      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="7157903272" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Site"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-					https://api.siteimprove.com/v2/sites/@(Model.SiteId)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-			<JsonPath Expr="site_name" Id="Site" Title="Site" Converter="String"/>
-			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
-			<JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Int"/>
-			<JsonPath Expr="policies" Id="Policies" Title="Policies" Converter="Int"/>
-			<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Int"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
@@ -153,29 +127,9 @@
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="SiteCrawlStatus" Title="Site Crawl Status" Group="Content Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/Content/get_sites_site_id_content_crawl" HelpText="Get info about the crawl status for a site.">
-    <Parameters>
-      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="7157903272" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Site"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-					https://api.siteimprove.com/v2/sites/@(Model.SiteId)/content/crawl
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="last_crawl" Id="LastCrawled" Title="Last Crawled" Converter="DateTime"/>
-			<JsonPath Expr="next_crawl" Id="NextCrawl" Title="Next Crawl" Converter="DateTime"/>
-			<JsonPath Expr="permission" Id="Permission" Title="Permission" Converter="String"/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
   <RestConnector Id="Pages" Title="List Pages" Group="Content Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/Content/get_sites_site_id_content_pages" HelpText="Get list of pages for a site.">
     <Parameters>
-      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="7157903272" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Site"/>
+      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="461076" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Site"/>
       <Text Id="Url" Title="Filter by URL" Required="false"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="true">
@@ -195,7 +149,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
@@ -222,36 +176,26 @@
 			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
 			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 			<JsonPath Expr="size_bytes" Id="Bytes" Title="Bytes" Converter="Long"/>
-      <JsonPath Expr="$.summary.page">
-				<JsonPath Expr="last_seen" Id="LastSeen" Title="LastSeen" Converter="Auto"/>
-				<JsonPath Expr="check_allowed" Id="CheckAllowed" Title="Check Allowed" Converter="Bool"/>
-      </JsonPath>
-      <JsonPath Expr="$.summary.seo">
-				<JsonPath Expr="errors" Id="Errors" Title="Errors" Converter="Long"/>
-				<JsonPath Expr="needs_review" Id="NeedsReview" Title="Needs Review" Converter="Long"/>
-				<JsonPath Expr="warnings" Id="Warnings" Title="Warnings" Converter="Long"/>
-      </JsonPath>
-      <JsonPath Expr="$.summary.policy">
-				<JsonPath Expr="matching_policies" Id="MatchingPolicies" Title="Matching Policies" Converter="Long"/>
-				<JsonPath Expr="high_priority_policies" Id="HighPriorityPolicies" Title="High Priority Policies" Converter="Long"/>
-				<JsonPath Expr="high_priority_matching_policies" Id="HighPriorityMatchingPolicies" Title="High Priority Matching Policies" Converter="Long"/>
-				<JsonPath Expr="high_priority_pending_checks" Id="HighPriorityPendingChecks" Title="High Priority Pending Checks" Converter="Long"/>
-      </JsonPath>
-      <JsonPath Expr="$.summary.quality_assurance">
-				<JsonPath Expr="misspellings" Id="Misspellings" Title="Misspellings" Converter="Long"/>
-				<JsonPath Expr="potential_misspellings" Id="PotentialMisspellings" Title="Potential Misspellings" Converter="Long"/>
-      </JsonPath>
-      <JsonPath Expr="$.summary.accessibility">
-        <JsonPath Expr="a_errors" Id="AErrors" Title="A_Errors" Converter="Long"/>
-        <JsonPath Expr="a_issues" Id="AIssues" Title="A_Issues" Converter="Long"/>
-        <JsonPath Expr="a_warnings" Id="AWarnings" Title="A_Warnings" Converter="Long"/>
-        <JsonPath Expr="aa_errors" Id="AAErrors" Title="AA_Errors" Converter="Long"/>
-        <JsonPath Expr="aa_issues" Id="AAIssues" Title="AA_Issues" Converter="Long"/>
-        <JsonPath Expr="aa_warnings" Id="AAWarnings" Title="AA_Warnings" Converter="Long"/>
-        <JsonPath Expr="aaa_errors" Id="AAAErrors" Title="AAA_Errors" Converter="Long"/>
-        <JsonPath Expr="aaa_issues" Id="AAAIssues" Title="AAA_Issues" Converter="Long"/>
-        <JsonPath Expr="aaa_warnings" Id="AAAWarnings" Title="AAA_Warnings" Converter="Long"/>
-      </JsonPath>
+			<JsonPath Expr="$.summary.page.last_seen" Id="LastSeen" Title="LastSeen" Converter="Auto"/>
+			<JsonPath Expr="$.summary.page.check_allowed" Id="CheckAllowed" Title="Check Allowed" Converter="Bool"/>
+			<JsonPath Expr="$.summary.seo.errors" Id="Errors" Title="Errors" Converter="Long"/>
+			<JsonPath Expr="$.summary.seo.needs_review" Id="NeedsReview" Title="Needs Review" Converter="Long"/>
+			<JsonPath Expr="$.summary.seo.warnings" Id="Warnings" Title="Warnings" Converter="Long"/>
+			<JsonPath Expr="$.summary.policy.matching_policies" Id="MatchingPolicies" Title="Matching Policies" Converter="Long"/>
+			<JsonPath Expr="$.summary.policy.high_priority_policies" Id="HighPriorityPolicies" Title="High Priority Policies" Converter="Long"/>
+			<JsonPath Expr="$.summary.policy.high_priority_matching_policies" Id="HighPriorityMatchingPolicies" Title="High Priority Matching Policies" Converter="Long"/>
+			<JsonPath Expr="$.summary.policy.high_priority_pending_checks" Id="HighPriorityPendingChecks" Title="High Priority Pending Checks" Converter="Long"/>
+			<JsonPath Expr="$.summary.quality_assurance.misspellings" Id="Misspellings" Title="Misspellings" Converter="Long"/>
+			<JsonPath Expr="$.summary.quality_assurance.potential_misspellings" Id="PotentialMisspellings" Title="Potential Misspellings" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.a_errors" Id="AErrors" Title="A_Errors" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.a_issues" Id="AIssues" Title="A_Issues" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.a_warnings" Id="AWarnings" Title="A_Warnings" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aa_errors" Id="AAErrors" Title="AA_Errors" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aa_issues" Id="AAIssues" Title="AA_Issues" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aa_warnings" Id="AAWarnings" Title="AA_Warnings" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aaa_errors" Id="AAAErrors" Title="AAA_Errors" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aaa_issues" Id="AAAIssues" Title="AAA_Issues" Converter="Long"/>
+			<JsonPath Expr="$.summary.accessibility.aaa_warnings" Id="AAAWarnings" Title="AAA_Warnings" Converter="Long"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
@@ -294,7 +238,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
         <JsonPath Expr="issue_type" Id="Issue" Title="Issue" Converter="String"/>
         <JsonPath Expr="affected_pages" Id="AffectedPages" Title="Affected Pages" Converter="Long"/>
         <JsonPath Expr="role" Id="Role" Title="Role" Converter="String"/>
@@ -325,7 +269,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
         <JsonPath Expr="issue_type" Id="Issue" Title="Issue" Converter="String"/>
         <JsonPath Expr="severity" Id="Severity" Title="Severity" Converter="String"/>
@@ -334,7 +278,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SeoPages" Title="List Pages" Group="SEO Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/SEO/get_sites_site_id_seo_pages" HelpText="Get all pages that are being checked for SEO issues.">
+  <RestConnector Id="SeoPages" Title="List SEO-checked Pages" Group="SEO Reports" HelpUrl="https://api.siteimprove.com/v2/documentation#!/SEO/get_sites_site_id_seo_pages" HelpText="Get all pages that are being checked for SEO issues.">
     <Parameters>
       <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="7157903272" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Site"/>
     </Parameters>
@@ -354,7 +298,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
@@ -390,7 +334,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="page_views_per_visit" Id="ViewsPerVisit" Title="Views Per Visit" Converter="Long"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long"/>
       </JsonPath>
@@ -420,7 +364,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
 				<JsonPath Expr="page_views_average" Id="PageViewsAverage" Title="Page Views Average" Converter="Double"/>
       </JsonPath>
@@ -443,7 +387,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="hour_of_day" Id="Hour" Title="Hour" Converter="Long"/>
 				<JsonPath Expr="page_views" Id="PageViews" Title="Page Views" Converter="Long"/>
 				<JsonPath Expr="average_page_views_per_visit" Id="AveragePageViews" Title="Average Page Views" Converter="Double"/>
@@ -468,7 +412,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="day_of_month" Id="Day" Title="Monthday" Converter="Long"/>
 				<JsonPath Expr="page_views" Id="PageViews" Title="Page Views" Converter="Long"/>
 				<JsonPath Expr="average_page_views_per_visit" Id="AveragePageViews" Title="Average Page Views" Converter="Double"/>
@@ -493,7 +437,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="day_of_week" Id="Day" Title="Weekday" Converter="Long"/>
 				<JsonPath Expr="page_views" Id="PageViews" Title="Page Views" Converter="Long"/>
 				<JsonPath Expr="average_page_views_per_visit" Id="AveragePageViews" Title="Average Page Views" Converter="Double"/>
@@ -525,7 +469,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="visit_duration_in_minutes" Id="VisitDuration" Title="Visit Duration" Converter="Long"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long"/>
       </JsonPath>
@@ -555,7 +499,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
 				<JsonPath Expr="visit_duration_average_in_minutes" Id="VisitDurationAverage" Title="Visit Duration Average" Converter="Double"/>
       </JsonPath>
@@ -585,7 +529,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -620,7 +564,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -654,7 +598,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -688,7 +632,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -722,7 +666,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -757,7 +701,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -791,7 +735,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -825,7 +769,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long"/>
       </JsonPath>
@@ -855,7 +799,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -889,7 +833,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -923,7 +867,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -964,7 +908,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -1028,7 +972,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
 				<JsonPath Expr="bounce_rate" Id="BounceRate" Title="Bounce Rate" Converter="Double"/>
 				<JsonPath Expr="new_visitors" Id="NewVisitors" Title="New Visitors" Converter="Long"/>
@@ -1061,7 +1005,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="city" Id="City" Title="City" Converter="String"/>
 				<JsonPath Expr="region" Id="Region" Title="Region" Converter="String"/>
@@ -1095,7 +1039,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
@@ -1128,7 +1072,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="external_referring_domain" Id="ReferringDomain" Title="Referring Domain" Converter="String"/>
 				<JsonPath Expr="referring_pages" Id="ReferringPages" Title="Referring Pages" Converter="Long" DefaultValue=""/>
@@ -1161,7 +1105,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 				<JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Long" DefaultValue=""/>
@@ -1194,7 +1138,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
 				<JsonPath Expr="external_search_term" Id="SearchTerm" Title="Search Term" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Long" DefaultValue=""/>
@@ -1227,7 +1171,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="search_engine" Id="SearchEngine" Title="Search Engine" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Long" DefaultValue=""/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long" DefaultValue=""/>
@@ -1258,7 +1202,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
 				<JsonPath Expr="organisation" Id="Site" Title="Site" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Long" DefaultValue=""/>
@@ -1292,7 +1236,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long"/>
       </JsonPath>
@@ -1322,7 +1266,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="browser_name" Id="Browser" Title="Browser" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="bounce_rate" Id="BounceRate" Title="Bounce Rate" Converter="Double"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long" DefaultValue=""/>
@@ -1353,7 +1297,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
 				<JsonPath Expr="country_name" Id="Country" Title="Country" Converter="String"/>
 				<JsonPath Expr="bounce_rate" Id="BounceRate" Title="Bounce Rate" Converter="Double"/>
@@ -1385,7 +1329,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="device_type" Id="Device" Title="Device" Converter="String"/>
 				<JsonPath Expr="bounce_rate" Id="BounceRate" Title="Bounce Rate" Converter="Double"/>
 				<JsonPath Expr="visits" Id="Visits" Title="Visits" Converter="Long" DefaultValue=""/>
@@ -1416,7 +1360,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="Long"/>
 				<JsonPath Expr="organisation" Id="Organisation" Title="Organisation" Converter="String"/>
 				<JsonPath Expr="ip_addresses" Id="IPAddresses" Title="IPA ddresses" Converter="Long"/>
