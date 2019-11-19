@@ -35,6 +35,7 @@
     </Resource>
     <Resource Id="Error">
       <Fail>
+				<JsonPath Expr="error" Fail.If="RegexMatches" Fail.ComparedTo="downstream\sissue" Fail.Action="EmptyResult"/>
 				<JsonPath Expr="error"/>
       </Fail>
     </Resource>
@@ -50,9 +51,10 @@
   <RestConnector Id="Keywords" Title="Keywords" HelpText="Returns important keywords in the content." HelpUrl="https://cloud.ibm.com/apidocs/natural-language-understanding#entities">
     <Parameters>
       <Resource Id="Inputs"/>
-			<Text Id="Text" Title="Input" Debug.DefaultValue="Lets test this sentence" Required="true"/>
-      <Number Id="Limit" Title="Keyword Limit" DefaultValue="50" Minimum="1" HelpText="Maximum number of keywords to return." Required="false"/>
+			<Text Id="Text" Title="Input" Debug.DefaultValue="Lets test this sentence" Required="true" Multiline="true"/>
     </Parameters>
+		<Batch Parameter="Text" Separator="\n"/>
+    <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <HttpSettings>
 				<Resource Id="HeaderMethods"/>
@@ -67,7 +69,7 @@
 						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"keywords": {
-								"limit": @Model.Limit,
+								"limit": @(Model.PageCursor.PageSize),
 								"sentiment":@ContainsKeyword(sentiments),
 								"emotion":@ContainsKeyword(emotions)
 							}
@@ -90,6 +92,7 @@
 				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" Checked="false" DefaultValue=""/>
 				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue=""/>
 				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue=""/>
+				<Compute Expr="@(Model.PageCursor.BatchPosition+1)" Id="Position" Converter="Auto" Checked="false" DefaultValue=""/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -98,9 +101,11 @@
   <RestConnector Id="Entities" Title="Entities" HelpText="Identifies people, cities, organizations, and other other entities in the content." HelpUrl="https://cloud.ibm.com/apidocs/natural-language-understanding#entities">
 	<Parameters>
 			<Resource Id="Inputs"/>
-      <Text Id="Text" Title="Input" Debug.DefaultValue="" Required="true"/>
-      <Number Id="Limit" Title="Keyword Limit" DefaultValue="50" Minimum="1" HelpText="Maximum number of entities to return." Required="false"/>
+      <Text Id="Text" Title="Input" Debug.DefaultValue="" Required="true" Multiline="true"/>
+			<Checkbox Id="ExcludeQuantities" Title="Exclude Quantities"/>
     </Parameters>
+		<Batch Parameter="Text" Separator="\n"/>
+    <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <HttpSettings>
 				<Resource Id="HeaderMethods"/>
@@ -116,7 +121,7 @@
 						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"entities": {
-								"limit": @Model.Limit,
+								"limit": @(Model.PageCursor.PageSize),
 								"sentiment":@ContainsKeyword(sentiments),
 								"emotion":@ContainsKeyword(emotions),
 								"mentions":@ContainsKeyword(locations)
@@ -129,7 +134,7 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.entities[*]">
+			<JsonPath Expr="$.entities[@(ExclQuantityToken())]">
 				<JsonPath Expr="text" Id="Text" Converter="String"/>
 				<JsonPath Expr="type" Id="Type" Converter="String"/>
 				<JsonPath Expr="relevance" Id="Relevance" Converter="Double"/>
@@ -143,6 +148,7 @@
 				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue=""/>
 				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue=""/>
 				<JsonPath Expr="mentions[0].location[0]" Id="FirstCharNum" Converter="Long" Checked="false" DefaultValue=""/>
+				<Compute Expr="@(Model.PageCursor.BatchPosition+1)" Id="Position" Converter="Auto" Checked="false" DefaultValue=""/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -341,6 +347,10 @@
 
 			string strJsonSent() {
 				return (!string.IsNullOrEmpty(Model.Inputs) ? "$.sentiment.targets[*]" : "$.sentiment.document");
+			}
+			
+			string ExclQuantityToken() {
+				return (Model.ExcludeQuantities == true ? "?(@.type!='Quantity')" : "*");
 			}
     ]]>
   </RazorFunctions>
