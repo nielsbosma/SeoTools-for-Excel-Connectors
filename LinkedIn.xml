@@ -830,7 +830,7 @@
     <Parameters>
       <Select Id="Type" Title="Lookup Method" DefaultValue="vanityName" Required="false">
         <DataSource>
-          <Item Id="vanityName" Title="Vanity Name"/>
+          <Item Id="vanityName" Title="Vanity Name or LinkedIn URL"/>
           <Item Id="emailDomain" Title="Email Domain"/>
         </DataSource>
       </Select>
@@ -840,7 +840,12 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.linkedin.com/v2/organizations?q=@(Model.Type)&@(Model.Type)=@(Model.Query)
+        https://api.linkedin.com/v2/organizations?q=@(Model.Type)&@(Model.Type)=
+				@(Model.Type == "emailDomain" 
+					? Model.Query
+					:	Model.Query.Contains("/company/") 
+						? GetVanityName() 
+						: Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -889,6 +894,13 @@
       string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(100).ToArray();
       return string.Join("&",lines.Select((e, i) => "shares[" + i + "]=" + e).ToArray());
     }
+		
+		String GetVanityName() {
+			Regex regex = new Regex(@"company\/(.*?)\/?$");
+			Match match = regex.Match(Model.Query);
+			return match.Groups[1].Value;
+    }
     ]]>
   </RazorFunctions>
+	
 </Suite>
