@@ -31,9 +31,12 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="PersonLookupEmail" Group="Persons" Title="Person Lookup by Email" HelpUrl="https://docs.fullcontact.com/#person-enrichment">
+  <RestConnector Id="PersonLookup" Group="Persons" Title="Person Lookup" HelpUrl="https://docs.fullcontact.com/#person-enrichment">
     <Parameters>
-      <Text Id="Email" Title="Email" Debug.DefaultValue="" Required="true"/>
+      <Text Id="Email" Title="Email Address" Debug.DefaultValue="niklas.thelning@retriever.se" Required="false"/>
+      <Text Id="Twitter" Title="Twitter Handle" Debug.DefaultValue="niklasthelning" Required="false"/>
+      <Text Id="LinkedIn" Title="LinkedIn URL" Debug.DefaultValue="" Required="false"/>
+      <Text Id="FullName" Title="Full Name" Debug.DefaultValue="" Required="false"/>
     </Parameters>
     <Fetch>
 			<HttpSettings>
@@ -42,47 +45,11 @@
 					<![CDATA[
 						@{
 							var dict = new Dictionary<string, object>();
-							dict.Add("email", Model.Email);
-							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
-						}
-						@output
-					]]>
-        </RequestBody>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-				https://api.fullcontact.com/v3/person.enrich
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="fullName" Id="FullName" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="ageRange" Id="Age" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="gender" Id="Gender" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="location" Id="Location" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="title" Id="Title" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="organization" Id="Organization" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="twitter" Id="Twitter" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="linkedin" Id="Linkedin" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="facebook" Id="Facebook" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="bio" Id="Bio" Converter="String" DefaultValue=""/>
-      <JsonPath Expr="website" Id="Website" Converter="String" DefaultValue=""/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="PersonLookupTwitter" Title="Person Lookup by Twitter" Group="Persons" HelpUrl="https://docs.fullcontact.com/#person-enrichment">
-    <Parameters>
-      <Text Id="Twitter" Title="Twitter" Debug.DefaultValue="" Required="true"/>
-    </Parameters>
-    <Fetch>
-			<HttpSettings>
-				<Resource Id="HttpSettingsEnrich"/>
-				<RequestBody>
-					<![CDATA[
-						@{
-							var dict = new Dictionary<string, object>();
-							dict.Add("twitter", Model.Twitter);
+							if(!string.IsNullOrEmpty(Model.Email)) dict.Add("email", Model.Email);
+							if(!string.IsNullOrEmpty(Model.Twitter)) dict.Add("twitter", Model.Twitter);
+							if(!string.IsNullOrEmpty(Model.LinkedIn)) dict.Add("linkedin", Model.LinkedIn);
+							if(!string.IsNullOrEmpty(Model.FullName)) dict.Add("fullName", Model.FullName);
+							
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
 						@output
