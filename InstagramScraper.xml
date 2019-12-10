@@ -18,7 +18,9 @@
 				<Regex Expr="&quot;description&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
 			</Compute>
 			<Regex Expr="&quot;external_url&quot;:&quot;(.*?)&quot;" Id="ExternalUrl" Title="External URL" Group="1" Converter="String" DefaultValue=""/>
-      <Regex Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Id="Avatar" Title="Avatar" Group="1" Converter="String"/>
+			<Compute Expr="@(DecodeAvatarUrl(Model.Inp))" Id="Avatar" Title="Avatar" DefaultValue="">
+				<Regex Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
+			</Compute>
     </Parse>
   </RestConnector>
 
@@ -199,7 +201,10 @@
 		}
 		string FetchAvatar() {
 			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"profile_pic_url\":\"(.*?)\",");
-			return matches.Count > 0 ? matches[matches.Count - 1].Groups[1].ToString() : "";
+			return matches.Count > 0 ? DecodeAvatarUrl(matches[matches.Count - 1].Groups[1].ToString()) : "";
+		}
+		string DecodeAvatarUrl(string url) {
+			return url.Replace(@"\u0026","&");
 		}
     ]]>
   </RazorFunctions>
