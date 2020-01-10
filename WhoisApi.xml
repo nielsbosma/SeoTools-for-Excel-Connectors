@@ -1,25 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Suite Category="Domains" Title="WhoisApi" Id="WhoisApi" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WhoisApi.xml" HelpUrl="http://seotoolsforexcel.com/whoisapi/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/whoisapi/">
-    <Text Id="Username" Required="true"/>
-    <Text Id="Password" Required="true" Password="true"/>
+    <Text Id="ApiKey" Required="true"/>
   </Settings>
 
-  <RestConnector Id="Whois" Title="Whois" HelpUrl="https://www.whoisxmlapi.com/whois-api-guide.php">
+  <RestConnector Id="Whois" Title="Whois" HelpUrl="https://whois.whoisxmlapi.com">
     <Parameters>
       <Text Id="Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://www.whoisxmlapi.com/whoisserver/WhoisService?
-        domainName=@(Model.Domain)
-        &username=@(Model.Username)
-        &password=@(Model.Password)
-        &outputFormat=JSON
+        https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=@(Model.ApiKey)
+				&domainName=@(Model.Domain)
+				&outputFormat=JSON
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -41,7 +38,7 @@
       </JsonPath>
     </Parse>
     <Fail>
-      <JsonPath Expr="WhoisRecord.dataError"/>
+      <JsonPath Expr="ErrorMessage.msg"/>
     </Fail>
   </RestConnector>
 
@@ -49,8 +46,8 @@
     <Parameters>
       <Radio Id="Mode" Title="Mode" DefaultValue="DNS_ONLY" Required="true">
         <DataSource>
-          <Item Id="DNS_ONLY" Title="DNS (Quicker)"/>
-          <Item Id="DNS_AND_WHOIS" Title="DNS and Whois"/>
+          <Item Id="1" Title="Quicker"/>
+          <Item Id="2" Title="Slower but more accurate"/>
         </DataSource>
       </Radio>
       <Text Id="Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
@@ -58,39 +55,18 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        http://www.whoisxmlapi.com/whoisserver/WhoisService?cmd=GET_DN_AVAILABILITY
-        &getMode=@(Model.Mode)
-        &domainName=@(Model.Domain)
-        &username=@(Model.Username)
-        &password=@(Model.Password)
-        &outputFormat=JSON
+        https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=@(Model.ApiKey)
+				&domainName=@(Model.Domain)
+				&outputFormat=JSON
+				&da=@(Model.Mode)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="DomainInfo.domainAvailability" Converter="Bool" Converter.TrueIf="AVAILABLE"/>
+      <JsonPath Expr="WhoisRecord.domainAvailability" Converter="Bool" Converter.TrueIf="AVAILABLE"/>
     </Parse>
     <Fail>
-      <JsonPath Expr="DomainInfo.dataError"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="AccountBalance" Title="Account Balance" HelpUrl="https://www.whoisxmlapi.com/whois-api-guide.php">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.whoisxmlapi.com/accountServices.php?servicetype=accountbalance
-        &username=@(Model.Username)
-        &password=@(Model.Password)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <XPath Expr="//balance" Id="Balance" Title="Balance" Converter="Int"/>
-      <XPath Expr="//reserve" Id="Reserve" Title="Reserve" Converter="Int" Checked="false"/>
-    </Parse>
-    <Fail>
-      <Xpath Expr="//error"/>
+      <JsonPath Expr="ErrorMessage.msg"/>
     </Fail>
   </RestConnector>
 
