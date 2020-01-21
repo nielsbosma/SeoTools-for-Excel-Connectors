@@ -75,9 +75,10 @@
 			</Compute>
       <Regex Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Id="ImageUrl" Title="Display URL" Group="1" Converter="String" DefaultValue=""/>
       <XPath Expr="//meta[@@property='instapp:owner_user_id']" Title="User Id" Id="UserId" Attribute="content" Converter="Auto" DefaultValue=""/>
-			<Compute Expr="@FetchUsername()" Id="Username" Title="Username" Converter="Auto" DefaultValue=""/>
-			<Compute Expr="https://www.instagram.com/@FetchUsername()" Id="UserUrl" Title="User URL" DefaultValue=""/>
-			<Compute Expr="@FetchAvatar()" Id="Avatar" Title="Avatar" DefaultValue=""/>
+			<Regex Expr="\(@@(.*?)\)" Id="Username" Title="Username" Group="1" Converter="String" DefaultValue=""/>
+			<Compute Expr="https://www.instagram.com/@(Model.Inp)" Id="UserUrl" Title="User URL" DefaultValue="">
+				<Regex Expr="\(@@(.*?)\)" Id="Inp" Group="1" DefaultValue=""/>
+			</Compute>
     </Parse>
   </RestConnector>
 
@@ -195,14 +196,6 @@
     string FetchUserString() {
 			return (Model.User.Contains("instagram.com") ? Model.User : "https://www.instagram.com/" + Model.User);
     }
-		string FetchUsername() {
-			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"username\":\"(.*?)\"}?,");
-			return matches.Count > 0 ? matches[matches.Count - 1].Groups[1].ToString() : "";
-		}
-		string FetchAvatar() {
-			MatchCollection matches = Regex.Matches(Model.FetchedResult.Body, "\"profile_pic_url\":\"(.*?)\",");
-			return matches.Count > 0 ? DecodeAvatarUrl(matches[matches.Count - 1].Groups[1].ToString()) : "";
-		}
 		string DecodeAvatarUrl(string url) {
 			return url.Replace(@"\u0026","&");
 		}
