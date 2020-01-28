@@ -363,6 +363,43 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+	<RestConnector Id="PostPageFeed" Title="Posts from Visitors" Group="Post Data">
+    <Parameters>
+      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="324952857522514" Select.Connector="ListPages" Select.IdField="PageId" Select.TitleField="PageName"/>
+
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="paging.next"/>
+      </Parse>
+    </Paging>
+    <Resource Id="Prepare"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/@(Model.Id)/visitor_posts?access_token=@(Model.PageToken)&period=lifetime
+        &fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
+        @PeriodParameters()
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.data[*]">
+        <JsonPath Expr="permalink_url" Id="PostLink" Title="PostLink" Tag="permalink_url" Converter="String"/>
+        <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
+        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
+        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" Tag="type" DefaultValue=""/>
+        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
+        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type' &amp;&amp; @@.period=='lifetime')].values[0].value.comment" Id="Comments" Tag="post_activity_by_action_type" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
+				<JsonPath Expr="insights.data[?(@@.name=='post_activity_by_action_type' &amp;&amp; @@.period=='lifetime')].values[0].value.share" Id="Shares" Tag="post_activity_by_action_type" Title="Shares" Converter="Int" DefaultValue="0" HelpText="Number of shares"/>
+    <Resource Id="Fail"/>
+  </RestConnector>
+	
 	<RestConnector Id="PostComments" Title="Comments to Post" Group="Post Data">
     <Parameters>
       <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
