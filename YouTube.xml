@@ -53,7 +53,9 @@
 				</Compute>
 				<JsonPath Title="Id" Id="Id" Expr="id" DefaultValue=""/>
 				<JsonPath Title="Created" Id="Created" Expr="snippet.publishedAt" Converter="Auto" DefaultValue=""/>
-				<JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
 				<JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
 				<Compute Id="Duration" Expr="@(System.Xml.XmlConvert.ToTimeSpan(Model.Inp))" Converter="String" DefaultValue="">
 					<JsonPath Title="Duration" Id="Inp" Expr="contentDetails.duration" DefaultValue=""/>
@@ -164,11 +166,6 @@
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="obama" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
-      <Select Id="Sorting" Title="Sorting" DefaultValue="date">
-        <DataSource>
-					<Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
       <Select Id="Duration" Title="Duration" DefaultValue="any">
         <DataSource>
 					<Item Id="any" Title="Any"/>
@@ -177,7 +174,25 @@
 					<Item Id="short" Title="4 min-"/>
         </DataSource>
       </Select>
+      <Select Id="LanguageCode" Title="Preferred Language" DefaultValue="all">
+        <DataSource>
+					<Item Id="all"/>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="CountryCode" Title="Preferred Country" DefaultValue="all">
+        <DataSource>
+					<Item Id="all"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sorting" DefaultValue="date">
+        <DataSource>
+					<Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
       <Checkbox Id="videoDefinition" Title="HD Quality"/>
+
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
       <Parse>
@@ -193,6 +208,8 @@
 					&videoDuration=@(Model.Duration)
 					&videoDefinition=@(Model.videoDefinition ? "high" : "any")
 					&q=@Utils.UrlEncode(Model.Query)
+					@(Model.CountryCode != "all" ? "&regionCode=" + Model.CountryCode.ToUpper() : "")
+					@(Model.LanguageCode != "all" ? "&relevanceLanguage=" + Model.LanguageCode.ToUpper() : "")
 					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
 					{
 						@: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
@@ -217,7 +234,9 @@
         </Compute>
         <JsonPath Title="Id" Id="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
         <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
         <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
         <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
         <JsonPath Title="Channel" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
@@ -437,7 +456,9 @@
         </Compute>
         <JsonPath Title="Id" Id="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
         <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
         <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
         <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
         <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
@@ -476,7 +497,9 @@
         </Compute>
         <JsonPath Title="Id" Id="Id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue=""/>
         <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
         <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
         <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
         <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
