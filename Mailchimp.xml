@@ -173,6 +173,7 @@
 
   <RestConnector Id="CampaignsStatistics" Title="Campaigns Statistics" Group="Campaigns" HelpText="Get detailed campaign reports." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/#read-get_reports">
     <Parameters>
+      <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
       <Select Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -192,14 +193,15 @@
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Base)/3.0/reports?
+        @(Model.Base)/3.0/reports
+				@(!string.IsNullOrEmpty(Model.CampaignId) ? "/" + Model.CampaignId : "")
+				?sort_field=send_time
         @if(Model.SentInterval.StartDate != null && Model.SentInterval.EndDate != null)
         {
             @: &since_send_time=@Model.SentInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
             @: &before_send_time=@Model.SentInterval.EndDate.ToString("yyyy-MM-dd")T00:00:00+00:00
         }
         @(Model.Type != "all" ? "&type=" + Model.Type : "")
-        &sort_field=send_time
         &sort_dir=@(Model.Sorting)
         &count=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
@@ -207,7 +209,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.reports[*]">
+      <JsonPath Expr="@GetJsonPath()">
         <JsonPath Title="Id" Id="Id" Expr="id" HelpText="A string that uniquely identifies this campaign."/>
         <JsonPath Title="Title" Id="Title" Expr="campaign_title" HelpText="The title of the campaign."/>
         <JsonPath Title="Subject" Id="Subject" Expr="subject_line" HelpText="The subject line for the campaign."/>
@@ -739,5 +741,13 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+	
+<RazorFunctions>
+    <![CDATA[
+    string GetJsonPath() {
+			return !string.IsNullOrEmpty(Model.CampaignId) ?  "$" : "$.reports[*]";
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
