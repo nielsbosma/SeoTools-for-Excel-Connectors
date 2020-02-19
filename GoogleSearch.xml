@@ -81,7 +81,48 @@
     </Parse>
   </RestConnector>
 
-
+  <RestConnector Id="Bolded" Title="Search Results Bolded Words">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+			<Resource Id="Type"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
+			<Resource Id="DisplayLanguage"/>
+      <Resource Id="PeriodSorting"/>
+      <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="False"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://google.com/search?safe=off
+				&hl=@Model.DisplayLanguage
+				&q=@Utils.UrlEncode(Model.Query)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
+					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
+        }
+        @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
+        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+				@(Model.Type == "news" ? "&tbm=nws" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="@(ReturnXpath(false))">
+        <Xpath Expr="." Id="Title"/>
+      </XPath>
+      <XPath Expr="//span[@@class='st'] | //div[@@class='st']">
+        <Xpath Expr="csv(em)" Id="Bolded" Title="Bolded Words"/>
+      </XPath>
+      <XPath Expr="@(ReturnXpath(true))">
+        <Compute Id="URL" Title="URL" Expr="@Uri.UnescapeDataString(Model.UrlRaw)">
+          <Xpath Expr="." Attribute="href" Id="UrlRaw"/>
+        </Compute>
+      </XPath>
+    </Parse>
+  </RestConnector>
 
   <RestConnector Id="Ads" Title="Ads" HelpText="Returns ads on the first results page">
     <Parameters>
