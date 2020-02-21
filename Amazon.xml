@@ -137,7 +137,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Reviews" Title="Reviews">
+  <RestConnector Id="Reviews" Title="ASIN Reviews">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true" Multiline="true"/>
       <Select Id="Rating" Title="Filter by Ratings" Required="false" DefaultValue="all_stars">
@@ -207,6 +207,48 @@
         <XPath Expr=".//span[@@data-hook='avp-badge']" Id="Verified" Title="Verified" DefaultValue=""/>
         <Compute Expr="@Model.ASIN" Id="Input" Title="Input ASIN" Checked="false"/>
       </XPath>
+    </Parse>
+  </RestConnector>
+	
+	<RestConnector Id="ASINLookup" Title="ASIN Lookup">
+    <Parameters>
+      <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Host"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.amazon.com/dp/@(Model.ASIN)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Compute Expr="https://www.amazon.com/dp/@(Model.ASIN)" Id="Url" Title="URL"/>
+      <XPath Expr="//span[@@id='productTitle']" Id="Title" Title="Title" DefaultValue=""/>
+			<Compute Id="Reviews" Title="Reviews" Converter="Int" DefaultValue="0">
+				<Compute.Expr>
+					<![CDATA[
+						@Regex.Replace(Model.Inp,@"[^0-9]+","")
+					]]>
+				</Compute.Expr>
+				<XPath Expr="//span[@@id='acrCustomerReviewText']" Id="Inp"/>
+			</Compute>
+			<Compute Id="AverageReview" Title="Average Score" Converter="Double" DefaultValue="0">
+				<Compute.Expr>
+					<![CDATA[
+					@{
+						string output = (Model.Inp is string && Model.Inp.Contains("out")) ?
+							Model.Inp.Substring(0, Model.Inp.IndexOf("out")) : "0";
+					}
+					@output
+					]]>
+				</Compute.Expr>
+				<XPath Id="Inp" Expr="//i[contains(@@class,'a-icon a-icon-star')]" Converter="String" DefaultValue=""/>
+			</Compute>
+      <XPath Expr="//a[contains(@@href,'offer-listing')]/text()" Id="Offers" Title="Offers" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
