@@ -52,26 +52,6 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BulkIPLookup" Title="Bulk IP Lookup" HelpText="Request data for multiple IPv4 or IPv6 addresses at the same time. Requires a PRO license.">
-    <Parameters>
-      <Text Id="Ips" Title="IP Addresses" Required="true" Debug.DefaultValue="134.201.250.155" Multiline="true" HelpText="Enter one or more IP Addresses separated by a new line"/>
-    </Parameters>
-		<Batch Parameter="Ips" Separator="\n" ItemsPerBatch="50"/>
-		<Fetch>
-      <Fetch.Url>
-        <![CDATA[
-          http://api.ipstack.com/@(FetchIps())?access_key=@(Model.AccessKey)&hostname=1
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="@(ArrTest())">
-				<Resource Id="Fields"/>
-			</JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
   <RestConnector Id="RequesterLookup" Title="Requester Lookup" HelpText="Look up the data behind the IP address your API request is coming from.">
 		<Fetch>
       <Fetch.Url>
@@ -86,16 +66,4 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RazorFunctions>
-    <![CDATA[
-      string FetchIps() {
-				string[] lines = ((string)Model.Ips).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-        return string.Join(",",lines.Select((e) => Utils.UrlEncode(e)).ToArray());
-      }
-			
-			string ArrTest() {
-			 return Model.Ips.Trim().Split('\n').Length > 1 ? "$[*]" : "$";
-			}
-    ]]>
-  </RazorFunctions>
 </Suite>
