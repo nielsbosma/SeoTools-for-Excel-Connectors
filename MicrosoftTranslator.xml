@@ -45,8 +45,8 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$[*]">
-				<Compute Expr="@Utils.IsoLanguageCodeToName(Model.Inp)" Id="Language" Converter="Auto" HelpText="Code of the detected language.">
+			<JsonPath Expr="$[0]">
+				<Compute Expr="@GetLanguage()" Id="Language" Converter="Auto" HelpText="Code of the detected language.">
 					<JsonPath Expr="language" Id="Inp" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText="The score is between zero and one and a low score indicates a low confidence."/>
@@ -74,7 +74,7 @@
     <Parse>
 			<JsonPath Expr="$[*]">
 				<JsonPath Expr="translations[0].text" Id="Result" Title="Result" Converter="String" HelpText="A string giving the translated text."/>
-				<Compute Expr="@Utils.IsoLanguageCodeToName(Model.Inp)" Id="DetectedLanguage" Title="Detected Language" Converter="String" Checked="false" HelpText="The code of the detected language.">
+				<Compute Expr="@GetLanguage()" Id="DetectedLanguage" Title="Detected Language" Converter="String" Checked="false" HelpText="The code of the detected language.">
 					<JsonPath Expr="detectedLanguage.language" Id="Inp" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="detectedLanguage.score" Id="DetectedLanguageScore" Title="Detected Language Score" Converter="Double" Checked="false" HelpText="The score is between zero and one and a low score indicates a low confidence."/>
@@ -112,6 +112,11 @@
 			string FormatData(){
 				string temp1 = Regex.Replace(Model.Text, "\"", "\\\"");
 				return  Utils.StripTags(temp1);
+			}
+			
+			string GetLanguage() {
+				string LangName = Utils.IsoLanguageCodeToName(Model.Inp);
+				return !string.IsNullOrEmpty(LangName) ? LangName : Model.Inp;
 			}
     ]]>
   </RazorFunctions>
