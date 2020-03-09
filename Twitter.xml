@@ -54,8 +54,17 @@
 			<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
 			<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
-			<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
-			<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
+			<Compute Expr="@(GetTweetType(Model.txt))" Id="Type" Title="Type">
+				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Retweets" Title="Retweets" Converter="Int">
+				<JsonPath Expr="retweet_count" Id="Inp" Converter="Int"/>
+				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Likes" Title="Likes" Converter="Int">
+				<JsonPath Expr="favorite_count" Id="Inp" Converter="Int"/>
+				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			</Compute>
 			<JsonPath Expr="csv(entities.hashtags[*].text)" Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.urls[*].url)" Id="UrlEntities" Title="URL Entities" Converter="String" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.user_mentions[*].screen_name)" Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue=""/>
@@ -117,6 +126,7 @@
   <RestConnector Id="TweetSearch" Title="Tweets Search" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/search/api-reference/get-search-tweets.html">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
       <Select Id="Language" Title="Language" Required="false" DefaultValue="">
         <DataSource>
           <Item Id="" Title="All"/>
@@ -156,6 +166,7 @@
   <RestConnector Id="TweetsLookup" Title="Tweets Lookup" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/get-statuses-lookup">
     <Parameters>
       <Text Id="Ids" Title="Tweet URLs or Ids (One per row)" Multiline="true" Debug.DefaultValue="1088844064236228608" Required="true"/>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="100"/>
     <Fetch>
@@ -181,6 +192,7 @@
       <Text Id="Username" Title="Username" Debug.DefaultValue="nielsbosma" Required="true" Multiline="true"/>
       <Checkbox Id="IncludeRts" Title="Include Retweets" DefaultValue="true"/>
       <Checkbox Id="IncludeReplies" Title="Include Replies" DefaultValue="true"/>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
     </Parameters>
     <Paging PageSize="200" EvenPages="false">
       <Parse>
@@ -464,6 +476,22 @@
 
 		string bool2dim() {
 			return (Model.Ids.Split('\n').Length > 1 ? "$[*]" : "$");
+		}
+
+		string GetTweetType(string txt) {
+			if(txt.StartsWith("RT @"))
+			{
+				return "Retweet";
+			}
+			if(txt.StartsWith("@"))
+			{
+				return "Reply";
+			}
+			return "Tweet";
+		}
+		
+		long AdjustEngagement(string txt) {
+			return (!Model.IncludeRtEng && GetTweetType(txt) == "Retweet") ? 0 : Model.Inp;
 		}
     ]]>
   </RazorFunctions>
