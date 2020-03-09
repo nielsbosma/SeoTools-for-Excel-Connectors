@@ -3,9 +3,9 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="Sitemap" Ttle="Sitemap">
+  <RestConnector Id="General" Title="General Protocol">
     <Parameters>
-      <Text Id="Url" Title="Stemap URL(s)" Debug.DefaultValue="https://www.aftonbladet.se/sitemaps/files/201207-articles.xml" Multiline="true"/>
+      <Text Id="Url" Title="Sitemap URL(s)" Debug.DefaultValue="https://www.aftonbladet.se/sitemaps/files/201207-articles.xml" Multiline="true"/>
     </Parameters>
 		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
@@ -22,6 +22,36 @@
 				<XPath Expr="../lastmod" Id="Modified" Converter="Auto" DefaultValue="" HelpText="The date of last modification of the file."/>
 				<XPath Expr="../changefreq" Id="Frequency" Converter="Auto" DefaultValue="" HelpText="How frequently the page is likely to change."/>
 				<XPath Expr="../priority" Id="Priority" Converter="Auto" DefaultValue="" HelpText="The priority of this URL relative to other URLs on your site."/>
+			</XPath>
+    </Parse>
+			<Fail>
+				<XPath Expr="//loc" Id="InvalidSitemap" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Not a valid Sitemap XML"/>
+			</Fail>
+  </RestConnector>
+	
+  <RestConnector Id="GoogleNews" Title="Google News">
+    <Parameters>
+      <Text Id="Url" Title="Google News Sitemap URL(s)" Debug.DefaultValue="https://www.aftonbladet.se/sitemaps/files/articles-48hrs.xml" Multiline="true"/>
+    </Parameters>
+		<Batch Parameter="Url" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @Model.Url
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//loc">
+				<Compute Expr="@Model.Url" Id="Input" HelpText="Sitemap Input URL."/>
+				<XPath Expr="." Id="Url" DefaultValue="" HelpText="URL of the page."/>
+				<XPath Expr="../lastmod" Id="Modified" Converter="Auto" DefaultValue="" HelpText="The date of last modification of the file."/>
+				<XPath Expr="..//*[name()='news:name']" Id="Name" Name="Name" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="..//*[name()='news:language']" Id="Language" Name="Language" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="..//*[name()='news:title']" Id="Title" Name="Title" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="..//*[name()='news:keywords']" Id="Keywords" Name="Keywords" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="..//*[name()='news:publication_date']" Id="PublicationDate" Name="Publication Date" Converter="Auto" DefaultValue=""/>
+
 			</XPath>
     </Parse>
 			<Fail>
