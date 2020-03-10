@@ -7,7 +7,7 @@
     <Parameters>
       <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
-		<Fetch Url="@FetchUserString()"/>
+		<Fetch Url="@(FetchUserString())"/>
     <Parse>
       <Regex Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Id="Followers" Title="Followers"  Group="1" Converter="Int"/>
       <Regex Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Id="Follows" Title="Follows" Group="1" Converter="Int"/>
@@ -101,7 +101,7 @@
 		</Fail>
   </RestConnector>
 
-  <RestConnector Id="HashtagFeed" Title="Post Hashtag Feed" Group="Posts">
+  <RestConnector Id="HashtagFeed" Title="Post Feed" Group="Hashtags">
     <Parameters>
       <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
       <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
@@ -189,21 +189,135 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="HashtagTopPosts" Title="Top Posts" Group="Hashtags">
+    <Parameters>
+      <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
+      <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10" MaxTake="10"/>
+    <Fetch>
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Accept-Language'>@Model.CaptionLanguage</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_top_posts.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+				<Compute Id="Type" Title="Type">
+					<Compute.Expr>
+						<![CDATA[
+						@Regex.Replace(Model.Inp, "Graph", "")
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_liked_by.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId" Converter="Auto"/>
+				<Compute Id="AccessibilityCaption" Title="Accessibility Caption">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = Model.Inp;
+							string NoPrediction = "";
+							string IntroSentence = "";
+
+							var dictLangs = new Dictionary<string, string>();
+							dictLangs.Add("en", "No photo description,Image may contain: ");
+							dictLangs.Add("sv", "Ingen fotobeskrivning,Bilden kan innehålla: ");
+							dictLangs.Add("nb", "Ingen bildebeskrivelse er tilgjengelig.,Bildet kan inneholde: ");
+							dictLangs.Add("da", "Ingen tilgængelig billedbeskrivelse.,Billedet indeholder sandsynligvis: ");
+							dictLangs.Add("fi", "Kuvan kuvausta ei ole saatavilla.,Kuvan mahdollinen sisältö: ");
+							dictLangs.Add("de", "Keine Fotobeschreibung verfügbar.,Bild könnte enthalten: ");
+							dictLangs.Add("es", "No hay descripción de la foto disponible.,La imagen puede contener: ");
+
+							if (dictLangs.ContainsKey(Model.CaptionLanguage))
+							{
+								NoPrediction = dictLangs[Model.CaptionLanguage].Split(',')[0];
+								IntroSentence = dictLangs[Model.CaptionLanguage].Split(',')[1];
+
+								if(!Model.Inp.Contains(NoPrediction) && !string.IsNullOrEmpty(Model.Inp))
+								{
+									output = Regex.Replace(Model.Inp, @IntroSentence, "");
+									output = Regex.Replace(output, @"^.*?\.$?", "");
+								}
+							}
+						}
+						@output
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="accessibility_caption" Id="Inp" DefaultValue=""/>
+				</Compute>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="RelatedHashtags" Title="Related Hashtags" Group="Hashtags">
+    <Parameters>
+      <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_related_tags.edges[*].node">
+				<JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="HashtagCount" Title="Post Count" Group="Hashtags">
+    <Parameters>
+      <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+			<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.count" Id="Count" Converter="Long" DefaultValue="0"/>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string FetchPostString() {
 			return (Model.Post.Contains("instagram.com") ? Model.Post : "https://www.instagram.com/p/" + Model.Post);
     }
     string FetchUserString() {
-			return (Model.User.Contains("instagram.com") ? Model.User : "https://www.instagram.com/" + Model.User);
+			string input = Model.User.StartsWith("@") ? Model.User.Substring(1) : Model.User;
+			return input.Contains("instagram.com") ? input : "https://www.instagram.com/" + input;
     }
 		string DecodeAvatarUrl(string url) {
 			return url.Replace(@"\u0026","&");
 		}
 		string StripHashtag() {
-			return Model.Hashtag.StartsWith("#") ? Model.Hashtag.Substring(1) : Model.Hashtag;
-		}
-		string StripTag() {
 			return Model.Hashtag.StartsWith("#") ? Model.Hashtag.Substring(1) : Model.Hashtag;
 		}
     ]]>
