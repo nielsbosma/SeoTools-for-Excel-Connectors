@@ -206,7 +206,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/statuses/user_timeline.json?
-        screen_name=@(Model.Username)
+        screen_name=@(StripTag(Model.Username))
         &count=@(Model.PageCursor.NextTake)
         &include_rts=@(Model.IncludeRts)
 				&exclude_replies=@(!Model.IncludeReplies)
@@ -273,7 +273,7 @@
 
   <RestConnector Id="Followers" Title="User Followers" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-followers-list">
     <Parameters>
-      <Text Id="ScreenName" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
       <Text Id="CustomCursor" Title="Custom Cursor" Required="false"/>
     </Parameters>
     <Paging PageSize="200">
@@ -286,7 +286,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/followers/list.json?skip_status=true
-        &screen_name=@(Model.ScreenName)
+        &screen_name=@(StripTag(Model.Username))
         &count=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.NextCursor
 					: Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor)
@@ -305,7 +305,7 @@
 
   <RestConnector Id="Following" Title="User Following" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-friends-list">
     <Parameters>
-      <Text Id="ScreenName" Title="User Lookup" Debug.DefaultValue="nielsbosma" Required="true"/>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="nielsbosma" Required="true"/>
       <Text Id="CustomCursor" Title="Custom Cursor" Required="false"/>
     </Parameters>
     <Paging PageSize="200">
@@ -318,7 +318,7 @@
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/friends/list.json?skip_status=true
-        &screen_name=@(Model.ScreenName)
+        &screen_name=@(StripTag(Model.Username))
         &count=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.NextCursor
 					: Model.PageCursor.Page == 0 && !string.IsNullOrEmpty(Model.CustomCursor)
@@ -400,16 +400,16 @@
           <Item Id="user_id" Title="User Ids"/>
         </DataSource>
       </Radio>
-      <Text Id="SourceUser" Title="Source User" Debug.DefaultValue="wearebuddler" HelpText="The subject user." Required="true"/>
-      <Text Id="TargetUser" Title="Target User" Debug.DefaultValue="kenyavic" HelpText="The taget user." Required="true"/>
+      <Text Id="SourceUser" Title="Source Username" Debug.DefaultValue="wearebuddler" HelpText="The subject username." Required="true"/>
+      <Text Id="TargetUser" Title="Target Username" Debug.DefaultValue="kenyavic" HelpText="The taget username." Required="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/1.1/friendships/show.json?
-        source_@(Model.InputType)=@(Model.SourceUser)
-        &target_@(Model.InputType)=@(Model.TargetUser)
+        source_@(Model.InputType)=@(StripTag(Model.SourceUser))
+        &target_@(Model.InputType)=@(StripTag(Model.TargetUser))
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -456,12 +456,12 @@
     <![CDATA[
     string FetchUserString() {
 			string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-      return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
+      return string.Join(",",lines.Select(e => Regex.Replace(e, @"^@", string.Empty)).ToArray());
     }
 
     string FetchTweetString() {
 			string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-      return string.Join(",",lines.Select((e, i) => Regex.Replace(e, @"(\w*)\/status", string.Empty)).Select((e, i) => Regex.Replace(e, @"[^\d]", string.Empty)).ToArray());
+      return string.Join(",",lines.Select(e => Regex.Replace(e, @"(\w*)\/status", string.Empty)).Select((e, i) => Regex.Replace(e, @"[^\d]", string.Empty)).ToArray());
     }
 
 		string FetchSingleTweet() {
@@ -489,9 +489,13 @@
 			}
 			return "Tweet";
 		}
-		
+
 		long AdjustEngagement(string txt) {
 			return (!Model.IncludeRtEng && GetTweetType(txt) == "Retweet") ? 0 : Model.Inp;
+		}
+
+    string StripTag(string username) {
+			return username.StartsWith("@") ? username.Substring(1) : username;
 		}
     ]]>
   </RazorFunctions>
