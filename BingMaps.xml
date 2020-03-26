@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Bing Maps" Identifier="BingMaps" RequireVersion="8.2" Category="GEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/BingMaps.xml" HelpUrl="http://seotoolsforexcel.com/bingmaps">
+
+ <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/bingmaps/">
+    <Text Id="ApiKey" Title="Api Key" Required="true"/>
+  </Settings>
+
+	<Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.errorDetails[0]"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="LocationbyAdress" Title="Find Location by Address" HelpUrl="https://docs.microsoft.com/en-us/bingmaps/rest-services/locations/find-a-location-by-address">
+    <Parameters>
+      <Text Id="CountryRegion" Title="Country Region" Debug.DefaultValue="SWE" HelpText="ISO country code. Example: AU"/>
+      <Text Id="AdminDistrict" Title="Admin District" HelpText="Subdivision, such as the abbreviation of a US state. Example: WA"/>
+      <Text Id="Locality" Title="Locality" HelpText="Locality, such as a US city. Example: Seattle"/>
+      <Text Id="PostalCode" Title="Postal Code" HelpText="Postal code, such as a US ZIP Code. Example: 98178"/>
+      <Text Id="AddressLine" Title="Address Line" Debug.DefaultValue="Kungsgatan 19" HelpText="Street line of an address. Example: 1 Microsoft Way"/>
+      <Number Id="Results" Title="Number of Results" Minimum="1" Maximum="20" DefaultValue="1" HelpText="Number between 1 and 20."/>
+    </Parameters>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					http://dev.virtualearth.net/REST/v1/Locations?key=@(Model.ApiKey)
+					@(!string.IsNullOrEmpty(Model.CountryRegion) ? "&countryRegion=" + Utils.UrlEncode(Model.CountryRegion) : "")
+					@(!string.IsNullOrEmpty(Model.AdminDistrict) ? "&adminDistrict=" + Utils.UrlEncode(Model.AdminDistrict) : "")
+					@(!string.IsNullOrEmpty(Model.Locality) ? "&locality=" + Utils.UrlEncode(Model.Locality) : "")
+					@(!string.IsNullOrEmpty(Model.PostalCode) ? "&postalCode=" + Utils.UrlEncode(Model.PostalCode) : "")
+					@(!string.IsNullOrEmpty(Model.AddressLine) ? "&addressLine=" + Utils.UrlEncode(Model.AddressLine) : "")
+					&maxResults=@(Model.Results)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.resourceSets[0].resources[*]">
+				<JsonPath Expr="name" Id="Name" Title="Name"/>
+				<JsonPath Expr="confidence" Id="Confidence" Title="Confidence"/>
+				<JsonPath Expr="entityType" Id="Type" Title="Type"/>
+				<JsonPath Expr="address.countryRegion" Id="CountryRegion" Title="Country Region"/>
+				<JsonPath Expr="address.adminDistrict" Id="AdminDistrict" Title="Admin District1"/>
+				<JsonPath Expr="address.adminDistrict2" Id="AdminDistrict2" Title="Admin District2"/>
+				<JsonPath Expr="address.locality" Id="Locality" Title="Locality"/>
+				<JsonPath Expr="address.postalCode" Id="PostalCode" Title="Postal Code"/>
+				<JsonPath Expr="address.addressLine" Id="AddressLine" Title="AddressLine"/>
+				<JsonPath Expr="csv(point.coordinates)" Id="Point" Title="Point" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="csv(bbox)" Id="Box" Title="Box" Converter="Auto" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="LocationbyPoint" Title="Find Location by Point" HelpUrl="https://docs.microsoft.com/en-us/bingmaps/rest-services/locations/find-a-location-by-point">
+    <Parameters>
+      <Text Id="Latitude" Title="Latitude" Debug.DefaultValue="59.33587"/>
+      <Text Id="Longitude" Title="Longitude" Debug.DefaultValue="18.06816"/>
+      <Number Id="Results" Title="Number of Results" Minimum="1" Maximum="20" DefaultValue="1" HelpText="Number between 1 and 20."/>
+    </Parameters>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					http://dev.virtualearth.net/REST/v1/Locations/@(Model.Latitude),@(Model.Longitude)?key=@(Model.ApiKey)
+					&maxResults=@(Model.Results)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.resourceSets[0].resources[*]">
+				<JsonPath Expr="name" Id="Name" Title="Name"/>
+				<JsonPath Expr="confidence" Id="Confidence" Title="Confidence"/>
+				<JsonPath Expr="entityType" Id="Type" Title="Type"/>
+				<JsonPath Expr="address.countryRegion" Id="CountryRegion" Title="Country Region"/>
+				<JsonPath Expr="address.adminDistrict" Id="AdminDistrict" Title="Admin District1"/>
+				<JsonPath Expr="address.adminDistrict2" Id="AdminDistrict2" Title="Admin District2"/>
+				<JsonPath Expr="address.locality" Id="Locality" Title="Locality"/>
+				<JsonPath Expr="address.postalCode" Id="PostalCode" Title="Postal Code"/>
+				<JsonPath Expr="address.addressLine" Id="AddressLine" Title="AddressLine"/>
+				<JsonPath Expr="csv(point.coordinates)" Id="Point" Title="Point" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="csv(bbox)" Id="Box" Title="Box" Converter="Auto" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>

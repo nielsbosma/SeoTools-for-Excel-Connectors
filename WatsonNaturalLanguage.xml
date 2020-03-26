@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Watson Natural Language" Id="WatsonNaturalLanguage" Category="Language" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WatsonNaturalLanguage.xml" HelpUrl="http://seotoolsforexcel.com/watson-nl/" HelpText="Documentation">
+<Suite Title="Watson Natural Language" Id="WatsonNaturalLanguage" Category="Language" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WatsonNaturalLanguage.xml" HelpUrl="http://seotoolsforexcel.com/watson-nl/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -19,6 +19,7 @@
 
   <Resources>
     <Resource Id="HeaderMethods">
+      <IntervalBetweenRequests RandomFrom="100" RandomTo="150" IfSame="Host"/>
 			<RequestMethod>POST</RequestMethod>
 			<RequestContentType>application/json</RequestContentType>
 			<RequestHeaders>
@@ -35,6 +36,8 @@
     </Resource>
     <Resource Id="Error">
       <Fail>
+				<JsonPath Expr="error" Fail.If="RegexMatches" Fail.ComparedTo="downstream\sissue" Fail.Action="EmptyResult"/>
+				<JsonPath Expr="language" Fail.If="RegexMatches" Fail.ComparedTo="unknown" Fail.Action="EmptyResult"/>
 				<JsonPath Expr="error"/>
       </Fail>
     </Resource>
@@ -50,9 +53,10 @@
   <RestConnector Id="Keywords" Title="Keywords" HelpText="Returns important keywords in the content." HelpUrl="https://cloud.ibm.com/apidocs/natural-language-understanding#entities">
     <Parameters>
       <Resource Id="Inputs"/>
-			<Text Id="Text" Title="Input" Debug.DefaultValue="Lets test this sentence" Required="true"/>
-      <Number Id="Limit" Title="Keyword Limit" DefaultValue="50" Minimum="1" HelpText="Maximum number of keywords to return." Required="false"/>
+			<Text Id="Text" Title="Input" Debug.DefaultValue="Lets test this sentence" Required="true" Multiline="true"/>
     </Parameters>
+		<Batch Parameter="Text" Separator="\n"/>
+    <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <HttpSettings>
 				<Resource Id="HeaderMethods"/>
@@ -64,10 +68,10 @@
 					}
 
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"keywords": {
-								"limit": @Model.Limit,
+								"limit": @(Model.PageCursor.PageSize),
 								"sentiment":@ContainsKeyword(sentiments),
 								"emotion":@ContainsKeyword(emotions)
 							}
@@ -79,17 +83,18 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.keywords.*">
-				<JsonPath Expr="text" Id="Text" Converter="String" HelpText=""/>
-				<JsonPath Expr="relevance" Id="Relevance" Converter="Double" HelpText=""/>
-				<JsonPath Expr="count" Id="Count" Converter="Long" HelpText=""/>
-				<JsonPath Expr="sentiment.label" Id="Sentiment" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="sentiment.score" Id="SentimentScore" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="$.keywords[*]">
+				<JsonPath Expr="text" Id="Text" Converter="String"/>
+				<JsonPath Expr="relevance" Id="Relevance" Converter="Double"/>
+				<JsonPath Expr="count" Id="Count" Converter="Long"/>
+				<JsonPath Expr="sentiment.label" Id="Sentiment" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="sentiment.score" Id="SentimentScore" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue=""/>
+				<Compute Expr="@(Model.PageCursor.BatchPosition+1)" Id="Position" Converter="Auto" Checked="false" DefaultValue=""/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -98,9 +103,11 @@
   <RestConnector Id="Entities" Title="Entities" HelpText="Identifies people, cities, organizations, and other other entities in the content." HelpUrl="https://cloud.ibm.com/apidocs/natural-language-understanding#entities">
 	<Parameters>
 			<Resource Id="Inputs"/>
-      <Text Id="Text" Title="Input" Debug.DefaultValue="" Required="true"/>
-      <Number Id="Limit" Title="Keyword Limit" DefaultValue="50" Minimum="1" HelpText="Maximum number of entities to return." Required="false"/>
+      <Text Id="Text" Title="Input" Debug.DefaultValue="" Required="true" Multiline="true"/>
+			<Checkbox Id="ExcludeQuantities" Title="Exclude Quantities"/>
     </Parameters>
+		<Batch Parameter="Text" Separator="\n"/>
+    <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <HttpSettings>
 				<Resource Id="HeaderMethods"/>
@@ -113,10 +120,10 @@
 					}
 
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"entities": {
-								"limit": @Model.Limit,
+								"limit": @(Model.PageCursor.PageSize),
 								"sentiment":@ContainsKeyword(sentiments),
 								"emotion":@ContainsKeyword(emotions),
 								"mentions":@ContainsKeyword(locations)
@@ -129,25 +136,21 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.entities.*">
-				<JsonPath Expr="text" Id="Text" Converter="String" HelpText=""/>
-				<JsonPath Expr="type" Id="Type" Converter="String" HelpText=""/>
-				<JsonPath Expr="relevance" Id="Relevance" Converter="Double" HelpText=""/>
-				<JsonPath Expr="count" Id="Count" Converter="Long" HelpText=""/>
-				<Compute Id="Subtypes" Converter="String" DefaultValue="" Checked="true" HelpText="">
-					<Compute.Expr>
-						<![CDATA[@Regex.Replace(Model.Inp, @"[""\[\]\r\n]", "")]]>
-					</Compute.Expr>
-					<JsonPath Expr="disambiguation.subtype" Id="Inp" DefaultValue=""/>
-				</Compute>
-				<JsonPath Expr="sentiment.label" Id="Sentiment" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="sentiment.score" Id="SentimentScore" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="mentions[0].location[0]" Id="FirstCharNum" Converter="Long" Checked="false" HelpText=""/>
+			<JsonPath Expr="$.entities[@(ExclQuantityToken())]">
+				<JsonPath Expr="text" Id="Text" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Converter="String"/>
+				<JsonPath Expr="relevance" Id="Relevance" Converter="Double"/>
+				<JsonPath Expr="count" Id="Count" Converter="Long"/>
+				<JsonPath Expr="csv(disambiguation.subtype)" Id="Subtypes" Converter="String" DefaultValue="" Checked="true"/>
+				<JsonPath Expr="sentiment.label" Id="Sentiment" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="sentiment.score" Id="SentimentScore" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" Checked="false" DefaultValue=""/>
+				<JsonPath Expr="mentions[0].location[0]" Id="FirstCharNum" Converter="Long" Checked="false" DefaultValue=""/>
+				<Compute Expr="@(Model.PageCursor.BatchPosition+1)" Id="Position" Converter="Auto" Checked="false" DefaultValue=""/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -165,7 +168,7 @@
         <RequestBody>
 					<![CDATA[
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"concepts": {
 								"limit": @Model.Limit
@@ -178,9 +181,9 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.concepts.*">
-				<JsonPath Expr="text" Id="Text" Converter="String" HelpText=""/>
-				<JsonPath Expr="relevance" Id="Relevance" Converter="Double" HelpText=""/>
+			<JsonPath Expr="$.concepts[*]">
+				<JsonPath Expr="text" Id="Text" Converter="String"/>
+				<JsonPath Expr="relevance" Id="Relevance" Converter="Double"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -198,7 +201,7 @@
         <RequestBody>
 					<![CDATA[
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"emotion": {
 								@(!string.IsNullOrEmpty(Model.Inputs) ? "\"targets\":" + Serialize() : "\"document\":true")
@@ -212,12 +215,12 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="@strJsonEmo()">
-				<JsonPath Expr="text" Id="Target" Converter="String" DefaultValue="" HelpText="" Checked="false"/>
-				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" DefaultValue="" HelpText=""/>
+				<JsonPath Expr="text" Id="Target" Converter="String" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="emotion.sadness" Id="Sadness" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="emotion.joy" Id="Joy" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="emotion.fear" Id="Fear" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="emotion.disgust" Id="Disgust" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="emotion.anger" Id="Anger" Converter="Auto" DefaultValue=""/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -235,7 +238,7 @@
         <RequestBody>
 					<![CDATA[
 					{
-						"@Model.InputType": "@Regex.Replace(Model.Text, "\"", "\\\"")",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"sentiment": {
 								@(!string.IsNullOrEmpty(Model.Inputs) ? "\"targets\":" + Serialize() : "\"document\":true")
@@ -249,9 +252,9 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="@strJsonSent()">
-				<JsonPath Expr="text" Id="Target" Converter="String" DefaultValue="" HelpText="" Checked="false"/>
-				<JsonPath Expr="label" Id="Sentiment" Converter="String" HelpText=""/>
-				<JsonPath Expr="score" Id="SentimentScore" Converter="Double" HelpText=""/>
+				<JsonPath Expr="text" Id="Target" Converter="String" DefaultValue="" Checked="false"/>
+				<JsonPath Expr="label" Id="Sentiment" Converter="String"/>
+				<JsonPath Expr="score" Id="SentimentScore" Converter="Double"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -268,7 +271,7 @@
         <RequestBody>
 					<![CDATA[
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"categories": {}
 						}
@@ -279,9 +282,9 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.categories.*">
-				<JsonPath Expr="label" Id="Label" Converter="String" HelpText=""/>
-				<JsonPath Expr="score" Id="Score" Converter="Double" HelpText=""/>
+			<JsonPath Expr="$.categories[*]">
+				<JsonPath Expr="label" Id="Label" Converter="String"/>
+				<JsonPath Expr="score" Id="Score" Converter="Double"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -298,7 +301,7 @@
         <RequestBody>
 					<![CDATA[
 					{
-						"@Model.InputType": "@Model.Text",
+						"@Model.InputType": "@(FormatData())",
 						"features": {
 							"relations": {}
 						}
@@ -309,12 +312,12 @@
 			<Resource Id="Url"/>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.relations.*">
-				<JsonPath Expr="sentence" Id="Sentence" Converter="String" HelpText=""/>
-				<JsonPath Expr="type" Id="Type" Converter="String" HelpText=""/>
-				<JsonPath Expr="score" Id="Score" Converter="Double" HelpText=""/>
-				<JsonPath Expr="arguments[0].text" Id="Argumment1" Converter="String" Checked="false" HelpText=""/>
-				<JsonPath Expr="arguments[1].text" Id="Argumment2" Converter="String" Checked="false" HelpText=""/>
+			<JsonPath Expr="$.relations[*]">
+				<JsonPath Expr="sentence" Id="Sentence" Converter="String"/>
+				<JsonPath Expr="type" Id="Type" Converter="String"/>
+				<JsonPath Expr="score" Id="Score" Converter="Double"/>
+				<JsonPath Expr="arguments[0].text" Id="Argumment1" Converter="String" Checked="false"/>
+				<JsonPath Expr="arguments[1].text" Id="Argumment2" Converter="String" Checked="false"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Error"/>
@@ -327,22 +330,29 @@
 			}
 
 			string Serialize(){
-      string[] lines = ((string)Model.Inputs).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-      return JsonConvert.SerializeObject(lines);
-    }
+				string[] lines = ((string)Model.Inputs).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+				return JsonConvert.SerializeObject(lines);
+			}
 
 			string ContainsKeyword(string[] items) {
 				return items.Any(s => Model.Fields.Contains(s)) ? "true" : "false";
 			}
 
 			string strJsonEmo() {
-				string strToReturn = !string.IsNullOrEmpty(Model.Inputs) ? "$.emotion.targets[*]" : "$.emotion.document";
-				return strToReturn;
+				return !string.IsNullOrEmpty(Model.Inputs) ? "$.emotion.targets[*]" : "$.emotion.document";
+			}
+
+			string FormatData(){
+				string temp1 = Regex.Replace(Model.Text, "\"", "\\\"");
+				return  Utils.StripTags(temp1);
 			}
 
 			string strJsonSent() {
-				string strToReturn = (!string.IsNullOrEmpty(Model.Inputs) ? "$.sentiment.targets[*]" : "$.sentiment.document");
-				return strToReturn;
+				return (!string.IsNullOrEmpty(Model.Inputs) ? "$.sentiment.targets[*]" : "$.sentiment.document");
+			}
+
+			string ExclQuantityToken() {
+				return (Model.ExcludeQuantities == true ? "?(@.type!='Quantity')" : "*");
 			}
     ]]>
   </RazorFunctions>

@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Locations" Title="Yelp" Id="Yelp" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Yelp.xml" HelpUrl="http://seotoolsforexcel.com/Yelp/" HelpText="Documentation">
+<Suite Title="Yelp" Id="Yelp" Category="Products &amp; Review Sites" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Yelp.xml" HelpUrl="http://seotoolsforexcel.com/yelp/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/Yelp/">
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/yelp/">
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="https://www.yelp.com/developers/documentation/v3/authentication"/>
   </Settings>
 
@@ -53,9 +53,22 @@
       <Item Id="zh_HK" Title="Hong Kong - Chinese"/>
       <Item Id="zh_TW" Title="Taiwan - Chinese"/>
     </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="errors.message"/>
+				<JsonPath Expr="error.code"/>
+			</Fail>
+    </Resource>
   </Resources>
 
-  <RestConnector Id="BusinessesSearch" Title="Businesses Search" HelpText="Returns up to 1000 businesses based on the provided search criteria." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search">
+  <RestConnector Id="BusinessesSearch" Title="Businesses Search" Group="Businesses" HelpText="Returns up to 1000 businesses based on the provided search criteria." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search">
     <Parameters>
       <Text Id="Term" Title="Term" Debug.DefaultValue="mat" Required="false" HelpText="Optional. Search term (e.g. food, restaurants). If term isn’t included we search everything. The term keyword also accepts business names such as Starbucks."/>
       <Text Id="Location" Title="Location" Debug.DefaultValue="Stockholm" Required="true"   HelpText="Required. Specifies the combination of address, neighborhood, city, state or zip, optional country to be used when searching for businesses."/>
@@ -67,14 +80,14 @@
           <Resource Id="Locales"/>
         </DataSource>
       </Select>
-      <Radio Id="Sort" Title="Sort" DefaultValue="best_match" Required="false">
+      <Select Id="Sort" Title="Sort" DefaultValue="best_match">
         <DataSource>
           <Item Id="best_match" Title="Best Match"/>
           <Item Id="rating" Title="Rating"/>
           <Item Id="review_count" Title="Reviews"/>
           <Item Id="distance" Title="Distance"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Parameters>
     <Paging PageSize="50" MaxTake="1000" EvenPages="false">
       <Parse>
@@ -82,32 +95,16 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.yelp.com/v3/businesses/search
         ?term=@Utils.UrlEncode(Model.Term)
         &location=@Utils.UrlEncode(Model.Location)
-        @if(!string.IsNullOrEmpty(Model.Radius))
-        {
-          @: &radius=@Utils.UrlEncode(Model.Radius)
-        }
-        @if(!string.IsNullOrEmpty(Model.Categories))
-        {
-          @: &categories=@(CategoryString())
-        }
-        @if(Model.HotNew == true)
-        {
-          @: &attributes=hot_and_new
-        }
-        @if(Model.Locale != "default")
-        {
-          @: &locale=@(Model.Locale)
-        }
+        @(!string.IsNullOrEmpty(Model.Radius) ? "&radius=" + Utils.UrlEncode(Model.Radius) : "")
+        @(!string.IsNullOrEmpty(Model.Categories) ? "&categories=" + CategoryString() : "")
+        @(Model.HotNew == true ? "&attributes=hot_and_new" : "")
+        @(Model.Locale != "default" ? "&locale=" + Model.Locale : "")
         &sort_by=@(Model.Sort)
         &limit=@(Model.PageCursor.NextTake)
         &offset=@(Model.PageCursor.NextSkip)
@@ -115,7 +112,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="businesses.*">
+      <JsonPath Expr="businesses[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Yelp id of this business."/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this business."/>
         <JsonPath Expr="categories[0].title" Id="Category" Title="Category" Converter="String" HelpText="Category title"/>
@@ -123,28 +120,24 @@
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" HelpText="Rating for this business (value ranges from 1, 1.5, ... 4.5, 5)."/>
         <JsonPath Expr="phone" Id="Phone" Title="Phone" Converter="String" HelpText="Phone number of the business."/>
         <JsonPath Expr="location.city" Id="City" Title="City" Converter="String" HelpText="City of this business."/>
-        <JsonPath Expr="location.country" Id="Country" Title="Country" Converter="String" HelpText="ISO 3166-1 alpha-2 country code of this business."/>
+				<Compute Expr="@Utils.IsoCountryCodeToName(Model.Inp)" Id="Country" Converter="Auto">
+					<JsonPath Expr="location.country" Id="Inp" DefaultValue=""/>
+				</Compute>
         <JsonPath Expr="coordinates.latitude" Id="Latitude" Title="Latitude" Converter="Double" HelpText="The latitude of this business."/>
         <JsonPath Expr="coordinates.longitude" Id="Longitude" Title="Longitude" Converter="Double" HelpText="The longitude of this business."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL for business page on Yelp."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PhoneLookup" Title="Phone Lookup" HelpText="Returns a list of businesses based on the provided phone number." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search_phone">
+  <RestConnector Id="PhoneLookup" Title="Phone Lookup" Group="Businesses" HelpText="Returns a list of businesses based on the provided phone number." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_search_phone">
     <Parameters>
-      <Text Id="Phone" Title="Phone (Starts with + and country code)" Debug.DefaultValue="" Required="true" HelpText=""/>
+      <Text Id="Phone" Title="Phone (Starts with + and country code)" Debug.DefaultValue="" Required="true"/>
     </Parameters>
     <Paging PageSize="1"/>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.yelp.com/v3/businesses/search/phone?
@@ -153,7 +146,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="businesses.*">
+      <JsonPath Expr="businesses[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Yelp id of this business."/>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Name of this business."/>
         <JsonPath Expr="categories[0].title" Id="Category" Title="Category" Defaultvalue="" Converter="String" HelpText="Category title"/>
@@ -161,21 +154,21 @@
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" HelpText="Rating for this business (value ranges from 1, 1.5, ... 4.5, 5)."/>
         <JsonPath Expr="phone" Id="Phone" Title="Phone" Converter="String" HelpText="Phone number of the business."/>
         <JsonPath Expr="location.city" Id="City" Title="City" Converter="String" HelpText="City of this business."/>
-        <JsonPath Expr="location.country" Id="Country" Title="Country" Converter="String" HelpText="ISO 3166-1 alpha-2 country code of this business."/>
+				<Compute Expr="@Utils.IsoCountryCodeToName(Model.Inp)" Id="Country" Converter="Auto">
+					<JsonPath Expr="location.country" Id="Inp" DefaultValue=""/>
+				</Compute>
         <JsonPath Expr="coordinates.latitude" Id="Latitude" Title="Latitude" Converter="Double" HelpText="The latitude of this business."/>
         <JsonPath Expr="coordinates.longitude" Id="Longitude" Title="Longitude" Converter="Double" HelpText="The longitude of this business."/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL for business page on Yelp."/>
       </JsonPath>
       <JsonPath Expr="total" Id="Total" Title="Total" Converter="Long" HelpText="The total number of business Yelp finds based on the search criteria."/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Reviews" Title="Reviews" HelpText="Returns the up to three reviews of a business." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_reviews">
+  <RestConnector Id="Reviews" Title="Reviews" Group="Businesses" HelpText="Returns the up to three reviews of a business." HelpUrl="https://www.yelp.com/developers/documentation/v3/business_reviews">
     <Parameters>
-      <Text Id="BusinessId" Title="Business Id" Debug.DefaultValue="bakfickan-stockholm-2" Required="true" HelpText=""/>
+      <Text Id="BusinessId" Title="Business Id" Debug.DefaultValue="bakfickan-stockholm-2" Required="true"/>
       <Select Id="Locale" Title="Locale" Required="false" DefaultValue="default" HelpText="Specify the locale to return the business information in.">
         <DataSource>
           <Resource Id="Locales"/>
@@ -183,23 +176,16 @@
       </Select>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.yelp.com/v3/businesses/@(Model.BusinessId)/reviews
-        @if(Model.Locale != "default")
-        {
-          @: &locale=@(Model.Locale)
-        }
+        @(Model.Locale != "default" ? "&locale=" + Model.Locale : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="reviews.*">
+      <JsonPath Expr="reviews[*]">
         <JsonPath Expr="time_created" Id="Created" Title="Created" Converter="DateTime" HelpText="The time that the review was created in PST."/>
         <JsonPath Expr="rating" Id="Rating" Title="Rating" Converter="Double" HelpText="Rating of this review."/>
         <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText="Text excerpt of this review."/>
@@ -208,14 +194,12 @@
         <JsonPath Expr="user.image_url" Id="Avatar" Title="Avatar" Converter="String" HelpText="URL of the user's profile photo."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AutocompleteCategories" Title="Autocomplete Categories" HelpText="Returns autocomplete suggestions for search keywords, businesses and categories." HelpUrl="https://www.yelp.com/developers/documentation/v3/autocomplete">
+  <RestConnector Id="AutocompleteCategories" Title="Autocomplete Categories" Group="Autocomplete" HelpText="Returns autocomplete suggestions for search keywords, businesses and categories." HelpUrl="https://www.yelp.com/developers/documentation/v3/autocomplete">
     <Parameters>
-      <Text Id="Text" Title="Text" Debug.DefaultValue="sushi" Required="true" HelpText=""/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="sushi" Required="true"/>
       <Select Id="Locale" Title="Locale" Required="false" DefaultValue="default" HelpText="Specify the locale to return the business information in.">
         <DataSource>
           <Resource Id="Locales"/>
@@ -223,36 +207,26 @@
       </Select>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.yelp.com/v3/autocomplete
-        ?text=@(Model.Text)
-        @if(Model.Locale != "default")
-        {
-          @: &locale=@(Model.Locale)
-        }
+        https://api.yelp.com/v3/autocomplete?text=@(Model.Text)
+        @(Model.Locale != "default" ? "&locale=" + Model.Locale : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="categories.*">
+      <JsonPath Expr="categories[*]">
         <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Title of a category for display purpose."/>
         <JsonPath Expr="alias" Id="Code" Title="Code" Converter="String" HelpText="Alias of a category"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AutocompleteTerms" Title="Autocomplete Terms" HelpText="Returns autocomplete suggestions for search keywords, businesses and categories." HelpUrl="https://www.yelp.com/developers/documentation/v3/autocomplete">
+  <RestConnector Id="AutocompleteTerms" Title="Autocomplete Terms" Group="Autocomplete" HelpText="Returns autocomplete suggestions for search keywords, businesses and categories." HelpUrl="https://www.yelp.com/developers/documentation/v3/autocomplete">
     <Parameters>
-      <Text Id="Text" Title="Text" Debug.DefaultValue="sushi" Required="true" HelpText=""/>
+      <Text Id="Text" Title="Text" Debug.DefaultValue="sushi" Required="true"/>
       <Select Id="Locale" Title="Locale" Required="false" DefaultValue="default" HelpText="Specify the locale to return the business information in.">
         <DataSource>
           <Resource Id="Locales"/>
@@ -260,30 +234,20 @@
       </Select>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.yelp.com/v3/autocomplete
-        ?text=@(Model.Text)
-        @if(Model.Locale != "default")
-        {
-          @: &locale=@(Model.Locale)
-        }
+        https://api.yelp.com/v3/autocomplete?text=@(Model.Text)
+        @(Model.Locale != "default" ? "&locale=" + Model.Locale : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="terms.*">
+      <JsonPath Expr="terms[*]">
         <JsonPath Expr="text" Id="Text" Title="Text" Converter="String" HelpText="The text content of the term autocomplete suggestion."/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AllCategories" Title="Categories List" HelpUrl="https://www.yelp.com/developers/documentation/v3/all_category_list">
@@ -295,37 +259,20 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-        <JsonPath Expr="alias" Id="Code" Title="Code" Converter="String" HelpText=""/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="alias" Id="Code" Title="Code" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="errors.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-
-    string CategoryString()
-    {
+    string CategoryString() {
       string[] lines = ((string)Model.Categories).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
       return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
     }
-
-    String GetTypeRequest()
-    {
-      if(Model.Type == "businesses")
-      {
-        return "businesses.*";
-      }
-      else
-      {
-        return "categories.*";
-      }
-    }
-
     ]]>
   </RazorFunctions>
 

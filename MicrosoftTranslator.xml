@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Language" Title="Microsoft Translator" Id="MicrosoftTranslator" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/MicrosoftTranslator.xml" HelpUrl="http://seotoolsforexcel.com/microsoft-translator/" HelpText="Documentation">
+<Suite Category="Language" Title="Microsoft Translator" Id="MicrosoftTranslator" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/MicrosoftTranslator.xml" HelpUrl="http://seotoolsforexcel.com/microsoft-translator/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -23,7 +23,7 @@
         </RequestHeaders>
         <RequestBody>
 					<![CDATA[
-					[{ "Text" : "@(Regex.Replace(Model.Text, "<.*?>", String.Empty))"}]
+					[{ "Text" : "@(FormatData())"}]
 					]]>
         </RequestBody>
       </HttpSettings>
@@ -34,7 +34,7 @@
   <RestConnector Id="Detect" Title="Detect" HelpText="Identifies the language of a piece of text." HelpUrl="https://docs.microsoft.com/en-us/azure/cognitive-services/translator/reference/v3-0-detect?tabs=curl">
     <Parameters>
       <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto." Required="true" HelpText="Enter one or more Texts separated by a new line"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -45,8 +45,10 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.*">
-				<JsonPath Expr="language" Id="Language" Title="Language" Converter="String" HelpText="Code of the detected language."/>
+			<JsonPath Expr="$[0]">
+				<Compute Expr="@GetLanguage()" Id="Language" Converter="Auto" HelpText="Code of the detected language.">
+					<JsonPath Expr="language" Id="Inp" DefaultValue=""/>
+				</Compute>
 				<JsonPath Expr="score" Id="Score" Title="Score" Converter="Double" HelpText="The score is between zero and one and a low score indicates a low confidence."/>
 				<JsonPath Expr="alternatives[0].language" Id="AltLanguage" Title="Alt Language" Converter="String" Checked="false" HelpText="Code of the alternative detected language."/>
 				<JsonPath Expr="alternatives[0].score" Id="AltScore" Title="Alt Score" Converter="Double" Checked="false" HelpText="Score of the alternative detected language."/>
@@ -59,7 +61,7 @@
     <Parameters>
       <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto." Required="true" HelpText="Enter one or more Texts separated by a new line"/>
       <Text Id="To" Title="To" Debug.DefaultValue="sv" Required="true"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -70,9 +72,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.*">
+			<JsonPath Expr="$[*]">
 				<JsonPath Expr="translations[0].text" Id="Result" Title="Result" Converter="String" HelpText="A string giving the translated text."/>
-				<JsonPath Expr="detectedLanguage.language" Id="DetectedLanguage" Title="Detected Language" Converter="String" Checked="false" HelpText="The code of the detected language."/>
+				<Compute Expr="@GetLanguage()" Id="DetectedLanguage" Title="Detected Language" Converter="String" Checked="false" HelpText="The code of the detected language.">
+					<JsonPath Expr="detectedLanguage.language" Id="Inp" DefaultValue=""/>
+				</Compute>
 				<JsonPath Expr="detectedLanguage.score" Id="DetectedLanguageScore" Title="Detected Language Score" Converter="Double" Checked="false" HelpText="The score is between zero and one and a low score indicates a low confidence."/>
 			</JsonPath>
     </Parse>
@@ -82,7 +86,7 @@
   <RestConnector Id="BreakSentence" Title="Break Sentence" HelpText="Identifies the positioning of sentence boundaries in a piece of text." HelpUrl="https://docs.microsoft.com/en-us/azure/cognitive-services/translator/reference/v3-0-break-sentence?tabs=curl">
     <Parameters>
       <Text Id="Text" Title="Text" Debug.DefaultValue="Ich würde wirklich gern Ihr Auto. Test it okey" Required="true" HelpText="Enter one or more Texts separated by a new line"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false" HelpText=""/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -93,26 +97,28 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="$.*">
-				<Compute Id="Sentences" Title="Sentences" Converter="Auto">
-          <Compute.Expr>
-            <![CDATA[
-            @(Model.Inp.Split(',').Length)
-            ]]>
-          </Compute.Expr>
+			<JsonPath Expr="$[*]">
+				<Compute Expr="@(Model.Inp.Split(',').Length)" Id="Sentences" Title="Sentences" Converter="Auto">
           <JsonPath Expr="sentLen" Id="Inp" Converter="String"/>
         </Compute>
-        <Compute Id="Lengths" Title="Lengths" Converter="Auto">
-          <Compute.Expr>
-            <![CDATA[
-            @(Regex.Replace(Model.Inp, @"[\[\]\r\n]", ""))
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="sentLen" Id="Inp" Converter="String"/>
-        </Compute>
+        <JsonPath Expr="csv(sentLen)" Id="Lengths" Converter="String"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RazorFunctions>
+    <![CDATA[
+			string FormatData(){
+				string temp1 = Regex.Replace(Model.Text, "\"", "\\\"");
+				return  Utils.StripTags(temp1);
+			}
+			
+			string GetLanguage() {
+				string LangName = Utils.IsoLanguageCodeToName(Model.Inp);
+				return !string.IsNullOrEmpty(LangName) ? LangName : Model.Inp;
+			}
+    ]]>
+  </RazorFunctions>
+	
 </Suite>

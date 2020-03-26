@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="GTmetrics" Id="GTmetrics" Category="SEO" RequireVersion="7.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GTmetrics.xml" HelpUrl="http://seotoolsforexcel.com/GTmetrics" HelpText="Documentation">
+<Suite Title="GTmetrics" Id="GTmetrics" Category="SEO" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GTmetrics.xml" HelpUrl="http://seotoolsforexcel.com/GTmetrics" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -7,6 +7,14 @@
     <Text Id="Email" Title="Email" Required="true" HelpUrl="http://seotoolsforexcel.com/gtmetrics"/>
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/gtmetrics"/>
   </Settings>
+	
+	<Resources>
+		<Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error"/>
+			</Fail>		
+		</Resource>
+	</Resources>
 
   <RestConnector Id="GetLocations" Hidden="true" HelpUrl="https://gtmetrix.com/api/?generate_key=1#api-locations">
     <Fetch>
@@ -25,13 +33,11 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id" Converter="String" HelpText="The location ID"/>
-        <JsonPath Expr="name" Id="Name" Converter="String" HelpText="The location name"/>
+        <JsonPath Expr="id" Id="Id" Title="Location Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Location"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="GetBrowsers" Hidden="true" HelpUrl="https://gtmetrix.com/api/?generate_key=1#api-browsers">
@@ -51,21 +57,19 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id" Converter="String" HelpText="The location ID"/>
-        <JsonPath Expr="name" Id="Name" Converter="String" HelpText="The location name"/>
+        <JsonPath Expr="id" Id="Id" Title="Browser Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Browser"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="StartTest" Title="Start a Test" HelpUrl="https://gtmetrix.com/api/?generate_key=1#api-test-start">
     <Parameters>
-      <Text Id="Url" Title="URL" DefaultValue="" Debug.DefaultValue="http://www.seotoolsforexcel.com" Required="true" HelpText="The URL to test"/>
-      <Text Id="Location" Title="Location" DefaultValue="" Required="false" Select.Connector="GetLocations" Select.IdField="Id" Select.TitleField="Name" HelpText="Test location Id"/>
-      <Text Id="Browser" Title="Browser" DefaultValue="" Required="false" Select.Connector="GetBrowsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Browser Id"/>
-      <Checkbox Id="AdBlock" Title="Enable AdBlock" DefaultValue="false" Required="false"/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="http://www.seotoolsforexcel.com" Required="true" HelpText="The URL to test"/>
+      <Text Id="Location" Title="Location" Required="false" Select.Connector="GetLocations" Select.IdField="Id" Select.TitleField="Name" HelpText="Test location Id"/>
+      <Text Id="Browser" Title="Browser" Required="false" Select.Connector="GetBrowsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Browser Id"/>
+      <Checkbox Id="AdBlock" Title="Enable AdBlock"/>
     </Parameters>
     <Fetch>
       <HttpSettings>
@@ -77,18 +81,9 @@
         <RequestBody>
           <![CDATA[
             url=@(Model.Url)
-            @if(Model.AdBlock == true)
-            {
-              @: &x-metrix-adblock=1
-            }
-            @if(!string.IsNullOrEmpty(Model.Location))
-            {
-              @: &location=@(Model.Location)
-            }
-            @if(!string.IsNullOrEmpty(Model.Browser))
-            {
-              @: &browser=@(Model.Browser)
-            }
+            @(Model.AdBlock == true ? "&x-metrix-adblock=1" : "")
+            @(!string.IsNullOrEmpty(Model.Location) ? "&location=" + Model.Location : "")
+            @(!string.IsNullOrEmpty(Model.Browser) ? "&browser=" + Model.Browser : "")
           ]]>
         </RequestBody>
       </HttpSettings>
@@ -102,9 +97,7 @@
       <JsonPath Expr="test_id" Id="TestId" Title="Test Id" Converter="String" HelpText="The test ID"/>
       <JsonPath Expr="credits_left" Id="CreditsLeft" Title="Credits Left" Converter="Long" HelpText="credits_left"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="GetTest" Title="Get Test Results" HelpUrl="https://gtmetrix.com/api/?generate_key=1#api-test-state">
@@ -160,22 +153,19 @@
         <JsonPath Expr="dom_content_loaded_time" Id="DomContentLoadedTime" Title="Dom Content Loaded Time" Converter="Int" HelpText="DOM content loaded time (in milliseconds)" DefaultValue=""/>
         <JsonPath Expr="dom_content_loaded_duration" Id="DomContentLoadedDuration" Title="Dom Content Loaded Duration" Converter="Int" HelpText="DOM content loaded duration (in milliseconds)" DefaultValue=""/>
         <JsonPath Expr="rum_speed_index" Id="RumSpeedIndex" Title="RUM Speed Index" Converter="Int" HelpText="RUM Speed Index" DefaultValue=""/>
-        <JsonPath Expr="report_url" Id="ReportUrl" Title="Report URL" Converter="String" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="report_url" Id="ReportUrl" Title="Report URL" Converter="String" DefaultValue=""/>
       </JsonPath>
       <JsonPath Expr="resources.report_pdf_full" Id="ReportPDFFull" Title="Report PDF Full" Converter="String" HelpText="The URL to the full GTmetrix report (includes recommendation details) in PDF format" DefaultValue=""/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-    string CreateBasicAuth()
-    {
-      string AuthString = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.ApiKey));
-      return AuthString;
+    string CreateBasicAuth() {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.ApiKey));
     }
     ]]>
   </RazorFunctions>
+
 </Suite>

@@ -1,162 +1,518 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Title="Keyword Tool" Id="KeywordTool" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/KeywordTool.xml" HelpUrl="http://seotoolsforexcel.com/keywordtool/" HelpText="Documentation">
+<Suite Title="Keyword Tool" Id="KeywordTool" Category="SEO" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/KeywordTool.xml" HelpUrl="http://seotoolsforexcel.com/keywordtool/" HelpText="Documentation">
 
-  <Author Name="Tim Wolfe" Url="https://www.linkedin.com/in/WolfeDen/"/>
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
 	<Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/keywordtool/">
 		<Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/keywordtool/"/>
 	</Settings>
 
   <Resources>
-    <Resource Id="Engines">
-      <Item Id="google" Title="Google"/>
-      <Item Id="youtube" Title="YouTube"/>
-      <Item Id="bing" Title="Bing"/>
-      <Item Id="amazon" Title="Amazon"/>
-      <Item Id="ebay" Title="eBay"/>
-      <Item Id="app-store" Title="App Store"/>
+    <Resource Id="Fail">
+		<Fail>
+			<JsonPath Expr="error.message"/>
+		</Fail>
+		</Resource>
+		<Resource Id="ParseVolume">
+			<JsonPath Expr="string" Id="Keyword" Title="Keyword" Converter="String" Checked="true" HelpText="Keyword for which the data is returned."/>
+			<JsonPath Expr="volume" Id="SearchVolume" Title="Search Volume" Converter="Long" DefaultValue="" HelpText="Current monthly search volume"/>
+			<JsonPath Expr="cmp" Id="Competition" Title="Competition" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="cpc" Id="Cpc" Title="CPC" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="m1" Id="SearchVolume1" Title="Month 1" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m2" Id="SearchVolume2" Title="Month 2" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m3" Id="SearchVolume3" Title="Month 3" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m4" Id="SearchVolume4" Title="Month 4" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m5" Id="SearchVolume5" Title="Month 5" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m6" Id="SearchVolume6" Title="Month 6" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m7" Id="SearchVolume7" Title="Month 7" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m8" Id="SearchVolume8" Title="Month 8" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m9" Id="SearchVolume9" Title="Month 9" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m10" Id="SearchVolume10" Title="Month 10" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m11" Id="SearchVolume11" Title="Month 11" Converter="Long" DefaultValue=""/>
+			<JsonPath Expr="m12" Id="SearchVolume12" Title="Month 12" Converter="Long" DefaultValue=""/>
 		</Resource>
   </Resources>
 
-	<RestConnector Id="GoogleSearchVolume" Title="Google Search Volume" HelpUrl="http://keywordtool.io/api/documentation" HelpText="Returns Google Keyword Search Volume for up to 800 Keywords per call.">
+	<RestConnector Id="GoogleSearchVolume" Title="Google" Group="Search Volume" HelpUrl="http://keywordtool.io/api/documentation">
 		<Parameters>
-			<Text Id="Keywords" Title="List of Keywords" Required="true" HelpUrl="" Multiline="true" HelpText="Separated by newline" Debug.DefaultValue="new york apartments"/>
-			<Text Id="LocationId" Title="Location Id" Required="false" HelpUrl="https://keywordtool.io/api/documentation#supported-parameters-metrics-location" HelpText="Click here to generate location Ids."/>
-      <Radio Id="Network" Title="Network" DefaultValue="googlesearchnetwork" Required="false">
+			<Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="seotools for excel" Required="true" Multiline="true"/>
+			<Text Id="LocationId" Title="Metrics Location Id" Debug.DefaultValue="2752" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-bing-metrics-location" HelpText="Click here to view location Ids."/>
+			<Text Id="LanguageId" Title="Metrics Language Id" Debug.DefaultValue="sv" HelpUrl="https://docs.keywordtool.io/reference#search-volume-google-metrics-language" HelpText="Click here to view language Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/reference#search-volume-google-metrics-currency" HelpText="Click here to view currency Ids."/>
+      <Select Id="Network" Title="Metrics Network" DefaultValue="googlesearchnetwork" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-google-metrics-network">
         <DataSource>
           <Item Id="googlesearchnetwork" Title="Google &amp; partners"/>
           <Item Id="googlesearch" Title="Google"/>
         </DataSource>
-      </Radio>
+      </Select>
 		</Parameters>
     <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
 		<Fetch>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":@(FetchKeywords()),
+							"metrics_location":[@(Model.LocationId)],
+							"metrics_language":["@(Model.LanguageId)"],
+							"metrics_network":"@(Model.Network)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
       </HttpSettings>
 			<Fetch.Url>
 				<![CDATA[
-					http://api.keywordtool.io/v2/search/volume/google?output=json
-					&apikey=@(Model.ApiKey)
-					&keyword=[@(FetchKeywords())]
-					@(!string.IsNullOrEmpty(Model.LocationId) ? "&metrics_location=" + Utils.UrlEncode(Model.LocationId) : "")
-					&metrics_network=@(Model.Network)
+					https://api.keywordtool.io/v2/search/volume/google
 				]]>
 			</Fetch.Url>
 		</Fetch>
 		<Parse>
 			<JsonPath Expr="results.*">
-				<JsonPath Expr="string" Id="Keyword" Title="Keyword" Converter="String" Checked="true" HelpText="Keyword for which the data is returned."/>
-				<JsonPath Expr="volume" Id="SearchVolume" Title="Search Volume" Converter="Long" DefaultValue="" HelpText="Current monthly search volume in Google."/>
-				<JsonPath Expr="cmp" Id="Competition" Title="Competition" Converter="Double" DefaultValue="" HelpText="This is an indicator of the competion for the given keyword in the Paid Index."/>
-				<JsonPath Expr="cpc" Id="Cpc" Title="CPC" Converter="Double" DefaultValue="" Checked="false" HelpText="Estimated CPC in AdWords for the specific keyword."/>
-				<JsonPath Expr="m1" Id="SearchVolume1" Title="Month 1" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 1 search volume."/>
-				<JsonPath Expr="m2" Id="SearchVolume2" Title="Month 2" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 2 search volume."/>
-				<JsonPath Expr="m3" Id="SearchVolume3" Title="Month 3" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 3 search volume."/>
-				<JsonPath Expr="m4" Id="SearchVolume4" Title="Month 4" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 4 search volume."/>
-				<JsonPath Expr="m5" Id="SearchVolume5" Title="Month 5" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 5 search volume."/>
-				<JsonPath Expr="m6" Id="SearchVolume6" Title="Month 6" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 6 search volume."/>
-				<JsonPath Expr="m7" Id="SearchVolume7" Title="Month 7" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 7 search volume."/>
-				<JsonPath Expr="m8" Id="SearchVolume8" Title="Month 8" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 8 search volume."/>
-				<JsonPath Expr="m9" Id="SearchVolume9" Title="Month 9" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 9 search volume."/>
-				<JsonPath Expr="m10" Id="SearchVolume10" Title="Month 10" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 10 search volume."/>
-				<JsonPath Expr="m11" Id="SearchVolume11" Title="Month 11" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 11 search volume."/>
-				<JsonPath Expr="m12" Id="SearchVolume12" Title="Month 12" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 12 search volume."/>
+				<Resource Id="ParseVolume"/>
 			</JsonPath>
 		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
+		<Resource Id="Fail"/>
 	</RestConnector>
 
-	<RestConnector Id="BingSearchVolume" Title="Bing Search Volume" HelpUrl="http://keywordtool.io/api/documentation" HelpText="Returns Bing Keyword Search Volume for up to 800 Keywords per call.">
+	<RestConnector Id="BingSearchVolume" Title="Bing" Group="Search Volume" HelpUrl="http://keywordtool.io/api/documentation">
 		<Parameters>
-			<Text Id="Keywords" Title="List of Keywords" Required="true" HelpUrl="" Multiline="true" HelpText="Separated by newline" Debug.DefaultValue="new york apartments"/>
-			<Text Id="LocationId" Title="Location Id" Required="false" HelpUrl="https://keywordtool.io/api/documentation#supported-parameters-metrics-location" HelpText="Click here to generate location Ids."/>
-		</Parameters>
-    <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
-		<Fetch>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
-      </HttpSettings>
-			<Fetch.Url>
-				<![CDATA[
-					http://api.keywordtool.io/v2/search/volume/bing?output=json
-					&apikey=@(Model.ApiKey)
-					&keyword=[@(FetchKeywords())]
-					@(!string.IsNullOrEmpty(Model.LocationId) ? "&metrics_location=" + Utils.UrlEncode(Model.LocationId) : "")
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<JsonPath Expr="results.*">
-				<JsonPath Expr="string" Id="Keyword" Title="Keyword" Converter="String" Checked="true" HelpText="Keyword for which the data is returned."/>
-				<JsonPath Expr="volume" Id="SearchVolume" Title="Search Volume" Converter="Long" DefaultValue="" HelpText="Current monthly search volume in Google."/>
-				<JsonPath Expr="cmp" Id="Competition" Title="Competition" Converter="Double" DefaultValue="" HelpText="This is an indicator of the competion for the given keyword in the Paid Index."/>
-				<JsonPath Expr="cpc" Id="Cpc" Title="CPC" Converter="Double" DefaultValue="" Checked="false" HelpText="Estimated CPC in AdWords for the specific keyword."/>
-				<JsonPath Expr="m1" Id="SearchVolume1" Title="Month 1" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 1 search volume."/>
-				<JsonPath Expr="m2" Id="SearchVolume2" Title="Month 2" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 2 search volume."/>
-				<JsonPath Expr="m3" Id="SearchVolume3" Title="Month 3" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 3 search volume."/>
-				<JsonPath Expr="m4" Id="SearchVolume4" Title="Month 4" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 4 search volume."/>
-				<JsonPath Expr="m5" Id="SearchVolume5" Title="Month 5" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 5 search volume."/>
-				<JsonPath Expr="m6" Id="SearchVolume6" Title="Month 6" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 6 search volume."/>
-				<JsonPath Expr="m7" Id="SearchVolume7" Title="Month 7" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 7 search volume."/>
-				<JsonPath Expr="m8" Id="SearchVolume8" Title="Month 8" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 8 search volume."/>
-				<JsonPath Expr="m9" Id="SearchVolume9" Title="Month 9" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 9 search volume."/>
-				<JsonPath Expr="m10" Id="SearchVolume10" Title="Month 10" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 10 search volume."/>
-				<JsonPath Expr="m11" Id="SearchVolume11" Title="Month 11" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 11 search volume."/>
-				<JsonPath Expr="m12" Id="SearchVolume12" Title="Month 12" Converter="Long" DefaultValue="" Checked="false" HelpText="Month 12 search volume."/>
-			</JsonPath>
-		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
-	</RestConnector>
-
-	<RestConnector Id="KeywordSuggestions" Title="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation" HelpText="Returns the autocomplete keyword suggestions from the various search engines.">
-		<Parameters>
-			<Text Id="Keyword" Title="Keyword" Required="true" HelpUrl="" Debug.DefaultValue="new york"/>
-			<Text Id="LocationId" Title="Location Id" Required="false" HelpUrl="https://keywordtool.io/api/documentation#supported-parameters-metrics-location" HelpText="Click here to generate location Ids."/>
-      <Select Id="Engine" Title="Engine" Required="false" DefaultValue="google">
+			<Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="excel" Required="true" Multiline="true"/>
+			<Text Id="LocationId" Title="Metrics Location Id" Debug.DefaultValue="190" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-bing-metrics-location" HelpText="Click here to view location Ids."/>
+			<Text Id="LanguageId" Title="Metrics Language Id" Debug.DefaultValue="English" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-bing-metrics-language" HelpText="Click here to view language Ids."/>
+      <Select Id="Network" Title="Metrics Network" DefaultValue="ownedandoperatedandsyndicatedsearch" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-bing-metrics-network">
         <DataSource>
-          <Resource Id="Engines"/>
+          <Item Id="ownedandoperatedandsyndicatedsearch" Title="Owned &amp; operated &amp; syndicated"/>
+          <Item Id="ownedandoperatedonly" Title="Owned and operated"/>
+          <Item Id="syndicatedsearchonly" Title="Syndicated search"/>
         </DataSource>
       </Select>
-      <Radio Id="Type" Title="Type" DefaultValue="suggestions" Required="false">
-        <DataSource>
-          <Item Id="suggestions" Title="Suggestions"/>
-          <Item Id="questions" Title="Questions"/>
-        </DataSource>
-      </Radio>
 		</Parameters>
+    <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
 		<Fetch>
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":@(FetchKeywords()),
+							"metrics_location":[@(Model.LocationId)],
+							"metrics_language":["@(Model.LanguageId)"],
+							"metrics_network":"@(Model.Network)",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
       </HttpSettings>
 			<Fetch.Url>
 				<![CDATA[
-					http://api.keywordtool.io/v2/search/suggestions/@(Model.Engine)?output=json
-					&apikey=@(Model.ApiKey)
-					&keyword=@(Utils.UrlEncode(Model.Keyword))
-					@(!string.IsNullOrEmpty(Model.LocationId) ? "&metrics_location=" + Utils.UrlEncode(Model.LocationId) : "")
-					&type=@(Model.Type)
+					https://api.keywordtool.io/v2/search/volume/bing
 				]]>
 			</Fetch.Url>
 		</Fetch>
 		<Parse>
-			<JsonPath Expr="results.[0]">
-				<JsonPath Expr="string" Id="Keyword" Title="Keyword" Converter="String" HelpText=""/>
+			<JsonPath Expr="results.*">
+				<Resource Id="ParseVolume"/>
 			</JsonPath>
 		</Parse>
-		<Fail>
-			<JsonPath Expr="error.message"/>
-		</Fail>
+		<Resource Id="Fail"/>
 	</RestConnector>
+
+	<RestConnector Id="YoutubeSearchVolume" Title="Youtube" Group="Search Volume" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="excel" Required="true" Multiline="true"/>
+			<Text Id="CountryId" Title="Country Id" Debug.DefaultValue="SE" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-youtube-country" HelpText="Click here to view country Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-youtube-metrics-currency" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+    <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":@(FetchKeywords()),
+							"country":"@(Model.CountryId)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/volume/youtube
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="results.*">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="AmazonSearchVolume" Title="Amazon" Group="Search Volume" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="excel" Required="true" Multiline="true"/>
+			<Text Id="CountryId" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-amazon-country" HelpText="Click here to view country Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="USD" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-amazon-metrics-currency" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+    <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":@(FetchKeywords()),
+							"country":"@(Model.CountryId)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/volume/amazon
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="results.*">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="EbaySearchVolume" Title="Ebay" Group="Search Volume" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keywords" Title="List of Keywords" Debug.DefaultValue="excel" Required="true" Multiline="true"/>
+			<Text Id="CountryId" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-ebay-country" HelpText="Click here to view country Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="USD" HelpUrl="https://docs.keywordtool.io/v2/reference#search-volume-ebay-metrics-currency" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+    <Batch Parameter="Keywords" Separator="\n" ItemsPerBatch="800"/>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":@(FetchKeywords()),
+							"country":"@(Model.CountryId)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/volume/ebay
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="results.*">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="GoogleSuggestions" Title="Google" Group="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="excel" Required="true"/>
+			<Text Id="Country" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google" HelpText="Click here to view country Ids."/>
+			<Text Id="Language" Title="Language Id" Debug.DefaultValue="en" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google" HelpText="Click here to view language Ids."/>
+			<Text Id="LocationId" Title="Metrics Location Id" Debug.DefaultValue="2752" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google" HelpText="Click here to view location Ids."/>
+			<Text Id="LanguageId" Title="Metrics Language Id" Debug.DefaultValue="sv" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google" HelpText="Click here to view language Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google" HelpText="Click here to view currency Ids."/>
+      <Select Id="Network" Title="Metrics Network" DefaultValue="googlesearchnetwork" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-google">
+        <DataSource>
+          <Item Id="googlesearchnetwork" Title="Google &amp; partners"/>
+          <Item Id="googlesearch" Title="Google"/>
+        </DataSource>
+      </Select>
+      <Select Id="Category" Title="Category" DefaultValue="web" HelpUrl="https://docs.keywordtool.io/v2/reference#keyword-suggestions-google-category">
+        <DataSource>
+          <Item Id="web" Title="All"/>
+          <Item Id="i" Title="Images"/>
+          <Item Id="yt" Title="Videos"/>
+          <Item Id="n" Title="News"/>
+        </DataSource>
+      </Select>
+		</Parameters>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":"@(Model.Keyword)",
+							"country":"@(Model.Country)",
+							"language":"@(Model.Language)",
+							"metrics":"true",
+							"metrics_location":[@(Model.LocationId)],
+							"metrics_language":["@(Model.LanguageId)"],
+							"metrics_network":"@(Model.Network)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"category":"@(Model.Category)",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/suggestions/google
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.results.['@(Model.Keyword)'][*]">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="BingSuggestions" Title="Bing" Group="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="excel" Required="true"/>
+			<Text Id="Country" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-bing" HelpText="Click here to view country Ids."/>
+			<Text Id="Language" Title="Language Id" Debug.DefaultValue="en-us" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-bing" HelpText="Click here to view language Ids."/>
+			<Text Id="LocationId" Title="Metrics Location Id" Debug.DefaultValue="190" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-bing" HelpText="Click here to view location Ids."/>
+			<Text Id="LanguageId" Title="Metrics Language Id" Debug.DefaultValue="English" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-bing" HelpText="Click here to view language Ids."/>
+      <Select Id="Network" Title="Metrics Network" DefaultValue="googlesearchnetwork" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-bing">
+        <DataSource>
+          <Item Id="ownedandoperatedandsyndicatedsearch" Title="Owned &amp; operated &amp; syndicated"/>
+          <Item Id="ownedandoperatedonly" Title="Owned and operated"/>
+          <Item Id="syndicatedsearchonly" Title="Syndicated search"/>
+        </DataSource>
+      </Select>
+      <Select Id="Category" Title="Category" DefaultValue="web" HelpUrl="https://docs.keywordtool.io/v2/reference#keyword-suggestions-bing-category">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="images" Title="Images"/>
+          <Item Id="vidoes" Title="Videos"/>
+          <Item Id="news" Title="News"/>
+        </DataSource>
+      </Select>
+		</Parameters>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":"@(Model.Keyword)",
+							"country":"@(Model.Country)",
+							"language":"@(Model.Language)",
+							"metrics":"true",
+							"metrics_location":[@(Model.LocationId)],
+							"metrics_language":["@(Model.LanguageId)"],
+							"metrics_network":"@(Model.Network)",
+							"category":"@(Model.Category)",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/suggestions/bing
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.results.['@(Model.Keyword)'][*]">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="YoutubeSuggestions" Title="Youtube" Group="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="excel" Required="true"/>
+			<Text Id="Country" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-youtube" HelpText="Click here to view country Ids."/>
+			<Text Id="Language" Title="Language Id" Debug.DefaultValue="en" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-youtube" HelpText="Click here to view language Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-youtube" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":"@(Model.Keyword)",
+							"country":"@(Model.Country)",
+							"language":"@(Model.Language)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"metrics":"true",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/suggestions/youtube
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.results.['@(Model.Keyword)'][*]">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="AmazonSuggestions" Title="Amazon" Group="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="excel" Required="true"/>
+			<Text Id="Country" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-amazon" HelpText="Click here to view country Ids."/>
+			<Text Id="Language" Title="Language Id" Debug.DefaultValue="en" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-amazon" HelpText="Click here to view language Ids."/>
+			<Text Id="Category" Title="Category Id" Debug.DefaultValue="aps" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-amazon" HelpText="Click here to view category Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-amazon" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":"@(Model.Keyword)",
+							"country":"@(Model.Country)",
+							"language":"@(Model.Language)",
+							"category":"@(Model.Category)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"metrics":"true",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/suggestions/amazon
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.results.['@(Model.Keyword)'][*]">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="EbaySuggestions" Title="Ebay" Group="Keyword Suggestions" HelpUrl="http://keywordtool.io/api/documentation">
+		<Parameters>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="excel" Required="true"/>
+			<Text Id="Country" Title="Country Id" Debug.DefaultValue="US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-ebay" HelpText="Click here to view country Ids."/>
+			<Text Id="Language" Title="Language Id" Debug.DefaultValue="en-US" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-ebay" HelpText="Click here to view language Ids."/>
+			<Text Id="CurrencyId" Title="Metrics Currency Id" Debug.DefaultValue="SEK" HelpUrl="https://docs.keywordtool.io/reference#keyword-suggestions-ebay" HelpText="Click here to view currency Ids."/>
+		</Parameters>
+		<Fetch>
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="6000" RandomTo="6000" IfSame="Host"/>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"keyword":"@(Model.Keyword)",
+							"country":"@(Model.Country)",
+							"language":"@(Model.Language)",
+							"metrics_currency":"@(Model.CurrencyId.ToUpper())",
+							"metrics":"true",
+							"apikey":"@(Model.ApiKey)",
+							"output":"json"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/search/suggestions/ebay
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.results.['@(Model.Keyword)'][*]">
+				<Resource Id="ParseVolume"/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="Quota" Title="Quota" HelpUrl="http://keywordtool.io/api/documentation">
+		<Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+					<![CDATA[
+						{
+							"apikey":"@(Model.ApiKey)"
+						}
+					]]>
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://api.keywordtool.io/v2/quota
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<JsonPath Expr="$.limits.daily.quota" Id="DailyQuota" Title="Daily Quota" Converter="Long"/>
+			<JsonPath Expr="$.limits.daily.used" Id="Used" Title="Used" Converter="Long"/>
+			<JsonPath Expr="$.limits.daily.remaining" Id="Remaining" Title="Remaining" Converter="Long"/>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
 
 	<RazorFunctions>
 		<![CDATA[
 			string FetchKeywords() {
-			string[] lines = (string[])Model.KeywordsBatch;
+			string[] lines = ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
 			return JsonConvert.SerializeObject(lines);
 			}
 		]]>

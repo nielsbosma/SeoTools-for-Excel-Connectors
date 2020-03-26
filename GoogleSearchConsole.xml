@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="7.0" Title="Google Search Console" Id="GoogleSearchConsole" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Google-Search-Console.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="8.2" Title="Google Search Console" Id="GoogleSearchConsole" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Google-Search-Console.xml" HelpUrl="http://seotoolsforexcel.com/google-search-console/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
@@ -80,7 +80,7 @@
    ]]>
   </RazorFunctions>
 
-  <RestConnector Id="Sites" Title="Sites" Hidden="true">
+  <RestConnector Id="Sites" Hidden="true">
     <Parameters>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites?fields=siteEntry">
@@ -91,8 +91,8 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.siteEntry.*">
-        <JsonPath Expr="siteUrl" Id="Id"/>
+      <JsonPath Expr="$.siteEntry[*]">
+        <JsonPath Expr="siteUrl" Id="Site"/>
 				<Compute Expr="@Utils.UrlEncode(Utils.UrlProperty(Model.Inp).Domain)" Id="Domain">
 					<JsonPath Expr="siteUrl" Id="Inp"/>
 				</Compute>
@@ -103,16 +103,16 @@
 
   <RestConnector Id="SearchAnalytics" Title="Search Analytics" HelpUrl="https://developers.google.com/webmaster-tools/v3/how-tos/search_analytics">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Domain"/>
+      <Text Id="Site" Title="Site" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Site" Select.TitleField="Domain"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
-      <Radio Id="SearchType" Title="Type" DefaultValue="web">
+      <Select Id="SearchType" Title="Type" DefaultValue="web">
         <DataSource>
           <Item Id="web" Title="Web"/>
           <Item Id="video" Title="Video"/>
           <Item Id="image" Title="Image"/>
         </DataSource>
-      </Radio>
+      </Select>
 			<Number Id="Offset" Title="Custom Startrow Offset" Required="false" HelpText="Enter a number to start at that position"/>
 		</Parameters>
     <Paging PageSize="10000" DefaultTake="1000" EvenPages="false"/>
@@ -143,7 +143,7 @@
       </Fetch.Url>
 		</Fetch>
     <Parse>
-      <JsonPath Expr="$.rows.*">
+      <JsonPath Expr="$.rows[*]">
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Date&quot;))]" Id="Date" Title="Date" Tag="Dimensions" Converter="DateTime"/>
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Query&quot;))]" Id="Query" Title="Query" Tag="Dimensions"/>
         <JsonPath Expr="keys[@(DimensionIndex(&quot;Country&quot;))]" Id="Country" Title="Country" Tag="Dimensions" Checked="false"/>
@@ -161,7 +161,7 @@
 
   <RestConnector Id="Sitemaps" Title="Sitemaps" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/sitemaps">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Domain"/>
+      <Text Id="Site" Title="Site" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Site" Select.TitleField="Domain"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps?fields=sitemap">
       <HttpSettings>
@@ -171,7 +171,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.sitemap.*">
+      <JsonPath Expr="$.sitemap[*]">
         <JsonPath Expr="path" Id="Path" Title="Path"/>
         <JsonPath Expr="lastSubmitted" Id="LastSubmitted" Title="Last Submitted" Converter="DateTime"/>
         <JsonPath Expr="isPending" Id="IsPending" Title="Is Pending" Converter="Bool"/>
@@ -186,8 +186,8 @@
 
   <RestConnector Id="SitemapContents" Title="Sitemap Status" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/sitemaps/get">
     <Parameters>
-      <Text Id="Site" Title="Site" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Id" Select.TitleField="Domain"/>
-      <Text Id="Sitemap" Title="Sitemap" DefaultValue="" Debug.DefaultValue="http://seotoolsforexcel.com/sitemap.xml" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="Path"/>
+      <Text Id="Site" Title="Site" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Site" Select.TitleField="Domain"/>
+      <Text Id="Sitemap" Title="Sitemap" Debug.DefaultValue="http://seotoolsforexcel.com/sitemap.xml" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="LastSubmitted"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps/@(Utils.UrlEncode(Model.Sitemap))?fields=contents">
       <HttpSettings>
@@ -197,7 +197,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.contents.*">
+      <JsonPath Expr="$.contents[*]">
         <JsonPath Expr="type" Id="Type" Title="Type"/>
         <JsonPath Expr="submitted" Id="Submitted" Title="Submitted" Converter="Int"/>
         <JsonPath Expr="indexed" Id="Indexed" Title="Indexed" Converter="Int"/>

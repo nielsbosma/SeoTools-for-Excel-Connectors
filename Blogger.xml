@@ -1,20 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" RequireVersion="7.0.0" Title="Blogger" Id="Blogger" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Blogger.xml" HelpUrl="http://seotoolsforexcel.com/blogger/" HelpText="Documentation">
+<Suite Category="Social" RequireVersion="8.2" Title="Blogger" Id="Blogger" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Blogger.xml" HelpUrl="http://seotoolsforexcel.com/blogger/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/blogger" StayAuthenticated="true"/>
 
-  <RestConnector Id="BlogLookupId" Title="Blog Lookup by Id" HelpText="Retrieves a blog by its ID." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/blogs/get">
-    <Parameters>
-      <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
-    </Parameters>
-    <Fetch>
+  <Resources>
+    <Resource Id="HttpSettings">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
+    </Resource>
+    <Resource Id="Error">
+			<Fail>
+				<JsonPath Expr="error"/>
+				<JsonPath Expr="error.message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+	
+  <RestConnector Id="BlogLookupId" Title="Blog Lookup by Id" HelpText="Retrieves a blog by its ID." Group="Blog" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/blogs/get">
+    <Parameters>
+      <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)
@@ -30,24 +42,22 @@
 			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 			<JsonPath Expr="posts.totalItems" Id="Items" Title="Items" Converter="Long"/>
 			<JsonPath Expr="pages.totalItems" Id="Pages" Title="Pages" Converter="Long"/>
-			<JsonPath Expr="locale.language" Id="Language" Title="Language" Converter="String"/>
-			<JsonPath Expr="locale.country" Id="Country" Title="Country" Converter="String"/>
+			<Compute Expr="@Utils.IsoLanguageCodeToName(Model.Inp)" Id="Language" Converter="Auto">
+				<JsonPath Expr="locale.language" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="@Utils.IsoCountryCodeToName(Model.Inp)" Id="Country" Converter="Auto">
+				<JsonPath Expr="locale.country" Id="Inp" DefaultValue=""/>
+			</Compute>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="BlogLookupUrl" Title="Blog Lookup by URL" HelpText="Retrieves a blog by URL." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/blogs/getByUrl">
+  <RestConnector Id="BlogLookupUrl" Title="Blog Lookup by URL" HelpText="Retrieves a blog by URL." Group="Blog" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/blogs/getByUrl">
     <Parameters>
       <Text Id="BlogUrl" Title="Blog URL" Debug.DefaultValue="https://blogger.googleblog.com/" Required="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/byurl?url=@(Model.BlogUrl)
@@ -63,24 +73,22 @@
 			<JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
 			<JsonPath Expr="posts.totalItems" Id="Items" Title="Items" Converter="Long"/>
 			<JsonPath Expr="pages.totalItems" Id="Pages" Title="Pages" Converter="Long"/>
-			<JsonPath Expr="locale.language" Id="Language" Title="Language" Converter="String"/>
-			<JsonPath Expr="locale.country" Id="Country" Title="Country" Converter="String"/>
+			<Compute Expr="@Utils.IsoLanguageCodeToName(Model.Inp)" Id="Language" Converter="Auto">
+				<JsonPath Expr="locale.language" Id="Inp" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="@Utils.IsoCountryCodeToName(Model.Inp)" Id="Country" Converter="Auto">
+				<JsonPath Expr="locale.country" Id="Inp" DefaultValue=""/>
+			</Compute>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="PageList" Title="Page List" HelpText="Retrieves the list of pages for a blog." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/pages/list">
+  <RestConnector Id="PageList" Title="Page List" HelpText="Retrieves the list of pages for a blog." Group="Blog" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/pages/list">
     <Parameters>
       <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)/pages
@@ -88,19 +96,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="items.*">
+			<JsonPath Expr="items[*]">
 				<JsonPath Expr="id" Id="PageId" Title="Page Id" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
-        <Compute Id="Content" Title="Content">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.ContentInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-				<JsonPath Expr="content" Id="ContentInput" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Content" Title="Content">
+					<JsonPath Expr="content" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
 				<JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
 				<JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
@@ -112,12 +112,10 @@
 				<JsonPath Expr="blog.id" Id="BlogId" Title="Blog Id" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="PostList" Title="Post List" HelpText="Retrieves a list of posts for a blog." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/list">
+  <RestConnector Id="PostList" Title="Post List" HelpText="Retrieves a list of posts for a blog." Group="Post" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/list">
     <Parameters>
       <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
@@ -134,11 +132,7 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)/posts
@@ -149,27 +143,16 @@
           @: &endDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T23:59:59.000Z
         }
 				&orderBy=@(Model.Sort)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="items.*">
+			<JsonPath Expr="items[*]">
 				<JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
-        <Compute Id="Content" Title="Content">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.ContentInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-				<JsonPath Expr="content" Id="ContentInput" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Content" Title="Content">
+					<JsonPath Expr="content" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
 				<JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
 				<JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
@@ -182,22 +165,16 @@
 				<JsonPath Expr="blog.id" Id="BlogId" Title="Blog Id" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="PostLookup" Title="Post Lookup" HelpText="Retrieves one post by post ID." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/get">
+  <RestConnector Id="PostLookup" Title="Post Lookup" HelpText="Retrieves one post by post ID." Group="Post" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/get">
     <Parameters>
       <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
       <Text Id="PostId" Title="Post Id" Debug.DefaultValue="847065355310893195" Required="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)/posts/@(Model.PostId)
@@ -207,16 +184,8 @@
     <Parse>
 			<JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
 			<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
-			<Compute Id="Content" Title="Content">
-				<Compute.Expr>
-					<![CDATA[
-					@{
-						var Cleaned = Regex.Replace(Model.ContentInput, "<.*?>", String.Empty);
-					}
-					@Cleaned
-					]]>
-				</Compute.Expr>
-			<JsonPath Expr="content" Id="ContentInput" Converter="String"/>
+			<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Content" Title="Content">
+				<JsonPath Expr="content" Id="Inp" Converter="String" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
 			<JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
@@ -228,12 +197,10 @@
 			<JsonPath Expr="author.url" Id="AuthorUrl" Title="Author URL" Converter="String"/>
 			<JsonPath Expr="blog.id" Id="BlogId" Title="Blog Id" Converter="String"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="PostSearch" Title="Post Search" HelpText="Searches for a post that matches the given query terms." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/search">
+  <RestConnector Id="PostSearch" Title="Post Search" HelpText="Searches for a post that matches the given query terms." Group="Post" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/posts/search">
     <Parameters>
       <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
       <Text Id="Query" Title="Query" Debug.DefaultValue="spring" Required="true"/>
@@ -245,11 +212,7 @@
       </Radio>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)/posts/search
@@ -259,19 +222,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="items.*">
+			<JsonPath Expr="items[*]">
 				<JsonPath Expr="id" Id="PostId" Title="Post Id" Converter="String"/>
 				<JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
-        <Compute Id="Content" Title="Content">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.ContentInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-				<JsonPath Expr="content" Id="ContentInput" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Content" Title="Content">
+					<JsonPath Expr="content" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
 				<JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
 				<JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
@@ -284,12 +239,10 @@
 				<JsonPath Expr="blog.id" Id="BlogId" Title="Blog Id" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="CommentList" Title="Comment List" HelpText="Retrieves the list of comments for a post." HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/comments/list">
+  <RestConnector Id="CommentList" Title="Comment List" HelpText="Retrieves the list of comments for a post." Group="Post" HelpUrl="https://developers.google.com/blogger/docs/3.0/reference/comments/list">
     <Parameters>
       <Text Id="BlogId" Title="Blog Id" Debug.DefaultValue="2399953" Required="true"/>
       <Text Id="PostId" Title="Post Id" Debug.DefaultValue="7295511683378010830" Required="true"/>
@@ -301,11 +254,7 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/blogger/v3/blogs/@(Model.BlogId)/posts/@(Model.PostId)/comments
@@ -315,26 +264,15 @@
           @: &startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00.000Z
           @: &endDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T23:59:59.000Z
         }
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="items.*">
+			<JsonPath Expr="items[*]">
 				<JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
-        <Compute Id="Content" Title="Content">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.ContentInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-				<JsonPath Expr="content" Id="ContentInput" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Content" Title="Content">
+					<JsonPath Expr="content" Id="Inp" Converter="String" DefaultValue=""/>
         </Compute>
 				<JsonPath Expr="published" Id="Published" Title="Published" Converter="DateTime"/>
 				<JsonPath Expr="updated" Id="Updated" Title="Updated" Converter="DateTime"/>
@@ -346,9 +284,7 @@
 				<JsonPath Expr="blog.id" Id="BlogId" Title="Blog Id" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
+		<Resource Id="Error"/>
   </RestConnector>
 
 </Suite>

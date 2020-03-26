@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Wikipedia" RequireVersion="6.1.2" Id="Wikipedia" Category="Knowledge" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Wikipedia.xml" HelpUrl="http://seotoolsforexcel.com/Wikipedia" HelpText="Documentation">
+<Suite Title="Wikipedia" RequireVersion="8.2" Id="Wikipedia" Category="Knowledge" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Wikipedia.xml" HelpUrl="http://seotoolsforexcel.com/Wikipedia" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <RestConnector Id="FindArticlesbyKeyword" Title="Find Articles by Keyword" Hidden="false">
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+				<JsonPath Expr="$.error.info"/>
+      </Fail>
+    </Resource>
+	</Resources>
+
+  <RestConnector Id="FindArticlesbyKeyword" Title="Find Articles by Keyword">
     <Parameters>
-      <Text Id="Query" Title="Query" DefaultValue="" Required="true" Debug.DefaultValue="missile command"/>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="missile command"/>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -15,9 +23,8 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://en.wikipedia.org/w/api.php?action=query&list=search
+        https://en.wikipedia.org/w/api.php?action=query&list=search&format=json
         &srsearch=@Utils.UrlEncode(Model.Query)
-        &format=json
         &srlimit=@(Model.PageCursor.NextTake)
         &sroffset=@(Model.PageCursor.NextSkip)
         ]]>
@@ -25,27 +32,17 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.query.search[*]">
-        <JsonPath Expr="pageid" Id="Id" Title="Id" Converter="Long" HelpText=""/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText=""/>
-        <Compute Id="Snippet" Title="Snippet">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var SnippetCleaned = Regex.Replace(Model.SnippetInput, "<.*?>", String.Empty);
-            }
-            @SnippetCleaned
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="snippet" Id="SnippetInput"/>
+        <JsonPath Expr="pageid" Id="Id" Title="Id" Converter="Long"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Snippet" Title="Snippet">
+          <JsonPath Expr="snippet" Id="Inp"/>
         </Compute>
-        <JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="wordcount" Id="WordCount" Title="Word Count" Converter="Int" HelpText=""/>
-        <JsonPath Expr="size" Id="Size" Title="Size" Converter="Int" HelpText=""/>
+        <JsonPath Expr="timestamp" Id="Timestamp" Title="Timestamp" Converter="DateTime"/>
+        <JsonPath Expr="wordcount" Id="WordCount" Title="Word Count" Converter="Int"/>
+        <JsonPath Expr="size" Id="Size" Title="Size" Converter="Int"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.info"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
@@ -55,18 +52,15 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://en.wikipedia.org/w/api.php?action=query&list=search
+        https://en.wikipedia.org/w/api.php?action=query&list=search&format=json
         &srsearch=@Utils.UrlEncode(Model.Query)
-        &format=json
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.query.searchinfo.totalhits" Id="Count" Title="Count" Converter="Int" HelpText=""/>
+      <JsonPath Expr="$.query.searchinfo.totalhits" Id="Count" Title="Count" Converter="Int"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.info"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ArticleLookup" Title="Article Lookup" HelpText="Returns Information about a specific Article">
@@ -76,25 +70,21 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://en.wikipedia.org/w/api.php?action=query
-        &prop=info
+        https://en.wikipedia.org/w/api.php?action=query&format=json&prop=info&inprop=url
         &pageids=@(Model.PageId)
-        &inprop=url
-        &format=json
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.query.pages.@(Model.PageId)">
-        <JsonPath Expr="title" Id="Size" Title="Size" Converter="String" HelpText=""/>
-        <JsonPath Expr="touched" Id="Touched" Title="Touched" Converter="DateTime" HelpText=""/>
-        <JsonPath Expr="pagelanguage" Id="Language" Title="Language" Converter="String" HelpText=""/>
-        <JsonPath Expr="fullurl" Id="Url" Title="URL" Converter="String" HelpText=""/>
+      <JsonPath Expr="$.query.pages.['@(Model.PageId)']">
+        <JsonPath Expr="title" Id="Size" Title="Size" Converter="String"/>
+        <JsonPath Expr="touched" Id="Touched" Title="Touched" Converter="DateTime"/>
+				<Compute Expr="@Utils.IsoLanguageCodeToName(Model.Inp)" Id="Language" Converter="Auto">
+					<JsonPath Expr="pagelanguage" Id="Inp" DefaultValue=""/>
+				</Compute>
+        <JsonPath Expr="fullurl" Id="Url" Title="URL" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="$.error.info"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
-
-  </Suite>
+</Suite>

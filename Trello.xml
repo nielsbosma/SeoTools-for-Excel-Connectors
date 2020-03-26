@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Trello" Id="Trello" Category="Productivity" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trello.xml" HelpUrl="http://seotoolsforexcel.com/trello/" HelpText="Documentation">
+<Suite Title="Trello" Id="Trello" Category="Productivity" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Trello.xml" HelpUrl="http://seotoolsforexcel.com/trello/" HelpText="Documentation">
 
-  <Author Name="Dovydas Meilunas" Url="https://github.com/dovydasm"/>
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="token" AuthUrl="https://trello.com/1/authorize/?key=09db9d177171989f1a122fd4bb40307b&amp;name=SeoTools+for+Excel&amp;redirect_uri={0}&amp;response_type=token&amp;scope=read"/>
 
@@ -35,7 +35,7 @@
 			<JsonPath Expr="data.board.name" Id="Board Name" Title="Board Name" Converter="Auto" HelpText="The name of the board"/>
 			<JsonPath Expr="data.card.id" Id="CardId" Title="Card Id" Converter="Auto" DefaultValue="" HelpText="The ID of the card"/>
 			<JsonPath Expr="data.card.name" Id="Card Name" Title="Card Name" Converter="Auto" DefaultValue="" HelpText="Name of the card"/>
-    </Resource>		
+    </Resource>
     <Resource Id="Fail">
       <Fail>
         <Regex Expr="^invalid token$" Group="0"/>
@@ -58,9 +58,9 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id"/>
-        <JsonPath Expr="name" Id="Name"/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="Id" Title="Board Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Board Name"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -68,7 +68,7 @@
 
   <RestConnector Id="ListsHidden" Hidden="true">
     <Parameters>
-      <Text Id="BoardId" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="BoardId" Select.Connector="BoardsHidden"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -78,9 +78,9 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id"/>
-        <JsonPath Expr="name" Id="Name"/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="Id" Title="List Id"/>
+        <JsonPath Expr="name" Id="Name" Title="List Name"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -88,8 +88,8 @@
 
   <RestConnector Id="CardsHidden" Hidden="true">
     <Parameters>
-      <Text Id="BoardId" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="ListId" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="BoardId" Select.Connector="BoardsHidden"/>
+      <Text Id="ListId" Select.Connector="ListsHidden"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -99,15 +99,15 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="Id"/>
-        <JsonPath Expr="name" Id="Name"/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="Id" Title="Card Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Card Name"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BoardCards" Title="Board Cards" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidtest">
+  <RestConnector Id="BoardCards" Title="Board Cards" Group="Cards" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidtest">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Required="true" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
 			<Resource Id="FilterCards"/>
@@ -121,14 +121,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="CardsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BoardMembers" Title="Board Members" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidmembers">
+  <RestConnector Id="BoardMembers" Title="Board Members" Group="Members" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidmembers">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Required="true" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Filter" Title="Member Filter" DefaultValue="all">
@@ -149,7 +149,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="id" Id="MemberId" Title="Member Id" HelpText="The ID of the member"/>
         <JsonPath Expr="member.username" Id="Username" Title="Username" HelpText="The username for the member."/>
         <JsonPath Expr="member.fullName" Id="FullName" Title="Name" HelpText="The full display name for the member"/>
@@ -159,7 +159,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BoardActions" Title="Board Actions" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidactions">
+  <RestConnector Id="BoardActions" Title="Board Actions" Group="Actions" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidactions">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Required="true" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
@@ -172,14 +172,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="ActionsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BoardLists" Title="Board Lists" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidlists">
+  <RestConnector Id="BoardLists" Title="Board Lists" Group="Boards" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidlists">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Required="true" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <Select Id="Filter" Title="List Filter" DefaultValue="all">
@@ -199,7 +199,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="id" Id="Id" Title="List Id" HelpText="The ID of the list"/>
         <JsonPath Expr="name" Id="Name" Title="Name" DefaultValue="" HelpText="The name of the list"/>
         <JsonPath Expr="closed" Id="Closed" Title="Closed" Converter="Bool" HelpText="Whether the list is closed (archived)"/>
@@ -209,7 +209,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListActions" Title="List Actions" HelpUrl="https://trello.readme.io/v1.0/reference#listsidactions">
+  <RestConnector Id="ListActions" Title="List Actions" Group="Actions" HelpUrl="https://trello.readme.io/v1.0/reference#listsidactions">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="ListId" Title="List ID" Required="true" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Name"/>
@@ -223,14 +223,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="ActionsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListCards" Title="List Cards" HelpUrl="https://trello.readme.io/v1.0/reference#listsidcards">
+  <RestConnector Id="ListCards" Title="List Cards" Group="Cards" HelpUrl="https://trello.readme.io/v1.0/reference#listsidcards">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="ListId" Title="List ID" Required="true" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Name"/>
@@ -245,14 +245,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="CardsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CardSearch" Title="Card Search" HelpUrl="https://developers.trello.com/reference#search-1">
+  <RestConnector Id="CardSearch" Title="Card Search" Group="Cards" HelpUrl="https://developers.trello.com/reference#search-1">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true"/>
       <Checkbox Id="Partial" Title="Partial Matching"/>
@@ -267,14 +267,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="CardsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CardActions" Title="Card Actions" HelpUrl="https://trello.readme.io/v1.0/reference#cardsidactions">
+  <RestConnector Id="CardActions" Title="Card Actions" Group="Actions" HelpUrl="https://trello.readme.io/v1.0/reference#cardsidactions">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Select.Connector="BoardsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="ListId" Title="Filter by List ID" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Name"/>
@@ -289,14 +289,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="ActionsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MemberActions" Title="Member Actions" HelpUrl="https://trello.readme.io/v1.0/reference#membersidactions">
+  <RestConnector Id="MemberActions" Title="Member Actions" Group="Actions" HelpUrl="https://trello.readme.io/v1.0/reference#membersidactions">
     <Parameters>
       <Text Id="MemberId" Title="Member ID/Username" Required="false" HelpText="Leave Blank for Current Authenticated User"/>
     </Parameters>
@@ -309,14 +309,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="ActionsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MemberCards" Title="Member Cards" HelpUrl="https://trello.readme.io/v1.0/reference#membersidcards">
+  <RestConnector Id="MemberCards" Title="Member Cards" Group="Cards" HelpUrl="https://trello.readme.io/v1.0/reference#membersidcards">
     <Parameters>
       <Text Id="MemberId" Title="Member ID/Username" Required="false" HelpText="Leave Blank for Current Authenticated User"/>
       <Resource Id="FilterCards"/>
@@ -330,14 +330,14 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
 				<Resource Id="CardsFields"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MemberBoards" Title="Member Boards" HelpUrl="https://trello.readme.io/v1.0/reference#membersidboards">
+  <RestConnector Id="MemberBoards" Title="Member Boards" Group="Boards" HelpUrl="https://trello.readme.io/v1.0/reference#membersidboards">
     <Parameters>
       <Text Id="MemberId" Title="Member ID/Username" Required="false" HelpText="Leave Blank for Current Authenticated User"/>
       <Select Id="Filter" Title="Board Filter" DefaultValue="all">
@@ -361,7 +361,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="id" Id="BoardId" Title="Board Id" HelpText="The ID of the board"/>
         <JsonPath Expr="name" Id="BoardName" Title="Name" HelpText="The name of the board"/>
         <JsonPath Expr="shortUrl" Id="ShortUrl" Title="URL" HelpText="URL for the board using only its shortMongoID"/>
@@ -372,7 +372,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="MemberSearch" Title="Member Search" HelpUrl="https://developers.trello.com/reference#search-1">
+  <RestConnector Id="MemberSearch" Title="Member Search" Group="Members" HelpUrl="https://developers.trello.com/reference#search-1">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true"/>
       <Checkbox Id="Partial" Title="Partial Matching"/>
@@ -386,7 +386,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.members.*">
+      <JsonPath Expr="$.members[*]">
         <JsonPath Expr="id" Id="MemberId" Title="Member Id" HelpText="The ID of the member"/>
         <JsonPath Expr="username" Id="Username" Title="Username" HelpText="The username for the member"/>
         <JsonPath Expr="fullName" Id="FullName" Title="Name" HelpText="The full display name for the member"/>
