@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Category="SEO" Title="Sistrix" Id="Sistrix" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Sistrix.xml" HelpUrl="http://seotoolsforexcel.com/sistrix/" HelpText="Documentation">
+<Suite Category="SEO" Title="Sistrix" Id="Sistrix" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Sistrix.xml" HelpUrl="http://seotoolsforexcel.com/sistrix/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -59,6 +59,7 @@
 		</Resource>
     <Resource Id="Fail">
 			<Fail>
+				<JsonPath Expr="error[0].error_code" Fail.If="RegexMatches" Fail.ComparedTo="1000" Fail.Action="EmptyResult"/>
 				<JsonPath Expr="error[0].error_message"/>
 			</Fail>
 		</Resource>
@@ -74,7 +75,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.answer[0].optimizer\.project[*]">
+      <JsonPath Expr="$.answer[0].['optimizer.project'][*]">
         <JsonPath Expr="hash" Id="Id" Title="Project Id"/>
         <JsonPath Expr="name" Id="Title" Title="Project Title"/>
       </JsonPath>
@@ -95,7 +96,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.answer[0].optimizer\.project[*]">
+      <JsonPath Expr="$.answer[0].['optimizer.project'][*]">
         <JsonPath Expr="hash" Id="Id" Title="Tag Id"/>
         <JsonPath Expr="name" Id="Title" Title="Tag Title"/>
       </JsonPath>
@@ -103,10 +104,9 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-
   <RestConnector Id="DomainOverview" Title="Domain Overview" Group="Domain Reports" HelpText="This delivers an overview on the current KPIs for the domain." HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://google.com" Required="true" />
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry"/>
 			<Resource Id="Extended"/>
@@ -124,48 +124,17 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.answer[0].sichtbarkeitsindex[0].value" Id="SichtBarkeitsIndex" Title="Sichtbarkeitsindex" Converter="Double" />
-      <JsonPath Expr="$.answer[0].kwcount\.seo[0].value" Id="KwCountSeo" Title="Keyword Count Seo" Converter="Int" />
-      <JsonPath Expr="$.answer[0].kwcount\.sem[0].value" Id="KwCountSem" Title="Keyword Count SEM" Converter="Int" />
+      <JsonPath Expr="$.answer[0].['kwcount.seo'][0].value" Id="KwCountSeo" Title="Keyword Count Seo" Converter="Int" />
+      <JsonPath Expr="$.answer[0].['kwcount.sem'][0].value" Id="KwCountSem" Title="Keyword Count SEM" Converter="Int" />
       <JsonPath Expr="$.answer[0].age[0].value" Id="Age" Title="Age" Converter="DateTime" />
       <JsonPath Expr="$.answer[0].pages[0].value" Id="Pages" Title="Pages" Converter="Int" />
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
-	
- <RestConnector Id="DomainKwCountSeoTop10" Title="Domain Keyword Count Seo Top10" HelpUrl="https://www.sistrix.com/api/domain/#domainkwcountseotop10">
-    <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" DefaultValue="" Required="true" />
-      <Resource Id="SelectMode" />
-      <Resource Id="SelectCountry"/>
-	  <Resource Id="Extended"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.sistrix.com/domain.kwcount.seo.top10
-        ?api_key=@(Model.ApiKey)
-        &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
-        &country=@(Model.Country)
-        @(Model.Extended == true ? "&extended=true" : "")
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name="User-Agent">SeoToolsForExcel</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <XPath Expr="/response/answer/kwcount.seo.top10" Attribute="value" Id="KwCountSeoTop10" Title="Keyword Count Seo Top10" Converter="Int" />
-    </Parse>
-    <Fail>
-      <XPath Expr="/response/error" Attribute="error_message" />
-    </Fail>
-  </RestConnector>
 
   <RestConnector Id="DomainVisibilityIndex" Title="Domain Visibility Index" Group="Domain Reports" HelpText="This method delivers a domain’s SISTRIX Visibility Index value." HelpUrl="https://www.sistrix.com/api/domain/#domainsichtbarkeitsindex">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://google.com" Required="true" />
       <Date Id="Date" Title="Date" Nullable="true"/>
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry" />
@@ -193,12 +162,13 @@
 
   <RestConnector Id="DomainVisibilityIndexHistory" Title="Domain Visibility Index History" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domainsichtbarkeitsindex">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry" />
       <Checkbox Id="Smartphone" Title="Smartphone" DefaultValue="False" HelpText="Calculates results for searches made with smartphones."/>
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -216,6 +186,7 @@
 			<JsonPath Expr="$.answer[0].sichtbarkeitsindex[*]">
 				<JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime"/>
 				<JsonPath Expr="value" Id="VisibilityIndex" Title="Visibility Index" Converter="Double"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
 			</JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -223,12 +194,13 @@
 
   <RestConnector Id="DomainCompetitorsSem" Title="Domain Competitors SEM" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorssem">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry" />
 			<Resource Id="Extended"/>
-      <Number Id="Num" Title="Rows" DefaultValue="100" Required="false" HelpText="Number of rows to retreive."/>
+      <Number Id="Num" Title="Rows" DefaultValue="100" HelpText="Number of rows to retreive per input"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -245,6 +217,7 @@
       <JsonPath Expr="$.answer[0].result[*]">
         <JsonPath Expr="domain" Title="Domain" Id="Domain" Converter="String"/>
         <JsonPath Expr="match" Title="Match" Id="Match" Converter="Double"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -252,12 +225,13 @@
 
   <RestConnector Id="DomainCompetitorsSeo" Title="Domain Competitors SEO" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domaincompetitorsseo">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry" />
 			<Resource Id="Extended"/>
-      <Number Id="Num" Title="Rows" DefaultValue="100" Required="false" HelpText="Number of rows to retreive."/>
+      <Number Id="Num" Title="Rows" DefaultValue="100" Required="false" HelpText="Number of rows to retreive per input"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -274,6 +248,7 @@
       <JsonPath Expr="$.answer[0].result[*]">
         <JsonPath Expr="domain" Title="Domain" Id="Domain" Converter="String"/>
         <JsonPath Expr="match" Title="Match" Id="Match" Converter="Double"/>
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -281,7 +256,7 @@
 
   <RestConnector Id="DomainAge" Title="Domain Age" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domainage">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://google.com" Required="true" />
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -300,7 +275,7 @@
 
   <RestConnector Id="DomainSocialOverview" Title="Domain Social Overview" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domainsocialoverview">
     <Parameters>
-      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://google.com" Required="true" />
       <Resource Id="SelectMode" />
     </Parameters>
     <Fetch>
@@ -327,13 +302,14 @@
 
   <RestConnector Id="KeywordSeo" Title="Keyword SEO" Group="Keyword Reports" HelpText="Returns information about the SERPs of the keyword." HelpUrl="https://www.sistrix.com/api/keyword/#keywordseo">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="nyheter" Required="true" />
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" />
-      <Date Id="Date" Title="Date" Required="false" Nullable="true"/>
-      <Number Id="Num" Title="Rows" DefaultValue="10" Required="false" HelpText="Number of rows to retreive."/>
+      <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="nyheter" Required="true" Multiline="true" />
+      <Text Id="Domain" Title="Domain"/>
+      <Date Id="Date" Title="Date" Nullable="false"/>
+      <Number Id="Num" Title="Rows" DefaultValue="10" Required="false" HelpText="Number of rows to retreive per keyword"/>
       <Resource Id="SelectCountry" />
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -353,6 +329,7 @@
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int"/>
         <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String"/>
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <Compute Expr="@Model.Keyword" Id="Keyword" Title="Keyword" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -360,13 +337,14 @@
 
   <RestConnector Id="KeywordSem" Title="Keyword SEM" Group="Keyword Reports" HelpText="Returns the AdWords ads for the keyword." HelpUrl="https://www.sistrix.com/api/keyword/#keywordsem">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true" />
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" />
-      <Date Id="Date" Title="Date" Required="false" Nullable="true"/>
-      <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+      <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Required="true" Multiline="true"/>
+      <Text Id="Domain" Title="Domain"/>
+      <Date Id="Date" Title="Date" Nullable="true"/>
+      <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive per keyword"/>
       <Resource Id="SelectCountry" />
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -387,6 +365,7 @@
         <JsonPath Expr="title" Id="Title" Title="Title" />
         <JsonPath Expr="text" Id="Text" Title="Text" />
         <JsonPath Expr="displayurl" Id="DisplayUrl" Title="Display URL" />
+        <Compute Expr="@Model.Keyword" Id="Keyword" Title="Keyword" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -394,11 +373,12 @@
 
   <RestConnector Id="KeywordUs" Title="Keyword Universal Search" Group="Keyword Reports" HelpUrl="https://www.sistrix.com/api/keyword/#keywordus">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true" />
-      <Date Id="Date" Title="Date" Required="false" Nullable="true"/>
-      <Resource Id="SelectCountry" />
+      <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Required="true" Multiline="true" />
+      <Date Id="Date" Title="Date" Nullable="true"/>
+      <Resource Id="SelectCountry"/>
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -417,14 +397,15 @@
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" />
         <JsonPath Expr="position.intern" Id="PositionIntern" Title="position Intern" Converter="Int" />
         <JsonPath Expr="url" Id="Url" Title="URL" />
+        <Compute Expr="@Model.Keyword" Id="Keyword" Title="Keyword" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="LinksOverview" Title="Backklinks Overview" Group="Link Reports" HelpUrl="https://www.sistrix.com/api/links/#linksoverview">
+  <RestConnector Id="LinksOverview" Title="Backlinks Overview" Group="Link Reports" HelpUrl="https://www.sistrix.com/api/links/#linksoverview">
     <Parameters>
-      <Text Id="Domain" Title="Domain, Path or Host" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
+      <Text Id="Domain" Title="Domain, Path or Host" Debug.DefaultValue="https://google.com" Required="true" />
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -446,10 +427,11 @@
 
   <RestConnector Id="LinksList" Title="Links List" Group="Link Reports" HelpText="Returns 10,000 of the most well-known backlinks for the domain in question." HelpUrl="https://www.sistrix.com/api/links/#linkslist">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
-      <Number Id="Offset" Title="Offset" DefaultValue="0" Required="false" />
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
+      <Number Id="Offset" Title="Offset" DefaultValue="0" />
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -463,9 +445,10 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.answer[0].link[*]">
-        <JsonPath Expr="url\.from" Id="UrlFrom" Title="URL From" />
+        <JsonPath Expr="['url.from']" Id="UrlFrom" Title="URL From" />
         <JsonPath Expr="text" Id="Text" Title="Text" />
-        <JsonPath Expr="url\.to" Id="UrlTo" Title="URL To" />
+        <JsonPath Expr="['url.to']" Id="UrlTo" Title="URL To" />
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -473,10 +456,11 @@
 
   <RestConnector Id="LinksLinkTargets" Title="Link Targets" Group="Link Reports" HelpText="Returns a list of the top link targets for the domain in question." HelpUrl="https://www.sistrix.com/api/links/#linkslinktargets">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
-      <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
+      <Number Id="Num" Title="Rows" DefaultValue="50" HelpText="Number of rows to retreive."/>
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -496,6 +480,7 @@
         <JsonPath Expr="nets" Id="Nets" Title="Nets" Converter="Int" />
         <JsonPath Expr="ips" Id="IPs" Title="IPs" Converter="Int" />
         <JsonPath Expr="totalLinks" Id="TotalLinks" Title="Total Links" Converter="Int" />
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -503,10 +488,11 @@
 
   <RestConnector Id="LinksLinkTexts" Title="Link Texts" Group="Link Reports" HelpText="Returns a list of the top link texts for the domain in question." HelpUrl="https://www.sistrix.com/api/links/#linkslinktexts">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
-      <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
+      <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="https://google.com" Required="true" Multiline="true"/>
+      <Number Id="Num" Title="Rows" DefaultValue="50" HelpText="Number of rows to retreive."/>
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -526,6 +512,7 @@
         <JsonPath Expr="nets" Id="Nets" Title="Nets" Converter="Int" />
         <JsonPath Expr="ips" Id="IPs" Title="IPs" Converter="Int" />
         <JsonPath Expr="totalLinks" Id="TotalLinks" Title="Total Links" Converter="Int" />
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -533,7 +520,7 @@
 
   <RestConnector Id="KeywordDomainSEO" Title="Keyword Domain SEO" Group="Keyword Reports" HelpText="With this method, a domain’s keywords found within the organic Google ranking are displayed." HelpUrl="https://www.sistrix.com/api/keyword/#keyworddomainseo">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Required="true" Debug.DefaultValue="https://seotoolsforexcel.com" HelpText="The Keywords found within the organic Google ranking for a domain."/>
+      <Text Id="Domain" Title="Domain(s)" Required="true" Debug.DefaultValue="https://google.com" HelpText="The Keywords found within the organic Google ranking for a domain." Multiline="true"/>
       <Text Id="Host" Title="Host" Required="false" HelpText="Limits the keyword search to a specific host name of the domain."/>
       <Text Id="Url" Title="URL" Required="false" HelpText="Limits the keyword search to a specific URL of the domain."/>
       <Text Id="Path" Title="Path" Required="false" HelpText="Limits the keyword search to a specific directory on the domain"/>
@@ -544,6 +531,7 @@
       <Number Id="Num" Title="Rows" DefaultValue="50" Required="false" HelpText="Number of rows to retreive."/>
 			<Resource Id="Extended"/>
     </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -569,6 +557,7 @@
         <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Int" />
         <JsonPath Expr="traffic" Id="Traffic" Title="Traffic" Converter="Int" />
         <JsonPath Expr="url" Id="Url" Title="URL" />
+        <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -577,7 +566,7 @@
   <RestConnector Id="ProjectKeywordsRanking" Title="Project Keywords Ranking" Group="Optimizer Reports" HelpText="This method returns the keywords and existing rankings for an Optimizer project." HelpUrl="https://www.sistrix.com/api/optimizer/#optimizerranking">
     <Parameters>
       <Text Id="Project" Title="Project Id" Required="true" HelpText="The project Id/Hash" Select.Connector="GetProjectId"/>
-      <Text Id="Tag" Title="Tag" Required="false" HelpText="Filter by a specific tag" Select.Connector="GetTags"/>
+      <Text Id="Tag" Title="Tag" Required="false" HelpText="Filter by a specific tag" Select.Connector="GetTags" Parent.Id="Project" Parent.Label="Project"/>
     </Parameters>
     <Paging PageSize="2" EvenPages="true"/>
     <Fetch>
@@ -593,13 +582,15 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.answer[0].optimizer\.rankings[0].optimizer\.ranking[*]">
+      <JsonPath Expr="$.answer[0].['optimizer.rankings'][0].['optimizer.ranking'][*]">
         <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" />
         <JsonPath Expr="position" Id="Position" Title="Position" Converter="Int" />
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="tags" Id="Tags" Title="Tags" Converter="String"/>
         <JsonPath Expr="device" Id="Device" Title="Device" Converter="String"/>
-        <JsonPath Expr="country" Id="Country" Title="Country" Converter="String"/>
+				<Compute Expr="@Utils.IsoCountryCodeToName(Model.Inp)" Id="Country" Converter="Auto">
+					<JsonPath Expr="country" Id="Inp" DefaultValue=""/>
+				</Compute>
         <JsonPath Expr="searchengine" Id="SearchEngine" Title="Search Engine" Converter="String"/>
       </JsonPath>
     </Parse>
