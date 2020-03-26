@@ -1,9 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="8.0" Title="Google Search" Category="SEO" Id="GoogleSearch" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSearch.xml" HelpUrl="http://seotoolsforexcel.com/Google-Search/" HelpText="Documentation">
+<Suite Title="Google Search" Category="SEO" Id="GoogleSearch" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSearch.xml" HelpUrl="http://seotoolsforexcel.com/Google-Search/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Resources>
+    <Resource Id="Type">
+      <Select Id="Type" Title="Type" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="news" Title="News"/>
+        </DataSource>
+      </Select>
+		</Resource>
     <Resource Id="DisplayLanguage">
       <Select Id="DisplayLanguage" Title="Display Language" DefaultValue="en">
         <DataSource>
@@ -33,6 +41,7 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
 			<Resource Id="DisplayLanguage"/>
       <Resource Id="PeriodSorting"/>
@@ -53,20 +62,26 @@
         }
         @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+				@(Model.Type == "news" ? "&tbm=nws" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@class='r']/a/h3">
+      <XPath Expr="@(ReturnXpath(false))">
         <Xpath Expr="." Id="Title"/>
       </XPath>
-      <XPath Expr="//span[@@class='st'] | //div[@@class='st']">
+      <XPath Expr="//div[@@class='s']/div/span[@@class='st']">
         <Xpath Expr="." Id="Description"/>
       </XPath>
-      <XPath Expr="//div[@@class='r']/a/h3/..">
+      <XPath Expr="@(ReturnXpath(true))">
         <Compute Id="URL" Title="URL" Expr="@Uri.UnescapeDataString(Model.UrlRaw)">
           <Xpath Expr="." Attribute="href" Id="UrlRaw"/>
         </Compute>
+      </XPath>
+			<XPath Expr="//div[@@class='s']/div/span[@@class='st']">
+				<Compute Expr="@GetUniqueBoldedWords()" Id="Bolded" Title="Bolded Words" Converter="Auto" DefaultValue="" Checked="false">
+					<Xpath Expr="csv(em)" Id="Inp"/>
+				</Compute>
       </XPath>
     </Parse>
   </RestConnector>
@@ -112,6 +127,7 @@
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
     </Parameters>
@@ -126,6 +142,7 @@
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
 					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
         }
+				@(Model.Type == "news" ? "&tbm=nws" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -137,6 +154,7 @@
   <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="aftonbladet.se"/>
+			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
     </Parameters>
@@ -151,6 +169,7 @@
           @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
 					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
         }
+				@(Model.Type == "news" ? "&tbm=nws" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -158,5 +177,20 @@
       <XPath Expr="//div[@@id='resultStats']/text()" Converter="Int"/>
     </Parse>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    String ReturnXpath(bool urlField) {
+			if(urlField)
+				return Model.Type == "all" ? "//div[@class='r']/a/h3/.." : "//div[@class='g']//h3/a";
+			else
+				return Model.Type == "all" ? "//div[@class='r']//h3" : "//div[@class='g']//h3";
+    }
+		String GetUniqueBoldedWords() {
+			string[] bolded = Regex.Split(Model.Inp, @", ");
+			return string.Join(", ", bolded.Distinct());
+		}
+    ]]>
+  </RazorFunctions>
 
 </Suite>

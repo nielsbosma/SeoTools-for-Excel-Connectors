@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="DeepCrawl" Id="DeepCrawl" RequireVersion="6.0.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DeepCrawl.xml" HelpUrl="http://seotoolsforexcel.com/deepcrawl/" HelpText="Documentation">
+<Suite Category="SEO" Title="DeepCrawl" Id="DeepCrawl" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DeepCrawl.xml" HelpUrl="http://seotoolsforexcel.com/deepcrawl/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -27,7 +27,8 @@
   <RestConnector Id="GenerateToken" HelpUrl="http://api-docs.deepcrawl.com/" Hidden="true">
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
+        <Cache>True</Cache>
+				<RequestMethod>POST</RequestMethod>
         <RequestHeaders>
           <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
         </RequestHeaders>
@@ -57,9 +58,9 @@
 			</Fetch.Url>
 		</Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-				<JsonPath Expr="id" Id="AccountId"/>
-				<JsonPath Expr="name" Id="AccountName"/>
+      <JsonPath Expr="$[*]">
+				<JsonPath Expr="id" Id="AccountId" Title="Account Id"/>
+				<JsonPath Expr="name" Id="AccountName" Title="Account Name"/>
 			</JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -82,9 +83,9 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="ProjectId"/>
-        <JsonPath Expr="name" Id="ProjectName"/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="ProjectId" Title="Project Id"/>
+        <JsonPath Expr="name" Id="ProjectName" Title="Project Name"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -153,15 +154,15 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="CrawlId"/>
-        <JsonPath Expr="crawling_at" Id="CrawlingAt" Converter="DateTime"/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="CrawlId" Title="Crawl Id"/>
+        <JsonPath Expr="crawling_at" Id="CrawlingAt" Title="Crawled At" Converter="DateTime"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListReportsHidden" Hidden="true">
+  <RestConnector Id="ListReportsHidden" Hidden="false">
     <Parameters>
       <Text Id="AccountId" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
       <Text Id="ProjectIdFilter" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
@@ -179,12 +180,11 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <Compute Expr="@(Model.Inp1)_@(Model.Inp2)" Id="ReportId">
           <JsonPath Expr="report_template" Id="Inp1"/>
           <JsonPath Expr="report_type" Id="Inp2"/>
         </Compute>
-        <JsonPath Expr="id" Id="ReportName" DefaultValue=""/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -208,19 +208,19 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
-        <JsonPath Expr="id" Id="TrendReportId" DefaultValue=""/>
-        <JsonPath Expr="report_template" Id="TrendReportName" DefaultValue=""/>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="TrendReportId" Title="Trend Report Id" DefaultValue=""/>
+        <JsonPath Expr="report_template" Id="TrendReportName" Title="Trend Report Name" DefaultValue=""/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ReportTrend" Title="Report Trend" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
+  <RestConnector Id="ReportTrend" Title="Report Trend" Group="Reports" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
     <Parameters>
       <Text Id="AccountId" Name="Select Account" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
-      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
-      <Text Id="TrendReportsIdFilter" Title="Filter Trends by Report" Required="true" Select.Connector="ListTrendReportsHidden" Select.IdField="TrendReportId" Select.TitleField="TrendReportName"/>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName" Parent.Id="AccountId" Parent.Label="Account Id"/>
+      <Text Id="TrendReportsIdFilter" Title="Filter Trends by Report" Required="true" Select.Connector="ListTrendReportsHidden" Select.IdField="TrendReportId" Select.TitleField="TrendReportName" Parent.Id="ProjectIdFilter" Parent.Label="Project Id"/>
     </Parameters>
     <Prepare>
       <Connector Id="GenerateToken"/>
@@ -236,7 +236,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Compute Expr="@(Model.LastCrawlDate)" Id="Date" Title="Date" Converter="DateTime"/>
+      <Compute Expr="['@(Model.LastCrawlDate)']" Id="Date" Title="Date" Converter="DateTime"/>
       <JsonPath Expr="total_weight" Id="All" Title="All" Converter="Int" DefaultValue="0"/>
       <JsonPath Expr="change_weight" Id="Change" Title="Change" Converter="Int" DefaultValue="0"/>
       <JsonPath Expr="added_total" Id="Added" Title="Added" Converter="Int" DefaultValue="0"/>
@@ -246,7 +246,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListProjects" Title="List Projects" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get">
+  <RestConnector Id="ListProjects" Title="List Projects" Group="Projects" HelpUrl="http://api-docs.deepcrawl.com/#projects-projects-get">
     <Parameters>
       <Text Id="AccountId" Name="Select Account" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
       <Select Id="Sorting" Title="Sort Projects by" Required="false" DefaultValue="-finished_at">
@@ -276,35 +276,23 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="name" Id="ProjectName" Title="Project Name" Converter="String"/>
         <JsonPath Expr="_crawls_last.status" Id="Status" Title="Status" Converter="Sring" DefaultValue=""/>
         <JsonPath Expr="_crawls_finished_last_finished_at" Id="LastCrawlDate" Title="Last Crawl Date" Converter="Auto" DefaultValue=""/>
         <JsonPath Expr="issues_count" Id="Tasks" Title="Tasks" Converter="Int"/>
         <JsonPath Expr="_crawls_last.all_pages_total" Id="Urls" Title="URLs" Converter="Int" DefaultValue=""/>
         <JsonPath Expr="crawls_count" Id="CrawlCount" Title="Crawls" Converter="Int"/>
-        <Compute Id="CrawlSources" Title="Crawl Sources">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var temp = Regex.Replace(Model.Inp, @"\s+", " ");
-              var temp2 = Regex.Replace(temp, @"\""", string.Empty);
-              var sourcesstripped = temp2.Substring(1,temp2.Length-2);
-            }
-            @sourcesstripped
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="crawl_types" Id="Inp"/>
-        </Compute>
+        <JsonPath Expr="csv(crawl_types)" Id="CrawlSources" Title="Crawl Sources" DefaultValue=""/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListCrawls" Title="Crawls List" HelpUrl="http://api-docs.deepcrawl.com/#crawls-crawls-get">
+  <RestConnector Id="ListCrawls" Title="Crawls List" Group="Crawls" HelpUrl="http://api-docs.deepcrawl.com/#crawls-crawls-get">
     <Parameters>
       <Text Id="AccountId" Name="Select Account" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
-      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName" Parent.Id="AccountId" Parent.Label="Acvcount Id"/>
       <Select Id="Sorting" Title="Sort Crawls by" Required="false" DefaultValue="-finished_at">
         <DataSource>
 					<Item Id="-finished_at" Title="Last Crawl Date"/>
@@ -330,7 +318,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="finished_at" Id="DateFinished" Title="Date Finished" Converter="Auto" DefaultValue=""/>
         <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" DefaultValue=""/>
         <JsonPath Expr="all_pages_total" Id="UrlsCrawled" Title="URLs Crawled" Converter="Int" DefaultValue="0"/>
@@ -342,11 +330,11 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CrawlSummary" Title="Crawl Summary" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
+  <RestConnector Id="CrawlSummary" Title="Crawl Summary" Group="Crawls" HelpUrl="http://api-docs.deepcrawl.com/#reports-reports-get">
     <Parameters>
       <Text Id="AccountId" Name="Select Account" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
-      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
-      <Text Id="CrawlIdFilter" Title="Select a Crawl" Required="true" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName" Parent.Id="AccountId" Parent.Label="Acvcount Id"/>
+      <Text Id="CrawlIdFilter" Title="Select a Crawl" Required="true" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt" Parent.Id="ProjectIdFilter" Parent.Label="Project Id"/>
       <Select Id="Sorting" Title="Sort Summaries by" Required="false" DefaultValue="report_template">
         <DataSource>
 					<Item Id="report_template" Title="Name (A-Z)"/>
@@ -373,7 +361,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.*">
+      <JsonPath Expr="$[*]">
         <JsonPath Expr="report_template" Id="ReportName" Title="Report Name" Converter="String" DefaultValue=""/>
         <JsonPath Expr="report_type" Id="ReportType" Title="Report Type" Converter="String" DefaultValue=""/>
         <JsonPath Expr="total_rows" Id="All" Title="All" Converter="Int" DefaultValue="0"/>
@@ -386,12 +374,12 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ReportDetails" Title="Report Details" HelpUrl="http://api-docs.deepcrawl.com/#/Report_Rows/get_accounts__account_id__projects__project_id__crawls__crawl_id__reports__report_id__report_rows">
+  <RestConnector Id="ReportDetails" Title="Report Details" Group="Reports" HelpUrl="http://api-docs.deepcrawl.com/#/Report_Rows/get_accounts__account_id__projects__project_id__crawls__crawl_id__reports__report_id__report_rows">
     <Parameters>
-      <Text Id="AccountId" Name="Select Account" Required="true" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
-      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Debug.DefaultValue="76280" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName"/>
-      <Text Id="CrawlIdFilter" Title="Select a Crawl" Required="true" Debug.DefaultValue="573647" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt"/>
-      <Text Id="ReportIdFilter" Title="Select a Report" Required="true" Debug.DefaultValue="140885524" Select.Connector="ListReportsHidden" Select.IdField="ReportId" Select.TitleField="ReportName"/>
+      <Text Id="AccountId" Name="Select Account" Required="true" Debug.DefaultValue="7093" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="AccountName"/>
+      <Text Id="ProjectIdFilter" Title="Filter Crawls by Project" Debug.DefaultValue="76280" Required="true" Select.Connector="ListProjectsHidden" Select.IdField="ProjectId" Select.TitleField="ProjectName" Parent.Id="AccountId" Parent.Label="Acvcount Id"/>
+      <Text Id="CrawlIdFilter" Title="Select a Crawl" Required="true" Debug.DefaultValue="1193021" Select.Connector="ListCrawlsHidden" Select.IdField="CrawlId" Select.TitleField="CrawlingAt" Parent.Id="ProjectIdFilter" Parent.Label="Project Id"/>
+      <Text Id="ReportIdFilter" Title="Select a Report" Required="true" Debug.DefaultValue="excluded_urls_missing" Select.Connector="ListReportsHidden" Select.IdField="ReportId" Parent.Id="CrawlIdFilter" Parent.Label="Crawl Id"/>
       <Text Id="UrlFilter" Title="URL Filter" HelpText="Filter Results by URL string"/>
       <Radio Id="FilterType" Title="Filter String Type" DefaultValue="name_cont" Required="false">
         <DataSource>
@@ -432,12 +420,17 @@
 						<JsonPath Expr="key" Id="Input" DefaultValue=""/>
 					</Compute>
         </JsonPath>
-        <JsonPath Id="Cells" Expr="keys(*.data)">
+        <JsonPath Id="Cells" Expr="keys($[*].data)">
           <JsonPath Expr="value" />
         </JsonPath>
       </Table>
     </Parse>
-		<Resource Id="Fail"/>
+    <Fail>
+			<Try Fail.If="EmptyResponse" Fail.Action="Message" Fail.Message="No data available"/>
+			<JsonPath Expr="$" Fail.If="IsEmpty" Fail.Message="No data available"/>
+			<JsonPath Expr="errors.message"/>
+			<JsonPath Expr="errors.code"/>
+		</Fail>
   </RestConnector>
 
   <RazorFunctions>

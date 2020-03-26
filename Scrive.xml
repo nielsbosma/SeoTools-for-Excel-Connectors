@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Suite Category="Legal" RequireVersion="8.2" Title="Scrive" Id="Scrive" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Scrive.xml" HelpUrl="http://seotoolsforexcel.com/scrive/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/scrive">
+    <Text Id="Email" Password="false" Required="true"/>
+    <Text Id="Password" Password="true" Required="true"/>
+		<Select Id="Environment" DefaultValue="prod">
+			<DataSource>
+				<Item Id="prod" Title="Production"/>
+				<Item Id="test" Title="Test"/>
+			</DataSource>
+		</Select>
+  </Settings>
+
+	<Resources>
+    <Resource Id="Prepare">
+			<Prepare>
+				<Connector Id="Authorization"/>
+			</Prepare>
+    </Resource>
+    <Resource Id="HttpSettings">
+			<HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>@(ReturnAuthString())</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="$.error_message"/>
+				<JsonPath Expr="$.message"/>
+			</Fail>
+    </Resource>
+
+  </Resources>
+
+  <RestConnector Id="Authorization" HelpUrl="https://apidocs.scrive.com/#authentication" Hidden="true">
+    <Fetch Url="@(ReturnEnvironment())/getpersonaltoken">
+      <HttpSettings>
+				<Cache>True</Cache>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestMethod>POST</RequestMethod>
+        <RequestForm>
+          <Param Name='email'>@(Model.Email)</Param>
+          <Param Name='password'>@(Model.Password)</Param>
+        </RequestForm>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.apitoken" Id="ApiToken"/>
+      <JsonPath Expr="$.apisecret" Id="ApiSecret"/>
+      <JsonPath Expr="$.accesstoken" Id="AccessToken"/>
+      <JsonPath Expr="$.accesssecret" Id="AccessSecret"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="StatisticsTotal" Title="Statistics Total" HelpUrl="https://apidocs.scrive.com/#apiv2usagestatsmonths" HelpText="Retrieve monthly or daily usage statistics.">
+    <Parameters>
+			<Select Id="Period" Title="Period Aggregation" DefaultValue="months">
+				<DataSource>
+					<Item Id="months" Title="Months"/>
+					<Item Id="days" Title="Days"/>
+				</DataSource>
+			</Select>
+    </Parameters>
+		<Resource Id="Prepare"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(ReturnEnvironment())/usagestats/@(Model.Period)?withCompany=true
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.stats[*]">
+				<JsonPath Expr="date" Id="date" Converter="DateTime"/>
+				<JsonPath Expr="sent" Id="sent" Converter="Int"/>
+				<JsonPath Expr="closed" Id="closed" Converter="Int"/>
+				<JsonPath Expr="signatures" Id="signatures" Converter="Int"/>
+				<JsonPath Expr="sms_sent" Id="sms_sent" Converter="Int"/>
+				<JsonPath Expr="sms_sent_via_telia" Id="sms_sent_via_telia" Converter="Int"/>
+				<JsonPath Expr="se_bankid_signatures" Id="se_bankid_signatures" Converter="Int"/>
+				<JsonPath Expr="se_bankid_authentications" Id="se_bankid_authentications" Converter="Int"/>
+				<JsonPath Expr="no_bankid_signatures" Id="no_bankid_signatures" Converter="Int"/>
+				<JsonPath Expr="no_bankid_authentications" Id="no_bankid_authentications" Converter="Int"/>
+				<JsonPath Expr="nemid_signatures" Id="nemid_signatures" Converter="Int"/>
+				<JsonPath Expr="nemid_authentications" Id="nemid_authentications" Converter="Int"/>
+				<JsonPath Expr="tupas_authentications" Id="tupas_authentications" Converter="Int"/>
+				<JsonPath Expr="shareable_links" Id="shareable_links" Converter="Int"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="StatisticsUser" Title="Statistics per User" HelpUrl="https://apidocs.scrive.com/#apiv2usagestatsmonths">
+    <Parameters>
+			<Select Id="Period" Title="Period Aggregation" DefaultValue="months">
+				<DataSource>
+					<Item Id="months" Title="Months"/>
+					<Item Id="days" Title="Days"/>
+				</DataSource>
+			</Select>
+    </Parameters>
+		<Resource Id="Prepare"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(ReturnEnvironment())/usagestats/@(Model.Period)?withCompany=true
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.stats[*].user_stats[*]">
+				<JsonPath Expr="date" Id="date" Converter="DateTime"/>
+				<JsonPath Expr="email" Id="Email" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="sent" Id="sent" Converter="Int"/>
+				<JsonPath Expr="closed" Id="closed" Converter="Int"/>
+				<JsonPath Expr="signatures" Id="signatures" Converter="Int"/>
+				<JsonPath Expr="sms_sent" Id="sms_sent" Converter="Int"/>
+				<JsonPath Expr="sms_sent_via_telia" Id="sms_sent_via_telia" Converter="Int"/>
+				<JsonPath Expr="se_bankid_signatures" Id="se_bankid_signatures" Converter="Int"/>
+				<JsonPath Expr="se_bankid_authentications" Id="se_bankid_authentications" Converter="Int"/>
+				<JsonPath Expr="no_bankid_signatures" Id="no_bankid_signatures" Converter="Int"/>
+				<JsonPath Expr="no_bankid_authentications" Id="no_bankid_authentications" Converter="Int"/>
+				<JsonPath Expr="nemid_signatures" Id="nemid_signatures" Converter="Int"/>
+				<JsonPath Expr="nemid_authentications" Id="nemid_authentications" Converter="Int"/>
+				<JsonPath Expr="tupas_authentications" Id="tupas_authentications" Converter="Int"/>
+				<JsonPath Expr="shareable_links" Id="shareable_links" Converter="Int"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="DocumentsList" Title="Documents" HelpUrl="https://apidocs.scrive.com/#apiv2documentslist">
+    <Parameters>
+			<Text Id="Text" Title="Filter by Text" Debug.DefaultValue=""/>
+			<Select Id="Status" Title="Filter by Status" DefaultValue="all">
+				<DataSource>
+					<Item Id="all" Title="All"/>
+					<Item Id="preparation" Title="Preparation"/>
+					<Item Id="pending" Title="Pending"/>
+					<Item Id="closed" Title="Closed"/>
+					<Item Id="canceled" Title="Canceled"/>
+					<Item Id="timeout" Title="Timeout"/>
+					<Item Id="rejected" Title="Rejeced"/>
+					<Item Id="document_error" Title="Error"/>
+				</DataSource>
+			</Select>
+      <DateInterval Id="DateInterval" Title="Interval" Nullable="true"/>
+			<Select Id="Sort" Title="Sort Results by" DefaultValue="mtime">
+				<DataSource>
+					<Item Id="mtime" Title="Modified"/>
+					<Item Id="title" Title="Title"/>
+					<Item Id="status" Title="Status"/>
+					<Item Id="author" Title="Author"/>
+				</DataSource>
+			</Select>
+			<Select Id="Direction" Title="Sort Direction" DefaultValue="descending">
+				<DataSource>
+					<Item Id="descending" Title="Descending"/>
+					<Item Id="ascending" Title="Ascending"/>
+				</DataSource>
+			</Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false"/>
+		<Resource Id="Prepare"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(ReturnEnvironment())/documents/list
+				?max=@(Model.PageCursor.NextTake)
+				&offset=@(Model.PageCursor.NextSkip)&
+				[{
+					sorting="sort_by": "@(Model.Sort)", "order": "@(Model.Direction)"
+				}]
+				@if(Model.Status != "all" || !string.IsNullOrEmpty(Model.Text) || Model.DateInterval.StartDate != null)
+				{
+					int usedFilters = 0;
+					@: &filter=	[
+					@if(Model.Status != "all")
+					{
+						@: {"filter_by": "status", "statuses": ["@(Model.Status)"]}
+						usedFilters ++;
+					}
+					@if(!string.IsNullOrEmpty(Model.Text))
+					{
+						@(usedFilters > 0 ? "," : "")
+						@: {"filter_by": "text", "text": "@(Model.Text)"}
+						usedFilters ++;
+					}
+					@if(Model.DateInterval.StartDate != null)
+					{
+						@(usedFilters > 0 ? "," : "")
+						@: {"filter_by": "mtime", "start_time": "@(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00Z"}
+						usedFilters ++;
+					}
+					@if(Model.DateInterval.EndDate != null)
+					{
+						@(usedFilters > 0 ? "," : "")
+						@: {"filter_by": "mtime", "end_time": "@(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T23:59:59Z"}
+					}
+					@: ]
+				}
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.documents[*]">
+				<JsonPath Expr="id" Id="id" Converter="String"/>
+				<JsonPath Expr="title" Id="title" Converter="Auto"/>
+				<JsonPath Expr="ctime" Id="created" Converter="DateTime"/>
+				<JsonPath Expr="mtime" Id="modified" Converter="DateTime"/>
+				<JsonPath Expr="timeout_time" Id="timeout" Converter="DateTime"/>
+				<JsonPath Expr="status" Id="status" Converter="String"/>
+				<JsonPath Expr="file.name" Id="file" Converter="String" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+
+  <RazorFunctions>
+    <![CDATA[
+    string ReturnAuthString() {
+      return 	"oauth_signature_method=\"PLAINTEXT\"," +
+							"oauth_consumer_key=\"" + Model.ApiToken + "\"," +
+							"oauth_token=\"" + Model.AccessToken + "\"," +
+							"oauth_signature=\"" + Model.ApiSecret + "&" + Model.AccessSecret + "\"";
+    }
+
+		string ReturnEnvironment() {
+			return @Model.Environment == "prod"
+				? "https://scrive.com/api/v2"
+				: "https://api-testbed.scrive.com/api/v2";
+		}
+    ]]>
+  </RazorFunctions>
+
+</Suite>

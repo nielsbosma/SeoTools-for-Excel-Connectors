@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Dropbox" Id="Dropbox" Category="File Storage" RequireVersion="8.0.31" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Dropbox.xml" HelpUrl="http://seotoolsforexcel.com/dropbox/" HelpText="Documentation">
+<Suite Title="Dropbox" Id="Dropbox" Category="File Storage" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Dropbox.xml" HelpUrl="http://seotoolsforexcel.com/dropbox/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -7,10 +7,26 @@
     <Text Id="Token" Title="Token" Required="true" HelpUrl="http://seotoolsforexcel.com/dropbox/"/>
   </Settings>
 
-  <RestConnector Id="ListFolders" Title="List Folders" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder" HelpText="Returns the contents of folders.">
+	<Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="user_message"/>
+				<JsonPath Expr="error_summary"/>
+			</Fail>
+    </Resource>
+    <Resource Id="Authentication">
+			<RequestMethod>POST</RequestMethod>
+			<RequestContentType>application/json</RequestContentType>
+			<RequestHeaders>
+				<Header Name='Authorization'>Bearer @(Model.Token)</Header>
+			</RequestHeaders>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="ListFolders" Title="Folders" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder" HelpText="Returns the contents of folders.">
     <Parameters>
-      <Text Id="Path" Title="Path" Debug.DefaultValue="" Required="false" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
-      <Checkbox Id="Deleted" Title="Include Deleted" DefaultValue="False"/>
+      <Text Id="Path" Title="Path" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
+      <Checkbox Id="Deleted" Title="Include Deleted"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="true">
       <Parse>
@@ -19,11 +35,7 @@
     </Paging>
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
+				<Resource Id="Authentication"/>
         <RequestBody>
 					<![CDATA[
 						@{
@@ -34,18 +46,13 @@
 								dict.Add("path", Utils.UrlEncode(Model.Path));
 								dict.Add("limit", Model.PageCursor.PageSize);
 								if(Model.Deleted == true)
-								{
 									dict.Add("include_deleted", Model.Deleted);
-								}
 							}
 							else
-							{
 								dict.Add("cursor", (Model.Cursor));
-							}
 
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
-
 						@output
 					]]>
         </RequestBody>
@@ -53,54 +60,42 @@
       <Fetch.Url>
         <![CDATA[
 				https://api.dropboxapi.com/2/files/list_folder
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: /continue
-				}
+				@(Model.PageCursor.Page != 0 ? "/continue" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="entries.*">
-				<JsonPath Expr="\.tag" Id="Tag" Title="Tag" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="path_display" Id="Path" Title="Path" Converter="String" HelpText=""/>
-				<JsonPath Expr="client_modified" Id="Modified" Title="Modified" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="size" Id="Size" Title="Size" Converter="Auto" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="entries[*]">
+				<JsonPath Expr="['.tag']" Id="Tag" Title="Tag" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="path_display" Id="Path" Title="Path" Converter="String"/>
+				<JsonPath Expr="client_modified" Id="Modified" Title="Modified" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="size" Id="Size" Title="Size" Converter="Auto" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Search" Title="Search" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-search" HelpText="Searches for files and folders.">
+  <RestConnector Id="Search" Title="Search" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-search" HelpText="Searches for files and folders.">
     <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="xlsm" Required="false" HelpText=""/>
-      <Text Id="Path" Title="Path" Debug.DefaultValue="" Required="false" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="xlsm" Required="false"/>
+      <Text Id="Path" Title="Path" Required="false" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
+        <Resource Id="Authentication"/>
         <RequestBody>
 					<![CDATA[
 						@{
 							var dict = new Dictionary<string, object>();
-
 							dict.Add("query", Model.Query);
 							dict.Add("path", Utils.UrlEncode(Model.Path));
 							dict.Add("max_results", Model.PageCursor.PageSize);
 							dict.Add("start", Model.PageCursor.NextSkip);
-
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
-
 						@output
 					]]>
         </RequestBody>
@@ -112,21 +107,19 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="matches.*.metadata">
-				<JsonPath Expr="\.tag" Id="Tag" Title="Tag" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="path_display" Id="Path" Title="Path" Converter="String" HelpText=""/>
-				<JsonPath Expr="client_modified" Id="Modified" Title="Modified" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="size" Id="Size" Title="Size" Converter="Auto" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="matches[*].metadata">
+				<JsonPath Expr="['.tag']" Id="Tag" Title="Tag" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="path_display" Id="Path" Title="Path" Converter="String"/>
+				<JsonPath Expr="client_modified" Id="Modified" Title="Modified" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="size" Id="Size" Title="Size" Converter="Auto" DefaultValue=""/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListSharedFolders" Title="List Shared Folders" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#sharing-list_folders" HelpText="Return the list of all shared folders the current user has access to.">
+  <RestConnector Id="ListSharedFolders" Title="Shared Folders" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#sharing-list_folders" HelpText="Return the list of all shared folders the current user has access to.">
     <Parameters>
     </Parameters>
     <Paging PageSize="100" EvenPages="true">
@@ -136,28 +129,19 @@
     </Paging>
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
+        <Resource Id="Authentication"/>
         <RequestBody>
 					<![CDATA[
 						@{
 							var dict = new Dictionary<string, object>();
 
 							if(Model.PageCursor.Page == 0)
-							{
 								dict.Add("limit", Model.PageCursor.PageSize);
-							}
 							else
-							{
 								dict.Add("cursor", (Model.Cursor));
-							}
 
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
-
 						@output
 					]]>
         </RequestBody>
@@ -165,29 +149,24 @@
       <Fetch.Url>
         <![CDATA[
 				https://api.dropboxapi.com/2/sharing/list_folders
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: /continue
-				}
+				@(Model.PageCursor.Page != 0 ? "/continue" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="entries.*">
-				<JsonPath Expr="access_type.\.tag" Id="Tag" Title="Tag" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="shared_folder_id" Id="Id" Title="Id" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="time_invited" Id="Invited" Title="Invited" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="is_team_folder" Id="TeamFolder" Title="Team Folder" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="is_inside_team_folder" Id="InsideTeamFolder" Title="Inside Team Folder" Converter="Bool" HelpText=""/>
+			<JsonPath Expr="entries[*]">
+				<JsonPath Expr="access_type.['.tag']" Id="Tag" Title="Tag" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="shared_folder_id" Id="Id" Title="Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="time_invited" Id="Invited" Title="Invited" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="is_team_folder" Id="TeamFolder" Title="Team Folder" Converter="Bool"/>
+				<JsonPath Expr="is_inside_team_folder" Id="InsideTeamFolder" Title="Inside Team Folder" Converter="Bool"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListReceivedFiles" Title="List Received Files" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#sharing-list_received_files" HelpText="Returns a list of all files shared with current user.">
+  <RestConnector Id="ListReceivedFiles" Title="Received Files" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#sharing-list_received_files" HelpText="Returns a list of all files shared with current user.">
     <Parameters>
     </Parameters>
     <Paging PageSize="100" EvenPages="true">
@@ -197,28 +176,18 @@
     </Paging>
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
+        <Resource Id="Authentication"/>
         <RequestBody>
 					<![CDATA[
 						@{
 							var dict = new Dictionary<string, object>();
-
 							if(Model.PageCursor.Page == 0)
-							{
 								dict.Add("limit", Model.PageCursor.PageSize);
-							}
 							else
-							{
 								dict.Add("cursor", (Model.Cursor));
-							}
 
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
-
 						@output
 					]]>
         </RequestBody>
@@ -226,67 +195,26 @@
       <Fetch.Url>
         <![CDATA[
 				https://api.dropboxapi.com/2/sharing/list_received_files
-				@if(Model.PageCursor.Page != 0)
-				{
-					@: /continue
-				}
+				@(Model.PageCursor.Page != 0 ? "/continue" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="entries.*">
-				<JsonPath Expr="access_type.\.tag" Id="Tag" Title="Tag" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText=""/>
-				<JsonPath Expr="time_invited" Id="Invited" Title="Invited" Converter="Auto" DefaultValue="" HelpText=""/>
-				<JsonPath Expr="parent_shared_folder_id" Id="ParentSharedFolderId" Title="Parent Shared Folder Id" Converter="String" HelpText=""/>
+			<JsonPath Expr="entries[*]">
+				<JsonPath Expr="access_type.['.tag']" Id="Tag" Title="Tag" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+				<JsonPath Expr="time_invited" Id="Invited" Title="Invited" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="parent_shared_folder_id" Id="ParentSharedFolderId" Title="Parent Shared Folder Id" Converter="String"/>
 			</JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AccountInfo" Title="Account Info" HelpUrl="https://dropbox.github.io/dropbox-api-v2-explorer/#users_get_current_account" HelpText="Get information about the current user's account.">
+  <RestConnector Id="AccountSpaceUsage" Title="Space Usage" Group="Account" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#users-get_space_usage" HelpText="Get the space usage information for the current user's account.">
     <Fetch>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
-        <RequestBody>
-					null
-        </RequestBody>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-				https://api.dropboxapi.com/2/users/get_current_account
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="account_id" Id="Id" Title="Id" Converter="String" HelpText=""/>
-			<JsonPath Expr="name.display_name" Id="Name" Title="Name" Converter="String" DefaultValue="" HelpText=""/>
-			<JsonPath Expr="email" Id="Email" Title="Email" Converter="String" DefaultValue="" HelpText=""/>
-			<JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText=""/>
-			<JsonPath Expr="locale" Id="Locale" Title="Locale" Converter="String" HelpText=""/>
-			<JsonPath Expr="referral_link" Id="ReferralLink" Title="Referral Link" Converter="String" HelpText=""/>
-			<JsonPath Expr="account_type.*" Id="AccountType" Title="Account Type" Converter="String" HelpText=""/>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="AccountSpaceUsage" Title="Account Space Usage" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#users-get_space_usage" HelpText="Get the space usage information for the current user's account.">
-    <Fetch>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/json</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
-        </RequestHeaders>
+        <Resource Id="Authentication"/>
         <RequestBody>
 					null
         </RequestBody>
@@ -298,12 +226,10 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="used" Id="Used" Title="Used" Converter="Long" HelpText=""/>
-			<JsonPath Expr="allocation.allocated" Id="Allocated" Title="Allocated" Converter="Long" HelpText=""/>
+			<JsonPath Expr="used" Id="Used" Title="Used" Converter="Long"/>
+			<JsonPath Expr="allocation.allocated" Id="Allocated" Title="Allocated" Converter="Long"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="user_message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>

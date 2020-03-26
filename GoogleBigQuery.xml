@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Business Intelligence" Title="Google BigQuery" Id="GoogleBigQuery" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleBigQuery.xml" HelpUrl="http://seotoolsforexcel.com/google-bigquery/" HelpText="Documentation">
+<Suite Category="Business Intelligence" RequireVersion="8.2" Title="Google BigQuery" Id="GoogleBigQuery" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleBigQuery.xml" HelpUrl="http://seotoolsforexcel.com/google-bigquery/" HelpText="Documentation">
 
   <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
@@ -13,7 +13,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Projects" Title="Projects" Hidden="true">
+  <RestConnector Id="Projects" Hidden="true">
     <Parameters>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects">
@@ -24,17 +24,17 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.projects.*">
-        <JsonPath Expr="projectReference.projectId" Id="Id" Title="Id"/>
-        <JsonPath Expr="friendlyName" Id="Name" Title="Name"/>
+      <JsonPath Expr="$.projects[*]">
+        <JsonPath Expr="projectReference.projectId" Id="Id" Title="Project Id"/>
+        <JsonPath Expr="friendlyName" Id="Name" Title="Project"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Datasets" Title="Datasets" Hidden="true">
+  <RestConnector Id="Datasets" Hidden="true">
     <Parameters>
-      <Text Id="Project" Title="Project" DefaultValue="" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Project" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.Project)/datasets">
       <HttpSettings>
@@ -44,9 +44,9 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.datasets.*">
-        <JsonPath Expr="datasetReference.datasetId" Id="Id" Title="Id" />
-        <JsonPath Expr="id" Id="Name" Title="Name" />
+      <JsonPath Expr="$.datasets[*]">
+        <JsonPath Expr="datasetReference.datasetId" Id="Id" Title="Dataset Id"/>
+        <JsonPath Expr="id" Id="Name" Title="Dataset"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -54,8 +54,8 @@
 
   <RestConnector Id="Tables" Title="Tables" Hidden="true">
     <Parameters>
-      <Text Id="Project" Title="Project" Debug.DefaultValue="bigquery-public-data" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Dataset" Title="Dataset" Debug.DefaultValue="samples" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Project" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Dataset" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.Project)/datasets/@(Model.Dataset)/tables">
       <HttpSettings>
@@ -65,7 +65,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.tables.*">
+      <JsonPath Expr="$.tables[*]">
         <JsonPath Expr="id" Id="Id" Title="Id"/>
         <JsonPath Expr="tableReference.tableId" Id="Name" Title="Name" />
       </JsonPath>
@@ -76,8 +76,8 @@
   <RestConnector Id="Query Table" Title="Query Table">
     <Parameters>
       <Text Id="Project" Title="Project" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Dataset" Title="Dataset" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Table" Title="Table" Required="true" Select.Connector="Tables" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Dataset" Title="Dataset" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name" Parent.Id="Project" Parent.Label="Project"/>
+      <Text Id="Table" Title="Table" Required="true" Select.Connector="Tables" Select.IdField="Id" Select.TitleField="Name" Parent.Id="Dataset" Parent.Label="Dataset"/>
       <Number Id="Limit" Title="Limit" DefaultValue="10"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.Project)/queries">
@@ -99,13 +99,13 @@
     </Fetch>
     <Parse>
       <Table>
-        <JsonPath Id='Headers' Expr="$.schema.fields.*">
+        <JsonPath Id='Headers' Expr="$.schema.fields[*]">
           <JsonPath Expr="name"/>
         </JsonPath>
-        <JsonPath Id='Converters' Expr="$.schema.fields.*">
+        <JsonPath Id='Converters' Expr="$.schema.fields[*]">
           <JsonPath Expr="type"/>
         </JsonPath>
-        <JsonPath Id='Cells' Expr='$.rows..f.*'>
+        <JsonPath Id='Cells' Expr='$.rows..f[*]'>
           <JsonPath Expr="v"/>
         </JsonPath>
       </Table>
@@ -116,7 +116,7 @@
   <RestConnector Id="Query" Title="Query">
     <Parameters>
       <Text Id="Project" Title="Project" Required="true" Select.Connector="Projects" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="Dataset" Title="Dataset" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="Dataset" Title="Dataset" Required="true" Select.Connector="Datasets" Select.IdField="Id" Select.TitleField="Name" Parent.Id="Project" Parent.Label="Project"/>
       <Text Id="Query" Title="Query" Multiline="true"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/bigquery/v2/projects/@(Model.Project)/queries">
@@ -138,13 +138,13 @@
     </Fetch>
     <Parse>
       <Table>
-        <JsonPath Id='Headers' Expr="$.schema.fields.*">
+        <JsonPath Id='Headers' Expr="$.schema.fields[*]">
           <JsonPath Expr="name"/>
         </JsonPath>
-        <JsonPath Id='Converters' Expr="$.schema.fields.*">
+        <JsonPath Id='Converters' Expr="$.schema.fields[*]">
           <JsonPath Expr="type"/>
         </JsonPath>
-        <JsonPath Id='Cells' Expr='$.rows..f.*'>
+        <JsonPath Id='Cells' Expr="$.rows..f[*]">
           <JsonPath Expr="v"/>
         </JsonPath>
       </Table>

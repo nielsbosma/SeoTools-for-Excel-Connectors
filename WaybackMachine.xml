@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Wayback Machine" Id="WaybackMachine" Category="SEO" RequireVersion="7.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WaybackMachine.xml" HelpUrl="http://seotoolsforexcel.com/wayback-machine/" HelpText="Documentation">
+<Suite Title="Wayback Machine" Id="WaybackMachine" Category="SEO" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/WaybackMachine.xml" HelpUrl="http://seotoolsforexcel.com/wayback-machine/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -16,16 +16,16 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="archived_snapshots.closest">
-				<JsonPath Expr="available" Id="Available" Title="Available" Converter="Bool" HelpText=""/>
-				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="" Checked="false"/>
-				<JsonPath Expr="timestamp" Id="LastSnapshot" Title="Last Snapshot" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" HelpText="" Checked="false"/>
+				<JsonPath Expr="available" Id="Available" Title="Available" Converter="Bool"/>
+				<JsonPath Expr="url" Id="Url" Title="URL" Converter="String" Checked="false"/>
+				<JsonPath Expr="timestamp" Id="LastSnapshot" Title="Last Snapshot" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" Checked="false"/>
 			</JsonPath>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="Snapshots" Title="Snapshots" HelpUrl="https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server" HelpText="Return each snapshot of the url that is available in the archive.">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true"/>
       <Select Id="Matchtype" Title="Matchtype" Required="false" DefaultValue="exact">
         <DataSource>
 					<Item Id="exact" Title="Exact"/>
@@ -36,7 +36,7 @@
       </Select>
       <Text Id="Collapse" Title="Collapse" Debug.DefaultValue="" Required="false" HelpText="Collapsing is done on adjacent lines where all captures after the first one that are duplicate are filtered out. To use collapsing, add one or more collapse=field or collapse=field:N where N is the first N characters of field to test."/>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="!statuscode:403" Required="false" HelpText="Any number of filter params of the following form may be specified: filter=[!]field:regex"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true" HelpText=""/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="1000" Required="true" HelpText="Number of snapshots to be returned back"/>
       <Radio Id="Sort" Title="Sort Order" DefaultValue="first">
         <DataSource>
@@ -45,6 +45,7 @@
         </DataSource>
       </Radio>
     </Parameters>
+    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -63,12 +64,13 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$[1:]">
-				<JsonPath Expr="$[0]" Id="original" Converter="String" HelpText=""/>
-				<JsonPath Expr="$[1]" Id="timestamp" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss" HelpText=""/>
-				<JsonPath Expr="$[2]" Id="mimetype" Converter="String" HelpText="" Checked="false"/>
-				<JsonPath Expr="$[3]" Id="statuscode" Converter="Auto" HelpText="" Checked="false"/>
-				<JsonPath Expr="$[4]" Id="length" Converter="Long" HelpText="" Checked="false"/>
-				<JsonPath Expr="$[5]" Id="urlkey" Converter="String" HelpText=""/>
+				<JsonPath Expr="$[0]" Id="Original" Title="Original" Converter="String"/>
+				<JsonPath Expr="$[1]" Id="Timestamp" Title="Timestamp" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmmss"/>
+				<JsonPath Expr="$[2]" Id="Mimetype" Title="Mimetype" Converter="String" Checked="false"/>
+				<JsonPath Expr="$[3]" Id="Statuscode" Title="Status Code" Converter="Auto" Checked="false"/>
+				<JsonPath Expr="$[4]" Id="Length" Title="Length" Converter="Long" Checked="false"/>
+				<JsonPath Expr="$[5]" Id="Urlkey" Title="URL Key" Converter="String" Checked="false"/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
 			</JsonPath>
     </Parse>
   </RestConnector>

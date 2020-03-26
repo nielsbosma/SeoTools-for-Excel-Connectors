@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" RequireVersion="6.0.0" Title="Tumblr" Id="Tumblr" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Tumblr.xml" HelpUrl="http://seotoolsforexcel.com/tumblr/" HelpText="Documentation">
+<Suite Category="Social" RequireVersion="8.2" Title="Tumblr" Id="Tumblr" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Tumblr.xml" HelpUrl="http://seotoolsforexcel.com/tumblr/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -8,26 +8,20 @@
   </Settings>
 
   <Resources>
-    <Resource Id="Types">
-      <Item Id="all" Title="All"/>
-      <Item Id="text" Title="Text"/>
-      <Item Id="quote" Title="Quote"/>
-      <Item Id="link" Title="Link"/>
-      <Item Id="answer" Title="Answer"/>
-      <Item Id="video" Title="Video"/>
-      <Item Id="audio" Title="Audio"/>
-      <Item Id="photo" Title="Photo"/>
-      <Item Id="chat" Title="Chat"/>
-    </Resource>
+		<Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="errors[0].title"/>
+			</Fail>
+		</Resource>
   </Resources>
 
-  <RestConnector Id="TagSearch" Title="Tags Search">
+  <RestConnector Id="TagSearch" Title="Tags Search" HelpUrl="https://www.tumblr.com/docs/en/api/v2#tagged--get-posts-with-tag">
     <Parameters>
       <Text Id="Tag" Title="Tag" Debug.DefaultValue="flowers" Required="true"/>
     </Parameters>
     <Paging PageSize="20">
       <Parse>
-        <JsonPath Id="MaxTimeStamp" Expr="response[(@@.length-1)].timestamp"/>
+        <JsonPath Id="MaxTimeStamp" Expr="response[-1:].timestamp"/>
       </Parse>
     </Paging>
     <Fetch>
@@ -37,10 +31,7 @@
         tag=@Utils.UrlEncode(Model.Tag)
         &api_key=@Model.Key
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &before=@(Model.MaxTimeStamp)
-        }
+        @(Model.PageCursor.Page != 0 ? "&before=" + Model.MaxTimeStamp : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -55,18 +46,17 @@
         <JsonPath Expr="blog_name" Id="BlogName" Title="Blog Name" Converter="String"/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BlogLookup" Title="Blog Lookup">
+  <RestConnector Id="BlogLookup" Title="Blog Lookup" HelpUrl="https://www.tumblr.com/docs/en/api/v2#info---retrieve-blog-info">
     <Parameters>
       <Text Id="BlogName" Title="Blog Name" Debug.DefaultValue="allimacha" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.tumblr.com/v2/blog/
-        @Utils.UrlEncode(Model.BlogName)
-        /info?
+        https://api.tumblr.com/v2/blog/@Utils.UrlEncode(Model.BlogName)/info?
         &api_key=@Model.Key
         ]]>
       </Fetch.Url>
@@ -75,30 +65,31 @@
       <JsonPath Expr="response.blog">
         <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="title" Id="Title" Converter="String"/>
-        <Compute Id="Description" Title="Description">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              var Cleaned = Regex.Replace(Model.DescriptionInput, "<.*?>", String.Empty);
-            }
-            @Cleaned
-            ]]>
-          </Compute.Expr>
-        <JsonPath Expr="description" Id="DescriptionInput" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Title="Description">
+					<JsonPath Expr="description" Id="Inp" Converter="String"/>
         </Compute>
         <JsonPath Expr="total_posts" Id="TotalPosts" Title="Total Posts" Converter="Int"/>
         <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserBlogPosts" Title="User Blogposts">
+  <RestConnector Id="UserBlogPosts" Title="User Blog Posts" HelpUrl="https://www.tumblr.com/docs/en/api/v2#posts--retrieve-published-posts">
     <Parameters>
       <Text Id="BlogName" Title="BlogName" Debug.DefaultValue="allimacha" Required="true"/>
       <Text Id="TagFilter" Title="Filter by Tag" Required="false" DefaultValue=""/>
       <Select Id="Type" Title="Type" Required="false" DefaultValue="all">
         <DataSource>
-          <Resource Id="Types"/>
+					<Item Id="all" Title="All"/>
+					<Item Id="text" Title="Text"/>
+					<Item Id="quote" Title="Quote"/>
+					<Item Id="link" Title="Link"/>
+					<Item Id="answer" Title="Answer"/>
+					<Item Id="video" Title="Video"/>
+					<Item Id="audio" Title="Audio"/>
+					<Item Id="photo" Title="Photo"/>
+					<Item Id="chat" Title="Chat"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -106,23 +97,12 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.tumblr.com/v2/blog/
-        @Utils.UrlEncode(Model.BlogName)
-        /posts?
+        https://api.tumblr.com/v2/blog/@Utils.UrlEncode(Model.BlogName)/posts?
         &api_key=@Model.Key
         &limit=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &offset=@(Model.PageCursor.NextSkip)
-        }
-        @if(Model.Type != "all")
-        {
-          @: &type=@(Model.Type)
-        }
-        @if(!string.IsNullOrEmpty(Model.TagFilter))
-        {
-          @: &tag=@Utils.UrlEncode(Model.TagFilter)
-        }
+        @(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+        (Model.Type != "all" ? "&type=" + Model.Type : "")
+        @(!string.IsNullOrEmpty(Model.TagFilter) ? ""&tag=" + Utils.UrlEncode(Model.TagFilter : ""))
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -135,7 +115,7 @@
         <JsonPath Expr="summary" Id="Summary" Converter="String"/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
-
 
 </Suite>

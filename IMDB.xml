@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Movies" RequireVersion="7.0.0" Title="IMDB" Id="IMDB" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/IMDB.xml" HelpUrl="http://seotoolsforexcel.com/imdb" HelpText="Documentation">
+<Suite Category="Knowledge" RequireVersion="8.2" Title="IMDB" Id="IMDB" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/IMDB.xml" HelpUrl="http://seotoolsforexcel.com/imdb" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -33,7 +33,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Top250" Title="Toplists - Top 250">
+  <RestConnector Id="Top250" Title="Top 250" Group="Toplists">
     <Parameters>
       <Radio Id="Type" Title="Type" DefaultValue="moviemeter" Required="false">
         <DataSource>
@@ -115,7 +115,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Bottom100" Title="Toplists - Bottom 100">
+  <RestConnector Id="Bottom100" Title="Bottom 100" Group="Toplists">
     <Parameters>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="rk">
         <DataSource>
@@ -191,7 +191,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="MostPopular" Title="Toplists - Most Popular">
+  <RestConnector Id="MostPopular" Title="Most Popular" Group="Toplists">
     <Parameters>
       <Radio Id="Type" Title="Type" DefaultValue="moviemeter" Required="false">
         <DataSource>
@@ -273,7 +273,63 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmsInTheaters" Title="Films - In Theaters">
+  <RestConnector Id="TopBoxOffice" Title="Toplists - Box Office" Group="Toplists">
+    <Parameters>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+			<![CDATA[
+        http://www.imdb.com/chart/boxoffice
+      ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//td[@@class='titleColumn']">
+        <Compute Id="Id" Title="Id">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"\/title\/(tt\d+)");
+              Match match = regex.Match(Model.LinkInput);
+              string output = match.Groups[1].Value;
+            }
+            @output
+            ]]>
+          </Compute.Expr>
+        <XPath Expr="a" Id="LinkInput" Attribute="href" Converter="String"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//td[@@class='titleColumn']">
+        <XPath Expr="a" Title="Title" Id="Title" Converter="String"/>
+			</XPath>
+      <XPath Expr="//td[@@class='ratingColumn'][1]">
+        <XPath Expr="." Title="Weekend" Id="Weekend" Converter="String"/>
+			</XPath>
+      <XPath Expr="//td[@@class='ratingColumn'][2]">
+        <XPath Expr="." Title="Gross" Id="Gross" Converter="String"/>
+			</XPath>
+      <XPath Expr="//td[@@class='weeksColumn']">
+        <XPath Expr="." Title="Weeks" Id="Weeks" Converter="Long"/>
+			</XPath>
+      <XPath Expr="//td[@@class='titleColumn']">
+        <Compute Id="Link" Title="Link">
+          <Compute.Expr>
+            <![CDATA[
+            @{
+              Regex regex = new Regex(@"\/title\/tt\d+");
+              Match match = regex.Match(Model.LinkInput);
+              string output = "https://imdb.com" + match.Groups[0].Value;
+            }
+            @output
+            ]]>
+          </Compute.Expr>
+        <XPath Expr="a" Id="LinkInput" Attribute="href" Converter="String"/>
+        </Compute>
+			</XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="FilmsInTheaters" Title="In Theaters" Group="Films">
     <Parameters>
       <Radio Id="Category" Title="Category" DefaultValue="inth_cs" Required="false">
         <DataSource>
@@ -397,63 +453,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="TopBoxOffice" Title="Toplists - Box Office">
-    <Parameters>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-			<![CDATA[
-        http://www.imdb.com/chart/boxoffice
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <XPath Expr="//td[@@class='titleColumn']">
-        <Compute Id="Id" Title="Id">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"\/title\/(tt\d+)");
-              Match match = regex.Match(Model.LinkInput);
-              string output = match.Groups[1].Value;
-            }
-            @output
-            ]]>
-          </Compute.Expr>
-        <XPath Expr="a" Id="LinkInput" Attribute="href" Converter="String"/>
-        </Compute>
-      </XPath>
-      <XPath Expr="//td[@@class='titleColumn']">
-        <XPath Expr="a" Title="Title" Id="Title" Converter="String"/>
-			</XPath>
-      <XPath Expr="//td[@@class='ratingColumn'][1]">
-        <XPath Expr="." Title="Weekend" Id="Weekend" Converter="String"/>
-			</XPath>
-      <XPath Expr="//td[@@class='ratingColumn'][2]">
-        <XPath Expr="." Title="Gross" Id="Gross" Converter="String"/>
-			</XPath>
-      <XPath Expr="//td[@@class='weeksColumn']">
-        <XPath Expr="." Title="Weeks" Id="Weeks" Converter="Long"/>
-			</XPath>
-      <XPath Expr="//td[@@class='titleColumn']">
-        <Compute Id="Link" Title="Link">
-          <Compute.Expr>
-            <![CDATA[
-            @{
-              Regex regex = new Regex(@"\/title\/tt\d+");
-              Match match = regex.Match(Model.LinkInput);
-              string output = "https://imdb.com" + match.Groups[0].Value;
-            }
-            @output
-            ]]>
-          </Compute.Expr>
-        <XPath Expr="a" Id="LinkInput" Attribute="href" Converter="String"/>
-        </Compute>
-			</XPath>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="FilmsOscarWinners" Title="Films - Oscar Winners">
+  <RestConnector Id="FilmsOscarWinners" Title="Oscar Winners" Group="Films">
     <Parameters>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="year">
         <DataSource>
@@ -567,7 +567,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="PersonsBornToday" Title="Persons - Born Today">
+  <RestConnector Id="PersonsBornToday" Title="Born Today" Group="Persons">
     <Parameters>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="starmeter">
         <DataSource>
@@ -633,7 +633,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="PersonsMostPopular" Title="Persons - Most Popular">
+  <RestConnector Id="PersonsMostPopular" Title="Most Popular Persons" Group="Persons">
     <Parameters>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="starmeter">
         <DataSource>
@@ -697,7 +697,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmFullCast" Title="Film - Full Cast">
+  <RestConnector Id="FilmFullCast" Title="Full Cast" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
     </Parameters>
@@ -748,7 +748,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmOthersLikes" Title="Film - Others Like">
+  <RestConnector Id="FilmOthersLikes" Title="Others Like" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
     </Parameters>
@@ -796,7 +796,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ReviewsUsers" Title="Film - Reviews - User">
+  <RestConnector Id="ReviewsUsers" Title="User Reviews" Group="Reviews">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="help">
@@ -881,7 +881,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ReviewsExternal" Title="Film - Reviews - External">
+  <RestConnector Id="ReviewsExternal" Title="External Reviews" Group="Reviews">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -947,7 +947,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ReviewsMetacritic" Title="Film - Reviews - Metacritic">
+  <RestConnector Id="ReviewsMetacritic" Title="Metacritic Reviews" Group="Reviews">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -977,7 +977,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmReleaseDates" Title="Film - Release Dates">
+  <RestConnector Id="FilmReleaseDates" Title="Release Dates" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -997,7 +997,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmAKA" Title="Film - Also Known As">
+  <RestConnector Id="FilmAKA" Title="Also Known As" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -1016,7 +1016,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmPlotKeywords" Title="Film - Plot Keywords">
+  <RestConnector Id="FilmPlotKeywords" Title="Plot Keywords" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -1049,7 +1049,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmPhotos" Title="Film - Photos">
+  <RestConnector Id="FilmPhotos" Title="Photos of Film" Group="Films">
     <Parameters>
       <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
      </Parameters>
@@ -1068,26 +1068,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="FilmPhotos" Title="Film - Photos">
-    <Parameters>
-      <Text Id="Id" Title="Film Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0068646"/>
-     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-			<![CDATA[
-        http://www.imdb.com/title/@(Model.Id)/mediaindex?
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <XPath Expr="//a[@@itemprop='thumbnailUrl']">
-        <XPath Expr="." Title="Caption" Id="Caption" Attribute="title" Converter="String"/>
-        <XPath Expr="img" Title="Thumbnail" Id="Thumbnail" Attribute="src" Converter="String"/>
-			</XPath>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="PersonFilmography" Title="Person - Filmography">
+  <RestConnector Id="PersonFilmography" Title="Filmography" Group="Persons">
     <Parameters>
       <Text Id="Id" Title="Person Id (Begins with &quot;nm&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="nm1172478"/>
     </Parameters>
@@ -1150,7 +1131,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="PersonPhotos" Title="Person - Photos">
+  <RestConnector Id="PersonPhotos" Title="Photos of Person" Group="Persons">
     <Parameters>
       <Text Id="Id" Title="Person Id (Begins with &quot;nm&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="nm1172478"/>
      </Parameters>
@@ -1169,7 +1150,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SeriesEpisodes" Title="Series - Episodes">
+  <RestConnector Id="SeriesEpisodes" Title="Series Episodes" Group="Films">
     <Parameters>
       <Text Id="Id" Title="TV Series Id (Begins with &quot;tt&quot;)" DefaultValue="" Required="true" Debug.DefaultValue="tt0285331"/>
       <Text Id="SeasonId" Title="Season Number" DefaultValue="" Required="true" Debug.DefaultValue="1"/>

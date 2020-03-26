@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="GEO" RequireVersion="8.2" Title="Google Geocoding" Id="GoogleGeocoding" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleGeocoding.xml" HelpUrl="http://seotoolsforexcel.com/google-geocoding/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/google-geocoding/">
+    <Text Id="ApiKey" Title="ApiKey" Required="true" HelpUrl="http://seotoolsforexcel.com/google-geocoding/"/>
+  </Settings>
+
+	<Resources>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
+      </HttpSettings>
+		</Resource>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="$.error_message"/>
+      </Fail>
+    </Resource>
+		<Resource Id="Types">
+			<Item Id="all" Title="All"/>
+			<Item Id="street_address" Title="Street Address"/>
+			<Item Id="route" Title="Route"/>
+			<Item Id="intersection" Title="Intersection"/>
+			<Item Id="political" Title="Political"/>
+			<Item Id="country" Title="Country"/>
+			<Item Id="administrative_area_level_1" Title="Administrative Area Level 1"/>
+			<Item Id="administrative_area_level_2" Title="Administrative Area Level 2"/>
+			<Item Id="administrative_area_level_2" Title="Administrative Area Level 3"/>
+			<Item Id="administrative_area_level_2" Title="Administrative Area Level 4"/>
+			<Item Id="administrative_area_level_2" Title="Administrative Area Level 5"/>
+			<Item Id="colloquial_area" Title="Colloquial Area"/>
+			<Item Id="locality" Title="Locality"/>
+			<Item Id="sublocality" Title="Sublocality"/>
+			<Item Id="neighborhood" Title="Neighbourhood"/>
+			<Item Id="premise" Title="Premise"/>
+			<Item Id="subpremise" Title="Subpremise"/>
+			<Item Id="postal_code" Title="Postal Code"/>
+			<Item Id="natural_feature" Title="Natural Feature"/>
+			<Item Id="airport" Title="Airport"/>
+			<Item Id="park" Title="Park"/>
+			<Item Id="point_of_interest" Title="Point of Interest"/>
+		</Resource>
+  </Resources>
+
+  <RestConnector Id="Geocoding" Title="Geocoding" HelpUrl="https://developers.google.com/maps/documentation/geocoding/intro" HelpText="Converts a string address (e.g. '5th Avenue, New York' into geocode information">
+    <Parameters>
+      <Text Id="Address" Title="Address" Debug.DefaultValue="lilla essingen" Required="true"/>
+      <Select Id="Country" Title="Preferred Country" DefaultValue="all">
+        <DataSource>
+					<Item Id="all" Title="All"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="100" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://maps.googleapis.com/maps/api/geocode/json?key=@Model.ApiKey
+				&address=@Utils.UrlEncode(Model.Address)
+        @(Model.Country != "all" ? "&region=" + Model.Country.ToUpper() : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[0]">
+        <JsonPath Expr="formatted_address" Id="Address" Title="Address" Converter="String"/>
+				<JsonPath Expr="csv(types)" Id="Types" Title="Types" DefaultValue=""/>
+        <JsonPath Expr="geometry.location.lat" Id="Latitude" Title="Latitude" Converter="String"/>
+        <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
+				<Compute Expr="@Utils.Capitalize(Model.Inp)" Id="LocationType" Title="Location Type" DefaultValue="">
+					<JsonPath Expr="geometry.location_type" Id="Inp" DefaultValue=""/>
+        </Compute>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ReverseGeocoding" Title="Reverse Geocoding" HelpUrl="https://developers.google.com/maps/documentation/geocoding/intro" HelpText="Converts latitude and longitude into geocode information">
+    <Parameters>
+      <Text Id="Latitude" Title="Latitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="59.34"/>
+      <Text Id="Longitude" Title="Longitude (DDD.DDDDD°)" Required="true" Debug.DefaultValue="17.94"/>
+      <Select Id="Type" Title="Address Type" DefaultValue="all">
+        <DataSource>
+          <Resource Id="Types"/>
+        </DataSource>
+      </Select>
+      <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="100" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://maps.googleapis.com/maps/api/geocode/json?key=@Model.ApiKey
+				&latlng=@(Model.Latitude),@(Model.Longitude)
+				@(Model.Type != "all" ? "&result_type=" + Model.Type : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+        <JsonPath Expr="formatted_address" Id="Address" Title="Address" Converter="String"/>
+				<JsonPath Expr="csv(types)" Id="Types" Title="Types" DefaultValue=""/>
+        <JsonPath Expr="geometry.location.lat" Id="Latitude" Title="Latitude" Converter="String"/>
+        <JsonPath Expr="geometry.location.lng" Id="Longitude" Title="Longitude" Converter="String"/>
+				<Compute Expr="@Utils.Capitalize(Model.Inp)" Id="LocationType" Title="Location Type" DefaultValue="">
+					<JsonPath Expr="geometry.location_type" Id="Inp" DefaultValue=""/>
+        </Compute>      
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>

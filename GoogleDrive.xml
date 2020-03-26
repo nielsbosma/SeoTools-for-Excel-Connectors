@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="File Storage" RequireVersion="8.0.0" Title="Google Drive" Id="GoogleDrive" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleDrive.xml" HelpUrl="http://seotoolsforexcel.com/googledrive/" HelpText="Documentation">
+<Suite Category="File Storage" RequireVersion="8.2" Title="Google Drive" Id="GoogleDrive" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleDrive.xml" HelpUrl="http://seotoolsforexcel.com/googledrive/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -17,34 +17,39 @@
       <Item Id="starred" Title="Starred"/>
       <Item Id="viewedByMeTime" Title="Viewed By Me Time"/>
     </Resource>
-  </Resources>
-
-  <RestConnector Id="About" Title="About" HelpUrl="https://developers.google.com/drive/api/v3/reference/about/get">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/drive/v3/about?fields=user,storageQuota
-        ]]>
-      </Fetch.Url>
+    <Resource Id="HttpSettings">
       <HttpSettings>
         <RequestHeaders>
           <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
         </RequestHeaders>
       </HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error.message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="About" Title="Storage Limits" Group="Account" HelpUrl="https://developers.google.com/drive/api/v3/reference/about/get">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/about?fields=user,storageQuota
+        ]]>
+      </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="user.displayName" Id="Name" Title="Name" Converter="String"/>
-      <JsonPath Expr="user.emailAddress" Id="Email" Title="Email" Converter="String"/>
       <JsonPath Expr="storageQuota.limit" Id="StorageLimit" Title="Storage Limit" Converter="Long"/>
       <JsonPath Expr="storageQuota.usage" Id="StorageUsage" Title="Storage Usage" Converter="Long"/>
       <JsonPath Expr="storageQuota.usageInDrive" Id="StorageUsageDrive" Title="Storage Usage in Drive" Converter="Long"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Files" Title="Files" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list">
+  <RestConnector Id="Files" Title="Files" Group="Content" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list">
     <Parameters>
       <Text Id="Query" Title="Query String" Debug.DefaultValue="" HelpUrl="https://developers.google.com/drive/api/v3/search-parameters" Required="false"/>
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
@@ -59,30 +64,17 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files
 				?pageSize=@(Model.PageCursor.NextTake)
-        @if(!string.IsNullOrEmpty(Model.Query))
-        {
-          @: &q=@Utils.UrlEncode(Model.Query)
-        }
-        @if(Model.Sort != "default")
-        {
-          @: &orderBy=@(Model.Sort)
-        }
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(!string.IsNullOrEmpty(Model.Query) ? "&q=" + Utils.UrlEncode(Model.Query) : "")
+        @(Model.Sort != "default" ? "&orderBy=" + Model.Sort : "")
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
 				&fields=files,nextPageToken
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="files[*]">
@@ -97,27 +89,21 @@
         <JsonPath Expr="webViewLink" Id="Link" Title="Link" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="FileLookup" Title="File Lookup" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/get">
+  <RestConnector Id="FileLookup" Title="File Lookup" Group="Content" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/get">
     <Parameters>
       <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files/@(Model.FileId)
 				?fields=*
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
 			<JsonPath Expr="id" Id="Id" Title="Name" Converter="String"/>
@@ -130,12 +116,10 @@
 			<JsonPath Expr="version" Id="Version" Title="Version" Converter="Long"/>
 			<JsonPath Expr="webViewLink" Id="Link" Title="Link" Converter="String"/>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Comments" Title="Comments" HelpUrl="https://developers.google.com/drive/api/v3/reference/comments/list">
+  <RestConnector Id="Comments" Title="Comments" Group="Metadata" HelpUrl="https://developers.google.com/drive/api/v3/reference/comments/list">
     <Parameters>
       <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
       <Checkbox Id="Deleted" Title="Include Deleted" DefaultValue="False"/>
@@ -146,23 +130,16 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files/@(Model.FileId)/comments
 				?pageSize=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
 				&includeDeleted=@(Model.Deleted)
 				&fields=comments,nextPageToken
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="comments[*]">
@@ -174,12 +151,10 @@
         <JsonPath Expr="deleted" Id="Deleted" Title="Deleted" Converter="Bool"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Permissions" Title="Permissions" HelpUrl="https://developers.google.com/drive/api/v3/reference/permissions/list">
+  <RestConnector Id="Permissions" Title="Permissions" Group="Metadata" HelpUrl="https://developers.google.com/drive/api/v3/reference/permissions/list">
     <Parameters>
       <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
     </Parameters>
@@ -189,22 +164,15 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files/@(Model.FileId)/permissions
 				?pageSize=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
 				&fields=permissions,nextPageToken
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="permissions[*]">
@@ -216,12 +184,10 @@
         <JsonPath Expr="deleted" Id="Deleted" Title="Deleted" Converter="Bool"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Revisions" Title="Revisions" HelpUrl="https://developers.google.com/drive/api/v3/reference/revisions/list">
+  <RestConnector Id="Revisions" Title="Revisions" Group="Metadata" HelpUrl="https://developers.google.com/drive/api/v3/reference/revisions/list">
     <Parameters>
       <Text Id="FileId" Title="File Id" Debug.DefaultValue="1EuW5NB06407zXvPCVW2PbgJuROk2mao23mnyoO1Vvdg" HelpUrl="" Required="true"/>
     </Parameters>
@@ -231,22 +197,15 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files/@(Model.FileId)/revisions
 				?pageSize=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &pageToken=@(Model.NextToken)
-        }
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
 				&fields=revisions,nextPageToken
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <JsonPath Expr="revisions[*]">
@@ -256,9 +215,7 @@
         <JsonPath Expr="lastModifyingUser.emailAddress" Id="Email" Title="Email" Converter="String"/>
       </JsonPath>
     </Parse>
-    <Fail>
-      <JsonPath Expr="error.message"/>
-    </Fail>
+    <Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>

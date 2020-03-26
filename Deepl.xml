@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Language" Title="Deepl" Identifier="Deepl" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Deepl.xml" HelpUrl="https://seotoolsforexcel.com/deepl/" HelpText="Documentation">
+<Suite Category="Language" Title="Deepl" Identifier="Deepl" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Deepl.xml" HelpUrl="https://seotoolsforexcel.com/deepl/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -17,6 +17,11 @@
       <Item Id="IT" Title="Italian"/>
       <Item Id="NL" Title="Dutch"/>
       <Item Id="PL" Title="Polish"/>
+    </Resource>
+    <Resource Id="Fail">
+      <Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
     </Resource>
   </Resources>
 
@@ -37,43 +42,33 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://api.deepl.com/v2/translate
-				?auth_key=@(Model.AuthKey)
+				https://api.deepl.com/v2/translate?auth_key=@(Model.AuthKey)
 				&text=@(Utils.UrlEncode(Model.Text))
 				&target_lang=@(Model.Target)
-				@if(Model.Source != "auto")
-				{
-					@: &source_lang=@(Model.Source)
-				}
-
+				@(Model.Source != "auto" ? "&source_lang=" + Model.Source : "")
         ]]>
       </Fetch.Url>
     </Fetch>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
     <Parse>
-      <JsonPath Expr="translations[0].text" Id="Result" Name="Result" Converter="String"/>
+      <JsonPath Expr="translations[0].text" Id="Result" Converter="String"/>
       <JsonPath Expr="translations[0].detected_source_language" Id="DetectedLanguage" Name="Detected Language" Converter="String"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AccountLimit" Title="Account Limit" HelpUrl="https://www.deepl.com/api.html">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://api.deepl.com/v2/usage
-				?auth_key=@(Model.AuthKey)
+				https://api.deepl.com/v2/usage?auth_key=@(Model.AuthKey)
         ]]>
       </Fetch.Url>
     </Fetch>
-    <Fail>
-      <JsonPath Expr="message"/>
-    </Fail>
     <Parse>
-      <JsonPath Expr="character_count" Id="Used" Name="Used" Converter="Long"/>
-      <JsonPath Expr="character_limit" Id="Total" Name="Total" Converter="Long"/>
+      <JsonPath Expr="character_count" Id="Used" Converter="Long"/>
+      <JsonPath Expr="character_limit" Id="Total" Converter="Long"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 </Suite>

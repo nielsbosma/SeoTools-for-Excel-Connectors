@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" Title="YouTube" Identifier="YouTube" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YouTube.xml" HelpUrl="http://seotoolsforexcel.com/youtube/" HelpText="Documentation">
+<Suite Category="Social" Title="YouTube" Id="YouTube" RequireVersion="8.2" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YouTube.xml" HelpUrl="http://seotoolsforexcel.com/youtube/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/youtube.force-ssl" StayAuthenticated="true"/>
 
@@ -19,12 +19,6 @@
 			<Item Id="relevance" Title="Relevance"/>
 			<Item Id="unread" Title="Unread"/>
     </Resource>
-    <Resource Id="Durations">
-			<Item Id="any" Title="Any"/>
-			<Item Id="long" Title="20 min+"/>
-			<Item Id="medium" Title="4-20 min"/>
-			<Item Id="short" Title="4 min-"/>
-    </Resource>
 		<Resource Id="Authorization">
       <HttpSettings>
         <RequestHeaders>
@@ -37,97 +31,136 @@
 				<JsonPath Expr="$.error.errors[0].reason"/>
 			</Fail>
     </Resource>
-
   </Resources>
 
-  <RestConnector Id="VideoStatistics" Title="Video Statistics" HelpUrl="https://developers.google.com/youtube/v3/docs/videos/list">
+  <RestConnector Id="VideoStatistics" Title="Video Statistics" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/videos/list">
     <Parameters>
-      <Text Id="VideoId" Title="Video Id" Required="true" Debug.DefaultValue="k5kJlDJfHgQ"/>
+      <Text Id="Ids" Title="Video Ids" Required="true" Debug.DefaultValue="k5kJlDJfHgQ" Multiline="true" HelpText="One or more Video Ids separated by newline"/>
     </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/videos?
-        id=@(Model.VideoId)
-        &part=statistics,snippet,contentDetails
-      ]]>
+				<![CDATA[
+					https://www.googleapis.com/youtube/v3/videos?id=@(FetchIds())&part=statistics,snippet,contentDetails
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="Auto" DefaultValue=""/>
-      <JsonPath Title="Title" Identifier="Title" Expr="$.items.[snippet].[title]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue=""/>
-			<Compute Id="Duration" Expr="@System.Xml.XmlConvert.ToTimeSpan(Model.Inp)" Converter="String">
-				<JsonPath Title="Duration" Identifier="Inp" Expr="$.items.[contentDetails].[duration]" Converter="String" DefaultValue=""/>
-			</Compute>
-      <JsonPath Title="Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Likes" Identifier="Likes" Expr="$.items.[statistics].[likeCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Dislikes" Identifier="Dislikes" Expr="$.items.[statistics].[dislikeCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Favorites" Identifier="Favorites"  Expr="$.items.[statistics].[favoriteCount]" Converter="Int" DefaultValue=""/>
-      <JsonPath Title="Comments" Identifier="Comments"  Expr="$.items.[statistics].[commentCount]" Converter="Int" DefaultValue=""/>
-			<Compute Id="Tags" Converter="Auto" DefaultValue="">
-				<Compute.Expr>
-					<![CDATA[@Regex.Replace(Model.Inp, @"[""\[\]\r\n]", "")]]>
-				</Compute.Expr>
-				<JsonPath Id="Inp" Expr="$.items.[snippet].[tags]" Converter="String" DefaultValue=""/>
-			</Compute>
-      <JsonPath Title="Dimension" Identifier="Dimension" Expr="$.items.[contentDetails].[dimension]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Definition" Identifier="Definition" Expr="$.items.[contentDetails].[definition]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Caption" Identifier="Caption" Expr="$.items.[contentDetails].[caption]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Channel Title" Identifier="ChannelTitle" Expr="$.items.[snippet].[channelTitle]" Converter="String" DefaultValue=""/>
-      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].default.url" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="items[*]">
+				<Compute Expr="http://www.youtube.com/watch/@(Model.Inp)" Id="Url" Title="URL" Converter="String" DefaultValue="">
+					<JsonPath Id="Inp" Expr="id" DefaultValue=""/>
+				</Compute>
+				<JsonPath Title="Id" Id="Id" Expr="id" DefaultValue=""/>
+				<JsonPath Title="Created" Id="Created" Expr="snippet.publishedAt" Converter="Auto" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
+				<JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+				<Compute Id="Duration" Expr="@(System.Xml.XmlConvert.ToTimeSpan(Model.Inp))" Converter="String" DefaultValue="">
+					<JsonPath Title="Duration" Id="Inp" Expr="contentDetails.duration" DefaultValue=""/>
+				</Compute>
+				<JsonPath Title="Views" Id="Views" Expr="statistics.viewCount" Converter="Int" DefaultValue=""/>
+				<JsonPath Title="Likes" Id="Likes" Expr="statistics.likeCount" Converter="Int" DefaultValue=""/>
+				<JsonPath Title="Dislikes" Id="Dislikes" Expr="statistics.dislikeCount" Converter="Int" DefaultValue=""/>
+				<JsonPath Title="Favorites" Id="Favorites"  Expr="statistics.favoriteCount" Converter="Int" DefaultValue=""/>
+				<JsonPath Title="Comments" Id="Comments"  Expr="statistics.commentCount" Converter="Int" DefaultValue=""/>
+				<JsonPath Expr="csv(snippet.tags)" Id="Tags" Converter="Auto" DefaultValue=""/>
+				<JsonPath Title="Dimension" Id="Dimension" Expr="contentDetails.dimension" Converter="String" DefaultValue=""/>
+				<JsonPath Title="Definition" Id="Definition" Expr="contentDetails.definition" Converter="String" DefaultValue=""/>
+				<JsonPath Title="Caption" Id="Caption" Expr="contentDetails.caption" Converter="String" DefaultValue=""/>
+				<JsonPath Title="Channel Title" Id="ChannelTitle" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+				<JsonPath Title="Thumbnail" Id="Thumbnail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ChannelStatistics" Title="Channel Statistics" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
+  <RestConnector Id="ChannelStatisticsUsername" Title="Channel Statistics by Username" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
     <Parameters>
-      <Text Id="ChannelInput" Title="Channel" Required="true"/>
-      <Radio Id="InputType" Title="Input Type" DefaultValue="id" Required="false">
-        <DataSource>
-          <Item Id="id" Title="Channel Id"/>
-          <Item Id="forUsername" Title="Channel Name"/>
-        </DataSource>
-      </Radio>
+      <Text Id="Username" Title="Channel" Debug.DefaultValue="jomezpro" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/channels?@(Model.InputType)=@(Model.ChannelInput)
-        &part=statistics,snippet
-      ]]>
+				<![CDATA[
+					https://www.googleapis.com/youtube/v3/channels?forUsername=@(Model.Username)&part=statistics,snippet
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
       <JsonPath Title="Id" Id="Id"  Expr="$.items.[id]" Converter="String" DefaultValue="0"/>
-      <JsonPath Title="Title" Identifier="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
-      <JsonPath Title="Description" Identifier="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
-      <JsonPath Title="Created" Identifier="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
-      <JsonPath Title="Subscribers" Identifier="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Videos" Identifier="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Total Views" Identifier="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
-      <JsonPath Title="Thumbnail" Identifier="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue="0"/>
+      <JsonPath Title="Title" Id="Title"  Expr="$.items.[snippet].[title]" Converter="String" DefaultValue="0"/>
+      <JsonPath Title="Description" Id="Description" Expr="$.items.[snippet].[description]" Converter="String" DefaultValue="0"/>
+      <JsonPath Title="Created" Id="Created" Expr="$.items.[snippet].[publishedAt]" Converter="DateTime" DefaultValue="0"/>
+      <JsonPath Title="Subscribers" Id="Subscribers"  Expr="$.items.[statistics].[subscriberCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Videos" Id="Videos" Expr="$.items.[statistics].[videoCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Total Views" Id="Views" Expr="$.items.[statistics].[viewCount]" Converter="Int" DefaultValue="0"/>
+      <JsonPath Title="Thumbnail" Id="Thumbnail" Expr="$.items.[snippet].[thumbnails].[default].[url]" Converter="String" DefaultValue=""/>
+      <JsonPath Title="Country" Id="Country" Expr="$.items.[snippet].[country]" Converter="String" DefaultValue=""/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchVideos" Title="Videos Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+  <RestConnector Id="ChannelStatisticsIds" Title="Channel Statistics by Ids" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
     <Parameters>
-      <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
+      <Text Id="Ids" Title="Channel Ids" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Fetch>
+      <Fetch.Url>
+				<![CDATA[
+					https://www.googleapis.com/youtube/v3/channels?id=@(FetchIds())&part=statistics,snippet
+				]]>
+      </Fetch.Url>
+      <Resource Id="Authorization"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="items[*]">
+				<JsonPath Title="Id" Id="Id"  Expr="$.id" Converter="String" DefaultValue="0"/>
+				<JsonPath Title="Title" Id="Title"  Expr="$.snippet.title" Converter="String" DefaultValue=""/>
+				<JsonPath Title="Description" Id="Description" Expr="$.snippet.description" Converter="String" DefaultValue="0"/>
+				<JsonPath Title="Created" Id="Created" Expr="$.snippet.publishedAt" Converter="DateTime" DefaultValue="0"/>
+				<JsonPath Title="Subscribers" Id="Subscribers"  Expr="$.statistics.subscriberCount" Converter="Int" DefaultValue="0"/>
+				<JsonPath Title="Videos" Id="Videos" Expr="$.statistics.videoCount" Converter="Int" DefaultValue="0"/>
+				<JsonPath Title="Total Views" Id="Views" Expr="$.statistics.viewCount" Converter="Int" DefaultValue="0"/>
+				<JsonPath Title="Thumbnail" Id="Thumbnail" Expr="$.snippet.thumbnails.default.url" Converter="String" DefaultValue="0"/>
+				<JsonPath Title="Country" Id="Country" Expr="$.items.[snippet].[country]" Converter="String" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SearchVideos" Title="Videos Search" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="obama" Required="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
+      <Select Id="Duration" Title="Duration" DefaultValue="any">
         <DataSource>
-          <Resource Id="Sortings"/>
+					<Item Id="any" Title="Any"/>
+					<Item Id="long" Title="20 min+"/>
+					<Item Id="medium" Title="4-20 min"/>
+					<Item Id="short" Title="4 min-"/>
         </DataSource>
       </Select>
-      <Select Id="Duration" Title="Duration" Required="false" DefaultValue="any">
+      <Select Id="LanguageCode" Title="Preferred Language" DefaultValue="all">
         <DataSource>
-          <Resource Id="Durations"/>
+					<Item Id="all"/>
+          <ISOLanguageCodes/>
         </DataSource>
       </Select>
-      <Checkbox Id="videoDefinition" Title="HD Quality" DefaultValue="False"/>
+      <Select Id="CountryCode" Title="Preferred Country" DefaultValue="all">
+        <DataSource>
+					<Item Id="all"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="Sorting" Title="Sorting" DefaultValue="date">
+        <DataSource>
+					<Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
+      <Checkbox Id="videoDefinition" Title="HD Quality"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
       <Parse>
@@ -137,52 +170,51 @@
     </Paging>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/search?
-        &part=snippet
-        &type=video
-        &order=@(Model.Sorting)
-        &videoDuration=@(Model.Duration)
-        &videoDefinition=@(Model.videoDefinition ? "high" : "any")
-        &q=@Utils.UrlEncode(Model.Query)
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
-          @: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
-        }
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
+				<![CDATA[
+					https://www.googleapis.com/youtube/v3/search?&part=snippet&type=video
+					&order=@(Model.Sorting)
+					&videoDuration=@(Model.Duration)
+					&videoDefinition=@(Model.videoDefinition ? "high" : "any")
+					&q=@Utils.UrlEncode(Model.Query)
+					@(Model.CountryCode != "all" ? "&regionCode=" + Model.CountryCode.ToUpper() : "")
+					@(Model.LanguageCode != "all" ? "&relevanceLanguage=" + Model.LanguageCode.ToUpper() : "")
+					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+					{
+						@: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
+						@: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
+					}
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
-            @{
-              var UrlString = (Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id);
-            }
-            @UrlString
+            @(Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id)
             ]]>
           </Compute.Expr>
           <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
           <JsonPath Expr="snippet.liveBroadcastContent" Id="Broadcast" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Channel Id" Identifier="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Id" Id="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchChannels" Title="Channels Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+  <RestConnector Id="SearchChannels" Title="Channels Search" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
       <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
@@ -190,12 +222,56 @@
           <Resource Id="Sortings"/>
         </DataSource>
       </Select>
-      <Radio Id="ChannelType" Title="Channel Type" DefaultValue="any" Required="true">
+      <Select Id="ChannelType" Title="Channel Type" DefaultValue="any" Required="true">
         <DataSource>
           <Item Id="any" Title="Any"/>
           <Item Id="show" Title="Show"/>
         </DataSource>
-      </Radio>
+      </Select>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+				<![CDATA[
+					https://www.googleapis.com/youtube/v3/search?&part=snippet&type=channel
+					&order=@(Model.Sorting)
+					&channelType=@(Model.ChannelType)
+					&q=@Utils.UrlEncode(Model.Query)
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+        ]]>
+      </Fetch.Url>
+      <Resource Id="Authorization"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items[*]">
+        <Compute Expr="http://www.youtube.com/channel/@(Model.Id)" Id="Url" Title="URL">
+          <JsonPath Expr="id.channelId" Id="Id"/>
+        </Compute>
+        <JsonPath Title="Id" Id="Id" Expr="id.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SearchPlaylists" Title="Playlist Search" Group="Playlists" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+    <Parameters>
+      <Text Id="Query" Debug.DefaultValue="trump" Title="Query" Required="true"/>
+      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
+        <DataSource>
+          <Resource Id="Sortings"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Paging PageSize="50" EvenPages="false">
       <Parse>
@@ -206,88 +282,104 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/youtube/v3/search?
-        &part=snippet
-        &type=channel
-        &order=@(Model.Sorting)
-        &channelType=@(Model.ChannelType)
-        &q=@Utils.UrlEncode(Model.Query)
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-        ]]>
+					https://www.googleapis.com/youtube/v3/search?&part=snippet&type=playlist
+					&order=@(Model.Sorting)
+					&q=@Utils.UrlEncode(Model.Query)
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            <![CDATA[http://www.youtube.com/channel/@(Model.Id)]]>
-          </Compute.Expr>
-          <JsonPath Expr="id.channelId" Id="Id" Converter="String"/>
+      <JsonPath Expr="$.items[*]">
+        <Compute Expr="http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)" Id="Url" Title="Url">
+          <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.channelId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Id" Id="Id" Expr="id.playlistId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Items" Id="Items" Expr="contentDetails.itemCount" Converter="Int" DefaultValue="0"/>
+        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchPlaylists" Title="Playlists Search" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+  <RestConnector Id="PlaylistStatistics" Title="Playlists Statistics" Group="Playlists" HelpUrl="https://developers.google.com/youtube/v3/docs/search/listhttps://developers.google.com/youtube/v3/docs/playlists/list">
     <Parameters>
-      <Text Id="Query" DefaultValue="" Title="Query" Required="true"/>
-      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
-        <DataSource>
-          <Resource Id="Sortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Ids" Title="Playlist Ids" Debug.DefaultValue="PLVL8S3lUHf0TRs7E1xzv187cZQlbPAYGk" Required="true" Multiline="true"/>
     </Parameters>
-    <Paging PageSize="50" EvenPages="false">
+    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://www.googleapis.com/youtube/v3/playlists?id=@(FetchIds())&part=snippet,contentDetails
+				]]>
+      </Fetch.Url>
+      <Resource Id="Authorization"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items[*]">
+        <Compute Expr="http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Ids)" Id="Url" Title="Url">
+          <JsonPath Expr="id" Id="Ids"/>
+        </Compute>
+        <JsonPath Title="Id" Id="Id" Expr="id" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Items" Id="Items" Expr="contentDetails.itemCount" Converter="Int" DefaultValue="0"/>
+        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Title" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PlaylistsFromChannels" Title="Playlists from Channels" Group="Playlists" HelpUrl="https://developers.google.com/youtube/v3/docs/search/listhttps://developers.google.com/youtube/v3/docs/playlists/list">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="False">
       <Parse>
         <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+		<Batch Parameter="ChannelId" Separator="\n"/>
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/youtube/v3/search?
-        &part=snippet
-        &type=playlist
-        &order=@(Model.Sorting)
-        &q=@Utils.UrlEncode(Model.Query)
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
+					https://www.googleapis.com/youtube/v3/playlists?channelId=@(Model.ChannelId)&part=snippet,contentDetails
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
-        <Compute Id="Url" Title="Url">
-          <Compute.Expr>
-            <![CDATA[http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Id)]]>
-          </Compute.Expr>
-          <JsonPath Expr="id.playlistId" Id="Id" Converter="String"/>
+      <JsonPath Expr="$.items[*]">
+        <Compute Expr="http://www.youtube.com/watch?v=PT2_F-1esPk&amp;list=@(Model.Ids)" Id="Url" Title="Url">
+          <JsonPath Expr="id" Id="Ids"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.playlistId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Id" Id="Id" Expr="id" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Title="Items" Id="Items" Expr="contentDetails.itemCount" Converter="Int" DefaultValue="0"/>
+        <JsonPath Title="Title" Id="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Title" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideosFromChannel" Title="Channel Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
+  <RestConnector Id="VideosFromChannels" Title="Videos from Channels" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
-      <Text Id="ChannelId" DefaultValue="" Title="Channel Id" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q"/>
+      <Text Id="ChannelId" Title="Channel Ids" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
         <DataSource>
@@ -301,53 +393,52 @@
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
-    <Fetch Url="">
+		<Batch Parameter="ChannelId" Separator="\n"/>
+    <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/youtube/v3/search?
-        &part=snippet
-        &channelId=@(Model.ChannelId)
-        &order=@(Model.Sorting)
-        &type=video
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
-          @: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
-        }
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
+					https://www.googleapis.com/youtube/v3/search?&part=snippet&type=video
+					&channelId=@(Model.ChannelId)
+					&order=@(Model.Sorting)
+					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+					{
+						@: &publishedAfter=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))T00:00:00z
+						@: &publishedBefore=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))T00:00:00z
+					}
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
+      <JsonPath Expr="$.items[*]">
         <Compute Id="Url" Title="URL">
           <Compute.Expr>
             <![CDATA[
-            @{
-              var UrlString = (Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id);
-            }
-            @UrlString
+							@(Model.Broadcast == "upcoming" ? "upcoming" : "http://www.youtube.com/watch/" + Model.Id)
             ]]>
           </Compute.Expr>
-          <JsonPath Expr="id.videoId" Id="Id" Converter="String"/>
-          <JsonPath Expr="snippet.liveBroadcastContent" Id="Broadcast" Converter="String"/>
+          <JsonPath Expr="id.videoId" Id="Id"/>
+          <JsonPath Expr="snippet.liveBroadcastContent" Id="Broadcast"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Channel" Identifier="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue="" Checked="false"/>
+        <JsonPath Title="Id" Id="Id" Expr="id.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Title" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideosFromPlayList" Title="Playlist Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/playlistItems/list">
+  <RestConnector Id="VideosFromPlayLists" Title="Videos from Playlists" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/playlistItems/list">
     <Parameters>
-      <Text Id="PlayListId" DefaultValue="" Title="PlayList Id" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L"/>
+      <Text Id="PlayListId" Title="PlayList Ids" Required="true" Debug.DefaultValue="PLNWnPlJSKEVGXEEiqknZqa0JOpDKkUC3L" Multiline="true"/>
     </Parameters>
     <Paging PageSize="50">
       <Parse>
@@ -355,163 +446,124 @@
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
       </Parse>
     </Paging>
+		<Batch Parameter="PlayListId" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://www.googleapis.com/youtube/v3/playlistItems?
-        &part=snippet
-        &playlistId=@Utils.UrlEncode(Model.PlayListId)
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
+					https://www.googleapis.com/youtube/v3/playlistItems?&part=snippet
+					&playlistId=@Utils.UrlEncode(Model.PlayListId)
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
-        <Compute Id="Url" Title="URL">
-          <Compute.Expr>
-            <![CDATA[http://www.youtube.com/watch/@(Model.Id)]]>
-          </Compute.Expr>
+      <JsonPath Expr="$.items[*]">
+        <Compute Expr="http://www.youtube.com/watch/@(Model.Id)" Id="Url" Title="URL">
           <JsonPath Expr="snippet.resourceId.videoId" Id="Id" Converter="String"/>
         </Compute>
-        <JsonPath Title="Id" Identifier="Id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Published" Identifier="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Title="Title" Identifier="Title" Expr="snippet.title" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Description" Identifier="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
-        <JsonPath Title="Thumbnail" Identifier="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Id" Id="Id" Expr="snippet.resourceId.videoId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Published" Id="Published" Expr="snippet.publishedAt" Converter="DateTime" DefaultValue=""/>
+				<Compute Expr="@(Utils.HtmlDecode(Model.Inp))" Id="Title" Title="Title">
+          <JsonPath Expr="snippet.title" Id="Inp" DefaultValue=""/>
+        </Compute>
+        <JsonPath Title="Description" Id="Description" Expr="snippet.description" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="Thumbail" Expr="snippet.thumbnails.default.url" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Id" Id="ChannelId" Expr="snippet.channelId" Converter="String" DefaultValue=""/>
+        <JsonPath Title="Channel Title" Id="Channel" Expr="snippet.channelTitle" Converter="String" DefaultValue=""/>
+        <Compute Title="Playlist Id" Id="PlaylistId" Expr="@Model.PlayListId" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="VideoComments" Title="Video Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
+  <RestConnector Id="VideoComments" Title="Comments on Videos" Group="Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
     <Parameters>
-      <Text Id="VideoId" DefaultValue="" Title="Video Id" Required="true" Debug.DefaultValue="MbHQo4KkBWc"/>
-      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
+      <Text Id="VideoId" Title="Video Ids" Required="true" Debug.DefaultValue="MbHQo4KkBWc" Multiline="true"/>
+      <Select Id="Sorting" Title="Sorting" DefaultValue="time">
         <DataSource>
           <Item Id="time" Title="Time"/>
           <Item Id="relevance" Title="Relevance"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/youtube/v3/commentThreads?
-        videoId=@(Model.VideoId)
-        &part=snippet
-        &order=@(Model.Sorting)
-        &textFormat=plainText
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
-      </Fetch.Url>
-      <Resource Id="Authorization"/>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.items.*">
-        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime"/>
-        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ChannelComments" Title="Channel Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
-    <Parameters>
-      <Text Id="ChannelId" DefaultValue="" Title="Channel Id" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w"/>
-      <Radio Id="Sorting" Title="Sorting" DefaultValue="date" Required="true">
-        <DataSource>
-          <Item Id="time" Title="Time"/>
-          <Item Id="relevance" Title="Relevance"/>
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://www.googleapis.com/youtube/v3/commentThreads?
-        channelId=@(Model.ChannelId)
-        &part=snippet
-        &order=@(Model.Sorting)
-        &textFormat=plainText
-        &maxResults=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
-      </Fetch.Url>
-      <Resource Id="Authorization"/>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.items.*">
-        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime"/>
-        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String"/>
-        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ChannelSubscriptions" Title="Channel Subscriptions" HelpUrl="https://developers.google.com/youtube/v3/docs/subscriptions/list">
-    <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Debug.DefaultValue="UCRDoSzbAoJTmq16vxMomCdg" HelpText="Leave empty to retrieve a feed of the authenticated user's subscriptions." Required="false"/>
-      <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="default">
-        <DataSource>
-          <Resource Id="SubscriptionSortings"/>
         </DataSource>
       </Select>
     </Parameters>
-    <Paging PageSize="50" EvenPages="false">
+    <Paging PageSize="100" EvenPages="false">
       <Parse>
         <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
-        <JsonPath Id="AvaliableRows" Expr="pageInfo.totalResults"/>
       </Parse>
     </Paging>
+		<Batch Parameter="VideoId" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://www.googleapis.com/youtube/v3/subscriptions?
-        @(!string.IsNullOrEmpty(Model.ChannelId) ? "channelId=" + Model.ChannelId : "mine=true")
-				&part=snippet,contentDetails
-        &maxResults=@(Model.PageCursor.NextTake)
-				@(Model.Sorting != "default" ? "&order=" + Model.Sorting : "")
-        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
-      ]]>
+        <![CDATA[
+					https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&textFormat=plainText
+					&videoId=@(Model.VideoId)
+					&order=@(Model.Sorting)
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*">
-				<JsonPath Expr="snippet.resourceId.channelId" Id="Id" Title="Channel Id" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="snippet.title" Id="ChannelName" Title="Channel Name" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="snippet.description" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="snippet.publishedAt" Id="Created" Title="Created" Converter="DateTime" DefaultValue=""/>
-				<JsonPath Expr="contentDetails.totalItemCount" Id="Items" Title="Items" Converter="Long" DefaultValue=""/>
-				<JsonPath Expr="snippet.thumbnails.default.url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
-			</JsonPath>
+      <JsonPath Expr="$.items[*]">
+        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime"/>
+        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String"/>
+        <JsonPath Expr="snippet.videoId" Id="VideoId" Title="Target Video Id"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ChannelComments" Title="Comments on Channels" Group="Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
+    <Parameters>
+      <Text Id="ChannelId" Title="Channel Ids" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w" Multiline="true"/>
+      <Select Id="Sorting" Title="Sorting" DefaultValue="time" >
+        <DataSource>
+          <Item Id="time" Title="Time"/>
+          <Item Id="relevance" Title="Relevance"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="100" EvenPages="false">
+      <Parse>
+        <JsonPath Id="NextPageToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+		<Batch Parameter="ChannelId" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&textFormat=plainText
+					&channelId=@(Model.ChannelId)
+					&order=@(Model.Sorting)
+					&maxResults=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
+				]]>
+      </Fetch.Url>
+      <Resource Id="Authorization"/>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.items[*]">
+        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.textDisplay" Id="Text" Title="Text"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorDisplayName" Id="DisplayName" Title="Display Name" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.publishedAt" Id="Posted" Title="Posted" Converter="DateTime"/>
+        <JsonPath Expr="snippet.totalReplyCount" Id="Replies" Title="Replies" Converter="Int"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.likeCount" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelId.value" Id="ChannelId" Title="Channel Id" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorChannelUrl" Id="ChannelUrl" Title="Channel URL" Converter="String"/>
+        <JsonPath Expr="snippet.topLevelComment.snippet.authorProfileImageUrl" Id="ChannelAvatarUrl" Title="Channel Avatar URL" Converter="String"/>
+        <JsonPath Expr="snippet.channelId" Id="ChannelId" Title="Target Channel Id"/>
+      </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
@@ -533,8 +585,7 @@
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://www.googleapis.com/youtube/v3/subscriptions?mySubscribers=true
-				&part=subscriberSnippet
+        https://www.googleapis.com/youtube/v3/subscriptions?mySubscribers=true&part=subscriberSnippet
         &maxResults=@(Model.PageCursor.NextTake)
 				@(Model.Sorting != "default" ? "&order=" + Model.Sorting : "")
         @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
@@ -543,7 +594,7 @@
       <Resource Id="Authorization"/>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.items.*.subscriberSnippet">
+      <JsonPath Expr="$.items[*].subscriberSnippet">
 				<JsonPath Expr="channelId" Id="Id" Title="Channel Id" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="title" Id="ChannelName" Title="Channel Name" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="description" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
@@ -553,32 +604,33 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserConverter" Title="Channel URL to Id">
+  <RestConnector Id="UserConverter" Title="Channel URL to Id" Group="Converters">
     <Parameters>
       <Text Id="ChannelUrl" Title="Channel URL" Debug.DefaultValue="https://www.youtube.com/user/LionelY2K" Required="true"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[@(Model.ChannelUrl)]]>
-      </Fetch.Url>
-    </Fetch>
+    <Fetch Url="@(Model.ChannelUrl)"/>
     <Parse>
-      <Regex Id="ChannelId" Expr="&quot;https:\/\/www.youtube.com\/channel\/(.*?)&quot;" Converter="String"/>
+      <Regex Id="ChannelId" Expr="&quot;https:\/\/www.youtube.com\/channel\/(.*?)&quot;"/>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="VideoConverter" Title="Video URL to Id">
+  <RestConnector Id="VideoConverter" Title="Video URL to Id" Group="Converters">
     <Parameters>
       <Text Id="VideoUrl" Title="Video URL" Debug.DefaultValue="https://www.youtube.com/watch?v=APLCiryMFdk" Required="true"/>
     </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[@(Model.VideoUrl)]]>
-      </Fetch.Url>
-    </Fetch>
+    <Fetch Url="@(Model.VideoUrl)"/>
     <Parse>
-      <Regex Id="VideoId" Expr="&quot;videoId\\&quot;:\\&quot;(.*?)\\" Converter="String"/>
+      <Regex Id="VideoId" Expr="&quot;videoId\\&quot;:\\&quot;(.*?)\\"/>
     </Parse>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string FetchIds() {
+				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+        return string.Join(",",lines.Select((e) => Utils.UrlEncode(e)).ToArray());
+      }
+    ]]>
+  </RazorFunctions>
 
 </Suite>

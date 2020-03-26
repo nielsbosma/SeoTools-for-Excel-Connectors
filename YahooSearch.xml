@@ -1,166 +1,116 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite RequireVersion="6.0" Title="Yahoo Search" Id="YahooSearch" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YahooSearch.xml" HelpUrl="http://seotoolsforexcel.com/yahoo-search/" HelpText="Documentation">
+<Suite RequireVersion="8.2" Title="Yahoo Search" Id="YahooSearch" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YahooSearch.xml" HelpUrl="http://seotoolsforexcel.com/yahoo-search/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Resources>
     <Resource Id="FileTypes">
-      <Item Id="all" Title="All File Types"/>
-      <Item Id=" .htm" Title="html"/>
-      <Item Id=" .html" Title="htm"/>
-      <Item Id=" .pdf" Title="pdf (Adobe PDF)"/>
-      <Item Id=" .xls" Title="xls (Microsoft Excel)"/>
-      <Item Id=" .ppt" Title="ppt (Microsoft Powerpoint)"/>
-      <Item Id=" .doc" Title="doc (Microsoft Word)"/>
-      <Item Id=" .txt" Title="txt (Standard text file)"/>
+      <Select Id="File" Title="File Type" Required="false" DefaultValue="all">
+        <DataSource>
+					<Item Id="all" Title="All File Types"/>
+					<Item Id=" .htm" Title="html"/>
+					<Item Id=" .html" Title="htm"/>
+					<Item Id=" .pdf" Title="pdf (Adobe PDF)"/>
+					<Item Id=" .xls" Title="xls (Microsoft Excel)"/>
+					<Item Id=" .ppt" Title="ppt (Microsoft Powerpoint)"/>
+					<Item Id=" .doc" Title="doc (Microsoft Word)"/>
+					<Item Id=" .txt" Title="txt (Standard text file)"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Periods">
+      <Select Id="Period" Title="Period" DefaultValue="all">
+        <DataSource>
+          <Item Id="all" Title="Anytime"/>
+          <Item Id="1d&amp;fr2=time&amp;btf=d" Title="Yesterday"/>
+          <Item Id="1w&amp;fr2=time&amp;btf=w" Title="Last Week"/>
+          <Item Id="1m&amp;fr2=time&amp;btf=m" Title="Last Month"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
+      </HttpSettings>
     </Resource>
   </Resources>
 
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
-      <Radio Id="Period" Title="Period" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="Anytime"/>
-          <Item Id="1d&amp;fr2=time&amp;btf=d" Title="Yesterday"/>
-          <Item Id="1w&amp;fr2=time&amp;btf=w" Title="Last Week"/>
-          <Item Id="1m&amp;fr2=time&amp;btf=m" Title="Last Month"/>
-        </DataSource>
-      </Radio>
-      <Select Id="File" Title="File Type" Required="false" DefaultValue="all">
-        <DataSource>
-          <Resource Id="FileTypes"/>
-        </DataSource>
-      </Select>
+      <Text Id="Domain" Title="Domain" Required="false" HelpText="Filter Results by specific Domain"/>
+			<Resource Id="FileTypes"/>
+			<Resource Id="Periods"/>
     </Parameters>
-    <Paging PageSize="10">
+    <Paging PageSize="10" EvenPages="false">
       <Parse>
         <XPath Id="AvaliableRows" Expr="//div[@@class='compPagination']/span" Converter="Int"/>
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?
-        p=@Utils.UrlEncode(Model.Query)
-        @if(!string.IsNullOrEmpty(Model.Domain))
-        {
-          @: &vs=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
-        }
-        @if(Model.File != "all")
-        {
-          @: @Utils.UrlEncode(Model.File)
-        }
+        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
+        @(!string.IsNullOrEmpty(Model.Domain) ? "&vs=" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
+        @(Model.File != "all" ? Model.File : "")
         &b=@(Model.PageCursor.FetchedRows+1)
-        @if(Model.Period != "all")
-        {
-          @: &age=@(Model.Period)&b=_UNSET_&pz=_UNSET_
-        }
+        @(Model.Period != "all" ? "&age=" + Model.Period + "&b=_UNSET_&pz=_UNSET_" : "")
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
-      </HttpSettings>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@id='web']//div[contains(@@class,'algo')]//h3">
-        <XPath Id="Url" Title="URL" Expr="a" Attribute="href"/>
-        <XPath Id="Title" Title="Title" Expr="a"/>
-      </XPath>
-      <XPath Expr="//div[@@id='web']//div[contains(@@class,'algo')]//div[contains(@@class,'compText ')]">
+      <XPath Expr="//h3[@@class='title']/a">
+				<Compute Expr="@Utils.UrlDecode(Model.Inp)" Id="Url" Title="URL">
+					<XPath Expr="." Id="Inp" Attribute="href" DefaultValue=""/>
+				</Compute>
+        <XPath Id="Title" Title="Title" Expr="."/>
+			</XPath>
+			<XPath Expr="//ol/li/div/div[2]/p">
         <XPath Id="Description" Title="Description" Expr="."/>
       </XPath>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
+  <RestConnector Id="NumberOfResults" Title="Number of Results">
     <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="" Required="false" HelpText="Filter Results by specific Domain"/>
-      <Radio Id="Period" Title="Period" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="Anytime"/>
-          <Item Id="1d&amp;fr2=time&amp;btf=d" Title="Yesterday"/>
-          <Item Id="1w&amp;fr2=time&amp;btf=w" Title="Last Week"/>
-          <Item Id="1m&amp;fr2=time&amp;btf=m" Title="Last Month"/>
-        </DataSource>
-      </Radio>
-      <Select Id="File" Title="File Type" Required="false" DefaultValue="all">
-        <DataSource>
-          <Resource Id="FileTypes"/>
-        </DataSource>
-      </Select>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
+      <Text Id="Domain" Title="Domain" Required="false" HelpText="Filter Results by specific Domain"/>
+			<Resource Id="FileTypes"/>
+			<Resource Id="Periods"/>
     </Parameters>
     <Fetch>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?
-        p=@Utils.UrlEncode(Model.Query)
-        @if(!string.IsNullOrEmpty(Model.Domain))
-        {
-          @: &vs=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
-        }
-        @if(Model.File != "all")
-        {
-          @: @Utils.UrlEncode(Model.File)
-        }
-        @if(Model.Period != "all")
-        {
-          @: &age=@(Model.Period)&b=_UNSET_&pz=_UNSET_
-        }
+        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
+        @(!string.IsNullOrEmpty(Model.Domain) ? "&vs=" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
+        @(Model.File != "all" ? Model.File : "")
+        @(Model.Period != "all" ? "&age=" + Model.Period + "&b=_UNSET_&pz=_UNSET_" : "")
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
-      </HttpSettings>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@class='compPagination']">
-        <XPath Id="Results" Title="Results" Expr="span" Converter="Int"/>
-      </XPath>
+      <XPath Expr="//div[@@class='compPagination']/span" Id="Results" Converter="Int"/>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
+  <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages">
     <Parameters>
       <Text Id="Domain" Title="Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
-      <Radio Id="Period" Title="Period" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="Anytime"/>
-          <Item Id="1d&amp;fr2=time&amp;btf=d" Title="Yesterday"/>
-          <Item Id="1w&amp;fr2=time&amp;btf=w" Title="Last Week"/>
-          <Item Id="1m&amp;fr2=time&amp;btf=m" Title="Last Month"/>
-        </DataSource>
-      </Radio>
-      <Select Id="File" Title="File Type" Required="false" DefaultValue="all">
-        <DataSource>
-          <Resource Id="FileTypes"/>
-        </DataSource>
-      </Select>
+			<Resource Id="FileTypes"/>
+			<Resource Id="Periods"/>
     </Parameters>
     <Fetch>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         http://search.yahoo.com/search?p=
-        @if(Model.File != "all")
-        {
-          @: @Utils.UrlEncode(Model.File)
-        }
-        else
-        {
-          @: .
-        }
+        @(Model.File != "all" ? Model.File : ".")
         &vs=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain))
-        @if(Model.Period != "all")
-        {
-          @: &age=@(Model.Period)&b=_UNSET_&pz=_UNSET_
-        }
+        @(Model.Period != "all" ? "&age=" + Model.Period + "&b=_UNSET_&pz=_UNSET_" : "")
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <Try>
@@ -175,15 +125,12 @@
       <Text Id="Query" Title="Query" Debug.DefaultValue="football" Required="true"/>
     </Parameters>
     <Fetch>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?
-        p=@Utils.UrlEncode(Model.Query)
+        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
-      </HttpSettings>
     </Fetch>
     <Parse>
       <XPath Expr="//ul[@@class='compDlink']/li">
