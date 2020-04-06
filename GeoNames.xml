@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="GeoNames" Id="GeoNames" RequireVersion="7.0.2" Category="GEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GeoNames.xml" HelpUrl="http://seotoolsforexcel.com/GeoNames/" HelpText="Documentation">
+<Suite Title="GeoNames" Id="GeoNames" RequireVersion="8.2" Category="GEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GeoNames.xml" HelpUrl="http://seotoolsforexcel.com/GeoNames/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -15,7 +15,7 @@
         <DataSource>
           <Item Id="name" Title="Default"/>
           <Item Id="name_equals" Title="Exact"/>
-          <Item Id="name_starts" Title="Starts With"/>
+          <Item Id="name_startsWith" Title="Starts With"/>
           <Item Id="fuzzy" Title="Fuzzy"/>
         </DataSource>
       </Radio>
@@ -36,18 +36,8 @@
     <Fetch.Url>
       <![CDATA[
       http://api.geonames.org/searchJSON?
-      @if(Model.SearchMode != "fuzzy")
-      {
-        @(Utils.UrlEncode(Model.SearchMode))@: =@(Model.Query)
-      }
-      else
-      {
-        @: q=@(Model.Query)&fuzzy=0
-      }
-      @if(!string.IsNullOrEmpty(Model.CountryFilter))
-      {
-        @: &country=@(Model.CountryFilter)
-      }
+      @(Model.SearchMode != "fuzzy" ? Utils.UrlEncode(Model.SearchMode) + "=" + Model.Query : "q=" + Model.Query + "&fuzzy=0")
+      @(!string.IsNullOrEmpty(Model.CountryFilter) ? "&country=" + Model.CountryFilter : "")
       &orderby=@(Model.Order)
       &maxRows=@(Model.PageCursor.PageSize)
       &startRow=@(Model.PageCursor.NextSkip)
@@ -56,7 +46,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="geonames.*">
+      <JsonPath Expr="geonames[*]">
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" HelpText="Localized name, the preferred name in the optional language parameter."/>
         <JsonPath Expr="fcodeName" Id="Type" Title="Type" Converter="String" HelpText="The classification of the location."/>
         <JsonPath Expr="adminName1" Id="Region" Title="Region" Converter="String" HelpText="Region of location."/>
