@@ -57,14 +57,20 @@
 
   <RestConnector Id="PageSearch" Title="Page Search" Group="Page Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/">
     <Parameters>
-      <Text Id="Query" Title="Query" Required="true"/>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="podcast"/>
     </Parameters>
+		<Paging PageSize="25" EvenPages="false">
+      <Parse>
+				<JsonPath Id="Cursor" Expr="paging.cursors.after"/>
+      </Parse>
+    </Paging>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://graph.facebook.com/v3.2/pages/search?q=@(Utils.UrlEncode(Model.Query))
         &fields=@SelectedFields()
         &access_token=@(Model.Authenticator.Token)
+				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -74,6 +80,7 @@
         <JsonPath Title="Page Id" Id="PageId" Expr="id" Converter="String" Tag="id"/>
         <JsonPath Title="City" Id="City" Expr="location.city" Converter="String" Tag="location" DefaultValue=""/>
         <JsonPath Title="Country" Id="Country" Expr="location.country" Converter="String" Tag="location" DefaultValue=""/>
+        <JsonPath Title="Street" Id="Street" Expr="location.street" Converter="String" Tag="location" DefaultValue=""/>
         <JsonPath Title="Zip" Id="Zip" Expr="location.zip" Converter="Auto" Tag="location" DefaultValue=""/>
         <JsonPath Title="Latitude" Id="Latitude" Expr="location.latitude" Converter="String" Tag="location" DefaultValue=""/>
         <JsonPath Title="Longitude" Id="Longitude" Expr="location.longitude" Converter="String" Tag="location" DefaultValue=""/>
@@ -573,7 +580,7 @@
 			string FetchIdsBatch() {
 				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
 				return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
-			}	
+			}
     ]]>
   </RazorFunctions>
 
