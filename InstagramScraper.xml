@@ -24,41 +24,6 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Title="Accounts Latest Posts" Id="LatestPosts" Group="Accounts">
-    <Parameters>
-      <Text Id="User" Title="Username or URL" Required="true" DefaultValue="" Debug.DefaultValue="zaralarsson" Multiline="true"/>
-    </Parameters>
-		<Batch Parameter="User" Separator="\n"/>
-		<Fetch Url="@FetchUserString()"/>
-    <Parse>
-      <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
-				<Compute Expr="https://www.instagram.com/p/@(Model.PostIdInput)" Id="PostUrl" Title="Post URL" DefaultValue="">
-					<Regex Expr=".*" Group="0" Id="PostIdInput" DefaultValue=""/>
-				</Compute>
-      </Regex>
-			<Regex Expr="taken_at_timestamp&quot;:(\d+)" Group="1" Converter.SourceFormat="Unix" >
-        <Regex Expr=".*" Id="Created" Title="Created" Group="0" Converter="DateTime" Converter.SourceFormat="Unix"/>
-      </Regex>
-			<Regex Expr="typename&quot;:&quot;Graph(\w+)" Group="1" DefaultValue="">
-				<Compute Expr="@Model.Inp" Id="Type" Title="Type" DefaultValue="">
-					<Regex Expr=".*" Group="0" Id="Inp" DefaultValue=""/>
-				</Compute>
-      </Regex>
-			<Regex Expr="edge_liked_by&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Int" DefaultValue="">
-        <Regex Expr=".*" Id="Likes" Title="Likes" Group="0" Converter="Long"/>
-      </Regex>
-			<Regex Expr="edge_media_to_comment&quot;:{&quot;count&quot;:(\d+)}" Group="1" Converter="Long" DefaultValue="">
-        <Regex Expr=".*" Id="Comments" Title="Comments" Group="0" Converter="Long"/>
-      </Regex>
-			<Regex Expr="display_url&quot;:&quot;(.*?)&quot;" Group="1" Converter="String" DefaultValue="">
-        <Regex Expr=".*" Id="ImageUrl" Title="Display URL" Group="0" Converter="String"/>
-      </Regex>
-      <Regex Expr="shortcode&quot;:&quot;(.*?)&quot;" Group="1" DefaultValue="">
-				<Compute Expr="@Model.User" Id="User" Title="User"/>
-      </Regex>
-    </Parse>
-  </RestConnector>
-
   <RestConnector Id="PostLookup" Title="Post Lookup" Group="Posts">
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/BhCZUzgAOhT/"/>
@@ -302,6 +267,80 @@
 		</Fetch>
     <Parse>
 			<JsonPath Expr="$.graphql.hashtag.edge_hashtag_to_media.count" Id="Count" Converter="Long" DefaultValue="0"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountSearch" Title="Search for Accounts" Group="Accounts">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/web/search/topsearch/?context=user&query=@Utils.UrlEncode(Model.Query)
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.users[*].user">
+				<Compute Expr="https://www.instagram.com/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="username" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="username" Id="Username" Converter="String"/>
+				<JsonPath Expr="pk" Id="UserId" Title="User Id" Converter="Auto"/>
+				<JsonPath Expr="full_name" Id="FullName" Title="Full Name" Converter="String"/>
+				<JsonPath Expr="is_private" Id="Private" Converter="Bool"/>
+				<JsonPath Expr="is_verified" Id="Verified" Converter="Bool"/>
+				<JsonPath Expr="profile_pic_url" Id="Avatar" Converter="String"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="HashtagSearch" Title="Search for Hashtags" Group="Hashtags">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/web/search/topsearch/?context=hashtag&query=@Utils.UrlEncode(Model.Query)
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.hashtags[*].hashtag">
+				<JsonPath Expr="name" Id="Hashtag" Converter="String"/>
+				<JsonPath Expr="media_count" Id="Count" Title="Count" Converter="Long"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="PlacesSearch" Title="Search for Places" Group="Places">
+    <Parameters>
+      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="stockholm"/>
+    </Parameters>
+    <Paging PageSize="100" MaxTake="100"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/web/search/topsearch/?context=place&query=@Utils.UrlEncode(Model.Query)
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.places[*].place">
+				<JsonPath Expr="location.name" Id="Name" Converter="String"/>
+				<JsonPath Expr="location.pk" Id="PlaceId" Title="Place Id" Converter="String"/>
+				<JsonPath Expr="location.address" Id="Address" Converter="String"/>
+				<JsonPath Expr="location.city" Id="City" Converter="String"/>
+				<JsonPath Expr="location.short_name" Id="ShortName" Title="Short Name" Converter="String"/>
+				<JsonPath Expr="location.lng" Id="Longitude" Converter="String"/>
+				<JsonPath Expr="location.lat" Id="Latitude" Converter="String"/>
+				<JsonPath Expr="location.external_source" Id="ExternalSource" Title="External Source" Converter="Auto"/>
+				<JsonPath Expr="location.facebook_places_id" Id="FacebookPlaceId" Title="Facebook Place Id" Converter="String"/>
+			</JsonPath>
     </Parse>
   </RestConnector>
 
