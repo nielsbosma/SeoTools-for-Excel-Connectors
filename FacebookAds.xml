@@ -98,20 +98,12 @@
 					<JsonPath Expr="adset_name" Id="AdsetName" Title="Adset Name" Converter="String" Tag="adset_name" HelpText="The name of the ad set" Checked="false" DefaultValue="-"/>
 					<JsonPath Expr="ad_id" Id="AdId" Title="Ad Id" Converter="String" Tag="ad_id" HelpText="The unique ID of the ad" Checked="false" DefaultValue="-"/>
 					<JsonPath Expr="ad_name" Id="AdName" Title="Ad Name" Converter="String" Tag="ad_name" HelpText="The unique ID of the ad" Checked="false" DefaultValue="-"/>
-					<Compute Id="Category" Title="Category" HelpText="Category Breakdown." DefaultValue="" Converter="String">
-						<Compute.Expr>
-							<![CDATA[
-								@{
-								string output = (Model.Type == "gender,age" ? Model.Gender + "-" + Model.AgeGroup : Model.Category);
-								output = (Model.Type == "frequency_value" ? Regex.Replace(output, @"-", " to ") : output);
-								}
-								@output
-							]]>
-						</Compute.Expr>
+					<Compute Expr="@GetCategoryField()" Id="Category" Title="Category" HelpText="Category Breakdown." DefaultValue="" Converter="String">
 						<JsonPath Expr="gender" Id="Gender" Converter="String" DefaultValue=""/>
 						<JsonPath Expr="age" Id="AgeGroup" Converter="String" DefaultValue=""/>
 						<JsonPath Expr="['@(Model.Type)']" Id="Category" Converter="String" DefaultValue=""/>
 					</Compute>
+					<JsonPath Expr="objective" Id="Objective" Title="Objective" Converter="String" DefaultValue="" Tag="objective" HelpText="The objective reflecting the goal you want to achieve with your advertising."/>					
 					<JsonPath Expr="impressions" Id="Impressions" Title="Impressions" Converter="Int" DefaultValue="" Tag="impressions" HelpText="The number of times your ads were viewed."/>
 					<JsonPath Expr="reach" Id="Reach" Title="Reach" Tag="reach" Converter="Int" DefaultValue="" HelpText="The number of people who saw your ads at least once."/>
 					<JsonPath Expr="frequency" Id="Frequency" Title="Frequency" Tag="frequency" DefaultValue="" Converter="Double" HelpText="The average number of times each person saw your ads."/>
@@ -125,6 +117,9 @@
 					<JsonPath Expr="cpp" Id="CPP" Title="CPP" Tag="cpp" Converter="Double" DefaultValue="" HelpText="The average cost to reach 1,000 people."/>
 					<JsonPath Expr="ctr" Id="CTR" Title="CTR" Tag="ctr" Converter="Double" DefaultValue="" HelpText="The percentage of times people saw your ad and performed a click (all)."/>
 					<JsonPath Expr="unique_ctr" Id="UniqueCTR" Title="Unique CPC" Tag="unique_ctr" Converter="Double" DefaultValue="" HelpText="The percentage of people who saw your ad and performed a unique click (all)."/>
+					<JsonPath Expr="website_ctr[?(@@.action_type=='link_click')].value" Id="WebsiteCTR" Title="Website CTR" Tag="website_ctr" Converter="Auto" DefaultValue="0" HelpText="The percentage of times people saw your ad and performed a link click."/>
+					<JsonPath Expr="purchase_roas[?(@@.action_type=='omni_purchase')].value" Id="PurchaseROAS" Title="Purchase ROAS" Tag="purchase_roas" Converter="Auto" DefaultValue="0" HelpText="The total return on ad spend (ROAS) from purchases."/>
+					<JsonPath Expr="website_purchase_roas[?(@@.action_type=='offsite_conversion.fb_pixel_purchase')].value" Id="WebsitePurchaseROAS" Title="Website Purchase ROAS" Tag="website_purchase_roas" Converter="Auto" DefaultValue="0" HelpText="The total return on ad spend (ROAS) from website purchases."/>
 					<JsonPath Expr="actions[?(@@.action_type=='app_custom_event.fb_mobile_achievement_unlocked')].value" Id="Action_app_custom_event_fb_mobile_achievement_unlocked" Title="Action_Mobile App Feature Unlocks" Tag="actions" Converter="Auto" DefaultValue="0" />
 					<JsonPath Expr="actions[?(@@.action_type=='app_custom_event.fb_mobile_activate_app')].value" Id="Action_app_custom_event_fb_mobile_activate_app" Title="Action_Mobile App Starts" Tag="actions" Converter="Auto" DefaultValue="0" />
 					<JsonPath Expr="actions[?(@@.action_type=='app_custom_event.fb_mobile_add_payment_info')].value" Id="Action_app_custom_event_fb_mobile_add_payment_info" Title="Action_Mobile App Payment Details" Tag="actions" Converter="Auto" DefaultValue="0" />
@@ -154,6 +149,36 @@
 					<JsonPath Expr="actions[?(@@.action_type=='offsite_conversion.fb_pixel_add_to_cart')].value" Id="Action_offsite_conversion_fb_pixel_add_to_cart" Title="Action_Adds To Cart" Tag="actions" Converter="Auto" DefaultValue="0" />
 					<JsonPath Expr="actions[?(@@.action_type=='offsite_conversion.fb_pixel_add_to_wishlist')].value" Id="Action_offsite_conversion_fb_pixel_add_to_wishlist" Title="Action_Adds To Wishlist" Tag="actions" Converter="Auto" DefaultValue="0" />
 					<JsonPath Expr="actions[?(@@.action_type=='offsite_conversion.fb_pixel_complete_registration')].value" Id="Action_offsite_conversion_fb_pixel_complete_registration" Title="Action_Completed Registration" Tag="actions" Converter="Auto" DefaultValue="0" />
+
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_achievement_unlocked')].value" Id="CPA_app_custom_event_fb_mobile_achievement_unlocked" Title="CPA_Mobile App Feature Unlocks" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_activate_app')].value" Id="CPA_app_custom_event_fb_mobile_activate_app" Title="CPA_Mobile App Starts" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_add_payment_info')].value" Id="CPA_app_custom_event_fb_mobile_add_payment_info" Title="CPA_Mobile App Payment Details" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_add_to_cart')].value" Id="CPA_app_custom_event_fb_mobile_add_to_cart" Title="CPA_Mobile App Adds To Cart" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_add_to_wishlist')].value" Id="CPA_app_custom_event_fb_mobile_add_to_wishlist" Title="CPA_Mobile App Adds to Wishlist" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_complete_registration')].value" Id="CPA_app_custom_event_fb_mobile_complete_registration" Title="CPA_Mobile App Registrations" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_content_view')].value" Id="CPA_app_custom_event_fb_mobile_content_view" Title="CPA_Mobile App Content Views" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_initiated_checkout')].value" Id="CPA_app_custom_event_fb_mobile_initiated_checkout" Title="CPA_Mobile App Checkouts" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_level_achieved')].value" Id="CPA_app_custom_event_fb_mobile_level_achieved" Title="CPA_Mobile App Achievements" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_purchase')].value" Id="CPA_app_custom_event_fb_mobile_purchase" Title="CPA_Mobile App Purchases" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_rate')].value" Id="CPA_app_custom_event_fb_mobile_rate" Title="CPA_Mobile App Ratings" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_search')].value" Id="CPA_app_custom_event_fb_mobile_search" Title="CPA_Mobile App Searchs" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_spent_credits')].value" Id="CPA_app_custom_event_fb_mobile_spent_credits" Title="CPA_Mobile App Credit Spends" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.fb_mobile_tutorial_completion')].value" Id="CPA_app_custom_event_fb_mobile_tutorial_completion" Title="CPA_Mobile App Tutorial Completions" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_custom_event.other')].value" Id="CPA_app_custom_event_other" Title="CPA_Other Mobile App Actions" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_install')].value" Id="CPA_app_install" Title="CPA_App Installs" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='app_use')].value" Id="CPA_app_use" Title="CPA_App Uses" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='checkin')].value" Id="CPA_checkin" Title="CPA_Check-ins" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='comment')].value" Id="CPA_comment" Title="CPA_Post Comments" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='credit_spent')].value" Id="CPA_credit_spent" Title="CPA_Credit Spends" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='games.plays')].value" Id="CPA_games_plays" Title="CPA_Game Plays" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='landing_page_view')].value" Id="CPA_landing_page_view" Title="CPA_Landing Page Views" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='like')].value" Id="CPA_like" Title="CPA_Page Likes" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='link_click')].value" Id="CPA_link_click" Title="CPA_Link Clicks" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='mobile_app_install')].value" Id="CPA_mobile_app_install" Title="CPA_Mobile App Installs" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='offsite_conversion.fb_pixel_add_payment_info')].value" Id="CPA_offsite_conversion_fb_pixel_add_payment_info" Title="CPA_Adds Payment Info" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='offsite_conversion.fb_pixel_add_to_cart')].value" Id="CPA_offsite_conversion_fb_pixel_add_to_cart" Title="CPA_Adds To Cart" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='offsite_conversion.fb_pixel_add_to_wishlist')].value" Id="CPA_offsite_conversion_fb_pixel_add_to_wishlist" Title="CPA_Adds To Wishlist" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
+					<JsonPath Expr="cost_per_action_type[?(@@.action_type=='offsite_conversion.fb_pixel_complete_registration')].value" Id="CPA_offsite_conversion_fb_pixel_complete_registration" Title="CPA_Completed Registration" Tag="cost_per_action_type" Converter="Auto" DefaultValue="0" />
 				</JsonPath>
 			</Parse>
     </Resource>
@@ -238,7 +263,7 @@
 
   <RestConnector Id="AccountStatistics" Title="ACCOUNTS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="212893879492024" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
       <Select Id="Level" Title="Sub level" DefaultValue="none" Required="false">
         <DataSource>
           <Item Id="none" Title="None"/>
@@ -257,7 +282,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://graph.facebook.com/v6.0/act_@(Model.AccountId)/insights?access_token=@(Model.Authenticator.Token)
+          https://graph.facebook.com/v6.0/act_@(Model.AccountId)/insights?
           &fields=@SelectedFields()
           @(Model.Level != "none" ? "&level=" + Model.Level : "")
 					@(Model.Type != "none" ? "&breakdowns=" + Model.Type : "")
@@ -267,6 +292,7 @@
           &time_increment=@(Model.PeriodIncrement)
           &limit=@(Model.PageCursor.NextTake)
           @(Model.PageCursor.Page != 0 ? "&after=" + Model.NextResults : "")
+					&access_token=@(Model.Authenticator.Token)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -276,7 +302,7 @@
 
   <RestConnector Id="CampaignStatistics" Title="CAMPAIGNS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="212893879492024" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
       <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Debug.DefaultValue="" Select.Connector="ListCampaignsHidden" Select.IdField="CampaignId" Select.TitleField="Name" Parent.Id="AccountId" Parent.Label="Account Id"/>
       <Select Id="Level" Title="Sub level for filtered campaign" DefaultValue="none" Required="false">
         <DataSource>
@@ -316,7 +342,7 @@
 
   <RestConnector Id="AdsetStatistics" Title="ADSETS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="212893879492024" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
 	    <Text Id="AdsetId" Title="Filter by Adset Id" Required="false" Debug.DefaultValue="" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name" Parent.Id="AccountId" Parent.Label="Account Id"/>
       <Select Id="Level" Title="Sub level for filtered campaign" DefaultValue="none" Required="false">
         <DataSource>
@@ -391,6 +417,11 @@
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
         return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
       }
+			
+			string GetCategoryField() {
+				string output = (Model.Type == "gender,age" ? Model.Gender + "-" + Model.AgeGroup : Model.Category);
+				return Model.Type == "frequency_value" ? Regex.Replace(output, @"-", " to ") : output;
+			}
     ]]>
   </RazorFunctions>
 
