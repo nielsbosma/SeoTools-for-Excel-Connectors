@@ -223,7 +223,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="ProjectCompetitorKeywordTrend" Title="Competitor Keyword Trend" Group="Projects" HelpUrl="https://seranking.com/api-competitors.html#anchor3" HelpText="Get statistics on the positions of competitor keywords that were added to the project.">
+	<RestConnector Id="ProjectCompetitorKeywordTrend" Title="Competitor Keyword Trend" Group="Projects Competitors" HelpUrl="https://seranking.com/api-competitors.html#anchor3" HelpText="Get statistics on the positions of competitor keywords that were added to the project.">
     <Parameters>
       <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="549058" Required="false" Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="CompetitorId" Title="Competitor Id" Debug.DefaultValue="112532" Required="true" Select.Connector="ProjectCompetitors" Select.IdField="Id" Select.TitleField="Url" Parent.Id="SiteId" Parent.Label="Site Id"/>
@@ -318,7 +318,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="ProjectCompetitorsTop" Title="Top Competitors" Group="Projects" HelpUrl="https://seranking.com/api-competitors.html#anchor7" HelpText="Find data on the sites that were ranked in the TOP 10 for each of the tracked queries.">
+	<RestConnector Id="ProjectCompetitorsTop" Title="Top Competitors" Group="Projects Competitors" HelpUrl="https://seranking.com/api-competitors.html#anchor7" HelpText="Find data on the sites that were ranked in the TOP 10 for each of the tracked queries.">
     <Parameters>
       <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="505962" Required="false" Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
       <Text Id="EngineId" Title="Site Engine Id" Debug.DefaultValue="" Required="true" Select.Connector="ProjectSearchEngines" Select.IdField="SiteEngineId" Select.TitleField="LangCode" Parent.Id="SiteId" Parent.Label="Site Id"/>
@@ -401,6 +401,61 @@
         <JsonPath Expr="value" Id="Volume" Converter="Long" HelpText="Keyword search volume"/>
       </JsonPath>
 		</Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="BacklinksSummaryStats" Title="Backlinks Summary Statistics" Group="Projects Backlinks" HelpUrl="https://seranking.com/api-backlinks.html" HelpText="Obtain a website’s backlink summary statistics.">
+    <Parameters>
+      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="1920799" Required="true"  Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api4.seranking.com/backlinks/@(Model.SiteId)/stat
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="total" Id="Total" Converter="Long" HelpText="Total number of backlinks"/>
+			<JsonPath Expr="anchors" Id="Anchors" Converter="Long" HelpText="Total number of unique anchor texts"/>
+			<JsonPath Expr="ip" Id="IP" Converter="Long" HelpText="Total number of unique IP addresses"/>
+			<JsonPath Expr="domains" Id="Domains" Converter="Long" HelpText="Total number of unique domains"/>
+			<JsonPath Expr="dofollow" Id="DoFollow" Converter="Long" HelpText="Total number of dofollow links"/>
+			<JsonPath Expr="nofollow" Id="NoFollow" Converter="Long" HelpText="Total number of nofollow links"/>
+			<JsonPath Expr="limit" Id="Limit" Converter="Long" HelpText="Limit on adding links. Available for adding today" Checked="false"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="BacklinksList" Title="Backlinks List" Group="Projects Backlinks" HelpUrl="https://seranking.com/api-backlinks.html" HelpText="Get a list of a website’s backlinks.">
+    <Parameters>
+      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="1920799" Required="true"  Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+		<Paging PageSize="1000" EvenPages="true"/>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api4.seranking.com/backlinks/@(Model.SiteId)
+				?limit=@(Model.PageCursor.NextTake)
+				&offset=@(Model.PageCursor.NextSkip)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$[*]">
+				<JsonPath Expr="id" Id="Id" Converter="String" HelpText=""/>
+				<JsonPath Expr="from_url" Id="FromUrl" Title="From URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="to_url" Id="ToUrl" Title="To URL" Converter="String" HelpText=""/>
+				<JsonPath Expr="domain" Id="Domain" Converter="String" HelpText=""/>
+				<JsonPath Expr="anchor" Id="Anchor" Converter="String" HelpText=""/>
+				<JsonPath Expr="date_added" Id="Added" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="last_crawler_visit" Id="LastCrawlerVisit" Title="Last Crawled" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="http_status" Id="HttpStatus" Converter="Auto" HelpText=""/>
+				<JsonPath Expr="total_ext_links" Id="ExternalLinks" Title="External Links" Converter="Long" HelpText=""/>
+			</JsonPath>
+    </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
