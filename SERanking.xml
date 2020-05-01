@@ -42,7 +42,7 @@
 
 	<RestConnector Id="ProjectSearchEngines" HelpUrl="https://seranking.com/api-project-management.html#anchor2" Hidden="true">
     <Parameters>
-      <Text Id="SiteId" Debug.DefaultValue="549058" Required="true"  Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="SiteId" Debug.DefaultValue="549058" Required="true" Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
     <Fetch>
       <Resource Id="HttpSettings"/>
@@ -445,21 +445,29 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="$[*]">
-				<JsonPath Expr="id" Id="Id" Converter="String" HelpText=""/>
-				<JsonPath Expr="from_url" Id="FromUrl" Title="From URL" Converter="String" HelpText=""/>
-				<JsonPath Expr="to_url" Id="ToUrl" Title="To URL" Converter="String" HelpText=""/>
-				<JsonPath Expr="domain" Id="Domain" Converter="String" HelpText=""/>
-				<JsonPath Expr="anchor" Id="Anchor" Converter="String" HelpText=""/>
-				<JsonPath Expr="date_added" Id="Added" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="last_crawler_visit" Id="LastCrawlerVisit" Title="Last Crawled" Converter="DateTime" HelpText=""/>
-				<JsonPath Expr="http_status" Id="HttpStatus" Converter="Auto" HelpText=""/>
-				<JsonPath Expr="total_ext_links" Id="ExternalLinks" Title="External Links" Converter="Long" HelpText=""/>
+				<JsonPath Expr="id" Id="Id" Converter="String" HelpText="Link ID"/>
+				<JsonPath Expr="from_url" Id="FromUrl" Title="From URL" Converter="String" HelpText="URL of the page that links back to your site"/>
+				<JsonPath Expr="to_url" Id="ToUrl" Title="To URL" Converter="String" HelpText="Page that is referred to"/>
+				<JsonPath Expr="domain" Id="Domain" Converter="String" HelpText="Domain of the page that links back to your site"/>
+				<JsonPath Expr="anchor" Id="Anchor" Converter="String" HelpText="Backlink anchor text"/>
+				<JsonPath Expr="date_added" Id="Added" Converter="DateTime" HelpText="Date when the backlink was added"/>
+				<JsonPath Expr="last_crawler_visit" Id="LastCrawlerVisit" Title="Last Crawled" Converter="DateTime" HelpText="Last crawling date"/>
+				<JsonPath Expr="http_status" Id="HttpStatus" Converter="Auto" HelpText="HTTP status of the page containing the backlink"/>
+				<JsonPath Expr="total_ext_links" Id="ExternalLinks" Title="External Links" Converter="Long" HelpText="The number of external links found on the page with a reverse link"/>
+				<JsonPath Expr="gin_index" Id="GoogleIndexed" Title="GoogleIndexed" Converter="Bool" HelpText="Has the page containing the backlink been indexed by Google"/>
+				<JsonPath Expr="gin_index_check_date" Id="GoogleIndexedCheckDate" Title="Google Indexed Check Date" Converter="DateTime" HelpText="Date of check"/>
+				<JsonPath Expr="is_blocked_meta" Id="BlockedMeta" Title="Blocked Meta" Converter="Bool" HelpText="Page is blocked via a meta header"/>
+				<JsonPath Expr="is_blocked_robotstxt" Id="BlockedRobotsTxt" Title="Blocked Robots Txt" Converter="Bool" HelpText="Page is blocked via robots.txt"/>
+				<JsonPath Expr="is_link_not_found" Id="LinkNotFound" Title="Link Not Found" Converter="Bool" HelpText="Page backlink not found"/>
+				<JsonPath Expr="is_nofollow" Id="NoFollow" Title="NoFollow" Converter="Bool" HelpText="Link will not be indexed"/>
+				<JsonPath Expr="notes" Id="Note" Title="Note" Converter="String" HelpText="Note"/>
+				<JsonPath Expr="src_domain_ip" Id="ReferringIps" Title="Referring Ips" Converter="String" HelpText="Referring IPs"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-	<RestConnector Id="AuditReport" Title="Audit Report" Group="Projects Audit" HelpUrl="https://seranking.com/api-backlinks.html" HelpText="Get a list of a website’s backlinks.">
+	<RestConnector Id="AuditReport" Title="Audit Report" Group="Projects Audit" HelpUrl="https://seranking.com/api-audit.html" HelpText="Get a report from an audit.">
     <Parameters>
       <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="1920799" Required="true"  Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
     </Parameters>
@@ -472,19 +480,64 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-				<JsonPath Expr="score_percent" Id="Score" Converter="Long" HelpText=""/>
-				<JsonPath Expr="weighted_score_percent" Id="WeightedScore" Title="Weighted Score" Converter="Double" HelpText=""/>
-				<JsonPath Expr="total_pages" Id="Pages" Converter="Long" HelpText=""/>
-				<JsonPath Expr="total_warnings" Id="Warnings" Converter="Long" HelpText=""/>
-				<JsonPath Expr="total_errors" Id="Errors" Converter="Long" HelpText=""/>
-				<JsonPath Expr="total_passed" Id="Passed" Converter="Long" HelpText=""/>
-				
-				<JsonPath Expr="domain_props.backlinks" Id="Backlinks" Converter="Long" HelpText=""/>
-				<JsonPath Expr="domain_props.index_google" Id="IndexGoogle" Title="Index Google" Converter="Long" HelpText=""/>
-				<JsonPath Expr="domain_props.index_bing" Id="IndexBing" Title="Index Bing" Converter="Long" HelpText=""/>
-				<JsonPath Expr="domain_props.index_yahoo" Id="IndexYahoo" Title="Index Yahoo" Converter="Long" HelpText=""/>
-				<JsonPath Expr="domain_props.index_yandex" Id="IndexYandex" Title="Index Yandex" Converter="Long" HelpText=""/>
-				<JsonPath Expr="domain_props.expdate" Id="ExpDate" Title="Expiray Date" Converter="DateTime" HelpText=""/>
+				<JsonPath Expr="score_percent" Id="Score" Converter="Long" HelpText="Rating in %"/>
+				<JsonPath Expr="weighted_score_percent" Id="WeightedScore" Title="Weighted Score" Converter="Double" HelpText="Weighted rating in %"/>
+				<JsonPath Expr="total_pages" Id="Pages" Converter="Long" HelpText="Total number of scanned pages"/>
+				<JsonPath Expr="total_warnings" Id="Warnings" Converter="Long" HelpText="Total number of warnings"/>
+				<JsonPath Expr="total_errors" Id="Errors" Converter="Long" HelpText="Total number of critical errors"/>
+				<JsonPath Expr="total_passed" Id="Passed" Converter="Long" HelpText="Total number of passed checks"/>
+				<JsonPath Expr="domain_props.backlinks" Id="Backlinks" Converter="Long" HelpText="Backlinks"/>
+				<JsonPath Expr="domain_props.index_google" Id="IndexGoogle" Title="Index Google" Converter="Long" HelpText="Pages in Google"/>
+				<JsonPath Expr="domain_props.index_bing" Id="IndexBing" Title="Index Bing" Converter="Long" HelpText="Pages in Bing"/>
+				<JsonPath Expr="domain_props.index_yahoo" Id="IndexYahoo" Title="Index Yahoo" Converter="Long" HelpText="Pages in Yaho"/>
+				<JsonPath Expr="domain_props.index_yandex" Id="IndexYandex" Title="Index Yandex" Converter="Long" HelpText="Pages in Yandex"/>
+				<JsonPath Expr="domain_props.expdate" Id="ExpDate" Title="Expiray Date" Converter="DateTime" HelpText="Domain expiration date"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="AuditStatus" Title="Audit Status" Group="Projects Audit" HelpUrl="https://seranking.com/api-audit.html" HelpText="Get the status from an audit.">
+    <Parameters>
+      <Text Id="SiteId" Title="Site Id" Debug.DefaultValue="1920799" Required="true"  Select.Connector="ProjectSites" Select.IdField="Id" Select.TitleField="Name"/>
+    </Parameters>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api4.seranking.com/audit/@(Model.SiteId)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+				<JsonPath Expr="status" Id="Status" Converter="String" HelpText="cancelled; expired – the last audit was conducted more than 3 months ago; queued; processing – the audit is in progress; finished – the audit has been completed."/>
+				<JsonPath Expr="start_time" Id="StartTime" Title="Start Time" Converter="DateTime" HelpText="Audit start time"/>
+				<JsonPath Expr="audit_time" Id="AuditTime" Title="End Time" Converter="DateTime" HelpText="Audit end time"/>
+				<JsonPath Expr="total_pages" Id="Pages" Converter="Long" HelpText="Total number of scanned pages"/>
+				<JsonPath Expr="total_warnings" Id="Warnings" Converter="Long" HelpText="Total number of warnings"/>
+				<JsonPath Expr="total_errors" Id="Errors" Converter="Long" HelpText="Total number of critical errors"/>
+				<JsonPath Expr="total_passed" Id="Passed" Converter="Long" HelpText="Total number of passed checks"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Sites" Title="Sites List" Group="Projects" HelpUrl="https://seranking.com/api-project-management.html#anchor1">
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api4.seranking.com/sites
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="Id" Title="Website Id" Converter="Auto" HelpText="Unique site ID"/>
+        <JsonPath Expr="name" Id="Url" Title="URL" Converter="String" HelpText="Website URL"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" HelpText="Website name"/>
+        <JsonPath Expr="is_active" Id="Active" Title="Active" Converter="Bool" HelpText="Website status 1 – active, 0 – delayed"/>
+        <JsonPath Expr="depth" Id="Depth" Title="Depth" Converter="Int" HelpText="Ranking position collection depth"/>
+        <JsonPath Expr="check_freq" Id="CheckFreq" Title="Check Frequency" Converter="String" HelpText="Checking the search volume"/>
+      </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
