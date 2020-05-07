@@ -4,17 +4,29 @@
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/vimeo">
-    <Text Id="AccessToken" Title="Access Token" Required="true" HelpUrl="http://seotoolsforexcel.com/vimeo"/>
-  </Settings>
+    <Select Id="Membership" Title="Membership Level" DefaultValue="1000">
+      <DataSource>
+				<Item Id="1000" Title="Basic"/>
+				<Item Id="100" Title="Plus"/>
+				<Item Id="50" Title="PRO"/>
+				<Item Id="25" Title="Business"/>
+				<Item Id="1" Title="Premium"/>
+				<Item Id="1" Title="Enterprise"/>
+      </DataSource>
+    </Select>
+		</Settings>
+
+	<DefaultOAuthAuthenticator StayAuthenticated="false" TokenName="access_token" AuthUrl="https://api.vimeo.com/oauth/authorize?client_id=3f5a8e5c2af22a28ae4b67fa38447579b18080f6&amp;response_type=token&amp;redirect_uri={0}&amp;state=seotools"/>
 
   <Resources>
     <Resource Id="HttpSettings">
       <HttpSettings>
-			  <IntervalBetweenRequests RandomFrom="1500" RandomTo="1500" IfSame="Domain"/>
+			  <IntervalBetweenRequests RandomFrom="@Model.Membership" RandomTo="@Model.Membership" IfSame="Domain"/>
         <RequestHeaders>
           <Header Name="Accept">application/vnd.vimeo.*+json;version=3.2</Header>
+          <Header Name='Authorization'>bearer @(Model.Authenticator.Token)</Header>
         </RequestHeaders>
-      </HttpSettings>		
+      </HttpSettings>
 		</Resource>
     <Resource Id="Fail">
 			<Fail>
@@ -28,10 +40,10 @@
           <Item Id="asc" Title="Ascending"/>
         </DataSource>
       </Select>
-		</Resource>		
+		</Resource>
 	</Resources>
-	
-  <RestConnector Id="TagSearch" Title="Video Search by Tag" Group="Videos">
+
+  <RestConnector Id="TagSearch" Title="Video Search by Tag" Group="Videos" HelpUrl="https://developer.vimeo.com/api/reference/tags#get_tag">
     <Parameters>
       <Text Id="Tag" Title="Tag" Required="true" Debug.DefaultValue="aftonbladet"/>
       <Select Id="Sort" Title="Sort" Required="true" DefaultValue="created_time">
@@ -48,8 +60,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/tags/@Utils.UrlEncode(Model.Tag)/videos?access_token=@(Model.AccessToken)
-        &sort=@(Model.Sort)
+        https://api.vimeo.com/tags/@Utils.UrlEncode(Model.Tag)/videos?
+        ?sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
@@ -58,8 +70,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
-        <Compute Expr="@(Model.Id.Substring(8)" Id="Id" Title="Id" Converter="Int">
-          <JsonPath Expr="uri" Id="Id" DefaultValue=""/>
+        <Compute Expr="@(Model.Inp.Substring(8)" Id="Id" Title="Id" Converter="Int">
+          <JsonPath Expr="uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="link" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="name" Id="Title" Title="Title" Converter="String"/>
@@ -76,8 +88,7 @@
         <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
         <JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
         <JsonPath Expr="user.bio" Id="Bio" Title="Bio" Converter="String"/>
-        <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
-        <JsonPath Expr="user.websites[*].link" Id="UserWebsite" Title="UserWebsite" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="user.websites[0].link" Id="UserWebsite" Title="User Website" Converter="String" DefaultValue=""/>
         <JsonPath Expr="user.metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int"/>
         <JsonPath Expr="user.metadata.connections.videos.total" Id="Videos" Title="Videos" Converter="Int"/>
       </JsonPath>
@@ -106,7 +117,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/videos/?query=@Utils.UrlEncode(Model.Query)?access_token=@(Model.AccessToken)
+        https://api.vimeo.com/videos/?query=@Utils.UrlEncode(Model.Query)
         &sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
@@ -116,8 +127,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
-        <Compute Expr="@Model.Id.Substring(8)" Id="Id" Title="Id" Converter="Int">
-          <JsonPath Expr="uri" Id="Id" DefaultValue=""/>
+        <Compute Expr="@Model.Inp.Substring(8)" Id="Id" Title="Id" Converter="Int">
+          <JsonPath Expr="uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="link" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="name" Id="Title" Title="Title" Converter="String"/>
@@ -137,8 +148,7 @@
         <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
         <JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
         <JsonPath Expr="user.bio" Id="Bio" Title="Bio" Converter="String"/>
-        <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
-        <JsonPath Expr="user.websites[*].link" Id="UserWebsite" Title="UserWebsite" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="user.websites[0].link" Id="UserWebsite" Title="User Website" Converter="String" DefaultValue=""/>
         <JsonPath Expr="user.metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int"/>
         <JsonPath Expr="user.metadata.connections.videos.total" Id="Videos" Title="Videos" Converter="Int"/>
       </JsonPath>
@@ -154,7 +164,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/videos/@Utils.UrlEncode(Model.Id)?&access_token=@(Model.AccessToken)
+        https://api.vimeo.com/videos/@Model.Id
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -177,8 +187,7 @@
       <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
       <JsonPath Expr="user.location" Id="Location" Title="Location" Converter="String"/>
       <JsonPath Expr="user.bio" Id="Bio" Title="Bio" Converter="String"/>
-      <JsonPath Expr="user.link" Id="UserUrl" Title="User URL" Converter="String"/>
-      <JsonPath Expr="user.websites[*].link" Id="UserWebsite" Title="UserWebsite" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="user.websites[0].link" Id="UserWebsite" Title="User Website" Converter="String" DefaultValue=""/>
       <JsonPath Expr="user.metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int"/>
       <JsonPath Expr="user.metadata.connections.videos.total" Id="Videos" Title="Videos" Converter="Int"/>
     </Parse>
@@ -202,7 +211,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/users/?query=@Utils.UrlEncode(Model.Query)?access_token=@(Model.AccessToken)
+        https://api.vimeo.com/users?query=@Utils.UrlEncode(Model.Query)
         &sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
@@ -212,8 +221,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
-        <Compute Expr="@Model.Id.Substring(7)" Id="Id" Title="Id" Converter="Int">
-          <JsonPath Expr="uri" Id="Id" DefaultValue=""/>
+        <Compute Expr="@Model.Inp.Substring(7)" Id="Id" Title="Id" Converter="Int">
+          <JsonPath Expr="uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="link" Id="UserUrl" Title="URL" Converter="String"/>
@@ -221,7 +230,7 @@
         <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Converter="DateTime"/>
         <JsonPath Expr="account" Id="Account" Title="Account Type" Converter="String"/>
-        <JsonPath Expr="websites[*].link" Id="UserWebsite" Title="Website" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="websites[0].link" Id="UserWebsite" Title="Website" Converter="String" DefaultValue=""/>
         <JsonPath Expr="metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int"/>
         <JsonPath Expr="metadata.connections.following.total" Id="Following" Title="Following" Converter="Int"/>
         <JsonPath Expr="metadata.connections.groups.total" Id="Groups" Title="Groups" Converter="Int"/>
@@ -245,7 +254,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)?access_token=@(Model.AccessToken)
+        https://api.vimeo.com/users/@Model.Id
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -254,10 +263,9 @@
       <JsonPath Expr="link" Id="UserUrl" Title="User URL" Converter="String"/>
       <JsonPath Expr="location" Id="Location" Title="Location" Converter="String"/>
       <JsonPath Expr="bio" Id="Bio" Title="Bio" Converter="String"/>
-      <JsonPath Expr="link" Id="UserUrl" Title="User URL" Converter="String"/>
       <JsonPath Expr="created_time" Id="Created" Title="Created" Converter="DateTime"/>
       <JsonPath Expr="account" Id="Account" Title="Account Type" Converter="String"/>
-      <JsonPath Expr="websites[0].link" Id="UserWebsite" Title="UserWebsite" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="websites[0].link" Id="UserWebsite" Title="Website" Converter="String" DefaultValue=""/>
       <JsonPath Expr="metadata.connections.followers.total" Id="Followers" Title="Followers" Converter="Int"/>
       <JsonPath Expr="metadata.connections.following.total" Id="Following" Title="Following" Converter="Int"/>
       <JsonPath Expr="metadata.connections.groups.total" Id="Groups" Title="Groups" Converter="Int"/>
@@ -282,8 +290,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/videos/@Utils.UrlEncode(Model.Id)/comments?access_token=@(Model.AccessToken)
-        &direction=@(Model.Direction)
+        https://api.vimeo.com/videos/@Utils.UrlEncode(Model.Id)/comments
+        ?direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
         ]]>
@@ -293,8 +301,8 @@
       <JsonPath Expr="data[*]">
         <JsonPath Expr="text" Id="CommentText" Title="Comment" Converter="String"/>
         <JsonPath Expr="created_on" Id="CommentDate" Title="Date" Converter="DateTime"/>
-        <Compute Expr="@Model.UserId.Substring(7)" Id="UserId" Title="Author Id" Converter="Int">
-          <JsonPath Expr="user.uri" Id="UserId" DefaultValue=""/>
+        <Compute Expr="@Model.Inp.Substring(7)" Id="UserId" Title="Author Id" Converter="Int">
+          <JsonPath Expr="user.uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="user.name" Id="CommentAuthor" Title="Name" Converter="String"/>
         <JsonPath Expr="user.link" Id="AuthorUrl" Title="URL" Converter="String"/>
@@ -316,9 +324,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/videos/@Utils.UrlEncode(Model.Id)/likes?
-        &access_token=@(Model.AccessToken)
-        &per_page=@(Model.PageCursor.NextTake)
+        https://api.vimeo.com/videos/@Utils.UrlEncode(Model.Id)/likes
+        ?per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
         ]]>
       </Fetch.Url>
@@ -326,8 +333,8 @@
     <Parse>
       <JsonPath Expr="data[*]">
         <JsonPath Expr="created_time" Id="LikeDate" Title="Like Date" Converter="DateTime"/>
-        <Compute Expr="@Model.UserId.Substring(7)" Id="UserId" Title="Liker Id" Converter="Int">
-          <JsonPath Expr="uri" Id="UserId" DefaultValue=""/>
+        <Compute Expr="@Model.Inp.Substring(7)" Id="UserId" Title="Liker Id" Converter="Int">
+          <JsonPath Expr="uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="name" Id="LikerAuthor" Title="Name" Converter="String"/>
         <JsonPath Expr="link" Id="LikerUrl" Title="URL" Converter="String"/>
@@ -358,8 +365,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/albums?access_token=@(Model.AccessToken)
-        &sort=@(Model.Sort)
+        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/albums
+        ?sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
@@ -368,8 +375,8 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
-        <Compute Expr="@Model.AlbumId.Substring(8,7)" Id="AlbumId" Title="Id" Converter="Int">
-          <JsonPath Expr="metadata.connections.videos.uri" Id="AlbumId" DefaultValue=""/>
+        <Compute Expr="@Model.Inp.Substring(8,7)" Id="AlbumId" Title="Id" Converter="Int">
+          <JsonPath Expr="metadata.connections.videos.uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="name" Id="AlbumName" Title="Name" Converter="String"/>
         <JsonPath Expr="link" Id="AlbumUrl" Title="URL" Converter="String"/>
@@ -398,8 +405,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/followers?access_token=@(Model.AccessToken)
-        &sort=@(Model.Sort)
+        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/followers
+        ?sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
@@ -409,7 +416,7 @@
     <Parse>
       <JsonPath Expr="data[*]">
         <Compute Expr="@Model.Inp.Substring(7)" Id="FollowerId" Title="Id" Converter="Int">
-          <JsonPath Expr="uri" Id="FollowerId" DefaultValue=""/>
+          <JsonPath Expr="uri" Id="Inp" DefaultValue=""/>
         </Compute>
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="link" Id="Url" Title="URL" Converter="String"/>
@@ -441,8 +448,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/videos?&access_token=@(Model.AccessToken)
-        &sort=@(Model.Sort)
+        https://api.vimeo.com/users/@Utils.UrlEncode(Model.Id)/videos
+        ?sort=@(Model.Sort)
         &direction=@(Model.Direction)
         &per_page=@(Model.PageCursor.NextTake)
         &page=@(Model.PageCursor.Page+1)
