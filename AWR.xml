@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Advanced Web Ranking" RequireVersion="8.2" Id="AWR" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AWR.xml" HelpUrl="http://seotoolsforexcel.com/awr/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/awr/">
+    <Text Id="Token" Title="Token" Required="true"/>
+  </Settings>
+
+  <Resources>
+		<Resource Id="Fail">
+		  <Fail>
+				<Try Fail.If="EmptyResponse" Fail.Action="Message" Fail.Message="No data or invalid settings"/>
+				<Regex Expr="^report type not currently supported$" Group="0" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Report type not supported"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+	<RestConnector Id="SelectProject" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://gds.awrcloud.com/gdsScripts/stable/release2/keywordRankingEndpoint.php?token=@(Model.Token)
+				&action=getProjects
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[*]">
+			  <JsonPath Expr="id" Id="Id" Title="Project Id"/>
+			  <JsonPath Expr="d" Id="Name" Title="Project Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="SelectKeyword" Hidden="true">
+    <Parameters>
+			<Text Id="ProjectId" Title="Project Id" Select.Connector="SelectProject" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://gds.awrcloud.com/gdsScripts/stable/release2/keywordRankingEndpoint.php?token=@(Model.Token)
+				&projectSelect=@(Model.ProjectId)
+				&action=getFilteredKeywords
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[*]">
+			  <JsonPath Expr="i" Id="Id" Title="Keyword Id"/>
+			  <JsonPath Expr="k" Id="Name" Title="Keyword Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="DateComparison" Title="Keywords Date Comparison">
+    <Parameters>
+			<Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="82" Select.Connector="SelectProject" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Text Id="WebsiteFilter" Title="Filter by website Ids" HelpText="Comma-separated list. Leave empty for all."/>
+      <Text Id="SearchEngineFilter" Title="Filter by search engine Ids" HelpText="Comma-separated list. Leave empty for all."/>
+      <Text Id="KeywordGroupFilter" Title="Filter by keyword group Ids" HelpText="Comma-separated list. Leave empty for all."/>
+			<Select Id="Sort" Title="Sort results by" DefaultValue="positionDown">
+        <DataSource>
+          <Item Id="positionDown" Title="Position down"/>
+          <Item Id="positionUp" Title="Position up"/>
+          <Item Id="cpcDown" Title="CPC down"/>
+          <Item Id="cpcUp" Title="CPC up"/>
+          <Item Id="searchVolumeDown" Title="Volume down"/>
+          <Item Id="searchVolumeUp" Title="Volume up"/>
+        </DataSource>
+      </Select>
+      <Select Id="FilterSelect" Title="Select Filter" DefaultValue="everything">
+        <DataSource>
+          <Item Id="everything" Title="Everything"/>
+          <Item Id="firstPlace" Title="First place"/>
+          <Item Id="topThree" Title="Top3"/>
+          <Item Id="topFive" Title="Top5"/>
+          <Item Id="topTen" Title="Top10"/>
+          <Item Id="topTwenty" Title="Top20"/>
+          <Item Id="topThirty" Title="Top30"/>
+          <Item Id="firstPage" Title="First page"/>
+          <Item Id="movedUp" Title="Moved up"/>
+          <Item Id="movedDown" Title="Moved down"/>
+          <Item Id="ranked" Title="Ranked"/>
+        </DataSource>
+      </Select>
+			<DateInterval Id="DateInterval" Title="Date Interval"/>
+			<Number Id="Limit" Title="Limit" DefaultValue="10000" Minimum="1" Maximum="250000"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://gds.awrcloud.com/gdsScripts/stable/release2/keywordRankingEndpoint.php?token=@(Model.Token)
+				&action=getTableData
+				&projectSelect=@(Model.ProjectId)
+				&websites=@(!string.IsNullOrEmpty(Model.WebsiteFilter) ? Model.WebsiteFilter : "-1")
+				&searchEngines=@(!string.IsNullOrEmpty(Model.SearchEngineFilter) ? Model.SearchEngineFilter : "-1")
+				&keywordGroups=@(!string.IsNullOrEmpty(Model.KeywordGroupFilter) ? Model.KeywordGroupFilter : "-1")
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&filterSelect=@(Model.FilterSelect)
+				&criteriaSelect=@(Model.Sort)
+				&limitSelect=@(Model.Limit)
+				&fields=[{"name":"date"},{"name":"keyword"},{"name":"position"},{"name":"resultType"},{"name":"searchEngine"},{"name":"url"},{"name":"website"}]
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+			  <JsonPath Expr="w" Id="Website" Title="Website" Tag="website" Converter="String"/>
+				<JsonPath Expr="k" Id="Keyword" Title="Keyword" Tag="keyword" Converter="String"/>
+        <JsonPath Expr="s" Id="SearchEngine" Title="Search Engine" Tag="searchEngine" Converter="String"/>
+			  <JsonPath Expr="d" Id="Date" Title="Date" Tag="date" Converter="DateTime"/>
+			  <JsonPath Expr="rt" Id="ResultType" Title="Result Type" Tag="resultType" Converter="Auto"/>
+			  <JsonPath Expr="p" Id="Position" Title="Position" Tag="position" Converter="Int"/>
+			  <JsonPath Expr="u" Id="Url" Title="URL" Tag="url" Converter="String"/>
+			  <JsonPath Expr="cpc" Id="CPC" Title="CPC" Tag="costPerClick" Converter="Double"/>
+			  <JsonPath Expr="comp" Id="Competition" Title="Competition" Tag="competition" Converter="Double"/>
+			  <JsonPath Expr="srcs" Id="Volume" Title="Volume" Tag="volume" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EvolutionStaticKeywords" Title="Evolution in Time - Static Keywords">
+    <Parameters>
+			<Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="82" Select.Connector="SelectProject" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+			<Text Id="KeywordId" Title="Keyword Id" Debug.DefaultValue="109" Select.Connector="SelectKeyword" Select.IdField="Id" Select.TitleField="Name" Parent.Id="ProjectId" Parent.Label="Project Id" Required="true"/>
+      <Text Id="WebsiteFilter" Title="Filter by website Ids" HelpText="Comma-separated list. Leave empty for all."/>
+      <Text Id="SearchEngineFilter" Title="Filter by search engine Ids" HelpText="Comma-separated list. Leave empty for all."/>
+			<DateInterval Id="DateInterval" Title="Date Interval"/>
+			<Number Id="Limit" Title="Limit" DefaultValue="10000" Minimum="1" Maximum="250000"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://gds.awrcloud.com/gdsScripts/stable/release2/keywordRankingEndpoint.php?token=@(Model.Token)
+				&action=getChartDataStatic
+				&projectSelect=@(Model.ProjectId)
+				&websites=@(!string.IsNullOrEmpty(Model.WebsiteFilter) ? Model.WebsiteFilter : "-1")
+				&searchEngines=@(!string.IsNullOrEmpty(Model.SearchEngineFilter) ? Model.SearchEngineFilter : "-1")
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&fields=[{"name":"competition"},{"name":"costPerClick"},{"name":"date"},{"name":"keyword"},{"name":"position"},{"name":"resultType"},{"name":"searchEngine"},{"name":"searchVolume"},{"name":"url"},{"name":"website"}]
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+			  <JsonPath Expr="w" Id="Website" Title="Website" Tag="website" Converter="String"/>
+				<JsonPath Expr="k" Id="Keyword" Title="Keyword" Tag="keyword" Converter="String"/>
+        <JsonPath Expr="s" Id="SearchEngine" Title="Search Engine" Tag="searchEngine" Converter="String"/>
+			  <JsonPath Expr="d" Id="Date" Title="Date" Tag="date" Converter="DateTime"/>
+			  <JsonPath Expr="rt" Id="ResultType" Title="Result Type" Tag="resultType" Converter="Auto"/>
+			  <JsonPath Expr="p" Id="Position" Title="Position" Tag="position" Converter="Int"/>
+			  <JsonPath Expr="u" Id="Url" Title="URL" Tag="url" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="EvolutionDynamicKeywords" Title="Evolution in Time - Dynamic Keywords">
+    <Parameters>
+			<Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="82" Select.Connector="SelectProject" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
+      <Text Id="WebsiteFilter" Title="Filter by website Ids" HelpText="Comma-separated list. Leave empty for all."/>
+      <Text Id="SearchEngineFilter" Title="Filter by search engine Ids" HelpText="Comma-separated list. Leave empty for all."/>
+      <Text Id="KeywordGroupFilter" Title="Filter by keyword group Ids" HelpText="Comma-separated list. Leave empty for all."/>
+			<Select Id="Sort" Title="Sort results by" DefaultValue="positionDown">
+        <DataSource>
+          <Item Id="positionDown" Title="Position down"/>
+          <Item Id="positionUp" Title="Position up"/>
+          <Item Id="cpcDown" Title="CPC down"/>
+          <Item Id="cpcUp" Title="CPC up"/>
+          <Item Id="searchVolumeDown" Title="Volume down"/>
+          <Item Id="searchVolumeUp" Title="Volume up"/>
+        </DataSource>
+      </Select>
+      <Select Id="FilterSelect" Title="Select Filter" DefaultValue="everything">
+        <DataSource>
+          <Item Id="everything" Title="Everything"/>
+          <Item Id="firstPlace" Title="First place"/>
+          <Item Id="topThree" Title="Top3"/>
+          <Item Id="topFive" Title="Top5"/>
+          <Item Id="topTen" Title="Top10"/>
+          <Item Id="topTwenty" Title="Top20"/>
+          <Item Id="topThirty" Title="Top30"/>
+          <Item Id="firstPage" Title="First page"/>
+          <Item Id="movedUp" Title="Moved up"/>
+          <Item Id="movedDown" Title="Moved down"/>
+          <Item Id="ranked" Title="Ranked"/>
+        </DataSource>
+      </Select>
+			<DateInterval Id="DateInterval" Title="Date Interval"/>
+			<Number Id="Limit" Title="Keywords limit" DefaultValue="100" Minimum="1" Maximum="100" HelpText="Number of keywords for which results are fetched"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				http://gds.awrcloud.com/gdsScripts/stable/release2/keywordRankingEndpoint.php?token=@(Model.Token)
+				&action=getChartDataDynamic
+				&projectSelect=@(Model.ProjectId)
+				&websites=@(!string.IsNullOrEmpty(Model.WebsiteFilter) ? Model.WebsiteFilter : "-1")
+				&searchEngines=@(!string.IsNullOrEmpty(Model.SearchEngineFilter) ? Model.SearchEngineFilter : "-1")
+				&keywordGroups=@(!string.IsNullOrEmpty(Model.KeywordGroupFilter) ? Model.KeywordGroupFilter : "-1")
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&filterSelect=@(Model.FilterSelect)
+				&criteriaSelect=@(Model.Sort)
+				&limitSelect=@(Model.Limit)
+				&fields=[{"name":"competition"},{"name":"costPerClick"},{"name":"date"},{"name":"keyword"},{"name":"position"},{"name":"resultType"},{"name":"searchEngine"},{"name":"searchVolume"},{"name":"url"},{"name":"website"}]
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+			  <JsonPath Expr="w" Id="Website" Title="Website" Tag="website" Converter="String"/>
+				<JsonPath Expr="k" Id="Keyword" Title="Keyword" Tag="keyword" Converter="String"/>
+        <JsonPath Expr="s" Id="SearchEngine" Title="Search Engine" Tag="searchEngine" Converter="String"/>
+			  <JsonPath Expr="d" Id="Date" Title="Date" Tag="date" Converter="DateTime"/>
+			  <JsonPath Expr="rt" Id="ResultType" Title="Result Type" Tag="resultType" Converter="Auto"/>
+			  <JsonPath Expr="p" Id="Position" Title="Position" Tag="position" Converter="Int"/>
+			  <JsonPath Expr="u" Id="Url" Title="URL" Tag="url" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Visibility">
+    <Parameters>
+			<Select Id="FilterType" Title="Filter type" DefaultValue="projectPartialFilter">
+        <DataSource>
+          <Item Id="projectPartialFilter" Title="Partial filter"/>
+          <Item Id="projectExactFilter" Title="Exact filter"/>
+          <Item Id="projectTagName" Title="Tag name"/>
+        </DataSource>
+      </Select>
+			<Text Id="ProjectFilter" Title="Part of project name" HelpText="Can be left empty for getting all projects"/>
+      <DateInterval Id="DateInterval" Title="Date Interval"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://gds.awrcloud.com/gdsScripts/stable/release1/gdsEndpointRelease1.php?token=@(Model.Token)
+				&reportType=visibilityInTime
+				@(!string.IsNullOrEmpty(Model.ProjectFilter) ? "&filter=" + Utils.UrlEncode(Model.ProjectFilter) : "")
+				@(!string.IsNullOrEmpty(Model.ProjectFilter) ? "&filterType=" + Model.FilterType : "")
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&fields=@(SelectedFields())
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+			  <JsonPath Expr="projectName" Id="ProjectName" Title="Project Name" Tag="projectName" Converter="String"/>
+			  <JsonPath Expr="website" Id="Website" Title="Website" Tag="website" Converter="String"/>
+        <JsonPath Expr="se" Id="SearchEngine" Title="Search Engine" Tag="searchEngine" Converter="String"/>
+			  <JsonPath Expr="keywordGroup" Id="KeywordGroup" Title="Keyword Group" Tag="keywordGroup" Converter="String" DefaultValue=""/>
+			  <JsonPath Expr="date" Id="Date" Title="Date" Tag="date" Converter="DateTime"/>
+			  <JsonPath Expr="visibility" Id="Score" Title="Score" Tag="score" Converter="Double"/>
+			  <JsonPath Expr="averageRank" Id="AverageRank" Title="Average Rank" Tag="averageRank" Converter="Double"/>
+			  <JsonPath Expr="first_page" Id="OnFirstPage" Title="On First Page" Tag="onFirstPage" Converter="Double"/>
+			  <JsonPath Expr="not_first_page" Id="BelowFirstPage" Title="Bellow First Page" Tag="belowFirstPage" Converter="Double"/>
+			  <JsonPath Expr="firstplace" Id="FirstPlace" Title="First Place" Tag="firstPlace" Converter="Double"/>
+        <JsonPath Expr="top3" Id="Top3" Title="Top3" Tag="topThree" Converter="Int"/>
+        <JsonPath Expr="top5" Id="Top5" Title="Top5" Tag="topFive" Converter="Int"/>
+        <JsonPath Expr="top10" Id="Top10" Title="Top10" Tag="topTen" Converter="Int"/>
+        <JsonPath Expr="top20" Id="Top20" Title="Top20" Tag="topTwenty" Converter="Int"/>
+        <JsonPath Expr="top30" Id="Top30" Title="Top30" Tag="topThirty" Converter="Int"/>
+			  <JsonPath Expr="ranked" Id="Ranked" Title="Ranked" Tag="ranked" Converter="Double"/>
+			  <JsonPath Expr="notranked" Id="NotRanked" Title="Not Ranked" Tag="notRanked" Converter="Double"/>
+			  <JsonPath Expr="keywords_up" Id="KeywordsUp" Title="Keywords Up" Tag="keywordsUp" Converter="Double"/>
+			  <JsonPath Expr="keywords_down" Id="KeywordsDown" Title="Keywords Down" Tag="keywordsDown" Converter="Double"/>
+			  <JsonPath Expr="added" Id="Added" Title="Added" Tag="added" Converter="Double"/>
+			  <JsonPath Expr="dropped" Id="Dropped" Title="Dropped" Tag="dropped" Converter="Double"/>
+			  <JsonPath Expr="kws_net_up" Id="KeywordsNetUp" Title="Keywords Net Up" Tag="keywordsNetUp" Converter="Double"/>
+			  <JsonPath Expr="kws_net_down" Id="KeywordsNetDown" Title="Keywords Net Down" Tag="keywordsNetDown" Converter="Double"/>
+			  <JsonPath Expr="estimated_visits" Id="EstimatedVisits" Title="Estimated Visits" Tag="estimatedVisits" Converter="Double"/>
+			  <JsonPath Expr="click_share" Id="ClickShare" Title="Click Share" Tag="clickShare" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+				var selFields = ((ResultField[])Model.Headers)
+					.Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower()))
+					.Select(e => e.Tag).Distinct()
+					.ToArray();
+
+				List<Dictionary<string, string>> col = new List<Dictionary<string, string>>();
+
+				foreach(var selField in selFields)
+				{
+					col.Add(
+						new Dictionary<string, string>()
+						{
+							{ "name",selField} }
+						);
+				}
+
+				return JsonConvert.SerializeObject(col);
+      }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
