@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Dropbox" Id="Dropbox" Category="File Storage" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Dropbox.xml" HelpUrl="http://seotoolsforexcel.com/dropbox/" HelpText="Documentation">
+<Suite Title="Dropbox" Id="Dropbox" Category="File Storage" RequireVersion="8.2" LoginButton="https://seotoolsforexcel.com/logins/dropbox.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Dropbox.xml" HelpUrl="http://seotoolsforexcel.com/dropbox/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/dropbox/">
-    <Text Id="Token" Title="Token" Required="true" HelpUrl="http://seotoolsforexcel.com/dropbox/"/>
-  </Settings>
+  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://www.dropbox.com/oauth2/authorize?client_id=t6flg4vatiuq8bb&amp;response_type=token&amp;redirect_uri={0}&amp;state=seotools"/>
 
 	<Resources>
     <Resource Id="Fail">
@@ -18,17 +16,18 @@
 			<RequestMethod>POST</RequestMethod>
 			<RequestContentType>application/json</RequestContentType>
 			<RequestHeaders>
-				<Header Name='Authorization'>Bearer @(Model.Token)</Header>
+				<Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
 			</RequestHeaders>
     </Resource>
   </Resources>
 
-  <RestConnector Id="ListFolders" Title="Folders" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder" HelpText="Returns the contents of folders.">
+  <RestConnector Id="ListFoldersFiles" Title="List Folders &amp; Files" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder" HelpText="Returns the contents of folders.">
     <Parameters>
       <Text Id="Path" Title="Path" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
+      <Checkbox Id="Recursive" Title="Recursive" DefaultValue="true" HelpText="If true, the list folder operation will be applied recursively to all subfolders and the response will contain contents of all subfolders."/>
       <Checkbox Id="Deleted" Title="Include Deleted"/>
     </Parameters>
-    <Paging PageSize="100" EvenPages="true">
+    <Paging PageSize="100" EvenPages="false">
       <Parse>
         <JsonPath Id="Cursor" Expr="cursor"/>
       </Parse>
@@ -43,13 +42,15 @@
 
 							if(Model.PageCursor.Page == 0)
 							{
-								dict.Add("path", Utils.UrlEncode(Model.Path));
-								dict.Add("limit", Model.PageCursor.PageSize);
-								if(Model.Deleted == true)
-									dict.Add("include_deleted", Model.Deleted);
+								dict.Add("recursive", Model.Recursive);
+								dict.Add("include_deleted", Model.Deleted);
+								dict.Add("path", Model.Path == null ? "" : Model.Path);
+
 							}
 							else
+							{
 								dict.Add("cursor", (Model.Cursor));
+							}
 
 							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
 						}
