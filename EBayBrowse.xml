@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="eBay Browse API" RequireVersion="8.2" Id="EBayBrowseAPI" Category="Products &amp; Review Sites" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/eBayBrowseApi.xml" HelpUrl="http://seotoolsforexcel.com/ebay-browse" HelpText="Documentation">
+
+	<SeoToolsAuthenticator StayAuthenticated="true" Key="ebay"/>
+
+  <Resources>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.Token)]]></Header>
+          <Header Name='X-EBAY-C-MARKETPLACE-ID'><![CDATA[@(Model.GlobalId)]]></Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
+    <Resource Id="GlobalIds">
+			<Select Id="GlobalId" Title="eBay Site" Required="false" DefaultValue="EBAY-US">
+					<DataSource>
+						<Item Id="EBAY-AT" Title="Austria"/>
+						<Item Id="EBAY-AU" Title="Australia"/>
+						<Item Id="EBAY-CH" Title="Switzerland"/>
+						<Item Id="EBAY-DE" Title="Germany"/>
+						<Item Id="EBAY-ENCA" Title="Canada (English)"/>
+						<Item Id="EBAY-ES" Title="Spain"/>
+						<Item Id="EBAY-FR" Title="France"/>
+						<Item Id="EBAY-FRBE" Title="Belgium (French)"/>
+						<Item Id="EBAY-FRCA" Title="Canada (French)"/>
+						<Item Id="EBAY-GB" Title="UK"/>
+						<Item Id="EBAY-HK" Title="Hong Kong"/>
+						<Item Id="EBAY-IE" Title="Ireland"/>
+						<Item Id="EBAY-IN" Title="India"/>
+						<Item Id="EBAY-IT" Title="Italy"/>
+						<Item Id="EBAY-MOTOR" Title="Motors"/>
+						<Item Id="EBAY-MY" Title="Malaysia"/>
+						<Item Id="EBAY-NL" Title="Netherlands"/>
+						<Item Id="EBAY-NLBE" Title="Belgium (Dutch)"/>
+						<Item Id="EBAY-PH" Title="Philippines"/>
+						<Item Id="EBAY-PL" Title="Poland"/>
+						<Item Id="EBAY-SG" Title="Singapore"/>
+						<Item Id="EBAY-US" Title="United States"/>
+					</DataSource>
+				</Select>
+    </Resource>
+    <Resource Id="Sortings">
+      <Select Id="Sorting" Title="Sort Results by" DefaultValue="best">
+        <DataSource>
+					<Item Id="best" Title="Best match"/>
+					<Item Id="price" Title="Lowest price"/>
+					<Item Id="-price" Title="Highest price"/>
+					<Item Id="distance" Title="Distance"/>
+					<Item Id="newlyListed" Title="Newly listed"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Conditions">
+			<ListBox Id="Condition" Title="Filter by Conditions" Separator="|" AllChecked="true">
+        <DataSource>
+          <Item Id="NEW" Title="New"/>
+					<Item Id="USED" Title="Used"/>
+					<Item Id="UNSPECIFIED" Title="Unspecified"/>
+        </DataSource>
+      </ListBox>
+    </Resource>
+		<Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="$.warnings[0].message"/>
+			</Fail>
+		</Resource>
+  </Resources>
+
+  <RestConnector Id="FindItemsByQuery" Title="Find Items by Query" HelpUrl="https://developer.ebay.com/api-docs/buy/browse/resources/item_summary/methods/search">
+    <Parameters>
+      <Text Id="Query" Title="Query(s)" Required="true" Debug.DefaultValue="harry potter" Multiline="true"/>
+      <Text Id="Seller" Title="Seller"/>
+      <Text Id="ExcludeSeller" Title="Exclude Seller"/>
+      <Number Id="MinPrice" Title="Min Price" DefaultValue="0" Required="true" Format="C1"/>
+      <Number Id="MaxPrice" Title="Max Price" DefaultValue="1000" Required="true" Format="C1"/>
+			<Resource Id="Conditions"/>
+      <Resource Id="GlobalIds"/>
+			<Resource Id="Sortings"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false" MaxTake="10000">
+      <Parse>
+        <JsonPath Id="AvaliableRows" Expr="$.total"/>
+      </Parse>
+    </Paging>
+    <Batch Parameter="Query" Separator="\n"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.ebay.com/buy/browse/v1/item_summary/search
+					?q=@Utils.UrlEncode(Model.Query)
+					&limit=@(Model.PageCursor.NextTake)
+					&offset=@(Model.PageCursor.NextSkip)
+					@(Model.Sorting != "best" ? "&sort=" + Model.Sorting : "")
+					&fieldgroups=MATCHING_ITEMS,EXTENDED
+					&filter=price:[@(Model.MinPrice)..@(Model.MaxPrice)]
+					,priceCurrency:USD
+					,conditions:{@(Model.Condition.Values)}
+					@(!string.IsNullOrEmpty(Model.ExcludeSeller) ? ",excludeSellers:{" + Model.ExcludeSeller + "}" : "")
+					@(!string.IsNullOrEmpty(Model.Seller) ? ",sellers:{" + Model.Seller + "}" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.itemSummaries[*]">
+        <JsonPath Expr="itemWebUrl" Id="ItemUrl" Title="Item URL" Converter="String"/>
+        <JsonPath Expr="itemId" Id="ItemId" Title="Item Id" Converter="String"/>
+        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String"/>
+        <JsonPath Expr="shortDescription" Id="Description" Title="Description" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="condition" Id="Condition" Title="Condition" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="csv(categories[*].categoryId)" Id="Categories" Title="Category Ids" Converter="String"/>
+        <JsonPath Expr="itemLocation.postalCode" Id="PostalCode" Title="Postal Code" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="itemLocation.country" Id="Country" Title="Country" Converter="String"/>
+        <JsonPath Expr="price.value" Id="Price" Title="Price" Converter="Double"/>
+        <JsonPath Expr="price.currency" Id="PriceCurency" Title="Price Currency" Converter="String"/>
+        <JsonPath Expr="shippingOptions[0].shippingCost.value" Id="ShippingCost" Title="Shipping Cost" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="shippingOptions[0].shippingCost.currency" Id="ShippingCostCurrency" Title="Shipping Cost Currency" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="shippingOptions[0].shippingCostType" Id="ShippingCostType" Title="Shipping Cost Type" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="buyingOptions[0]" Id="BuyingOptions" Title="Buying Options" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="seller.username" Id="SellerUsername" Title="Seller Username" Converter="String"/>
+        <JsonPath Expr="seller.feedbackScore" Id="SellerFeedbackScore" Title="Seller Feedback Score" Converter="Int"/>
+        <JsonPath Expr="seller.feedbackPercentage" Id="PositiveFeedbackRate" Title="Positive Feedback Rate" Converter="Double"/>
+        <JsonPath Expr="image.imageUrl" Id="ImageUrl" Title="Image URL" Converter="String"/>
+				<JsonPath Expr="legacyItemId" Id="LegacyItemId" Title="Legacy Item Id" Converter="String"/>
+				<Compute Expr="@Model.Query" Id="Input" Title="Input Query" Checked="false"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CategoryByQuery" Title="Category Distributions by Query" HelpUrl="https://developer.ebay.com/api-docs/buy/browse/resources/item_summary/methods/search">
+    <Parameters>
+      <Text Id="Query" Title="Query(s)" Required="true" Debug.DefaultValue="harry potter" Multiline="true"/>
+      <Text Id="Seller" Title="Seller"/>
+      <Text Id="ExcludeSeller" Title="Exclude Seller"/>
+      <Number Id="MinPrice" Title="Min Price" DefaultValue="0" Required="true" Format="C1"/>
+      <Number Id="MaxPrice" Title="Max Price" DefaultValue="1000" Required="true" Format="C1"/>
+			<Resource Id="Conditions"/>
+      <Resource Id="GlobalIds"/>
+			<Resource Id="Sortings"/>
+    </Parameters>
+    <Batch Parameter="Query" Separator="\n"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.ebay.com/buy/browse/v1/item_summary/search
+					?q=@Utils.UrlEncode(Model.Query)
+					@(Model.Sorting != "best" ? "&sort=" + Model.Sorting : "")
+					&fieldgroups=CATEGORY_REFINEMENTS
+					&filter=price:[@(Model.MinPrice)..@(Model.MaxPrice)]
+					,priceCurrency:USD
+					,conditions:{@(Model.Condition.Values)}
+					@(!string.IsNullOrEmpty(Model.ExcludeSeller) ? ",excludeSellers:{" + Model.ExcludeSeller + "}" : "")
+					@(!string.IsNullOrEmpty(Model.Seller) ? ",sellers:{" + Model.Seller + "}" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.refinement.categoryDistributions[*]">
+        <JsonPath Expr="categoryName" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="categoryId" Id="Id" Title="Id" Converter="Auto"/>
+        <JsonPath Expr="matchCount" Id="Count" Title="Count" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+
+  <RestConnector Id="BuyingOptionsByQuery" Title="Buying Option Distributions by Query" HelpUrl="https://developer.ebay.com/api-docs/buy/browse/resources/item_summary/methods/search">
+    <Parameters>
+      <Text Id="Query" Title="Query(s)" Required="true" Debug.DefaultValue="harry potter" Multiline="true"/>
+      <Text Id="Seller" Title="Seller"/>
+      <Text Id="ExcludeSeller" Title="Exclude Seller"/>
+      <Number Id="MinPrice" Title="Min Price" DefaultValue="0" Required="true" Format="C1"/>
+      <Number Id="MaxPrice" Title="Max Price" DefaultValue="1000" Required="true" Format="C1"/>
+			<Resource Id="Conditions"/>
+      <Resource Id="GlobalIds"/>
+			<Resource Id="Sortings"/>
+    </Parameters>
+    <Batch Parameter="Query" Separator="\n"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+          https://api.ebay.com/buy/browse/v1/item_summary/search
+					?q=@Utils.UrlEncode(Model.Query)
+					@(Model.Sorting != "best" ? "&sort=" + Model.Sorting : "")
+					&fieldgroups=BUYING_OPTION_REFINEMENTS
+					&filter=price:[@(Model.MinPrice)..@(Model.MaxPrice)]
+					,priceCurrency:USD
+					,conditions:{@(Model.Condition.Values)}
+					@(!string.IsNullOrEmpty(Model.ExcludeSeller) ? ",excludeSellers:{" + Model.ExcludeSeller + "}" : "")
+					@(!string.IsNullOrEmpty(Model.Seller) ? ",sellers:{" + Model.Seller + "}" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.refinement.buyingOptionDistributions[*]">
+        <JsonPath Expr="buyingOption" Id="Option" Title="Option" Converter="String"/>
+        <JsonPath Expr="matchCount" Id="Count" Title="Count" Converter="Int"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  </Suite>

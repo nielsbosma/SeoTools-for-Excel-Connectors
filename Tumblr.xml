@@ -1,13 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" RequireVersion="8.2" Title="Tumblr" Id="Tumblr" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Tumblr.xml" HelpUrl="http://seotoolsforexcel.com/tumblr/" HelpText="Documentation">
+<Suite Category="Social" RequireVersion="8.2" Title="Tumblr" Id="Tumblr" LoginButton="https://seotoolsforexcel.com/logins/tumblr.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Tumblr.xml" HelpUrl="http://seotoolsforexcel.com/tumblr/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/tumblr/">
-    <Text Id="Key" Title="API Key" Required="true"/>
-  </Settings>
+  <SeoToolsAuthenticator StayAuthenticated="true" Key="tumblr"/>
 
   <Resources>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+        <OAuth>
+          <ConsumerKey>@Model.OAuthConsumerKey</ConsumerKey>
+          <ConsumerSecret>@Model.OAuthConsumerSecret</ConsumerSecret>
+          <Token>@Model.OAuthToken</Token>
+          <TokenSecret>@Model.OAuthTokenSecret</TokenSecret>
+        </OAuth>
+      </HttpSettings>
+		</Resource>
 		<Resource Id="Fail">
 			<Fail>
 				<JsonPath Expr="errors[0].title"/>
@@ -15,7 +23,7 @@
 		</Resource>
   </Resources>
 
-  <RestConnector Id="TagSearch" Title="Tags Search" HelpUrl="https://www.tumblr.com/docs/en/api/v2#tagged--get-posts-with-tag">
+  <RestConnector Id="TagSearch" Title="Posts by Tag" HelpUrl="https://www.tumblr.com/docs/en/api/v2#tagged--get-posts-with-tag">
     <Parameters>
       <Text Id="Tag" Title="Tag" Debug.DefaultValue="flowers" Required="true"/>
     </Parameters>
@@ -25,11 +33,11 @@
       </Parse>
     </Paging>
     <Fetch>
+		  <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.tumblr.com/v2/tagged?
         tag=@Utils.UrlEncode(Model.Tag)
-        &api_key=@Model.Key
         &limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&before=" + Model.MaxTimeStamp : "")
         ]]>
@@ -37,13 +45,24 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="response[*]">
+        <JsonPath Expr="post_url" Id="URL" Title="URL" Converter="String"/>
         <JsonPath Expr="id" Id="Id" Converter="String"/>
-        <JsonPath Expr="summary" Id="Summary" Converter="String"/>
         <JsonPath Expr="date" Id="Date" Converter="DateTime"/>
+        <JsonPath Expr="summary" Id="Summary" Converter="String"/>
         <JsonPath Expr="type" Id="Type" Converter="String"/>
+        <JsonPath Expr="state" Id="State" Converter="String"/>
         <JsonPath Expr="note_count" Id="Notes" Converter="Int"/>
-        <JsonPath Expr="short_url" Id="Url" Title="URL" Converter="String"/>
-        <JsonPath Expr="blog_name" Id="BlogName" Title="Blog Name" Converter="String"/>
+        <JsonPath Expr="csv(tags)" Id="Tags" Title="Tags" Converter="String"/>
+        <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="String"/>
+        <JsonPath Expr="short_url" Id="ShortUrl" Title="Short URL" Converter="String"/>
+        <JsonPath Expr="link_url" Id="LinkUrl" Title="Link URL" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="blog.name" Id="BlogName" Title="Blog Name" Converter="String"/>
+        <JsonPath Expr="blog.title" Id="BlogTitle" Title="Blog Title" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="BlogDescription" Title="Blog Description">
+					<JsonPath Expr="blog.description" Id="Inp" Converter="String"/>
+        </Compute>
+				<JsonPath Expr="blog.url" Id="BlogUrl" Title="Blog URL" Converter="String"/>
+				<JsonPath Expr="blog.updated" Id="BlogUpdated" Title="Blog Updated" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -51,13 +70,13 @@
 
   <RestConnector Id="BlogLookup" Title="Blog Lookup" HelpUrl="https://www.tumblr.com/docs/en/api/v2#info---retrieve-blog-info">
     <Parameters>
-      <Text Id="BlogName" Title="Blog Name" Debug.DefaultValue="allimacha" Required="true"/>
+      <Text Id="BlogName" Title="Blog Name" Debug.DefaultValue="activitesparanormales" Required="true"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.tumblr.com/v2/blog/@Utils.UrlEncode(Model.BlogName)/info?
-        &api_key=@Model.Key
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -75,9 +94,9 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="UserBlogPosts" Title="User Blog Posts" HelpUrl="https://www.tumblr.com/docs/en/api/v2#posts--retrieve-published-posts">
+  <RestConnector Id="UserBlogPosts" Title="Posts by User" HelpUrl="https://www.tumblr.com/docs/en/api/v2#posts--retrieve-published-posts">
     <Parameters>
-      <Text Id="BlogName" Title="BlogName" Debug.DefaultValue="allimacha" Required="true"/>
+      <Text Id="BlogName" Title="BlogName" Debug.DefaultValue="activitesparanormales" Required="true"/>
       <Text Id="TagFilter" Title="Filter by Tag" Required="false" DefaultValue=""/>
       <Select Id="Type" Title="Type" Required="false" DefaultValue="all">
         <DataSource>
@@ -95,24 +114,55 @@
     </Parameters>
     <Paging PageSize="20"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.tumblr.com/v2/blog/@Utils.UrlEncode(Model.BlogName)/posts?
-        &api_key=@Model.Key
-        &limit=@(Model.PageCursor.NextTake)
+        limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
-        (Model.Type != "all" ? "&type=" + Model.Type : "")
-        @(!string.IsNullOrEmpty(Model.TagFilter) ? ""&tag=" + Utils.UrlEncode(Model.TagFilter : ""))
+        @(Model.Type != "all" ? "&type=" + Model.Type : "")
+        @(!string.IsNullOrEmpty(Model.TagFilter) ? "&tag=" + Utils.UrlEncode(Model.TagFilter) : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
       <JsonPath Expr="response.posts[*]">
+        <JsonPath Expr="post_url" Id="URL" Title="URL" Converter="String"/>
         <JsonPath Expr="id" Id="Id" Converter="String"/>
-        <JsonPath Expr="short_url" Id="Url" Title="URL" Converter="String"/>
         <JsonPath Expr="date" Id="Date" Converter="DateTime"/>
-        <JsonPath Expr="type" Id="Type" Converter="String"/>
         <JsonPath Expr="summary" Id="Summary" Converter="String"/>
+        <JsonPath Expr="type" Id="Type" Converter="String"/>
+        <JsonPath Expr="state" Id="State" Converter="String"/>
+        <JsonPath Expr="note_count" Id="Notes" Converter="Int"/>
+        <JsonPath Expr="csv(tags)" Id="Tags" Title="Tags" Converter="String"/>
+        <JsonPath Expr="slug" Id="Slug" Title="Slug" Converter="String"/>
+        <JsonPath Expr="short_url" Id="ShortUrl" Title="Short URL" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="PersonalFollows" Title="Authenticated User Follows" HelpUrl="https://www.tumblr.com/docs/en/api/v2#userfollow--follow-a-blog">
+    <Paging PageSize="20"/>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.tumblr.com/v2/user/following?
+        limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&offset=" + Model.PageCursor.NextSkip : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="response.blogs[*]">
+        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String"/>
+        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
+        <JsonPath Expr="title" Id="Title" Converter="String"/>
+        <Compute Expr="@Utils.StripTags(Model.Inp)" Id="Description" Title="Description">
+					<JsonPath Expr="description" Id="Inp" Converter="String"/>
+        </Compute>
+        <JsonPath Expr="updated" Id="Updated" Converter="DateTime" Converter.SourceFormat="Unix"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
