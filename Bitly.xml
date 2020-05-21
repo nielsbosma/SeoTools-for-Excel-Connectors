@@ -1,82 +1,169 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Suite Title="Bitly" Id="Bitly" Category="URL Shorteners" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Bitly.xml" HelpUrl="http://seotoolsforexcel.com/bitly/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-  <Settings HelpUrl="http://seotoolsforexcel.com/bitly/" HelpText="What's this?">
-    <Text Id="GenericAccessToken" Title="Generic Access Token" Required="true"/>
-  </Settings>
-	
+	<SeoToolsAuthenticator StayAuthenticated="true" Key="bitly"/>
+
   <Resources>
+		<Resource Id="HttpProps">
+			<RequestContentType>application/json</RequestContentType>
+			<IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
+			<RequestHeaders>
+				<Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+			</RequestHeaders>
+		</Resource>
     <Resource Id="Fail">
 			<Fail>
 				<JsonPath Expr="$.message"/>
+				<Regex Expr="Method Not Allowed" Group="0"/>
 			</Fail>
     </Resource>
   </Resources>
 
-  <RestConnector Id="Shorten" Title="Shorten">
+  <RestConnector Id="Shorten" Title="Shorten" HelpUrl="https://dev.bitly.com/v4/#operation/createBitlink">
     <Parameters>
-      <Text Id="LongUrl" Title="Long URL" Required="true"/>
+      <Text Id="LongUrl" Title="Long URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
       <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
       <HttpSettings>
-				<RequestContentType>application/json</RequestContentType>
+				<Resource Id="HttpProps"/>
 				<RequestMethod>POST</RequestMethod>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
 				<RequestBody>
           <![CDATA[
 					{
-					"group_guid": "string",
-					"long_url": "@(Model.LongUrl)"
+						"domain":"bit.ly",
+						"long_url": "@(Model.LongUrl)"
 					}
           ]]>
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				https://api-ssl.bitly.com/v4/shorten?format=json
-				&access_token=@(Model.GenericAccessToken)
+				https://api-ssl.bitly.com/v4/shorten
 				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.url" Title="Short URL"/>
+      <JsonPath Expr="$.link" Id="ShortUrl"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Expand" Title="Expand">
+  <RestConnector Id="Expand" Title="Expand" HelpUrl="https://dev.bitly.com/v4/#operation/expandBitlink">
     <Parameters>
-      <Text Id="ShortUrl" Title="Short URL" Required="true"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
+      <Text Id="ShortUrl" Title="Short URL (Bitlink)" Debug.DefaultValue="https://bit.ly/3cQZAWV" HelpText="Format: bit.ly/foo" Required="true"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpProps"/>
+				<RequestMethod>POST</RequestMethod>
+				<RequestBody>
+          <![CDATA[
+					{
+						"bitlink_id": "@(ReturnProperBitlink())"
+					}
+          ]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
-        <![CDATA[https://api-ssl.bitly.com/v3/expand?access_token=@(Model.GenericAccessToken)&shortUrl=@(((string)Model.ShortUrl).UrlEncode())&format=json]]>
+        <![CDATA[
+				https://api-ssl.bitly.com/v4/expand
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.expand[0].long_url" Title="Long URL"/>
+      <JsonPath Expr="$.long_url" Id="LongUrl"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Clicks" Title="Clicks">
+  <RestConnector Id="Clicks" Title="Clicks Total" HelpUrl="https://dev.bitly.com/v4/#operation/getClicksSummaryForBitlink">
     <Parameters>
-      <Text Id="ShortUrl" Title="Short URL" Required="true"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
+      <Text Id="ShortUrl" Title="Short URL (Bitlink)" Debug.DefaultValue="https://bit.ly/3cQZAWV" HelpText="Format: bit.ly/foo" Required="true"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpProps"/>
+      </HttpSettings>
       <Fetch.Url>
-        <![CDATA[https://api-ssl.bitly.com/v3/link/clicks?access_token=@(Model.GenericAccessToken)&link=@(((string)Model.ShortUrl).UrlEncode())&format=json]]>
+        <![CDATA[
+				https://api-ssl.bitly.com/v4/bitlinks/@(ReturnProperBitlink())/clicks/summary
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data.link_clicks" Title="Long URL" Converter="Int"/>
+      <JsonPath Expr="$.total_clicks" Id="Clicks" Converter="Int"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
+
+  <RestConnector Id="ClicksOverTime" Title="Clicks Over Time" HelpUrl="https://dev.bitly.com/v4/#operation/getClicksForBitlink">
+    <Parameters>
+      <Text Id="ShortUrl" Title="Short URL (Bitlink)" Debug.DefaultValue="https://bit.ly/3cQZAWV" HelpText="Format: bit.ly/foo" Required="true"/>
+			<Select Id="TimeUnit" Title="Time Unit" DefaultValue="day">
+        <DataSource>
+					<Item Id="month" Title="Month"/>
+					<Item Id="week" Title="Week"/>
+					<Item Id="day" Title="Day"/>
+					<Item Id="hour" Title="Hour"/>
+					<Item Id="minute" Title="Minute"/>
+        </DataSource>
+      </Select>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpProps"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://api-ssl.bitly.com/v4/bitlinks/@(ReturnProperBitlink())/clicks?units=-1&unit=@(Model.TimeUnit)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.link_clicks[*]">
+				<JsonPath Expr="date" Id="Date" Converter="DateTime"/>
+				<JsonPath Expr="clicks" Id="Clicks" Converter="Int"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ClicksByCountry" Title="Clicks by Country" HelpUrl="https://dev.bitly.com/v4/#operation/getMetricsForBitlinkByCountries">
+    <Parameters>
+      <Text Id="ShortUrl" Title="Short URL (Bitlink)" Debug.DefaultValue="https://bit.ly/3cQZAWV" HelpText="Format: bit.ly/foo" Required="true"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpProps"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://api-ssl.bitly.com/v4/bitlinks/@(ReturnProperBitlink())/countries?units=-1&unit=day
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.metrics[*]">
+				<JsonPath Expr="value" Id="Country" Converter="String"/>
+				<JsonPath Expr="clicks" Id="Clicks" Converter="Int"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+      string ReturnProperBitlink() {
+        return Model.ShortUrl.Replace("https://",string.Empty);
+      }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
