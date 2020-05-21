@@ -10,25 +10,35 @@
   <Resources>
     <Resource Id="Fail">
 			<Fail>
-				<JsonPath Expr="$.data.expand[0].error"/>
+				<JsonPath Expr="$.message"/>
 			</Fail>
-    </Resource>
-    <Resource Id="HttpSettings">
-      <HttpSettings>
-        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
-      </HttpSettings>
     </Resource>
   </Resources>
 
   <RestConnector Id="Shorten" Title="Shorten">
     <Parameters>
       <Text Id="LongUrl" Title="Long URL" Required="true"/>
-      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
+      <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestMethod>POST</RequestMethod>
+        <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay+10)" IfSame="Domain"/>
+				<RequestBody>
+          <![CDATA[
+					{
+					"group_guid": "string",
+					"long_url": "@(Model.LongUrl)"
+					}
+          ]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
-        <![CDATA[https://api-ssl.bitly.com/v3/shorten?access_token=@(Model.GenericAccessToken)&longUrl=@(((string)Model.LongUrl).UrlEncode())&format=json]]>
+        <![CDATA[
+				https://api-ssl.bitly.com/v4/shorten?format=json
+				&access_token=@(Model.GenericAccessToken)
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -43,7 +53,6 @@
       <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
-			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[https://api-ssl.bitly.com/v3/expand?access_token=@(Model.GenericAccessToken)&shortUrl=@(((string)Model.ShortUrl).UrlEncode())&format=json]]>
       </Fetch.Url>
@@ -59,7 +68,6 @@
       <Text Id="ShortUrl" Title="Short URL" Required="true"/>
       <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
-			<Resource Id="HttpSettings"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[https://api-ssl.bitly.com/v3/link/clicks?access_token=@(Model.GenericAccessToken)&link=@(((string)Model.ShortUrl).UrlEncode())&format=json]]>
