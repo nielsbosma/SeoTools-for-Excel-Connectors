@@ -38,7 +38,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="GetRange" Title="Get Range" HelpUrl="https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/get">
+  <RestConnector Id="GoogleSheets" Title="Google Sheets" HelpUrl="https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/get">
     <Parameters>
       <Text Id="SpreadsheetId" Title="Spreadsheet Id" Debug.DefaultValue="166XYski87ZlVWuodjMZdOw4asVYLKzZdTPqiiEShZ1g" Select.Connector="Spreadsheets" Select.IdField="Id" Select.TitleField="Name" HelpText="Use 'Select' to browse all your sheets, or copy from sheet URL" Required="true"/>
       <Text Id="Range" Title="Range to fetch" Debug.DefaultValue="Testing!A1:B1" HelpText="For example: 'A2:C10' or 'A:A' or 'Sheetname!A1'" Required="true"/>
@@ -84,70 +84,6 @@
 				</Array.Expr>
 				<JsonPath Expr="."/>
 			</Array>
-    </Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-  <RestConnector Id="SendRange" Title="Send Range" HelpUrl="https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update">
-    <Parameters>
-      <Text Id="SpreadsheetId" Title="Spreadsheet Id" Debug.DefaultValue="166XYski87ZlVWuodjMZdOw4asVYLKzZdTPqiiEShZ1g" Select.Connector="Spreadsheets" Select.IdField="Id" Select.TitleField="Name" HelpText="Use 'Select' to browse all your sheets, or copy from sheet URL" Required="true"/>
-      <Text Id="Source" Title="Source Range" Debug.DefaultValue="[A1:B2]" HelpText="For example: '[A2:C10]' or use Formula Mode to refer to sheet range" Required="true" AcceptRange="true"/>
-      <Text Id="Target" Title="Target Cell" Debug.DefaultValue="Testing!A1" HelpText="For example: 'A2'" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <HttpSettings>
-        <RequestMethod>PUT</RequestMethod>
-        <RequestContentType>application/json</RequestContentType>
-				<RequestHeaders>
-					<Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-				</RequestHeaders>
-        <RequestBody>
-					<![CDATA[
-					@{
-						string output = "";
-						if(Model.Source is string)
-						{
-							output = "[\"" + @Regex.Replace(Model.Source, "\"", "\\\"") + "\"]";
-						}
-						else
-						{
-							output = "\r\n";
-							var raw = (object[,])Model.Source;
-
-							for (int row = raw.GetLowerBound(0); row <= raw.GetUpperBound(0); row++)
-							{
-								output += "[\r\n";
-								for (int col = raw.GetLowerBound(1); col <= raw.GetUpperBound(1); col++)
-								{
-									string cell = raw[row,col] == null
-										|| raw[row,col] is ExcelDna.Integration.ExcelEmpty
-										|| raw[row,col] is ExcelDna.Integration.ExcelError
-										|| raw[row,col] is ExcelDna.Integration.ExcelMissing
-										? "" : (string)raw[row,col].ToString();
-
-									output += "\"" + @Regex.Replace(cell, "\"", "\\\"") + "\"";
-									output += col <= raw.GetUpperBound(1) ? ",\r\n" : "\r\n";
-								}
-								output += row <= raw.GetUpperBound(0) ? "],\r\n" : "]";
-							}
-						}
-					}
-					{
-						"majorDimension": "ROWS",
-						"values": [@(output)]
-					}
-					]]>
-        </RequestBody>
-      </HttpSettings>
-      <Fetch.Url>
-        <![CDATA[
-        https://sheets.googleapis.com/v4/spreadsheets/@(Model.SpreadsheetId)/values/@(Model.Target)
-				?valueInputOption=RAW
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<Compute Id="Message" Expr="Ok"/>
     </Parse>
 		<Resource Id="Fail"/>
 	</RestConnector>
