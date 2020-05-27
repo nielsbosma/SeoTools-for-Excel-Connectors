@@ -741,7 +741,43 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
+
+  <RestConnector Id="ListAutomations" Title="Automations" Group="Automations" HelpText="Get a summary of an account's Automations." HelpUrl="https://mailchimp.com/developer/reference/automation/#get_/automations">
+    <Parameters>
+      <DateInterval Id="CreatedInterval" Title="Createtd Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/automations?
+          @if(Model.CreatedInterval.StartDate != null && Model.CreatedInterval.EndDate != null)
+          {
+              @: &since_timestamp_opt=@Model.CreatedInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
+              @: &before_timestamp_opt=@Model.CreatedInterval.EndDate.ToString("yyyy-MM-dd")T00:00:00+00:00
+          }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.automations[*]">
+        <JsonPath Title="Id" Id="Id" Expr="id" Converter="Auto" HelpText=""/>
+        <JsonPath Title="Created" Id="Created" Expr="creat_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Title="Started" Id="Started" Expr="start_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Title="Status" Id="Status" Expr="status" Conveter="String" HelpText=""/>
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Long" HelpText=""/>
+        <JsonPath Title="Opens" Id="Opens" Expr="report_summary.opens" Converter="Long" DefaultValue="" HelpText="The number of unique opens divided by the total number of successful deliveries."/>
+        <JsonPath Title="Unique Opens" Id="UniqueOpens" Expr="report_summary.unique_opens" Converter="Long" DefaultValue="" HelpText="The number of unique opens."/>
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="report_summary.open_rate" Converter="Double" DefaultValue="" Converter.ResultFormat="0.00%" HelpText="The number of unique opens divided by the total number of successful deliveries."/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="report_summary.clicks" Converter="Long" DefaultValue="" HelpText=""/>
+        <JsonPath Title="Subscriber Clicks" Id="SubscriberClicks" Expr="report_summary.subscriber_clicks" Converter="Long" DefaultValue="" HelpText="The number of unique clicks."/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="report_summary.click_rate" Converter="Double" DefaultValue="" HelpText="The number of unique clicks divided by the total number of successful deliveries."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
 <RazorFunctions>
     <![CDATA[
     string GetJsonPath() {
