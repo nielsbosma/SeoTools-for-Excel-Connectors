@@ -99,6 +99,25 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="AutomationsHidden" Hidden="true">
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(Model.Base)/3.0/automations?count=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.automations[*]">
+        <JsonPath Title="Automation Id" Id="Id" Expr="id"/>
+        <JsonPath Title="Title" Id="Title" Expr="settings.title" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="CampaignsList" Title="Campaigns List" Group="Campaigns" HelpText="Get all campaigns in an account." HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
     <Parameters>
       <Text Id="ListId" Title="Filter by List Id" Required="false" HelpText="Leave Empty to include all Lists" Select.Connector="ListsHidden"/>
@@ -746,6 +765,7 @@
     <Parameters>
       <DateInterval Id="CreatedInterval" Title="Createtd Interval" Required="false" Nullable="true"/>
     </Parameters>
+    <Resource Id="Paging"/>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
@@ -756,6 +776,8 @@
               @: &since_timestamp_opt=@Model.CreatedInterval.StartDate.ToString("yyyy-MM-dd")T00:00:00+00:00
               @: &before_timestamp_opt=@Model.CreatedInterval.EndDate.ToString("yyyy-MM-dd")T00:00:00+00:00
           }
+          &count=@(Model.PageCursor.NextTake)
+          &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -763,7 +785,42 @@
     <Parse>
       <JsonPath Expr="$.automations[*]">
         <JsonPath Title="Id" Id="Id" Expr="id" Converter="Auto" HelpText=""/>
-        <JsonPath Title="Created" Id="Created" Expr="creat_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Title="Title" Id="Title" Expr="settings.title" DefaultValue=""/>
+        <JsonPath Title="Created" Id="Created" Expr="create_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Title="Started" Id="Started" Expr="start_time" Converter="DateTime" HelpText=""/>
+        <JsonPath Title="Status" Id="Status" Expr="status" Conveter="String" HelpText=""/>
+        <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Long" HelpText=""/>
+        <JsonPath Title="Opens" Id="Opens" Expr="report_summary.opens" Converter="Long" DefaultValue="" HelpText="The number of unique opens divided by the total number of successful deliveries."/>
+        <JsonPath Title="Unique Opens" Id="UniqueOpens" Expr="report_summary.unique_opens" Converter="Long" DefaultValue="" HelpText="The number of unique opens."/>
+        <JsonPath Title="Open Rate" Id="OpenRate" Expr="report_summary.open_rate" Converter="Double" DefaultValue="" Converter.ResultFormat="0.00%" HelpText="The number of unique opens divided by the total number of successful deliveries."/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="report_summary.clicks" Converter="Long" DefaultValue="" HelpText=""/>
+        <JsonPath Title="Subscriber Clicks" Id="SubscriberClicks" Expr="report_summary.subscriber_clicks" Converter="Long" DefaultValue="" HelpText="The number of unique clicks."/>
+        <JsonPath Title="Click Rate" Id="ClickRate" Expr="report_summary.click_rate" Converter="Double" DefaultValue="" HelpText="The number of unique clicks divided by the total number of successful deliveries."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AutomationEmailsSummary" Title="Automation Emails Summary" Group="Automations" HelpText="Get a summary of the emails in an Automation workflow." HelpUrl="https://mailchimp.com/developer/reference/automation/automation-email/#get_/automations/-workflow_id-/emails">
+    <Parameters>
+      <Text Id="AutomationId" Title="Automation Id" Required="true" Debug.DefaultValue="a51d4c9852" Select.Connector="AutomationsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <DateInterval Id="CreatedInterval" Title="Createtd Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Resource Id="Paging"/>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/automations/@(Model.AutomationId)/emails?
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.emails[*]">
+        <JsonPath Title="Id" Id="Id" Expr="id" Converter="Auto" HelpText=""/>
+        <JsonPath Title="Title" Id="Title" Expr="settings.title" DefaultValue=""/>
+        <JsonPath Title="Created" Id="Created" Expr="create_time" Converter="DateTime" HelpText=""/>
         <JsonPath Title="Started" Id="Started" Expr="start_time" Converter="DateTime" HelpText=""/>
         <JsonPath Title="Status" Id="Status" Expr="status" Conveter="String" HelpText=""/>
         <JsonPath Title="Emails Sent" Id="EmailsSent" Expr="emails_sent" Converter="Long" HelpText=""/>
