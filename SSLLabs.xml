@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Security" RequireVersion="8.2" Id="SSLLabs" Title="SSL Labs" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SSLLabs.xml" HelpUrl="http://seotoolsforexcel.com/ssl-labs/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <RestConnector Id="HostAnalysis" Title="Host Analysis" HelpUrl="https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md">
+    <Parameters>
+      <Text Id="Host" Title="Host" Debug.DefaultValue="www.seotoolsforexcel.com" Required="true"/>
+			<Text Id="MaxAge" Title="Max Cache Age" HelpText="Maximum report age, in hours. If older, a new analysis begins." Syntax="^\d+$"/>
+      <Checkbox Id="ForceStartNew" Title="Force new analysis" HelpText="If true then cached assessment results are ignored and a new assessment is started."/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dev.ssllabs.com/api/v3/analyze.html
+				?host=@(Utils.UrlProperty(Model.Host).Host)
+				@if(Model.ForceStartNew)
+				{
+					@: &startNew=on
+				}
+				else if(!string.IsNullOrEmpty(Model.MaxAge))
+				{
+					@: &maxAge=@(Model.MaxAge)
+				}
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+        <JsonPath Expr="endpoints[0].statusMessage" Id="Status" Title="Status" Converter="String"/>
+        <JsonPath Expr="host" Id="Host" Title="Host" Converter="String"/>
+        <JsonPath Expr="endpoints[0].ipAddress" Id="IpAddress" Title="IP Address" Converter="String"/>
+        <JsonPath Expr="startTime" Id="TestStarted" Title="Test Started" Converter="DateTime" Converter.SourceFormat="UnixMs" DefaultValue=""/>
+        <JsonPath Expr="endpoints[0].grade" Id="Grade" Title="Grade" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="endpoints[0].hasWarnings" Id="Warnings" Title="Warnings" Converter="Auto" DefaultValue=""/>
+        <JsonPath Expr="endpoints[0].isExceptional" Id="Exceptional" Title="Exceptional" Converter="Auto" DefaultValue=""/>
+    </Parse>
+		<Fail>
+			<JsonPath Expr="endpoints[0].statusMessage" Fail.If="IsEmpty" Fail.Action="Retry" Fail.RetryAfter="2000" Fail.RetryTimes="5"/>
+		</Fail>
+  </RestConnector>
+
+</Suite>
