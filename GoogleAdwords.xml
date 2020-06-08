@@ -5,289 +5,347 @@
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/adwords/">
     <Text Id="DeveloperToken" Title="Developer Token" Required="true" HelpUrl="http://seotoolsforexcel.com/adwords/"/>
+		<Select Id="PrefLocation" Title="Preferred Location" DefaultValue="all">
+      <Resource Id="Locations"/>
+    </Select>
+		<Select Id="PrefLanguage" Title="Preferred Language" DefaultValue="all">
+      <Resource Id="Languages"/>
+    </Select>
   </Settings>
 
   <Resources>
-    <Resource Id="Fail">
+    <Resource Id="FailAWQL">
+			<Fail>
+				<XPath Id="FindError" Expr="//apierror/type"/>
+			</Fail>
+    </Resource>
+    <Resource Id="FailSOAP">
       <Fail>
         <XPath Expr="//faultstring"/>
       </Fail>
     </Resource>
-		<Resource Id="HttpSettingsProps">
+		<Resource Id="HttpSettingsAWQL">
+			<RequestHeaders>
+				<Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+				<Header Name='clientCustomerId'><![CDATA[@(Model.CustomerId)]]></Header>
+				<Header Name='developerToken'><![CDATA[@(Model.DeveloperToken)]]></Header>
+			</RequestHeaders>
+			<RequestMethod>POST</RequestMethod>
+			<RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+		</Resource>
+		<Resource Id="HttpSettingsSOAP">
 			<RequestHeaders>
 				<Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
 			</RequestHeaders>
 			<RequestMethod>POST</RequestMethod>
 			<RequestContentType>application/soap+xml</RequestContentType>
 		</Resource>
+		<Resource Id="PerformanceFields">
+			<Compute Expr="@HandleDouble()" Id="ActiveViewCpm" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="activeViewAvgCPM" Id="Inp"/>
+			</Compute>
+			<Xpath Expr="." Attribute="activeViewViewableCTR" Id="ActiveViewCtr" Converter="Double"/>
+			<Xpath Expr="." Attribute="activeViewViewableImpressions" Id="ActiveViewImpressions" Converter="Long"/>
+			<Xpath Expr="." Attribute="activeViewMeasurableImprImpr" Id="ActiveViewMeasurability" Converter="Double"/>
+			<Compute Expr="@HandleDouble()" Id="ActiveViewMeasurableCost" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="activeViewMeasurableCost" Id="Inp"/>
+			</Compute>
+			<Xpath Expr="." Attribute="activeViewMeasurableImpr" Id="ActiveViewMeasurableImpressions" Converter="Long"/>
+			<Xpath Expr="." Attribute="convRate" Id="ConversionRate" Converter="Double"/>
+			<Xpath Expr="." Attribute="conv" Id="Conversions" Converter="Double"/>
+			<Xpath Expr="." Attribute="convValue" Id="ConversionValue" Converter="Double"/>
+			<Compute Expr="@HandleDouble()" Id="AverageCost" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="avgCost" Id="Inp"/>
+			</Compute>
+			<Compute Expr="@HandleDouble()" Id="AverageCpm" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="avgCPM" Id="Inp"/>
+			</Compute>
+			<Xpath Expr="." Attribute="avgCPV" Id="AverageCpv" Converter="Double"/>
+			<Xpath Expr="." Attribute="pagesSession" Id="AveragePageviews" Converter="Double"/>
+			<Compute Expr="@HandleDouble()" Id="AveragePosition" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="avgPosition" Id="Inp"/>
+			</Compute>
+			<Compute Expr="@HandleDouble()" Id="AverageTimeOnSite" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="avgSessionDurationSeconds" Id="Inp"/>
+			</Compute>
+			<Xpath Expr="." Attribute="bounceRate" Id="BounceRate" Converter="Double"/>
+			<Xpath Expr="." Attribute="clicks" Id="Clicks" Converter="Long"/>
+			<Compute Expr="@HandleDouble()" Id="Cost" Converter="Double" DefaultValue="0">
+				<Xpath Expr="." Attribute="cost" Id="Inp"/>
+			</Compute>
+			<Xpath Expr="." Attribute="ctr" Id="Ctr" Converter="Double"/>
+			<Xpath Expr="." Attribute="engagementRate" Id="EngagementRate" Converter="Double"/>
+			<Xpath Expr="." Attribute="engagements" Id="Engagements" Converter="Double"/>
+			<Xpath Expr="." Attribute="impressions" Id="Impressions" Converter="Double"/>
+			<Xpath Expr="." Attribute="interactionRate" Id="InteractionRate" Converter="Double"/>
+			<Xpath Expr="." Attribute="interactions" Id="Interactions" Converter="Double"/>
+			<Xpath Expr="." Attribute="newSessions" Id="PercentNewVisitors" Converter="Double"/>
+			<Xpath Expr="." Attribute="views" Id="VideoViews" Converter="Double"/>
+		</Resource>
 		<Resource Id="Locations">
-			<Select Id="Location" DefaultValue="all">
-        <DataSource>
-					<Item Id="all" Title="[All]"/>
-					<Item Id="2004" Title="Afghanistan"/>
-					<Item Id="2008" Title="Albania"/>
-					<Item Id="2012" Title="Algeria"/>
-					<Item Id="2016" Title="American Samoa"/>
-					<Item Id="2020" Title="Andorra"/>
-					<Item Id="2024" Title="Angola"/>
-					<Item Id="2010" Title="Antarctica"/>
-					<Item Id="2028" Title="Antigua and Barbuda"/>
-					<Item Id="2032" Title="Argentina"/>
-					<Item Id="2051" Title="Armenia"/>
-					<Item Id="2036" Title="Australia"/>
-					<Item Id="2040" Title="Austria"/>
-					<Item Id="2031" Title="Azerbaijan"/>
-					<Item Id="2048" Title="Bahrain"/>
-					<Item Id="2050" Title="Bangladesh"/>
-					<Item Id="2052" Title="Barbados"/>
-					<Item Id="2112" Title="Belarus"/>
-					<Item Id="2056" Title="Belgium"/>
-					<Item Id="2084" Title="Belize"/>
-					<Item Id="2204" Title="Benin"/>
-					<Item Id="2064" Title="Bhutan"/>
-					<Item Id="2068" Title="Bolivia"/>
-					<Item Id="2070" Title="Bosnia and Herzegovina"/>
-					<Item Id="2072" Title="Botswana"/>
-					<Item Id="2076" Title="Brazil"/>
-					<Item Id="2096" Title="Brunei Darussalam"/>
-					<Item Id="2100" Title="Bulgaria"/>
-					<Item Id="2854" Title="Burkina Faso"/>
-					<Item Id="2108" Title="Burundi"/>
-					<Item Id="2116" Title="Cambodia"/>
-					<Item Id="2120" Title="Cameroon"/>
-					<Item Id="2124" Title="Canada"/>
-					<Item Id="2132" Title="Cape Verde"/>
-					<Item Id="2140" Title="Central African Republic"/>
-					<Item Id="2148" Title="Chad"/>
-					<Item Id="2152" Title="Chile"/>
-					<Item Id="2156" Title="China"/>
-					<Item Id="2162" Title="Christmas Island"/>
-					<Item Id="2166" Title="Cocos (Keeling) Islands"/>
-					<Item Id="2170" Title="Colombia"/>
-					<Item Id="2174" Title="Comoros"/>
-					<Item Id="2178" Title="Congo"/>
-					<Item Id="2184" Title="Cook Islands"/>
-					<Item Id="2188" Title="Costa Rica"/>
-					<Item Id="2384" Title="Cote d'Ivoire"/>
-					<Item Id="2191" Title="Croatia"/>
-					<Item Id="2196" Title="Cyprus"/>
-					<Item Id="2203" Title="Czech Republic"/>
-					<Item Id="2180" Title="Democratic Republic of the Congo"/>
-					<Item Id="2208" Title="Denmark"/>
-					<Item Id="2262" Title="Djibouti"/>
-					<Item Id="2212" Title="Dominica"/>
-					<Item Id="2214" Title="Dominican Republic"/>
-					<Item Id="2218" Title="Ecuador"/>
-					<Item Id="2818" Title="Egypt"/>
-					<Item Id="2222" Title="El Salvador"/>
-					<Item Id="2226" Title="Equatorial Guinea"/>
-					<Item Id="2232" Title="Eritrea"/>
-					<Item Id="2233" Title="Estonia"/>
-					<Item Id="2231" Title="Ethiopia"/>
-					<Item Id="2242" Title="Fiji"/>
-					<Item Id="2246" Title="Finland"/>
-					<Item Id="2250" Title="France"/>
-					<Item Id="2258" Title="French Polynesia"/>
-					<Item Id="2260" Title="French Southern and Antarctic Lands"/>
-					<Item Id="2266" Title="Gabon"/>
-					<Item Id="2268" Title="Georgia"/>
-					<Item Id="2276" Title="Germany"/>
-					<Item Id="2288" Title="Ghana"/>
-					<Item Id="2300" Title="Greece"/>
-					<Item Id="2308" Title="Grenada"/>
-					<Item Id="2316" Title="Guam"/>
-					<Item Id="2320" Title="Guatemala"/>
-					<Item Id="2324" Title="Guinea"/>
-					<Item Id="2624" Title="Guinea-Bissau"/>
-					<Item Id="2328" Title="Guyana"/>
-					<Item Id="2332" Title="Haiti"/>
-					<Item Id="2334" Title="Heard Island and McDonald Islands"/>
-					<Item Id="2340" Title="Honduras"/>
-					<Item Id="2348" Title="Hungary"/>
-					<Item Id="2352" Title="Iceland"/>
-					<Item Id="2356" Title="India"/>
-					<Item Id="2360" Title="Indonesia"/>
-					<Item Id="2368" Title="Iraq"/>
-					<Item Id="2372" Title="Ireland"/>
-					<Item Id="2376" Title="Israel"/>
-					<Item Id="2380" Title="Italy"/>
-					<Item Id="2388" Title="Jamaica"/>
-					<Item Id="2392" Title="Japan"/>
-					<Item Id="2400" Title="Jordan"/>
-					<Item Id="2398" Title="Kazakhstan"/>
-					<Item Id="2404" Title="Kenya"/>
-					<Item Id="2296" Title="Kiribati"/>
-					<Item Id="2414" Title="Kuwait"/>
-					<Item Id="2417" Title="Kyrgyzstan"/>
-					<Item Id="2418" Title="Laos"/>
-					<Item Id="2428" Title="Latvia"/>
-					<Item Id="2422" Title="Lebanon"/>
-					<Item Id="2426" Title="Lesotho"/>
-					<Item Id="2430" Title="Liberia"/>
-					<Item Id="2434" Title="Libya"/>
-					<Item Id="2438" Title="Liechtenstein"/>
-					<Item Id="2440" Title="Lithuania"/>
-					<Item Id="2442" Title="Luxembourg"/>
-					<Item Id="2807" Title="Macedonia (FYROM)"/>
-					<Item Id="2450" Title="Madagascar"/>
-					<Item Id="2454" Title="Malawi"/>
-					<Item Id="2458" Title="Malaysia"/>
-					<Item Id="2462" Title="Maldives"/>
-					<Item Id="2466" Title="Mali"/>
-					<Item Id="2470" Title="Malta"/>
-					<Item Id="2584" Title="Marshall Islands"/>
-					<Item Id="2478" Title="Mauritania"/>
-					<Item Id="2480" Title="Mauritius"/>
-					<Item Id="2484" Title="Mexico"/>
-					<Item Id="2583" Title="Micronesia"/>
-					<Item Id="2498" Title="Moldova"/>
-					<Item Id="2492" Title="Monaco"/>
-					<Item Id="2496" Title="Mongolia"/>
-					<Item Id="2499" Title="Montenegro"/>
-					<Item Id="2504" Title="Morocco"/>
-					<Item Id="2508" Title="Mozambique"/>
-					<Item Id="2516" Title="Namibia"/>
-					<Item Id="2520" Title="Nauru"/>
-					<Item Id="2524" Title="Nepal"/>
-					<Item Id="2528" Title="Netherlands"/>
-					<Item Id="2540" Title="New Caledonia"/>
-					<Item Id="2554" Title="New Zealand"/>
-					<Item Id="2558" Title="Nicaragua"/>
-					<Item Id="2562" Title="Niger"/>
-					<Item Id="2566" Title="Nigeria"/>
-					<Item Id="2570" Title="Niue"/>
-					<Item Id="2574" Title="Norfolk Island"/>
-					<Item Id="2580" Title="Northern Mariana Islands"/>
-					<Item Id="2578" Title="Norway"/>
-					<Item Id="2512" Title="Oman"/>
-					<Item Id="2586" Title="Pakistan"/>
-					<Item Id="2585" Title="Palau"/>
-					<Item Id="2591" Title="Panama"/>
-					<Item Id="2598" Title="Papua New Guinea"/>
-					<Item Id="2600" Title="Paraguay"/>
-					<Item Id="2604" Title="Peru"/>
-					<Item Id="2608" Title="Philippines"/>
-					<Item Id="2612" Title="Pitcairn Islands"/>
-					<Item Id="2616" Title="Poland"/>
-					<Item Id="2620" Title="Portugal"/>
-					<Item Id="2634" Title="Qatar"/>
-					<Item Id="2642" Title="Romania"/>
-					<Item Id="2643" Title="Russia"/>
-					<Item Id="2646" Title="Rwanda"/>
-					<Item Id="2654" Title="Saint Helena"/>
-					<Item Id="2659" Title="Saint Kitts and Nevis"/>
-					<Item Id="2662" Title="Saint Lucia"/>
-					<Item Id="2666" Title="Saint Pierre and Miquelon"/>
-					<Item Id="2670" Title="Saint Vincent and the Grenadines"/>
-					<Item Id="2882" Title="Samoa"/>
-					<Item Id="2674" Title="San Marino"/>
-					<Item Id="2678" Title="Sao Tome and Principe"/>
-					<Item Id="2682" Title="Saudi Arabia"/>
-					<Item Id="2686" Title="Senegal"/>
-					<Item Id="2688" Title="Serbia"/>
-					<Item Id="2690" Title="Seychelles"/>
-					<Item Id="2694" Title="Sierra Leone"/>
-					<Item Id="2702" Title="Singapore"/>
-					<Item Id="2703" Title="Slovakia"/>
-					<Item Id="2705" Title="Slovenia"/>
-					<Item Id="2090" Title="Solomon Islands"/>
-					<Item Id="2706" Title="Somalia"/>
-					<Item Id="2710" Title="South Africa"/>
-					<Item Id="2239" Title="South Georgia and the South Sandwich Islands"/>
-					<Item Id="2410" Title="South Korea"/>
-					<Item Id="2724" Title="Spain"/>
-					<Item Id="2144" Title="Sri Lanka"/>
-					<Item Id="2740" Title="Suriname"/>
-					<Item Id="2748" Title="Swaziland"/>
-					<Item Id="2752" Title="Sweden"/>
-					<Item Id="2756" Title="Switzerland"/>
-					<Item Id="2762" Title="Tajikistan"/>
-					<Item Id="2834" Title="Tanzania"/>
-					<Item Id="2764" Title="Thailand"/>
-					<Item Id="2044" Title="The Bahamas"/>
-					<Item Id="2270" Title="The Gambia"/>
-					<Item Id="2626" Title="Timor-Leste"/>
-					<Item Id="2768" Title="Togo"/>
-					<Item Id="2772" Title="Tokelau"/>
-					<Item Id="2776" Title="Tonga"/>
-					<Item Id="2780" Title="Trinidad and Tobago"/>
-					<Item Id="2788" Title="Tunisia"/>
-					<Item Id="2792" Title="Turkey"/>
-					<Item Id="2795" Title="Turkmenistan"/>
-					<Item Id="2798" Title="Tuvalu"/>
-					<Item Id="2800" Title="Uganda"/>
-					<Item Id="2804" Title="Ukraine"/>
-					<Item Id="2784" Title="United Arab Emirates"/>
-					<Item Id="2826" Title="United Kingdom"/>
-					<Item Id="2840" Title="United States"/>
-					<Item Id="2581" Title="United States Minor Outlying Islands"/>
-					<Item Id="2858" Title="Uruguay"/>
-					<Item Id="2860" Title="Uzbekistan"/>
-					<Item Id="2876" Title="Wallis and Futuna"/>
-					<Item Id="2548" Title="Vanuatu"/>
-					<Item Id="2336" Title="Vatican City"/>
-					<Item Id="2862" Title="Venezuela"/>
-					<Item Id="2704" Title="Vietnam"/>
-					<Item Id="2887" Title="Yemen"/>
-					<Item Id="2894" Title="Zambia"/>
-					<Item Id="2716" Title="Zimbabwe"/>
-        </DataSource>
-      </Select>
+			<DataSource>
+				<Item Id="all" Title="[All]"/>
+				<Item Id="2004" Title="Afghanistan"/>
+				<Item Id="2008" Title="Albania"/>
+				<Item Id="2012" Title="Algeria"/>
+				<Item Id="2016" Title="American Samoa"/>
+				<Item Id="2020" Title="Andorra"/>
+				<Item Id="2024" Title="Angola"/>
+				<Item Id="2010" Title="Antarctica"/>
+				<Item Id="2028" Title="Antigua and Barbuda"/>
+				<Item Id="2032" Title="Argentina"/>
+				<Item Id="2051" Title="Armenia"/>
+				<Item Id="2036" Title="Australia"/>
+				<Item Id="2040" Title="Austria"/>
+				<Item Id="2031" Title="Azerbaijan"/>
+				<Item Id="2048" Title="Bahrain"/>
+				<Item Id="2050" Title="Bangladesh"/>
+				<Item Id="2052" Title="Barbados"/>
+				<Item Id="2112" Title="Belarus"/>
+				<Item Id="2056" Title="Belgium"/>
+				<Item Id="2084" Title="Belize"/>
+				<Item Id="2204" Title="Benin"/>
+				<Item Id="2064" Title="Bhutan"/>
+				<Item Id="2068" Title="Bolivia"/>
+				<Item Id="2070" Title="Bosnia and Herzegovina"/>
+				<Item Id="2072" Title="Botswana"/>
+				<Item Id="2076" Title="Brazil"/>
+				<Item Id="2096" Title="Brunei Darussalam"/>
+				<Item Id="2100" Title="Bulgaria"/>
+				<Item Id="2854" Title="Burkina Faso"/>
+				<Item Id="2108" Title="Burundi"/>
+				<Item Id="2116" Title="Cambodia"/>
+				<Item Id="2120" Title="Cameroon"/>
+				<Item Id="2124" Title="Canada"/>
+				<Item Id="2132" Title="Cape Verde"/>
+				<Item Id="2140" Title="Central African Republic"/>
+				<Item Id="2148" Title="Chad"/>
+				<Item Id="2152" Title="Chile"/>
+				<Item Id="2156" Title="China"/>
+				<Item Id="2162" Title="Christmas Island"/>
+				<Item Id="2166" Title="Cocos (Keeling) Islands"/>
+				<Item Id="2170" Title="Colombia"/>
+				<Item Id="2174" Title="Comoros"/>
+				<Item Id="2178" Title="Congo"/>
+				<Item Id="2184" Title="Cook Islands"/>
+				<Item Id="2188" Title="Costa Rica"/>
+				<Item Id="2384" Title="Cote d'Ivoire"/>
+				<Item Id="2191" Title="Croatia"/>
+				<Item Id="2196" Title="Cyprus"/>
+				<Item Id="2203" Title="Czech Republic"/>
+				<Item Id="2180" Title="Democratic Republic of the Congo"/>
+				<Item Id="2208" Title="Denmark"/>
+				<Item Id="2262" Title="Djibouti"/>
+				<Item Id="2212" Title="Dominica"/>
+				<Item Id="2214" Title="Dominican Republic"/>
+				<Item Id="2218" Title="Ecuador"/>
+				<Item Id="2818" Title="Egypt"/>
+				<Item Id="2222" Title="El Salvador"/>
+				<Item Id="2226" Title="Equatorial Guinea"/>
+				<Item Id="2232" Title="Eritrea"/>
+				<Item Id="2233" Title="Estonia"/>
+				<Item Id="2231" Title="Ethiopia"/>
+				<Item Id="2242" Title="Fiji"/>
+				<Item Id="2246" Title="Finland"/>
+				<Item Id="2250" Title="France"/>
+				<Item Id="2258" Title="French Polynesia"/>
+				<Item Id="2260" Title="French Southern and Antarctic Lands"/>
+				<Item Id="2266" Title="Gabon"/>
+				<Item Id="2268" Title="Georgia"/>
+				<Item Id="2276" Title="Germany"/>
+				<Item Id="2288" Title="Ghana"/>
+				<Item Id="2300" Title="Greece"/>
+				<Item Id="2308" Title="Grenada"/>
+				<Item Id="2316" Title="Guam"/>
+				<Item Id="2320" Title="Guatemala"/>
+				<Item Id="2324" Title="Guinea"/>
+				<Item Id="2624" Title="Guinea-Bissau"/>
+				<Item Id="2328" Title="Guyana"/>
+				<Item Id="2332" Title="Haiti"/>
+				<Item Id="2334" Title="Heard Island and McDonald Islands"/>
+				<Item Id="2340" Title="Honduras"/>
+				<Item Id="2348" Title="Hungary"/>
+				<Item Id="2352" Title="Iceland"/>
+				<Item Id="2356" Title="India"/>
+				<Item Id="2360" Title="Indonesia"/>
+				<Item Id="2368" Title="Iraq"/>
+				<Item Id="2372" Title="Ireland"/>
+				<Item Id="2376" Title="Israel"/>
+				<Item Id="2380" Title="Italy"/>
+				<Item Id="2388" Title="Jamaica"/>
+				<Item Id="2392" Title="Japan"/>
+				<Item Id="2400" Title="Jordan"/>
+				<Item Id="2398" Title="Kazakhstan"/>
+				<Item Id="2404" Title="Kenya"/>
+				<Item Id="2296" Title="Kiribati"/>
+				<Item Id="2414" Title="Kuwait"/>
+				<Item Id="2417" Title="Kyrgyzstan"/>
+				<Item Id="2418" Title="Laos"/>
+				<Item Id="2428" Title="Latvia"/>
+				<Item Id="2422" Title="Lebanon"/>
+				<Item Id="2426" Title="Lesotho"/>
+				<Item Id="2430" Title="Liberia"/>
+				<Item Id="2434" Title="Libya"/>
+				<Item Id="2438" Title="Liechtenstein"/>
+				<Item Id="2440" Title="Lithuania"/>
+				<Item Id="2442" Title="Luxembourg"/>
+				<Item Id="2807" Title="Macedonia (FYROM)"/>
+				<Item Id="2450" Title="Madagascar"/>
+				<Item Id="2454" Title="Malawi"/>
+				<Item Id="2458" Title="Malaysia"/>
+				<Item Id="2462" Title="Maldives"/>
+				<Item Id="2466" Title="Mali"/>
+				<Item Id="2470" Title="Malta"/>
+				<Item Id="2584" Title="Marshall Islands"/>
+				<Item Id="2478" Title="Mauritania"/>
+				<Item Id="2480" Title="Mauritius"/>
+				<Item Id="2484" Title="Mexico"/>
+				<Item Id="2583" Title="Micronesia"/>
+				<Item Id="2498" Title="Moldova"/>
+				<Item Id="2492" Title="Monaco"/>
+				<Item Id="2496" Title="Mongolia"/>
+				<Item Id="2499" Title="Montenegro"/>
+				<Item Id="2504" Title="Morocco"/>
+				<Item Id="2508" Title="Mozambique"/>
+				<Item Id="2516" Title="Namibia"/>
+				<Item Id="2520" Title="Nauru"/>
+				<Item Id="2524" Title="Nepal"/>
+				<Item Id="2528" Title="Netherlands"/>
+				<Item Id="2540" Title="New Caledonia"/>
+				<Item Id="2554" Title="New Zealand"/>
+				<Item Id="2558" Title="Nicaragua"/>
+				<Item Id="2562" Title="Niger"/>
+				<Item Id="2566" Title="Nigeria"/>
+				<Item Id="2570" Title="Niue"/>
+				<Item Id="2574" Title="Norfolk Island"/>
+				<Item Id="2580" Title="Northern Mariana Islands"/>
+				<Item Id="2578" Title="Norway"/>
+				<Item Id="2512" Title="Oman"/>
+				<Item Id="2586" Title="Pakistan"/>
+				<Item Id="2585" Title="Palau"/>
+				<Item Id="2591" Title="Panama"/>
+				<Item Id="2598" Title="Papua New Guinea"/>
+				<Item Id="2600" Title="Paraguay"/>
+				<Item Id="2604" Title="Peru"/>
+				<Item Id="2608" Title="Philippines"/>
+				<Item Id="2612" Title="Pitcairn Islands"/>
+				<Item Id="2616" Title="Poland"/>
+				<Item Id="2620" Title="Portugal"/>
+				<Item Id="2634" Title="Qatar"/>
+				<Item Id="2642" Title="Romania"/>
+				<Item Id="2643" Title="Russia"/>
+				<Item Id="2646" Title="Rwanda"/>
+				<Item Id="2654" Title="Saint Helena"/>
+				<Item Id="2659" Title="Saint Kitts and Nevis"/>
+				<Item Id="2662" Title="Saint Lucia"/>
+				<Item Id="2666" Title="Saint Pierre and Miquelon"/>
+				<Item Id="2670" Title="Saint Vincent and the Grenadines"/>
+				<Item Id="2882" Title="Samoa"/>
+				<Item Id="2674" Title="San Marino"/>
+				<Item Id="2678" Title="Sao Tome and Principe"/>
+				<Item Id="2682" Title="Saudi Arabia"/>
+				<Item Id="2686" Title="Senegal"/>
+				<Item Id="2688" Title="Serbia"/>
+				<Item Id="2690" Title="Seychelles"/>
+				<Item Id="2694" Title="Sierra Leone"/>
+				<Item Id="2702" Title="Singapore"/>
+				<Item Id="2703" Title="Slovakia"/>
+				<Item Id="2705" Title="Slovenia"/>
+				<Item Id="2090" Title="Solomon Islands"/>
+				<Item Id="2706" Title="Somalia"/>
+				<Item Id="2710" Title="South Africa"/>
+				<Item Id="2239" Title="South Georgia and the South Sandwich Islands"/>
+				<Item Id="2410" Title="South Korea"/>
+				<Item Id="2724" Title="Spain"/>
+				<Item Id="2144" Title="Sri Lanka"/>
+				<Item Id="2740" Title="Suriname"/>
+				<Item Id="2748" Title="Swaziland"/>
+				<Item Id="2752" Title="Sweden"/>
+				<Item Id="2756" Title="Switzerland"/>
+				<Item Id="2762" Title="Tajikistan"/>
+				<Item Id="2834" Title="Tanzania"/>
+				<Item Id="2764" Title="Thailand"/>
+				<Item Id="2044" Title="The Bahamas"/>
+				<Item Id="2270" Title="The Gambia"/>
+				<Item Id="2626" Title="Timor-Leste"/>
+				<Item Id="2768" Title="Togo"/>
+				<Item Id="2772" Title="Tokelau"/>
+				<Item Id="2776" Title="Tonga"/>
+				<Item Id="2780" Title="Trinidad and Tobago"/>
+				<Item Id="2788" Title="Tunisia"/>
+				<Item Id="2792" Title="Turkey"/>
+				<Item Id="2795" Title="Turkmenistan"/>
+				<Item Id="2798" Title="Tuvalu"/>
+				<Item Id="2800" Title="Uganda"/>
+				<Item Id="2804" Title="Ukraine"/>
+				<Item Id="2784" Title="United Arab Emirates"/>
+				<Item Id="2826" Title="United Kingdom"/>
+				<Item Id="2840" Title="United States"/>
+				<Item Id="2581" Title="United States Minor Outlying Islands"/>
+				<Item Id="2858" Title="Uruguay"/>
+				<Item Id="2860" Title="Uzbekistan"/>
+				<Item Id="2876" Title="Wallis and Futuna"/>
+				<Item Id="2548" Title="Vanuatu"/>
+				<Item Id="2336" Title="Vatican City"/>
+				<Item Id="2862" Title="Venezuela"/>
+				<Item Id="2704" Title="Vietnam"/>
+				<Item Id="2887" Title="Yemen"/>
+				<Item Id="2894" Title="Zambia"/>
+				<Item Id="2716" Title="Zimbabwe"/>
+			</DataSource>
 		</Resource>
 		<Resource Id="Languages">
-			<Select Id="Language" DefaultValue="all">
-        <DataSource>
-					<Item Id="all" Title="[All]"/>
-					<Item Id="1019" Title="Arabic"/>
-					<Item Id="1020" Title="Bulgarian"/>
-					<Item Id="1038" Title="Catalan"/>
-					<Item Id="1017" Title="Chinese (simplified)"/>
-					<Item Id="1018" Title="Chinese (traditional)"/>
-					<Item Id="1039" Title="Croatian"/>
-					<Item Id="1021" Title="Czech"/>
-					<Item Id="1009" Title="Danish"/>
-					<Item Id="1010" Title="Dutch"/>
-					<Item Id="1000" Title="English"/>
-					<Item Id="1043" Title="Estonian"/>
-					<Item Id="1042" Title="Filipino"/>
-					<Item Id="1011" Title="Finnish"/>
-					<Item Id="1002" Title="French"/>
-					<Item Id="1001" Title="German"/>
-					<Item Id="1022" Title="Greek"/>
-					<Item Id="1027" Title="Hebrew"/>
-					<Item Id="1023" Title="Hindi"/>
-					<Item Id="1024" Title="Hungarian"/>
-					<Item Id="1026" Title="Icelandic"/>
-					<Item Id="1025" Title="Indonesian"/>
-					<Item Id="1004" Title="Italian"/>
-					<Item Id="1005" Title="Japanese"/>
-					<Item Id="1012" Title="Korean"/>
-					<Item Id="1028" Title="Latvian"/>
-					<Item Id="1029" Title="Lithuanian"/>
-					<Item Id="1013" Title="Norwegian"/>
-					<Item Id="1030" Title="Polish"/>
-					<Item Id="1014" Title="Portuguese"/>
-					<Item Id="1032" Title="Romanian"/>
-					<Item Id="1031" Title="Russian"/>
-					<Item Id="1035" Title="Serbian"/>
-					<Item Id="1033" Title="Slovak"/>
-					<Item Id="1034" Title="Slovenian"/>
-					<Item Id="1003" Title="Spanish"/>
-					<Item Id="1015" Title="Swedish"/>
-					<Item Id="1044" Title="Thai"/>
-					<Item Id="1037" Title="Turkish"/>
-					<Item Id="1036" Title="Ukrainian"/>
-					<Item Id="1041" Title="Urdu"/>
-					<Item Id="1040" Title="Vietnamese"/>
-        </DataSource>
-      </Select>
+			<DataSource>
+				<Item Id="all" Title="[All]"/>
+				<Item Id="1019" Title="Arabic"/>
+				<Item Id="1020" Title="Bulgarian"/>
+				<Item Id="1038" Title="Catalan"/>
+				<Item Id="1017" Title="Chinese (simplified)"/>
+				<Item Id="1018" Title="Chinese (traditional)"/>
+				<Item Id="1039" Title="Croatian"/>
+				<Item Id="1021" Title="Czech"/>
+				<Item Id="1009" Title="Danish"/>
+				<Item Id="1010" Title="Dutch"/>
+				<Item Id="1000" Title="English"/>
+				<Item Id="1043" Title="Estonian"/>
+				<Item Id="1042" Title="Filipino"/>
+				<Item Id="1011" Title="Finnish"/>
+				<Item Id="1002" Title="French"/>
+				<Item Id="1001" Title="German"/>
+				<Item Id="1022" Title="Greek"/>
+				<Item Id="1027" Title="Hebrew"/>
+				<Item Id="1023" Title="Hindi"/>
+				<Item Id="1024" Title="Hungarian"/>
+				<Item Id="1026" Title="Icelandic"/>
+				<Item Id="1025" Title="Indonesian"/>
+				<Item Id="1004" Title="Italian"/>
+				<Item Id="1005" Title="Japanese"/>
+				<Item Id="1012" Title="Korean"/>
+				<Item Id="1028" Title="Latvian"/>
+				<Item Id="1029" Title="Lithuanian"/>
+				<Item Id="1013" Title="Norwegian"/>
+				<Item Id="1030" Title="Polish"/>
+				<Item Id="1014" Title="Portuguese"/>
+				<Item Id="1032" Title="Romanian"/>
+				<Item Id="1031" Title="Russian"/>
+				<Item Id="1035" Title="Serbian"/>
+				<Item Id="1033" Title="Slovak"/>
+				<Item Id="1034" Title="Slovenian"/>
+				<Item Id="1003" Title="Spanish"/>
+				<Item Id="1015" Title="Swedish"/>
+				<Item Id="1044" Title="Thai"/>
+				<Item Id="1037" Title="Turkish"/>
+				<Item Id="1036" Title="Ukrainian"/>
+				<Item Id="1041" Title="Urdu"/>
+				<Item Id="1040" Title="Vietnamese"/>
+			</DataSource>
 		</Resource>
   </Resources>
 
   <RestConnector Id="Customers" Title="Customers" Hidden="true">
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
+        <Resource Id="HttpSettingsSOAP"/>
         <RequestBody>
           <![CDATA[
 					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
@@ -316,150 +374,298 @@
 				<Xpath Expr="descriptiveName" Id="CustomerName"/>
       </Xpath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="Campaigns" Title="Campaigns">
+	<RestConnector Id="Campaigns" Title="Campaigns" Group="Performance Reports">
 		<Parameters>
 		  <Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="" HelpText="Get fields for campaign with specific id"/>
-      <DateInterval Id="DateInterval" Title="Date Interval"/>
+			<Text Id="CustomWhere" Title="AWQL WHERE statement" Debug.DefaultValue="" HelpText="Filter results using the AWQL. Example: Impressions &gt; 1000" HelpUrl="https://seotoolsforexcel.com/google-adwords/"/>
     </Parameters>
-		<Paging PageSize="100"/>
+		<Paging PageSize="10000"/>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
-        <RequestBody>
-          <![CDATA[
-					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
-						 <s:Header>
-								<RequestHeader xmlns="https://adwords.google.com/api/adwords/cm/v201809">
-									 <clientCustomerId>@(Model.CustomerId)</clientCustomerId>
-									 <developerToken>@(Model.DeveloperToken)</developerToken>
-									 <userAgent>SeoTools</userAgent>
-								</RequestHeader>
-						 </s:Header>
-						 <s:Body xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-								<get xmlns="https://adwords.google.com/api/adwords/cm/v201809">
-									 <serviceSelector>
-											@GetSelectedFields()
-											@GetPredicateEquals("Id",Model.CampaignId)
-											@GetDateFilter()
-											@GetPaging()
-									 </serviceSelector>
-								</get>
-						 </s:Body>
-					</s:Envelope>
-          ]]>
-        </RequestBody>
+				<Resource Id="HttpSettingsAWQL"/>
+				<RequestForm>
+          <Param Name='__rdquery'>
+					<![CDATA[
+					@{
+						List<string> criteria = new List<string>();
+						string where = string.Empty;
+
+						if(!string.IsNullOrEmpty(Model.CampaignId)) {
+							criteria.Add("CampaignId = " + Model.CampaignId);
+						}
+						
+						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
+							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
+							? Model.CustomWhere.Substring(6)
+							: Model.CustomWhere;
+							criteria.Add(customWhere);
+						}
+
+						if(criteria.Count() > 0)
+							where = "WHERE " + string.Join(" AND ", criteria);
+					}
+					@GetSELECT()
+					FROM CAMPAIGN_PERFORMANCE_REPORT
+					@where
+					]]>
+					</Param>
+          <Param Name='__fmt'>XML</Param>
+				</RequestForm>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-          https://adwords.google.com/api/adwords/cm/v201809/CampaignService?
+					https://adwords.google.com/api/adwords/reportdownload/v201809
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Xpath Expr="//getResponse/rval/entries">
-				<Xpath Expr="id" Id="Id" Converter="Auto"/>
-				<Xpath Expr="name" Id="Name" Converter="String"/>
-				<Xpath Expr="adservingoptimizationstatus" Id="AdServingOptimizationStatus" Converter="String"/>
-				<Compute Expr="@(Model.Inp / 1000000)" Id="Amount" Converter="Double" DefaultValue="0">
-					<Xpath Expr="budget/amount/microamount" Id="Inp" Converter="Double" DefaultValue="0"/>
+			<Xpath Expr="//row">
+				<Xpath Expr="." Attribute="campaignID" Id="CampaignId" Converter="String"/>
+				<Xpath Expr="." Attribute="campaign" Id="CampaignName" Converter="String"/>
+				<Xpath Expr="." Attribute="budgetID" Id="BudgetId" Converter="String"/>
+				<Xpath Expr="." Attribute="startDate" Id="StartDate" Converter="Auto" DefaultValue=""/>
+				<Xpath Expr="." Attribute="endDate" Id="EndDate" Converter="Auto" DefaultValue=""/>
+				<Xpath Expr="." Attribute="campaignState" Id="CampaignStatus" Converter="String"/>
+				<Xpath Expr="." Attribute="campaignServingStatus" Id="ServingStatus" Converter="String"/>
+				<Xpath Expr="." Attribute="network" Id="AdNetworkType1" Converter="String"/>
+				<Xpath Expr="." Attribute="networkWithSearchPartners" Id="AdNetworkType2" Converter="String"/>
+				<Compute Expr="@HandleDouble()" Id="Amount" Converter="Double" DefaultValue="0">
+					<Xpath Expr="." Attribute="budget" Id="Inp"/>
 				</Compute>
-				<Xpath Expr="budget/budgetid" Id="BudgetId" Converter="Auto"/>
-				<Xpath Expr="budget/name" Id="BudgetName" Converter="String"/>
-				<Xpath Expr="budget/referenceCount" Id="BudgetReferenceCount" Converter="Int"/>
-				<Xpath Expr="budget/status" Id="BudgetStatus" Converter="String"/>
-				<Xpath Expr="budget/deliverymethod" Id="DeliveryMethod" Converter="String"/>
-				<Xpath Expr="conversionoptimizereligibility/eligible" Id="Eligible" Converter="Bool"/>
-				<Xpath Expr="enddate" Id="EndDate" Converter="DateTime" Converter.SourceFormat="yyyyMMdd"/>
-				<Xpath Expr="conversionoptimizereligibility/rejectionreasons" Id="RejectionReasons" Converter="String" DefaultValue=""/>
-				<Xpath Expr="servingstatus" Id="ServingStatus" Converter="String"/>
-				<Xpath Expr="startDate" Id="StartDate" Converter="DateTime" Converter.SourceFormat="yyyyMMdd"/>
-				<Xpath Expr="status" Id="Status" Converter="String"/>
-				<Xpath Expr="networksetting/targetContentNetwork" Id="TargetContentNetwork" Converter="Bool"/>
-				<Xpath Expr="networksetting/targetGoogleSearch" Id="TargetGoogleSearch" Converter="Bool"/>
-				<Xpath Expr="networksetting/targetPartnerSearchNetwork" Id="TargetPartnerSearchNetwork" Converter="Bool"/>
-				<Xpath Expr="networksetting/targetSearchNetwork" Id="TargetSearchNetwork" Converter="Bool"/>
-      </Xpath>
-    </Parse>
-    <Resource Id="Fail"/>
+				<Resource Id="PerformanceFields"/>
+			</Xpath>
+		</Parse>
+		<Resource Id="FailAWQL"/>
   </RestConnector>
 
-  <RestConnector Id="Keywords" Title="Keywords">
+	<RestConnector Id="AdGroups" Title="AdGroups" Group="Performance Reports">
 		<Parameters>
-		  <Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
-			<Text Id="KeywordId" Title="Keyword Id" Debug.DefaultValue="" HelpText="Get fields for keyword with specific id"/>
+			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
+			<Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="" HelpText="Get fields for campaign with specific id"/>
 			<Text Id="AdGroupId" Title="AdGroup Id" Debug.DefaultValue="" HelpText="Get fields for adgroup with specific id"/>
-      <DateInterval Id="DateInterval" Title="Date Interval"/>
+			<Text Id="CustomWhere" Title="AWQL WHERE statement" Debug.DefaultValue="" HelpText="Filter results using the AWQL. Example: Impressions &gt; 1000" HelpUrl="https://seotoolsforexcel.com/google-adwords/"/>
     </Parameters>
-		<Paging PageSize="100"/>
+		<Paging PageSize="10000"/>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
-        <RequestBody>
-          <![CDATA[
-					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
-						 <s:Header>
-								<RequestHeader xmlns="https://adwords.google.com/api/adwords/cm/v201809">
-									 <clientCustomerId>@(Model.CustomerId)</clientCustomerId>
-									 <developerToken>@(Model.DeveloperToken)</developerToken>
-									 <userAgent>SeoTools</userAgent>
-								</RequestHeader>
-						 </s:Header>
-						 <s:Body xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-								<get xmlns="https://adwords.google.com/api/adwords/cm/v201809">
-									 <serviceSelector>
-											@GetSelectedFields()
-											@GetPredicateEquals("CriteriaType", "KEYWORD")
-											@GetPredicateEquals("Id", Model.KeywordId)
-											@GetPredicateEquals("AdGroupId", Model.AdGroupId)
-											@GetDateFilter()
-											@GetPaging()
-									 </serviceSelector>
-								</get>
-						 </s:Body>
-					</s:Envelope>
-          ]]>
-        </RequestBody>
+				<Resource Id="HttpSettingsAWQL"/>
+				<RequestForm>
+          <Param Name='__rdquery'>
+					<![CDATA[
+					@{
+						List<string> criteria = new List<string>();
+						string where = string.Empty;
+
+						if(!string.IsNullOrEmpty(Model.CampaignId)) {
+							criteria.Add("CampaignId = " + Model.CampaignId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.AdGroupId)) {
+							criteria.Add("AdGroupId = " + Model.AdGroupId);
+						}
+						
+						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
+							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
+							? Model.CustomWhere.Substring(6)
+							: Model.CustomWhere;
+							criteria.Add(customWhere);
+						}
+
+						if(criteria.Count() > 0)
+							where = "WHERE " + string.Join(" AND ", criteria);
+					}
+					@GetSELECT()
+					FROM ADGROUP_PERFORMANCE_REPORT
+					@where
+					]]>
+					</Param>
+          <Param Name='__fmt'>XML</Param>
+				</RequestForm>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-          https://adwords.google.com/api/adwords/cm/v201809/AdGroupCriterionService?
+					https://adwords.google.com/api/adwords/reportdownload/v201809
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Xpath Expr="//getResponse/rval/entries">
-				<Xpath Expr="criterion/id" Id="Id" Converter="Auto"/>
-				<Xpath Expr="adgroupid" Id="AdGroupId" Converter="Auto"/>
-				<Xpath Expr="criterion/text" Id="KeywordText" Converter="String"/>
-				<Xpath Expr="criterion/matchtype" Id="KeywordMatchType" Converter="String"/>
-				<Xpath Expr="approvalstatus" Id="ApprovalStatus" Converter="String" DefaultValue=""/>
-				<Xpath Expr="disapprovalreasons" Id="DisapprovalReasons" Converter="String" DefaultValue=""/>
-				<Compute Expr="@(Model.Inp / 1000000)" Id="FirstPageCpc" Converter="Double" DefaultValue="0">
-					<Xpath Expr="firstpagecpc/amount/microamount" Id="Inp" Converter="Double" DefaultValue="0"/>
-				</Compute>
-				<Xpath Expr="criterion/matchtype" Id="QualityScore" Converter="Auto" DefaultValue=""/>
-				<Xpath Expr="userstatus" Id="Status" Converter="String" DefaultValue=""/>
-				<Xpath Expr="systemservingstatus" Id="SystemServingStatus" Converter="String" DefaultValue=""/>
+			<Xpath Expr="//row">
+				<Xpath Expr="." Attribute="adGroupID" Id="AdGroupId" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroup" Id="AdGroupName" Converter="String"/>
+				<Xpath Expr="." Attribute="campaignID" Id="CampaignId" Converter="String"/>
+				<Xpath Expr="." Attribute="campaign" Id="CampaignName" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroupState" Id="AdGroupStatus" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroupType" Id="AdGroupType" Converter="String"/>
+				<Xpath Expr="." Attribute="network" Id="AdNetworkType1" Converter="String"/>
+				<Xpath Expr="." Attribute="networkWithSearchPartners" Id="AdNetworkType2" Converter="String"/>
+				<Resource Id="PerformanceFields"/>
       </Xpath>
-    </Parse>
-    <Resource Id="Fail"/>
+		</Parse>
+		<Resource Id="FailAWQL"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsSearchVolume" Title="Keywords Search Volume">
+	<RestConnector Id="Keywords" Title="Keywords" Group="Performance Reports">
+		<Parameters>
+			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
+			<Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="" HelpText="Get fields for campaign with specific id"/>
+			<Text Id="AdGroupId" Title="AdGroup Id" Debug.DefaultValue="" HelpText="Get fields for adgroup with specific id"/>
+			<Text Id="KeywordId" Title="Keyword Id" Debug.DefaultValue="" HelpText="Get fields for keyword with specific id"/>
+			<Text Id="CustomWhere" Title="AWQL WHERE statement" Debug.DefaultValue="" HelpText="Filter results using the AWQL. Example: Impressions &gt; 1000" HelpUrl="https://seotoolsforexcel.com/google-adwords/"/>
+    </Parameters>
+		<Paging PageSize="10000"/>
+    <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpSettingsAWQL"/>
+				<RequestForm>
+          <Param Name='__rdquery'>
+					<![CDATA[
+					@{
+						List<string> criteria = new List<string>();
+						string where = string.Empty;
+
+						if(!string.IsNullOrEmpty(Model.CampaignId)) {
+							criteria.Add("CampaignId = " + Model.CampaignId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.AdGroupId)) {
+							criteria.Add("AdGroupId = " + Model.AdGroupId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.KeywordId)) {
+							criteria.Add("Id = " + Model.KeywordId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
+							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
+							? Model.CustomWhere.Substring(6)
+							: Model.CustomWhere;
+							criteria.Add(customWhere);
+						}
+
+						if(criteria.Count() > 0)
+							where = "WHERE " + string.Join(" AND ", criteria);
+					}
+					@GetSELECT()
+					FROM KEYWORDS_PERFORMANCE_REPORT
+					@where
+					]]>
+					</Param>
+          <Param Name='__fmt'>XML</Param>
+				</RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+					https://adwords.google.com/api/adwords/reportdownload/v201809
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Xpath Expr="//row">
+				<Xpath Expr="." Attribute="keywordID" Id="Id" Converter="String"/>
+				<Xpath Expr="." Attribute="keyword" Id="Criteria" Title="KeywordText" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroupID" Id="AdGroupId" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroup" Id="AdGroupName" Converter="String"/>
+				<Xpath Expr="." Attribute="campaignID" Id="CampaignId" Converter="String"/>
+				<Xpath Expr="." Attribute="campaign" Id="CampaignName" Converter="String"/>
+				<Xpath Expr="." Attribute="matchType" Id="KeywordMatchType" Converter="String"/>
+				<Xpath Expr="." Attribute="approvalStatus" Id="ApprovalStatus" Converter="String"/>
+				<Xpath Expr="." Attribute="keywordState" Id="Status" Converter="String"/>
+				<Xpath Expr="." Attribute="criterionServingStatus" Id="SystemServingStatus" Converter="String"/>
+				<Resource Id="PerformanceFields"/>
+      </Xpath>
+		</Parse>
+		<Resource Id="FailAWQL"/>
+  </RestConnector>
+
+	<RestConnector Id="Ads" Title="Ads" Group="Performance Reports">
+		<Parameters>
+			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
+			<Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="" HelpText="Get fields for campaign with specific id"/>
+			<Text Id="AdGroupId" Title="AdGroup Id" Debug.DefaultValue="20591472781" HelpText="Get fields for adgroup with specific id"/>
+			<Text Id="AdId" Title="Ad Id" Debug.DefaultValue="" HelpText="Get fields for ad with specific id"/>
+			<Text Id="CustomWhere" Title="AWQL WHERE statement" Debug.DefaultValue="" HelpText="Filter results using the AWQL. Example: Impressions &gt; 1000" HelpUrl="https://seotoolsforexcel.com/google-adwords/"/>
+    </Parameters>
+		<Paging PageSize="10000"/>
+    <Fetch>
+      <HttpSettings>
+				<Resource Id="HttpSettingsAWQL"/>
+				<RequestForm>
+          <Param Name='__rdquery'>
+					<![CDATA[
+					@{
+						List<string> criteria = new List<string>();
+						string where = string.Empty;
+
+						if(!string.IsNullOrEmpty(Model.CampaignId)) {
+							criteria.Add("CampaignId = " + Model.CampaignId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.AdGroupId)) {
+							criteria.Add("AdGroupId = " + Model.AdGroupId);
+						}
+
+						if(!string.IsNullOrEmpty(Model.AdId)) {
+							criteria.Add("Id = " + Model.AdId);
+						}
+						
+						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
+							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
+							? Model.CustomWhere.Substring(6)
+							: Model.CustomWhere;
+							criteria.Add(customWhere);
+						}
+
+						if(criteria.Count() > 0)
+							where = "WHERE " + string.Join(" AND ", criteria);
+					}
+					@GetSELECT()
+					FROM AD_PERFORMANCE_REPORT
+					@where
+					]]>
+					</Param>
+          <Param Name='__fmt'>XML</Param>
+				</RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+					https://adwords.google.com/api/adwords/reportdownload/v201809
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Xpath Expr="//row">
+				<Xpath Expr="." Attribute="adID" Id="Id" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroupID" Id="AdGroupId" Converter="String"/>
+				<Xpath Expr="." Attribute="adGroup" Id="AdGroupName" Converter="String"/>
+				<Xpath Expr="." Attribute="campaignID" Id="CampaignId" Converter="String"/>
+				<Xpath Expr="." Attribute="campaign" Id="CampaignName" Converter="String"/>
+				<Xpath Expr="." Attribute="description" Id="Description" Converter="String"/>
+				<Resource Id="PerformanceFields"/>
+      </Xpath>
+		</Parse>
+		<Resource Id="FailAWQL"/>
+  </RestConnector>
+
+
+  <RestConnector Id="KeywordsSearchVolume" Title="Keywords Search Volume" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Keywords" Title="Keyword(s)" Required="true" Debug.DefaultValue="mamma" HelpText="One or more keywords separated by a newline" Multiline="true"/>
-			<Resource Id="Locations"/>
-			<Resource Id="Languages"/>
+			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
+				<Resource Id="Locations"/>
+			</Select>
+			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+				<Resource Id="Languages"/>
+			</Select>
 			<Checkbox Id="GoogleOnly" Title="Google search only"/>
 		</Parameters>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
+        <Resource Id="HttpSettingsSOAP"/>
         <RequestBody>
           <![CDATA[
 					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
@@ -472,22 +678,21 @@
 						 </s:Header>
 						 <s:Body xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 								<get xmlns="https://adwords.google.com/api/adwords/o/v201809">
-								<selector>
-									<searchParameters xsi:type="RelatedToQuerySearchParameter">
-										 @GetKeywords()
-									</searchParameters>
-									@GetLocation()
-									@GetLanguage()
-									@GetGoogleOnly()
-									<ideaType>KEYWORD</ideaType>
-									<requestType>STATS</requestType>
-									@GetSelectedTags()
-									<paging>
-										 <startIndex xmlns="https://adwords.google.com/api/adwords/cm/v201809">0</startIndex>
-										 <numberResults xmlns="https://adwords.google.com/api/adwords/cm/v201809">@GetKeywordsCount()</numberResults>
-									</paging>
-							 </selector>
-
+									<selector>
+										<searchParameters xsi:type="RelatedToQuerySearchParameter">
+											 @GetKeywords()
+										</searchParameters>
+										@GetLocation()
+										@GetLanguage()
+										@GetGoogleOnly()
+										<ideaType>KEYWORD</ideaType>
+										<requestType>STATS</requestType>
+										@GetSelectedTags()
+										<paging>
+											 <startIndex xmlns="https://adwords.google.com/api/adwords/cm/v201809">0</startIndex>
+											 <numberResults xmlns="https://adwords.google.com/api/adwords/cm/v201809">@GetKeywordsCount()</numberResults>
+										</paging>
+								 </selector>
 								</get>
 						 </s:Body>
 					</s:Envelope>
@@ -507,20 +712,24 @@
 				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>
       </Xpath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsSearchVolumeTrends" Title="Keywords Search Volume Trends">
+  <RestConnector Id="KeywordsSearchVolumeTrends" Title="Keywords Search Volume Trends" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Keywords" Title="Keyword(s)" Debug.DefaultValue="mamma" HelpText="One or more keywords separated by a newline" Multiline="true"/>
-			<Resource Id="Locations"/>
-			<Resource Id="Languages"/>
+			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
+				<Resource Id="Locations"/>
+			</Select>
+			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+				<Resource Id="Languages"/>
+			</Select>
 			<Checkbox Id="GoogleOnly" Title="Google search only"/>
     </Parameters>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
+        <Resource Id="HttpSettingsSOAP"/>
         <RequestBody>
           <![CDATA[
 					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
@@ -569,20 +778,24 @@
 				<Xpath Expr="." Id="Volume" Converter="Int"/>
       </Xpath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsIdeas" Title="Keywords Ideas">
+  <RestConnector Id="KeywordsIdeas" Title="Keywords Ideas" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Query" Title="Query or URL" Required="true" Debug.DefaultValue="https://seotoolsforexcel.com" HelpText="Find keywords based on a query or URL"/>
-			<Resource Id="Locations"/>
-			<Resource Id="Languages"/>
+			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
+				<Resource Id="Locations"/>
+			</Select>
+			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+				<Resource Id="Languages"/>
+			</Select>
 		</Parameters>
 		<Paging PageSize="100"/>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
+        <Resource Id="HttpSettingsSOAP"/>
         <RequestBody>
           <![CDATA[
 					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
@@ -628,20 +841,24 @@
 				<Xpath Expr="data[key='EXTRACTED_FROM_WEBPAGE']/value/value/url" Id="ExtractedFromWebpage" Title="Extracted from webpage" Tag="EXTRACTED_FROM_WEBPAGE" Converter="String" DefaultValue=""/>
       </Xpath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsIdeasTrends" Title="Keywords Ideas Trends">
+  <RestConnector Id="KeywordsIdeasTrends" Title="Keywords Ideas Trends" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Query" Title="Query or URL" Required="true" Debug.DefaultValue="https://seotoolsforexcel.com" HelpText="Find keywords based on a query or URL"/>
-			<Resource Id="Locations"/>
-			<Resource Id="Languages"/>
+			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
+				<Resource Id="Locations"/>
+			</Select>
+			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+				<Resource Id="Languages"/>
+			</Select>
     </Parameters>
 		<Paging PageSize="100" DefaultTake="1200"/>
     <Fetch>
       <HttpSettings>
-        <Resource Id="HttpSettingsProps"/>
+        <Resource Id="HttpSettingsSOAP"/>
         <RequestBody>
           <![CDATA[
 					<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
@@ -687,23 +904,17 @@
 				<Xpath Expr="." Id="Volume" Converter="Int"/>
       </Xpath>
     </Parse>
-    <Resource Id="Fail"/>
+    <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="AWQL" Title="Adwords Query Language (AWQL)">
+  <RestConnector Id="AWQL" Title="Custom Query" Group="Adwords Query Language (AWQL)">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Query" Title="Awql" Required="true" HelpText="Adwords Query Language" Multiline="true"/>
     </Parameters>
     <Fetch>
-      <HttpSettings>
-				<RequestHeaders>
-					<Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-					<Header Name='clientCustomerId'><![CDATA[@(Model.CustomerId)]]></Header>
-					<Header Name='developerToken'><![CDATA[@(Model.DeveloperToken)]]></Header>
-				</RequestHeaders>
-				<RequestMethod>POST</RequestMethod>
-				<RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+			<HttpSettings>
+				<Resource Id="HttpSettingsAWQL"/>
 				<RequestForm>
           <Param Name='__rdquery'>@(Model.Query)</Param>
           <Param Name='__fmt'>CSV</Param>
@@ -726,12 +937,16 @@
 
   <RazorFunctions>
     <![CDATA[
-      string GetSelectedFields() {
-        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-				return string.Join("\n",
-					((ResultField[])Model.Headers)
-					.Where(e => fields.Contains(e.Identifier.ToLower()))
-					.Select(f => new XElement("fields", f.Identifier).ToString()));
+			string HandleDouble() {
+				double val = 0;
+				bool isDouble = double.TryParse(Model.Inp, out val);
+				if(isDouble) val = val / 1000000;
+				return val.ToString();
+			}
+
+			string GetSELECT() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim()).ToArray();
+				return "SELECT " + string.Join(",",((ResultField[])Model.Headers).Where(e => fields.Contains(e.Identifier)).Select(f => f.Identifier).ToArray());
 			}
 
 			string GetSelectedTags() {
@@ -740,29 +955,6 @@
 					((ResultField[])Model.Headers)
 					.Where(e => fields.Contains(e.Identifier.ToLower()))
 					.Select(f => new XElement("requestedAttributeTypes", f.Tag).ToString()));
-			}
-
-			string GetPredicateEquals(string id, string value) {
-				if(string.IsNullOrEmpty(value)) return string.Empty;
-				return new XElement("predicates",
-					new XElement("field", id),
-					new XElement("operator", "EQUALS"),
-					new XElement("values", value))
-					.ToString();
-			}
-
-			string GetDateFilter() {
-				return new XElement("dateRange",
-					new XElement("min", (((DateTime)Model.DateInterval.StartDate).ToString("yyyyMMdd"))),
-					new XElement("max", (((DateTime)Model.DateInterval.EndDate).ToString("yyyyMMdd"))))
-					.ToString();
-			}
-
-			string GetPaging() {
-				return new XElement("paging",
-					new XElement("startIndex", Model.PageCursor.NextSkip),
-					new XElement("numberResults", Model.PageCursor.NextTake))
-					.ToString();
 			}
 
 			string GetKeywords() {
@@ -825,7 +1017,7 @@
 					+ new XElement(tag,Model.Query)
 					+ "</searchParameters>";
 			}
-
     ]]>
   </RazorFunctions>
+
 </Suite>
