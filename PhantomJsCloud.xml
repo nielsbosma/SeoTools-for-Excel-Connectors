@@ -1,12 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Scraping" RequireVersion="8.2" Title="PhantomJs Cloud" Id="PhantomJsCloud" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/PhantomJsCloud.xml" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/" HelpText="Documentation" >
+<Suite Category="Scraping" RequireVersion="9.0" Title="PhantomJs Cloud" Id="PhantomJsCloud" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/PhantomJsCloud.xml" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/" HelpText="Documentation" >
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/">
     <Text Id="ApiKey" Title="API Key" Required="true" HelpUrl="http://seotoolsforexcel.com/phantomjs-cloud/" />
   </Settings>
-
 
   <Resources>
     <Resource Id="Fetch">
@@ -53,13 +52,58 @@
     </Parse>
   </RestConnector>
 
+	<RestConnector Id="Headers" Title="Headers">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="http://www.seotoolsforexcel.com"/>
+      <Text Id="Specific" Title="Specific Header (optional)"/>
+    </Parameters>
+		<Fetch>
+			<Fetch.Url>
+				<![CDATA[
+					https://PhantomJsCloud.com/api/browser/v2/@(Model.ApiKey)/?request=@CreateRequestArr()
+				]]>
+			</Fetch.Url>
+		</Fetch>
+    <Parse>
+      <Array>
+				<Array.Expr>
+					<![CDATA[
+					@{
+					  var headers = Model.FetchedResult.Headers;
+						string[,] resultsAll = new string[headers.Count, 2];
+						string[,] resultsSpecific = new string[1, 1];
+
+						if(!string.IsNullOrEmpty(Model.Specific))
+						{
+							string value = headers[Model.Specific];
+							resultsSpecific[0,0] = value != null ? value : string.Empty;
+							Utils.StoreArray = resultsSpecific;
+						}
+						else
+						{
+							int i = 0;
+							foreach(var key in headers)
+							{
+									resultsAll[i,0] = key;
+									resultsAll[i,1] = headers[key];
+									i++;
+							}
+							Utils.StoreArray = resultsAll;
+						}
+						}
+					]]>
+				</Array.Expr>
+			</Array>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string CreateRequestArr() {
 			var dict = new Dictionary<string, string>();
 			dict.Add("url", Model.Url);
 			dict.Add("renderType", "html");
-			return Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));							
+			return Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
     }
     ]]>
   </RazorFunctions>
