@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="SEMrush" Id="SEMrush" RequireVersion="8.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SEMrush.xml" HelpUrl="http://seotoolsforexcel.com/semrush/" HelpText="Documentation">
+<Suite Category="SEO" Title="SEMrush" Id="SEMrush" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SEMrush.xml" HelpUrl="http://seotoolsforexcel.com/semrush/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -177,6 +177,7 @@
 					<Resource Id="Databases"/>
         </DataSource>
       </Select>
+			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -187,6 +188,12 @@
         &key=@Model.ApiKey
         &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
         @(Model.Database != "all" ? "&database=" + Model.Database : "")
+				@if(!Utils.IsNullDate(Model.DisplayDate))
+        {
+					@: &display_date=@(Model.DisplayDate.Day <= 15
+						?	Model.DisplayDate.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.AddMonths(0).ToString("yyyyMM15"))
+        }
         &export_columns=@Model.Fields
         ]]>
       </Fetch.Url>
@@ -391,7 +398,7 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RestConnector Id="BacklinksOverview" Title="Backlinks Overview" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_overview" HelpText="Provides a summary of backlinks, including their type, referring domains and IP addresses for a domain, root domain, or URL.">
     <Parameters>
       <Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
