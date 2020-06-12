@@ -397,12 +397,9 @@
 						if(!string.IsNullOrEmpty(Model.CampaignId)) {
 							criteria.Add("CampaignId = " + Model.CampaignId);
 						}
-						
+
 						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
-							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
-							? Model.CustomWhere.Substring(6)
-							: Model.CustomWhere;
-							criteria.Add(customWhere);
+							criteria.Add(AdjustWhere());
 						}
 
 						if(criteria.Count() > 0)
@@ -442,7 +439,7 @@
 		<Resource Id="FailAWQL"/>
   </RestConnector>
 
-	<RestConnector Id="AdGroups" Title="AdGroups" Group="Performance Reports">
+	<RestConnector Id="AdGroups" Title="Ad Groups" Group="Performance Reports">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="CampaignId" Title="Campaign Id" Debug.DefaultValue="" HelpText="Get fields for campaign with specific id"/>
@@ -467,12 +464,9 @@
 						if(!string.IsNullOrEmpty(Model.AdGroupId)) {
 							criteria.Add("AdGroupId = " + Model.AdGroupId);
 						}
-						
+
 						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
-							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
-							? Model.CustomWhere.Substring(6)
-							: Model.CustomWhere;
-							criteria.Add(customWhere);
+							criteria.Add(AdjustWhere());
 						}
 
 						if(criteria.Count() > 0)
@@ -540,10 +534,7 @@
 						}
 
 						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
-							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
-							? Model.CustomWhere.Substring(6)
-							: Model.CustomWhere;
-							criteria.Add(customWhere);
+							criteria.Add(AdjustWhere());
 						}
 
 						if(criteria.Count() > 0)
@@ -611,12 +602,9 @@
 						if(!string.IsNullOrEmpty(Model.AdId)) {
 							criteria.Add("Id = " + Model.AdId);
 						}
-						
+
 						if(!string.IsNullOrEmpty(Model.CustomWhere)) {
-							string customWhere = Model.CustomWhere.ToLower().StartsWith("where ")
-							? Model.CustomWhere.Substring(6)
-							: Model.CustomWhere;
-							criteria.Add(customWhere);
+							criteria.Add(AdjustWhere());
 						}
 
 						if(criteria.Count() > 0)
@@ -650,15 +638,14 @@
 		<Resource Id="FailAWQL"/>
   </RestConnector>
 
-
-  <RestConnector Id="KeywordsSearchVolume" Title="Keywords Search Volume" Group="Targeting Ideas Service">
+  <RestConnector Id="KeywordsLookup" Title="Keywords Lookup" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Keywords" Title="Keyword(s)" Required="true" Debug.DefaultValue="mamma" HelpText="One or more keywords separated by a newline" Multiline="true"/>
 			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
 				<Resource Id="Locations"/>
 			</Select>
-			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+			<Select Id="Language" DefaultValue="all" DefaultSettings="PrefLanguage">
 				<Resource Id="Languages"/>
 			</Select>
 			<Checkbox Id="GoogleOnly" Title="Google search only"/>
@@ -710,19 +697,22 @@
 				<Xpath Expr="data[key='KEYWORD_TEXT']/value/value" Id="Keyword" Tag="KEYWORD_TEXT" Converter="String"/>
 				<Xpath Expr="data[key='COMPETITION']/value/value" Id="Competition" Tag="COMPETITION" Converter="Double"/>
 				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>
+				<Compute Expr="@HandleDouble()" Id="AverageCpm" Tag="AVERAGE_CPC" Converter="Double">
+					<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="Inp" DefaultValue="0"/>
+				</Compute>
       </Xpath>
     </Parse>
     <Resource Id="FailSOAP"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsSearchVolumeTrends" Title="Keywords Search Volume Trends" Group="Targeting Ideas Service">
+  <RestConnector Id="KeywordsLookupTrends" Title="Keywords Lookup Trends" Group="Targeting Ideas Service">
 		<Parameters>
 			<Text Id="CustomerId" Title="Customer Id" Required="true" Debug.DefaultValue="9518714818" Select.Connector="Customers" Select.IdField="CustomerId" Select.TitleField="CustomerName"/>
 			<Text Id="Keywords" Title="Keyword(s)" Debug.DefaultValue="mamma" HelpText="One or more keywords separated by a newline" Multiline="true"/>
 			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
 				<Resource Id="Locations"/>
 			</Select>
-			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+			<Select Id="Language" DefaultValue="all" DefaultSettings="PrefLanguage">
 				<Resource Id="Languages"/>
 			</Select>
 			<Checkbox Id="GoogleOnly" Title="Google search only"/>
@@ -788,7 +778,7 @@
 			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
 				<Resource Id="Locations"/>
 			</Select>
-			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+			<Select Id="Language" DefaultValue="all" DefaultSettings="PrefLanguage">
 				<Resource Id="Languages"/>
 			</Select>
 		</Parameters>
@@ -820,7 +810,6 @@
 											 <numberResults xmlns="https://adwords.google.com/api/adwords/cm/v201809">@(Model.PageCursor.NextTake)</numberResults>
 										</paging>
 								 </selector>
-
 								</get>
 						 </s:Body>
 					</s:Envelope>
@@ -838,7 +827,9 @@
 				<Xpath Expr="data[key='KEYWORD_TEXT']/value/value" Id="Keyword" Tag="KEYWORD_TEXT" Converter="String"/>
 				<Xpath Expr="data[key='COMPETITION']/value/value" Id="Competition" Tag="COMPETITION" Converter="Double"/>
 				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>
-				<Xpath Expr="data[key='EXTRACTED_FROM_WEBPAGE']/value/value/url" Id="ExtractedFromWebpage" Title="Extracted from webpage" Tag="EXTRACTED_FROM_WEBPAGE" Converter="String" DefaultValue=""/>
+				<Compute Expr="@HandleDouble()" Id="AverageCpm" Tag="AVERAGE_CPC" Converter="Double">
+					<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="Inp" DefaultValue="0"/>
+				</Compute>
       </Xpath>
     </Parse>
     <Resource Id="FailSOAP"/>
@@ -851,7 +842,7 @@
 			<Select Id="Location" DefaultValue="all" DefaultSettings="PrefLocation">
 				<Resource Id="Locations"/>
 			</Select>
-			<Select Id="Languages" DefaultValue="all" DefaultSettings="PrefLanguage">
+			<Select Id="Language" DefaultValue="all" DefaultSettings="PrefLanguage">
 				<Resource Id="Languages"/>
 			</Select>
     </Parameters>
@@ -967,6 +958,12 @@
 
 			int GetKeywordsCount() {
 				return ((string)Model.Keywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Count();
+			}
+
+			string AdjustWhere() {
+				return Model.CustomWhere.ToLower().StartsWith("where ")
+					? Model.CustomWhere.Substring(6)
+					: Model.CustomWhere;
 			}
 
 			string GetLocation() {
