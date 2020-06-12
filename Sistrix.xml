@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Category="SEO" Title="Sistrix" Id="Sistrix" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Sistrix.xml" HelpUrl="http://seotoolsforexcel.com/sistrix/" HelpText="Documentation">
+<Suite Category="SEO" Title="Sistrix" Id="Sistrix" RequireVersion="9.3.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Sistrix.xml" HelpUrl="http://seotoolsforexcel.com/sistrix/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -104,18 +104,41 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DomainOverview" Title="Domain Overview" Group="Domain Reports" HelpText="This delivers an overview on the current KPIs for the domain." HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
+  <RestConnector Id="DomainOverview" Title="Domain Overview" Group="Domain Reports" HelpText="This delivers an overview on the current KPIs for the domain. Each selected field costs one credit." HelpUrl="https://www.sistrix.com/api/domain/#domainoverview">
     <Parameters>
       <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://google.com" Required="true" />
       <Resource Id="SelectMode" />
       <Resource Id="SelectCountry"/>
 			<Resource Id="Extended"/>
     </Parameters>
+		<Prepare>
+      <Connector Id="SichtBarkeitsIndexHidden" Parameters="Domain,SelectMode,SelectCountry,Extended" RequiredField="SichtBarkeitsIndexGet"/>
+      <Connector Id="KwCountSeoHidden" Parameters="Domain,SelectMode,SelectCountry,Extended" RequiredField="KwCountSeoGet"/>
+      <Connector Id="KwCountSemHidden" Parameters="Domain,SelectMode,SelectCountry,Extended" RequiredField="KwCountSemGet"/>
+      <Connector Id="DomainAgeHidden" Parameters="Domain" RequiredField="AgeGet"/>
+      <Connector Id="DomainPagesHidden" Parameters="Domain" RequiredField="PagesGet"/>
+    </Prepare>
+    <Parse>
+			<Compute Expr="@Model.SichtBarkeitsIndex" Id="SichtBarkeitsIndexGet" Title="Visibility Index" Converter="Auto"/>
+			<Compute Expr="@Model.KwCountSeo" Id="KwCountSeoGet" Title="Keywords SEO" Converter="Auto"/>
+			<Compute Expr="@Model.KwCountSem" Id="KwCountSemGet" Title="Keywords SEM" Converter="Auto"/>
+			<Compute Expr="@Model.Age" Id="AgeGet" Title="Age" Converter="Auto"/>
+			<Compute Expr="@Model.Pages" Id="PagesGet" Title="Pages" Converter="Auto"/>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SichtBarkeitsIndexHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Domain"/>
+      <Resource Id="SelectMode" />
+      <Resource Id="SelectCountry" />
+			<Resource Id="Extended"/>
+    </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://api.sistrix.com/domain.overview?api_key=@(Model.ApiKey)&format=json
+        https://api.sistrix.com/domain.sichtbarkeitsindex?api_key=@(Model.ApiKey)&format=json
         &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
         &country=@(Model.Country)
         @(Model.Extended == true ? "&extended=true" : "")
@@ -123,15 +146,97 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.answer[0].sichtbarkeitsindex[0].value" Id="SichtBarkeitsIndex" Title="Sichtbarkeitsindex" Converter="Double" />
-      <JsonPath Expr="$.answer[0].['kwcount.seo'][0].value" Id="KwCountSeo" Title="Keyword Count Seo" Converter="Int" />
-      <JsonPath Expr="$.answer[0].['kwcount.sem'][0].value" Id="KwCountSem" Title="Keyword Count SEM" Converter="Int" />
-      <JsonPath Expr="$.answer[0].age[0].value" Id="Age" Title="Age" Converter="DateTime" />
-      <JsonPath Expr="$.answer[0].pages[0].value" Id="Pages" Title="Pages" Converter="Int" />
+      <JsonPath Expr="$.answer[0].sichtbarkeitsindex[0].value" Id="SichtBarkeitsIndex" Converter="Double"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="DomainAgeHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://google.com" Required="true" />
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sistrix.com/domain.age?api_key=@(Model.ApiKey)&format=json
+        &domain=@(Utils.UrlProperty(Model.Domain).Domain)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.answer[0].age[0].value" Id="Age" Converter="Auto"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="KwCountSeoHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Domain"/>
+      <Resource Id="SelectMode" />
+      <Resource Id="SelectCountry"/>
+	  <Resource Id="Extended"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sistrix.com/domain.kwcount.seo?api_key=@(Model.ApiKey)&format=json
+        &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
+        &country=@(Model.Country)
+        @(Model.Extended == true ? "&extended=true" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.answer[0].['kwcount.seo'][0].value" Id="KwCountSeo"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+	<RestConnector Id="KwCountSemHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Domain"/>
+      <Resource Id="SelectMode" />
+      <Resource Id="SelectCountry"/>
+	  <Resource Id="Extended"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sistrix.com/domain.kwcount.sem?api_key=@(Model.ApiKey)&format=json
+        &@(Model.Mode)=@(Utils.UrlEncode(Model.Domain))
+        &country=@(Model.Country)
+        @(Model.Extended == true ? "&extended=true" : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.answer[0].['kwcount.sem'][0].value" Id="KwCountSem"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+	<RestConnector Id="DomainPagesHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Domain"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.sistrix.com/domain.pages?api_key=@(Model.ApiKey)&format=json
+        &domain=@(Utils.UrlProperty(Model.Domain).Domain)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.answer[0].['pages'][0].value" Id="Pages"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
   <RestConnector Id="DomainVisibilityIndex" Title="Domain Visibility Index" Group="Domain Reports" HelpText="This method delivers a domain’s SISTRIX Visibility Index value." HelpUrl="https://www.sistrix.com/api/domain/#domainsichtbarkeitsindex">
     <Parameters>
       <Text Id="Domain" Title="Domain/Host/Path/URL" Debug.DefaultValue="https://google.com" Required="true" />
@@ -250,25 +355,6 @@
         <JsonPath Expr="match" Title="Match" Id="Match" Converter="Double"/>
         <Compute Expr="@Model.Domain" Id="Input" Title="Input" Checked="false"/>
       </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="DomainAge" Title="Domain Age" Group="Domain Reports" HelpUrl="https://www.sistrix.com/api/domain/#domainage">
-    <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="https://google.com" Required="true" />
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.sistrix.com/domain.age?api_key=@(Model.ApiKey)&format=json
-        &domain=@(Utils.UrlProperty(Model.Domain).Domain)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.answer[0].age[0].value" Id="Age" Title="Age" Converter="DateTime"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
