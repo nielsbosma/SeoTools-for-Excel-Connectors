@@ -46,9 +46,15 @@
 			</Compute>
       <Regex Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Id="ImageUrl" Title="Display URL" Group="1" Converter="String" DefaultValue=""/>
       <XPath Expr="//meta[@@property='instapp:owner_user_id']" Title="User Id" Id="UserId" Attribute="content" Converter="Auto" DefaultValue=""/>
-			<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Username" Title="Username" Group="1" Converter="String" DefaultValue=""/>
-			<Compute Expr="https://www.instagram.com/@(Model.Inp)" Id="UserUrl" Title="User URL" DefaultValue="">
-				<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Inp" Group="1" DefaultValue=""/>
+			<Compute Expr="@GetUsername()" Id="Username" Title="Username" DefaultValue="">
+				<Regex Expr="\s\(@@(.*?)\)" Id="Inp1" Group="1" DefaultValue=""/>
+				<Regex Expr="@@id&quot;:&quot;https:\\\/\\\/www.instagram.com\\\/(.*?)\\\/" Id="Inp2" Group="1" DefaultValue=""/>
+				<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Inp3" Group="1" DefaultValue=""/>
+			</Compute>
+			<Compute Expr="https://www.instagram.com/@GetUsername()/" Id="UserUrl" Title="User URL" DefaultValue="">
+				<Regex Expr="\s\(@@(.*?)\)" Id="Inp1" Group="1" DefaultValue=""/>
+				<Regex Expr="@@id&quot;:&quot;https:\\\/\\\/www.instagram.com\\\/(.*?)\\\/" Id="Inp2" Group="1" DefaultValue=""/>
+				<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Inp3" Group="1" DefaultValue=""/>
 			</Compute>
 			<Regex Expr="&quot;Place&quot;,&quot;name&quot;:&quot;(.*?)&quot;" Id="Place" Title="Location Place" Group="1" Converter="String" DefaultValue=""/>
 			<Regex Expr="&quot;addressLocality&quot;:&quot;(.*?)&quot;" Id="Locality" Title="Locality" Group="1" Converter="String" DefaultValue=""/>
@@ -370,6 +376,12 @@
 		}
 		string StripHashtag() {
 			return Model.Hashtag.StartsWith("#") ? Model.Hashtag.Substring(1) : Model.Hashtag;
+		}
+		
+		string GetUsername() {
+			if(!string.IsNullOrEmpty(Model.Inp1)) return Model.Inp1;
+			if(!string.IsNullOrEmpty(Model.Inp2)) return Model.Inp2;
+			return Model.Inp3;
 		}
     ]]>
   </RazorFunctions>
