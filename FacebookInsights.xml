@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Facebook Insights" RequireVersion="9.3" Id="FacebookInsights" Category="Social" LoginButton="https://seotoolsforexcel.com/logins/facebook.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookInsights.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-Insights/" HelpText="Documentation">
+<Suite Title="Facebook Insights" RequireVersion="9.4" Id="FacebookInsights" Category="Social" LoginButton="https://seotoolsforexcel.com/logins/facebook.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookInsights.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-Insights/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -650,7 +650,7 @@
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
-</RestConnector>
+	</RestConnector>
 
 	<RestConnector Id="VideoBatchMetrics" Title="Videos Lookup" Group="Video Data">
     <Parameters>
@@ -696,6 +696,31 @@
         <JsonPath Expr="insights.data[?(@@.name=='post_video_views_autoplayed' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="a" Tag="post_video_views_autoplayed" Title="Autoplayed" Converter="Int" HelpText="Number of times your video started automatically playing and people viewed it for more than 3 seconds"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_video_views_clicked_to_play' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="c" Tag="post_video_views_clicked_to_play" Title="Clicked" Converter="Int" HelpText="Number of times people clicked to play your video and viewed it more than 3 seconds"/>
 			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+	
+	<RestConnector Id="VideoRetentionRate" Title="Videos Retention Rate" Group="Video Data">
+    <Parameters>
+      <Text Id="Id" Title="Video Ids (One per row)" HelpText="(Use 'PageId_PostId' Format). Posts from different pages are not supported" Debug.DefaultValue="840264879353861_3010767978970196" Required="true" Multiline="true"/>
+    </Parameters>
+    <Batch Parameter="Id" Separator="\n" ItemsPerBatch="50"/>
+    <Resource Id="Prepare"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.2/
+				@(Model.Id.Split('\n').Length == 1 ? "?id=" + Model.Id : "?ids=" + FetchIdsBatch())
+        &fields=id,insights.metric(post_video_retention_graph)
+        &access_token=@(Model.PageToken)&period=lifetime
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="keys($..values[0].value)">
+        <JsonPath Expr="key" Id="Interval" Converter="Int"/>
+        <JsonPath Expr="value" Id="Retention" Converter="Double"/>
+      </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
