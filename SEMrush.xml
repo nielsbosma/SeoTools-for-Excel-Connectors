@@ -19,7 +19,6 @@
 			<Item Id="it" Title="google.it"/>
 			<Item Id="br" Title="google.com.br"/>
 			<Item Id="au" Title="google.com.au"/>
-			<Item Id="bing-us" Title="bing.com"/>
 			<Item Id="ar" Title="google.com.ar"/>
 			<Item Id="be" Title="google.be"/>
 			<Item Id="ch" Title="google.ch"/>
@@ -35,7 +34,6 @@
 			<Item Id="se" Title="google.se"/>
 			<Item Id="sg" Title="google.com.sg"/>
 			<Item Id="tr" Title="google.com.tr"/>
-			<Item Id="mobile-us" Title="google.com"/>
 			<Item Id="jp" Title="google.co.jp"/>
 			<Item Id="in" Title="google.co.in"/>
 			<Item Id="hu" Title="google.hu"/>
@@ -129,6 +127,7 @@
 			<Item Id="zw" Title="google.co.zw"/>
 			<Item Id="ly" Title="google.com.ly"/>
 			<Item Id="mobile-uk" Title="google.com"/>
+      <Item Id="mobile-us" Title="google.com"/>
 			<Item Id="mobile-ca" Title="google.ca"/>
 			<Item Id="mobile-de" Title="google.de"/>
 			<Item Id="mobile-fr" Title="google.fr"/>
@@ -168,9 +167,15 @@
 		</Resource>
 	</Resources>
 
+  <!-- 
+    ======================================================================================================
+                                                Domain
+    ======================================================================================================
+  -->
+
 	<RestConnector Id="DomainOverview" Title="Domain Overview" Group="Domain Reports" HelpUrl="http://www.semrush.com/api-analytics/#domain_ranks" HelpText="Provides live or historical data on a domain’s keyword rankings in both organic and paid search in all regional databases.">
 		<Parameters>
-			<Text Id="Domain" Title="Domain" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="nike.com" Required="true"/>
 			<Select Id="Database" Title="Database" Required="false" DefaultValue="all">
 				<DataSource>
 					<Item Id="all" Title="[all]"/>
@@ -190,9 +195,9 @@
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate.Day <= 15
-						?	Model.DisplayDate.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.AddMonths(0).ToString("yyyyMM15"))
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
 				}
 				&export_columns=@Model.Fields
 				]]>
@@ -202,7 +207,7 @@
 			<Csv Separator=";" HasHeader="true">
 				<Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="True" HelpText="Regional database (US, UK, Italy, etc.)"/>
 				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
-				<Field Id="Rk" Title="Rank" Tag="Rank" Converter="Long" Checked="True" HelpText="The SEMrush rating of the website's popularity based on organic traffic coming from Google's top 20 organic search results."/>
+				<Field Id="Rk" Title="Rank" Tag="Rank" Converter="Long" Checked="False" HelpText="The SEMrush rating of the website's popularity based on organic traffic coming from Google's top 20 organic search results."/>
 				<Field Id="Or" Title="Organic Keywords" Tag="Organic Keywords" Converter="Long" Checked="True" HelpText="Keywords that bring users to a website via Google's top 20 organic search results."/>
 				<Field Id="Ot" Title="Organic Traffic" Tag="Organic Traffic" Converter="Long" Checked="True" HelpText="Traffic brought to a website via Google's top 20 organic search results."/>
 				<Field Id="Oc" Title="Organic Cost" Tag="Organic Cost" Converter="Long" Checked="True" HelpText="Estimated price of organic keywords in Google AdWords."/>
@@ -222,6 +227,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
 			<Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
 				<DataSource>
 					<Item Id="all" Title="All"/>
@@ -253,6 +259,12 @@
 				&key=@Model.ApiKey
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
 				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
@@ -278,6 +290,55 @@
 		</Parse>
 		<Resource Id="Fail"/>
 	</RestConnector>
+
+  <RestConnector Id="AdsCopies" Title="Ads Copies" Group="Domain Reports" HelpUrl="https://www.semrush.com/api-analytics/#domain_adwords_unique" HelpText="Shows unique ad copies SEMrush noticed when the domain ranked in Google's paid search results for keywords from our databases.">
+		<Parameters>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>			
+      <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=domain_adwords_unique
+				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&key=@Model.ApiKey
+				&export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="True" HelpText="position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
+				<Field Id="Pp" Title="Previous Position" Tag="Previous Position" Converter="Int" Checked="True" HelpText="A position a domain gets with a particular keyword in Google's top 20 organic or paid search results."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
+				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
+				<Field Id="Tt" Title="Title" Tag="Title" Converter="String" Checked="True" HelpText="Ad title."/>
+				<Field Id="Ds" Title="Description" Tag="Description" Converter="String" Checked="True" HelpText="Ad text."/>
+				<Field Id="Vu" Title="Visible URL" Tag="Visible Url" Converter="String" Checked="True" HelpText="Visible URL."/>
+				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
+				<Field Id="Pc" Title="Number of Keywords" Tag="Number of Keywords" Converter="Int" Checked="True" HelpText="Number of keywords."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+  <!-- 
+    ======================================================================================================
+                                                Backlinks
+    ======================================================================================================
+  -->
 
 	<RestConnector Id="Anchors" Title="Anchors"	Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_anchors" HelpText="Lists anchor texts used in backlinks leading to the queried domain, root domain, or URL. It also includes the number of backlinks and referring domains per anchor.">
 		<Parameters>
@@ -452,6 +513,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
 			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
 				<DataSource>
 					<Item Id="default" Title="Default"/>
@@ -470,6 +532,12 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
 				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
@@ -498,6 +566,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
 			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
 				<DataSource>
 					<Item Id="default" Title="Default"/>
@@ -516,6 +585,12 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
 				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
@@ -544,6 +619,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
 			<Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
 				<DataSource>
 					<Item Id="all" Title="All"/>
@@ -575,6 +651,12 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
 				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
@@ -658,198 +740,7 @@
 		<Resource Id="Fail"/>
 	</RestConnector>
 
-	<RestConnector Id="KeywordOverview" Title="Keyword Overview" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_all" HelpText="Provides a summary of a keyword, including its volume, CPC, competition, and the number of results in all regional databases.">
-		<Parameters>
-			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="all">
-				<DataSource>
-					<Item Id="all" Title="[all]"/>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_all
-				&phrase=@Utils.UrlEncode(Model.Phrase)
-				&key=@Model.ApiKey
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="True" HelpText="Regional database (US, UK, Italy, etc.)"/>
-				<Field Id="Ph" Title="Phrase" Tag="Phrase" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="KeywordDifficulty" Title="Keyword Difficulty" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_kdi" HelpText="Provides keyword difficulty, an index that helps to estimate how difficult it would be to seize competitors' positions in organic search within the Google's top 20 with an indicated search term.">
-		<Parameters>
-			<Text Id="Ids" Title="Phrases" Required="true" HelpText="Phrases separated by newline" Multiline="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>
-		</Parameters>
-		<Batch Parameter="Ids" Separator="\n" ItemsPerBatch="20"/>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_kdi
-				&phrase=@(FetchPhrases())
-				&key=@Model.ApiKey
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Kd" Title="Keyword Difficulty Index" Tag="Keyword Difficulty Index" Converter="Double" Checked="True" HelpText="Keyword Difficulty Index."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="OrganicResults" Title="Organic Results" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_organic" HelpText="Lists domains that are ranking in Google's top 20 organic search results with a requested keyword.">
-		<Parameters>
-			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="test" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>
-			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
-			<Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_organic
-				&key=@Model.ApiKey
-				&phrase=@Utils.UrlEncode(Model.Phrase)
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-		@if(!Utils.IsNullDate(Model.DisplayDate))
-				{
-					@: &display_date=@(Model.DisplayDate.Day <= 15
-					? Model.DisplayDate.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.AddMonths(0).ToString("yyyyMM15"))
-				}
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
-				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="PaidResults" Title="Paid Results" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_adwords" HelpText="Lists domains that are ranking in Google's top 20 paid search results with a requested keyword.">
-		<Parameters>
-			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>
-			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_adwords
-				&phrase=@Utils.UrlEncode(Model.Phrase)
-				&key=@Model.ApiKey
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
-				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="PhraseMatchKeywords" Title="Phrase Match Keywords" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_fullsearch" HelpText="Offers a list of phrase matches and alternate search queries, including particular keywords or keyword expressions.">
-		<Parameters>
-			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>
-			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
-				<DataSource>
-					<Item Id="default" Title="Default"/>
-					<Item Id="nq_desc" Title="Search Volume Desc"/>
-					<Item Id="nq_asc" Title="Search Volume Asc"/>
-					<Item Id="cp_desc" Title="CPC Desc"/>
-					<Item Id="cp_asc" Title="CPC Asc"/>
-					<Item Id="co_desc" Title="Competition Desc"/>
-					<Item Id="co_asc" Title="Competition Asc"/>
-					<Item Id="nr_desc" Title="Results Desc"/>
-					<Item Id="nr_asc" Title="Results Asc"/>
-				</DataSource>
-			</Select>
-			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_fullsearch
-				&phrase=@Utils.UrlEncode(Model.Phrase)
-				&key=@Model.ApiKey
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
-				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="ReferringDomains" Title="Referring Domains" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refdomains" HelpText="Lists domains pointing to the queried domain, root domain, or URL.">
+  <RestConnector Id="ReferringDomains" Title="Referring Domains" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_refdomains" HelpText="Lists domains pointing to the queried domain, root domain, or URL.">
 		<Parameters>
 		<Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
 			<Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
@@ -957,179 +848,7 @@
 		<Resource Id="Fail"/>
 	</RestConnector>
 
-	<RestConnector Id="RelatedKeywords" Title="Related Keywords" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_related" HelpText="Provides an extended list of related keywords, synonyms, and variations relevant to a queried term in a chosen database.">
-		<Parameters>
-			<Text Id="Phrase" Title="Keyword/Phrase" Debug.DefaultValue="" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
-				<DataSource>
-					<Item Id="default" Title="Default"/>
-					<Item Id="nq_desc" Title="Search Volume Desc"/>
-					<Item Id="nq_asc" Title="Search Volume Asc"/>
-					<Item Id="cp_desc" Title="CPC Desc"/>
-					<Item Id="cp_asc" Title="CPC Asc"/>
-					<Item Id="co_desc" Title="Competition Desc"/>
-					<Item Id="co_asc" Title="Competition Asc"/>
-					<Item Id="nr_desc" Title="Results Desc"/>
-					<Item Id="nr_asc" Title="Results Asc"/>
-				</DataSource>
-			</Select>
-			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=phrase_related
-				&phrase=@Utils.UrlEncode(Model.Phrase)
-				&key=@Model.ApiKey
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
-				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="UrlOrganicSearchKeywords" Title="URL Organic Search Keywords" Group="URL Reports" HelpUrl="https://www.semrush.com/api-analytics/#url_organic" HelpText="Lists keywords that bring users to a URL via Google's top 20 organic search results.">
-		<Parameters>
-			<Text Id="Url" Title="URL" Debug.DefaultValue="http://nintendo.com" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=url_organic
-				&url=@Utils.UrlEncode(Model.Url)
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&key=@Model.ApiKey
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="True" HelpText="Position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
-				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
-				<Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="The total amount spent on keywords in Google AdWords for which the domain is ranking in search results."/>
-				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
-				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="UrlPaidSearchKeywords" Title="URL Paid Search Keywords" Group="URL Reports" HelpUrl="https://www.semrush.com/api-analytics/#url_adwords" HelpText="Lists keywords that bring users to a URL via Google's top 20 paid search results.">
-		<Parameters>
-			<Text Id="Url" Title="URL" Debug.DefaultValue="http://nintendo.com" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=url_adwords
-				&url=@Utils.UrlEncode(Model.Url)
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&key=@Model.ApiKey
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="True" HelpText="position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
-				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
-				<Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="The total amount spent on keywords in Google AdWords for which the domain is ranking in search results."/>
-				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
-				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
-				<Field Id="Tt" Title="Title" Tag="Title" Converter="String" Checked="True" HelpText="Ad title."/>
-				<Field Id="Ds" Title="Description" Tag="Description" Converter="String" Checked="True" HelpText="Ad text."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="AdsCopies" Title="Ads Copies" Group="Domain Reports" HelpUrl="https://www.semrush.com/api-analytics/#domain_adwords_unique" HelpText="Shows unique ad copies SEMrush noticed when the domain ranked in Google's paid search results for keywords from our databases.">
-		<Parameters>
-			<Text Id="Domain" Title="Domain" Debug.DefaultValue="http://nintendo.com" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
-				<DataSource>
-					<Resource Id="Databases"/>
-				</DataSource>
-			</Select>			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
-		</Parameters>
-		<Fetch>
-			<Resource Id="HttpSettings"/>
-			<Fetch.Url>
-				<![CDATA[
-				http://api.semrush.com/?
-				type=domain_adwords_unique
-				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
-				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-				&key=@Model.ApiKey
-				&export_columns=@Model.Fields
-				&display_limit=@Model.MaxResults
-				]]>
-			</Fetch.Url>
-		</Fetch>
-		<Parse>
-			<Csv Separator=";" HasHeader="true">
-				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
-				<Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="True" HelpText="position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
-				<Field Id="Pp" Title="Previous Position" Tag="Previous Position" Converter="Int" Checked="True" HelpText="A position a domain gets with a particular keyword in Google's top 20 organic or paid search results."/>
-				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
-				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
-				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
-				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
-				<Field Id="Tt" Title="Title" Tag="Title" Converter="String" Checked="True" HelpText="Ad title."/>
-				<Field Id="Ds" Title="Description" Tag="Description" Converter="String" Checked="True" HelpText="Ad text."/>
-				<Field Id="Vu" Title="Visible URL" Tag="Visible Url" Converter="String" Checked="True" HelpText="Visible URL."/>
-				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
-				<Field Id="Pc" Title="Number of Keywords" Tag="Number of Keywords" Converter="Int" Checked="True" HelpText="Number of keywords."/>
-			</Csv>
-		</Parse>
-		<Resource Id="Fail"/>
-	</RestConnector>
-
-	<RestConnector Id="TLDDistribution" Title="TLD Distribution" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_tld" HelpText="Shows referring domain distributions depending on their top-level domain type.">
+  <RestConnector Id="TLDDistribution" Title="TLD Distribution" Group="Backlinks" HelpUrl="https://www.semrush.com/api-analytics/#backlinks_tld" HelpText="Shows referring domain distributions depending on their top-level domain type.">
 		<Parameters>
 		<Text Id="Target" Title="Target" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
 			<Select Id="Type" Title="Type" DefaultValue="root_domain" Required="false">
@@ -1212,6 +931,364 @@
 				<Field Id="country" Title="Country" Tag="country" Converter="String" Checked="True" HelpText="The country of TLD."/>
 				<Field Id="domains_num" Title="Domains" Tag="domains_num" Converter="Int" Checked="True" HelpText="Number of domains."/>
 				<Field Id="backlinks_num" Title="Backlinks" Tag="backlinks_num" Converter="Int" Checked="True" HelpText="Number of backlinks."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+  <!-- 
+    ======================================================================================================
+                                                Keyword Phrases
+    ======================================================================================================
+  -->
+
+	<RestConnector Id="KeywordOverview" Title="Keyword Overview" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_all" HelpText="Provides a summary of a keyword, including its volume, CPC, competition, and the number of results in all regional databases.">
+		<Parameters>
+			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="all">
+				<DataSource>
+					<Item Id="all" Title="[all]"/>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_all
+				&phrase=@Utils.UrlEncode(Model.Phrase)
+				&key=@Model.ApiKey
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&export_columns=@Model.Fields
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="True" HelpText="Regional database (US, UK, Italy, etc.)"/>
+				<Field Id="Ph" Title="Phrase" Tag="Phrase" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="KeywordDifficulty" Title="Keyword Difficulty" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_kdi" HelpText="Provides keyword difficulty, an index that helps to estimate how difficult it would be to seize competitors' positions in organic search within the Google's top 20 with an indicated search term.">
+		<Parameters>
+			<Text Id="Ids" Title="Phrases" Required="true" HelpText="Phrases separated by newline" Multiline="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>
+		</Parameters>
+		<Batch Parameter="Ids" Separator="\n" ItemsPerBatch="20"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_kdi
+				&phrase=@(FetchPhrases())
+				&key=@Model.ApiKey
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&export_columns=@Model.Fields
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Kd" Title="Keyword Difficulty Index" Tag="Keyword Difficulty Index" Converter="Double" Checked="True" HelpText="Keyword Difficulty Index."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="OrganicResults" Title="Organic Results" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_organic" HelpText="Lists domains that are ranking in Google's top 20 organic search results with a requested keyword.">
+		<Parameters>
+			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="test" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>
+			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+			<Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_organic
+				&phrase=@Utils.UrlEncode(Model.Phrase)
+				&key=@Model.ApiKey
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
+				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="PaidResults" Title="Paid Results" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_adwords" HelpText="Lists domains that are ranking in Google's top 20 paid search results with a requested keyword.">
+		<Parameters>
+			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="us">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_adwords
+        &key=@Model.ApiKey
+				&phrase=@Utils.UrlEncode(Model.Phrase)
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
+				&export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
+				<Field Id="Ur" Title="URL" Tag="Url" Converter="String" Checked="True" HelpText="The URL of the target page (Backlinks)."/>
+        <Field Id="Vu" Title="Visible URL" Tag="Visible URL" Converter="String" Checked="True" HelpText="Visible URL."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="PhraseMatchKeywords" Title="Phrase Match Keywords" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_fullsearch" HelpText="Offers a list of phrase matches and alternate search queries, including particular keywords or keyword expressions.">
+		<Parameters>
+			<Text Id="Phrase" Title="Phrase" Debug.DefaultValue="" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>
+			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+				<DataSource>
+					<Item Id="default" Title="Default"/>
+					<Item Id="nq_desc" Title="Search Volume Desc"/>
+					<Item Id="nq_asc" Title="Search Volume Asc"/>
+					<Item Id="cp_desc" Title="CPC Desc"/>
+					<Item Id="cp_asc" Title="CPC Asc"/>
+					<Item Id="co_desc" Title="Competition Desc"/>
+					<Item Id="co_asc" Title="Competition Asc"/>
+					<Item Id="nr_desc" Title="Results Desc"/>
+					<Item Id="nr_asc" Title="Results Asc"/>
+				</DataSource>
+			</Select>
+			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_fullsearch
+				&phrase=@Utils.UrlEncode(Model.Phrase)
+				&key=@Model.ApiKey
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
+				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="RelatedKeywords" Title="Related Keywords" Group="Keyword Reports" HelpUrl="https://www.semrush.com/api-analytics/#phrase_related" HelpText="Provides an extended list of related keywords, synonyms, and variations relevant to a queried term in a chosen database.">
+		<Parameters>
+			<Text Id="Phrase" Title="Keyword/Phrase" Debug.DefaultValue="" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>			
+      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
+				<DataSource>
+					<Item Id="default" Title="Default"/>
+					<Item Id="nq_desc" Title="Search Volume Desc"/>
+					<Item Id="nq_asc" Title="Search Volume Asc"/>
+					<Item Id="cp_desc" Title="CPC Desc"/>
+					<Item Id="cp_asc" Title="CPC Asc"/>
+					<Item Id="co_desc" Title="Competition Desc"/>
+					<Item Id="co_asc" Title="Competition Asc"/>
+					<Item Id="nr_desc" Title="Results Desc"/>
+					<Item Id="nr_asc" Title="Results Asc"/>
+				</DataSource>
+			</Select>
+			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=phrase_related
+				&phrase=@Utils.UrlEncode(Model.Phrase)
+				&key=@Model.ApiKey
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&export_columns=@Model.Fields
+				&display_limit=@Model.MaxResults
+				@(Model.Sort != "default" ? "&display_sort=" + Model.Sort : "")
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Double" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Co" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
+				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+  <!-- 
+    ======================================================================================================
+                                                URL Reports
+    ======================================================================================================
+  -->
+
+	<RestConnector Id="UrlOrganicSearchKeywords" Title="URL Organic Search Keywords" Group="URL Reports" HelpUrl="https://www.semrush.com/api-analytics/#url_organic" HelpText="Lists keywords that bring users to a URL via Google's top 20 organic search results.">
+		<Parameters>
+			<Text Id="Url" Title="URL" Debug.DefaultValue="http://tools.seobook.com/" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>			
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=url_organic
+        &key=@Model.ApiKey
+				&url=@Utils.UrlEncode(Model.Url)
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+        &display_limit=@Model.MaxResults
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
+        &export_columns=@Model.Fields
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Po" Title="URL Position" Tag="Position" Converter="Int" Checked="True" HelpText="position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
+				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
+				<Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="The total amount spent on keywords in Google AdWords for which the domain is ranking in search results."/>
+				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
+				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
+			</Csv>
+		</Parse>
+		<Resource Id="Fail"/>
+	</RestConnector>
+
+	<RestConnector Id="UrlPaidSearchKeywords" Title="URL Paid Search Keywords" Group="URL Reports" HelpUrl="https://www.semrush.com/api-analytics/#url_adwords" HelpText="Lists keywords that bring users to a URL via Google's top 20 paid search results.">
+		<Parameters>
+			<Text Id="Url" Title="URL" Debug.DefaultValue="http://www.amazon.com/" Required="true"/>
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="en">
+				<DataSource>
+					<Resource Id="Databases"/>
+				</DataSource>
+			</Select>			
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
+		</Parameters>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+			<Fetch.Url>
+				<![CDATA[
+				http://api.semrush.com/?
+				type=url_adwords
+				&url=@Utils.UrlEncode(Model.Url)
+				@(Model.Database != "all" ? "&database=" + Model.Database : "")
+				&key=@Model.ApiKey
+				&export_columns=@Model.Fields
+        @if(!Utils.IsNullDate(Model.DisplayDate))
+				{
+					@: &display_date=@(Model.DisplayDate > DateTime.Today
+						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
+						: Model.DisplayDate.ToString("yyyyMM15"))
+				}
+				&display_limit=@Model.MaxResults
+				]]>
+			</Fetch.Url>
+		</Fetch>
+		<Parse>
+			<Csv Separator=";" HasHeader="true">
+				<Field Id="Ph" Title="Keyword" Tag="Keyword" Converter="String" Checked="True" HelpText="Keyword bringing users to the website via Google's top 20 organic search results."/>
+				<Field Id="Po" Title="Position" Tag="Position" Converter="Int" Checked="True" HelpText="position a URL gets with a particular keyword in Google's top 20 organic or paid search results."/>
+				<Field Id="Nq" Title="Search Volume" Tag="Search Volume" Converter="Int" Checked="True" HelpText="The average number of times users have searched for a given keyword per month. We calculate this value over the last 12 months."/>
+				<Field Id="Cp" Title="CPC" Tag="CPC" Converter="Int" Checked="True" HelpText="Average price in US dollars advertisers pay for a user's click on an ad containing a particular keyword (Google AdWords)."/>
+				<Field Id="Co" Title="Traffic Cost (%)" Tag="Traffic Cost (%)" Converter="Double" Checked="True" HelpText="Competitive density of advertisers using the given term for their ads. One (1) means the highest competition."/>
+				<Field Id="Tr" Title="Traffic (%)" Tag="Traffic (%)" Converter="Double" Checked="True" HelpText="The share of traffic driven to the website with a particular keyword for a specified period."/>
+				<Field Id="Tc" Title="Competition" Tag="Competition" Converter="Double" Checked="True" HelpText="The total amount spent on keywords in Google AdWords for which the domain is ranking in search results."/>
+				<Field Id="Nr" Title="Number of Results" Tag="Number of Results" Converter="Int" Checked="True" HelpText="The total number of organic results returned for a given keyword at the last date of collection."/>
+				<Field Id="Td" Title="Trends" Tag="Trends" Converter="String" Checked="True" HelpText="The interest of searchers in a particular keyword during the last 12 months. This metric is based on changes in the number of queries per month."/>
+				<Field Id="Tt" Title="Title" Tag="Title" Converter="String" Checked="True" HelpText="Ad title."/>
+				<Field Id="Ds" Title="Description" Tag="Description" Converter="String" Checked="True" HelpText="Ad text."/>
 			</Csv>
 		</Parse>
 		<Resource Id="Fail"/>
@@ -1312,7 +1389,6 @@
 		<Resource Id="Fail"/>
 	</RestConnector>
 
-
 	<RazorFunctions>
 		<![CDATA[
 		string FetchPhrases() {
@@ -1321,5 +1397,4 @@
 		}
 		]]>
 	</RazorFunctions>
-
 </Suite>
