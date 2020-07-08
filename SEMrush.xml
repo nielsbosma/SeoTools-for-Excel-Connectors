@@ -127,7 +127,7 @@
 			<Item Id="zw" Title="google.co.zw"/>
 			<Item Id="ly" Title="google.com.ly"/>
 			<Item Id="mobile-uk" Title="google.com"/>
-			<Item Id="mobile-us" Title="google.com"/>
+      		<Item Id="mobile-us" Title="google.com"/>
 			<Item Id="mobile-ca" Title="google.ca"/>
 			<Item Id="mobile-de" Title="google.de"/>
 			<Item Id="mobile-fr" Title="google.fr"/>
@@ -144,6 +144,7 @@
 			<Item Id="mobile-id" Title="google.co.id"/>
 			<Item Id="mobile-il" Title="google.co.il"/>
 		</Resource>
+
 		<Resource Id="Fail">
 			<Fail>
 				<Regex Expr="^(ERROR 50.*)" Tag="EmptyResult"/>
@@ -176,13 +177,13 @@
 	<RestConnector Id="DomainOverview" Title="Domain Overview" Group="Domain Reports" HelpUrl="http://www.semrush.com/api-analytics/#domain_ranks" HelpText="Provides live or historical data on a domain’s keyword rankings in both organic and paid search in all regional databases.">
 		<Parameters>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="nike.com" Required="true"/>
-			<Select Id="Database" Title="Database" Required="false" DefaultValue="all">
+			<Select Id="Database" Title="Database" Required="false" DefaultValue="us">
 				<DataSource>
 					<Item Id="all" Title="[all]"/>
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 		</Parameters>
 		<Fetch>
 			<Resource Id="HttpSettings"/>
@@ -195,9 +196,7 @@
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				]]>
@@ -207,7 +206,7 @@
 			<Csv Separator=";" HasHeader="true">
 				<Field Id="Db" Title="Database" Tag="Database" Converter="String" Checked="True" HelpText="Regional database (US, UK, Italy, etc.)"/>
 				<Field Id="Dn" Title="Domain" Tag="Domain" Converter="String" Checked="True" HelpText="A website's position for a particular keyword in Google's top 20 organic search results."/>
-				<Field Id="Rk" Title="Rank" Tag="Rank" Converter="Long" Checked="False" HelpText="The SEMrush rating of the website's popularity based on organic traffic coming from Google's top 20 organic search results."/>
+				<Field Id="Rk" Title="Rank" Tag="Rank" Converter="Long" Checked="True" HelpText="The SEMrush rating of the website's popularity based on organic traffic coming from Google's top 20 organic search results."/>
 				<Field Id="Or" Title="Organic Keywords" Tag="Organic Keywords" Converter="Long" Checked="True" HelpText="Keywords that bring users to a website via Google's top 20 organic search results."/>
 				<Field Id="Ot" Title="Organic Traffic" Tag="Organic Traffic" Converter="Long" Checked="True" HelpText="Traffic brought to a website via Google's top 20 organic search results."/>
 				<Field Id="Oc" Title="Organic Cost" Tag="Organic Cost" Converter="Long" Checked="True" HelpText="Estimated price of organic keywords in Google AdWords."/>
@@ -227,7 +226,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      		<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
 				<DataSource>
 					<Item Id="all" Title="All"/>
@@ -259,11 +258,9 @@
 				&key=@Model.ApiKey
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+        		@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
@@ -298,8 +295,8 @@
 				<DataSource>
 					<Resource Id="Databases"/>
 				</DataSource>
-			</Select>			
-      <Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
+			</Select>
+			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
 		</Parameters>
 		<Fetch>
 			<Resource Id="HttpSettings"/>
@@ -513,7 +510,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
 				<DataSource>
 					<Item Id="default" Title="Default"/>
@@ -532,11 +529,9 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
@@ -566,7 +561,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Select Id="Sort" Title="Sort" Required="false" DefaultValue="default">
 				<DataSource>
 					<Item Id="default" Title="Default"/>
@@ -585,11 +580,9 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
@@ -619,7 +612,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Select Id="KeywordType" Title="Filter by Keyword Type" DefaultValue="all" Required="false">
 				<DataSource>
 					<Item Id="all" Title="All"/>
@@ -651,11 +644,9 @@
 				&domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
@@ -1017,7 +1008,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+			<Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
 		</Parameters>
 		<Fetch>
@@ -1033,9 +1024,7 @@
 				&display_limit=@Model.MaxResults
 				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				]]>
 			</Fetch.Url>
@@ -1057,7 +1046,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
 			<Number Id="MaxResults" Title="Max Results" DefaultValue="100" Required="false" HelpText="Number of rows to be returned back"/>
 		</Parameters>
 		<Fetch>
@@ -1066,14 +1055,12 @@
 				<![CDATA[
 				http://api.semrush.com/?
 				type=phrase_adwords
-        &key=@Model.ApiKey
+				&key=@Model.ApiKey
 				&phrase=@Utils.UrlEncode(Model.Phrase)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&export_columns=@Model.Fields
 				&display_limit=@Model.MaxResults
@@ -1206,7 +1193,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>			
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
 		</Parameters>
 		<Fetch>
@@ -1215,17 +1202,15 @@
 				<![CDATA[
 				http://api.semrush.com/?
 				type=url_organic
-        &key=@Model.ApiKey
+        		&key=@Model.ApiKey
 				&url=@Utils.UrlEncode(Model.Url)
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
-        &display_limit=@Model.MaxResults
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+        		&display_limit=@Model.MaxResults
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
-        &export_columns=@Model.Fields
+        		&export_columns=@Model.Fields
 				]]>
 			</Fetch.Url>
 		</Fetch>
@@ -1253,7 +1238,7 @@
 					<Resource Id="Databases"/>
 				</DataSource>
 			</Select>			
-      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true"/>
+      <Date Id="DisplayDate" Title="Display Date (Optional)" Required="false" Nullable="true" HelpText="SEMRush API forces Display Date to be the 15th of each month. Dates are autocorrected to the 15th Pre-Fetch."/>
       <Number Id="MaxResults" Title="Max Results" DefaultValue="10" Required="false" HelpText="Number of rows to be returned back"/>
 		</Parameters>
 		<Fetch>
@@ -1266,11 +1251,9 @@
 				@(Model.Database != "all" ? "&database=" + Model.Database : "")
 				&key=@Model.ApiKey
 				&export_columns=@Model.Fields
-        @if(!Utils.IsNullDate(Model.DisplayDate))
+				@if(!Utils.IsNullDate(Model.DisplayDate))
 				{
-					@: &display_date=@(Model.DisplayDate > DateTime.Today
-						?	DateTime.Today.AddMonths(-1).ToString("yyyyMM15")
-						: Model.DisplayDate.ToString("yyyyMM15"))
+					@: &display_date=@Model.DisplayDate.ToString("yyyyMM15")
 				}
 				&display_limit=@Model.MaxResults
 				]]>
