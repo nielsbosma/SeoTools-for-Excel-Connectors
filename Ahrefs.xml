@@ -927,7 +927,7 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.refdomains[*]">
-        <JsonPath Expr="refdomain" Id="RefDomains" Title="Ref Domains" Converter="String" HelpText="The referring domain that contains at least one link to the target."/>
+        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="The referring domain that contains at least one link to the target."/>
         <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of backlinks found in the referring domain that link to the target."/>
         <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" HelpText="Number of referring pages found in the referring domain that link to the target."/>
         <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
@@ -939,6 +939,60 @@
         <JsonPath Expr="refdomains" Id="RefdomainsTotal" Title="Ref Domains Total" Converter="Int" HelpText="Total number of referring domains that contain at least one link to the target." Checked="false"/>
         <JsonPath Expr="ips" Id="IPsTotal" Title="IPs Total" Converter="Int" HelpText="Total number of IP addresses that link to the target." Checked="false"/>
         <JsonPath Expr="class_c" Id="ClassCTotal" Title="Class C Total" Converter="Int" HelpText="Total number of referring class C networks that link to the target." Checked="false"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RefDomainsExtended" Title="Ref Domains Extended" Group="Domains" HelpText="Contains the referring domains that contain backlinks to the target with additional fields and filters">
+    <Parameters>
+      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
+      <Resource Id="Mode"/>
+      <Resource Id="Conditions"/>
+      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="refdomain">
+        <DataSource>
+					<Item Id="refdomain" Title="Ref Domain"/>
+					<Item Id="backlinks" Title="Backlinks"/>
+					<Item Id="backlinks_dofollow" Title="Backlinks Dofollow"/>
+					<Item Id="refpages" Title="Ref Pages"/>
+					<Item Id="first_seen" Title="First Seen"/>
+					<Item Id="last_visited" Title="Last Visited"/>
+					<Item Id="domain_rating" Title="Domain Rating"/>
+					<Item Id="traffic" Title="Traffic"/>
+					<Item Id="linked_domains" Title="Linked Domains"/>
+        </DataSource>
+      </Select>
+      <Resource Id="Direction"/>
+    </Parameters>
+    <Paging PageSize="1000" EvenPages="true"/>
+		<Batch Parameter="Url" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_by_type
+        &target=@Utils.UrlEncode(Model.Url)
+				&limit=@(Model.PageCursor.NextTake)
+				&offset=@(Model.PageCursor.NextSkip)
+        &mode=@(Model.Mode)
+        &order_by=@(Model.OrderBy):@(Model.Direction)
+        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
+        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.refdomains[*]">
+        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="The referring domain that contains at least one link to the target."/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of backlinks found in the referring domain that link to the target."/>
+        <JsonPath Expr="backlinks_dofollow" Id="BacklinksDofollow" Title="Backlinks Dofollow" Converter="Int" HelpText=" Number of dofollow backlinks found in the referring domain that link to the target."/>
+        <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" HelpText="Number of referring pages found in the referring domain that link to the target."/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
+        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
+        <JsonPath Expr="traffic" Id="Traffic" Title="Traffic" Converter="Double" HelpText=""/>
+        <JsonPath Expr="linked_domains" Id="LinkedDomains" Title="Linked Domains" Converter="Int" HelpText=""/>
+        <JsonPath Expr="refdomains" Id="Refdomains" Title="Ref Domains" Converter="Int" HelpText=""/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
