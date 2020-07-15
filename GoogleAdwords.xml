@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" Title="Google Adwords" Id="GoogleAdwords" RequireVersion="9.3.1" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleAdwords.xml" HelpUrl="http://seotoolsforexcel.com/google-adwords/">
+<Suite Category="Social" Title="Google Adwords" Id="GoogleAdwords" RequireVersion="9.4" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleAdwords.xml" HelpUrl="http://seotoolsforexcel.com/google-adwords/">
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/adwords" StayAuthenticated="true"/>
 
@@ -430,9 +430,7 @@
 				<Xpath Expr="." Attribute="campaignServingStatus" Id="ServingStatus" Converter="String"/>
 				<Xpath Expr="." Attribute="network" Id="AdNetworkType1" Converter="String"/>
 				<Xpath Expr="." Attribute="networkWithSearchPartners" Id="AdNetworkType2" Converter="String"/>
-				<Compute Expr="@HandleDouble()" Id="Amount" Converter="Double" DefaultValue="0">
-					<Xpath Expr="." Attribute="budget" Id="Inp"/>
-				</Compute>
+				<Xpath Expr="." Attribute="budget" Id="AdNetworkType2" Converter="Double" Converter.SourceFormat="Micro"/>
 				<Resource Id="PerformanceFields"/>
 			</Xpath>
 		</Parse>
@@ -697,9 +695,7 @@
 				<Xpath Expr="data[key='KEYWORD_TEXT']/value/value" Id="Keyword" Tag="KEYWORD_TEXT" Converter="String"/>
 				<Xpath Expr="data[key='COMPETITION']/value/value" Id="Competition" Tag="COMPETITION" Converter="Double"/>
 				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>
-				<Compute Expr="@HandleDouble()" Id="AverageCpm" Tag="AVERAGE_CPC" Converter="Double">
-					<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="Inp" DefaultValue="0"/>
-				</Compute>
+				<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="AverageCpc" Tag="AVERAGE_CPC" Converter="Double" Converter.SourceFormat="Micro"/>
       </Xpath>
     </Parse>
     <Resource Id="FailSOAP"/>
@@ -826,10 +822,8 @@
       <Xpath Expr="//getResponse/rval/entries">
 				<Xpath Expr="data[key='KEYWORD_TEXT']/value/value" Id="Keyword" Tag="KEYWORD_TEXT" Converter="String"/>
 				<Xpath Expr="data[key='COMPETITION']/value/value" Id="Competition" Tag="COMPETITION" Converter="Double"/>
-				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>
-				<Compute Expr="@HandleDouble()" Id="AverageCpm" Tag="AVERAGE_CPC" Converter="Double">
-					<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="Inp" DefaultValue="0"/>
-				</Compute>
+				<Xpath Expr="data[key='SEARCH_VOLUME']/value/value" Id="SearchVolume" Tag="SEARCH_VOLUME" Converter="Int"/>	
+				<Xpath Expr="data[key='AVERAGE_CPC']/value/value/*[2]" Id="AverageCpc" Tag="AVERAGE_CPC" Converter="Double" Converter.SourceFormat="Micro"/>
       </Xpath>
     </Parse>
     <Resource Id="FailSOAP"/>
@@ -928,13 +922,6 @@
 
   <RazorFunctions>
     <![CDATA[
-			string HandleDouble() {
-				double val = 0;
-				bool isDouble = double.TryParse(Model.Inp, out val);
-				if(isDouble) val = val / 1000000;
-				return val.ToString();
-			}
-
 			string GetSELECT() {
         string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim()).ToArray();
 				return "SELECT " + string.Join(",",((ResultField[])Model.Headers).Where(e => fields.Contains(e.Identifier)).Select(f => f.Identifier).ToArray());
