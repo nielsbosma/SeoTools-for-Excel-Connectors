@@ -102,7 +102,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        http://www.@(Model.Domain)/s?
+        @(HandleBaseUrl())/s?
         url=search-alias=@(Model.Department)
         &field-keywords=@(Utils.UrlEncode(Model.Query))
         &page=@(Model.PageCursor.Page+1)
@@ -112,8 +112,8 @@
     </Fetch>
     <Parse>
       <XPath Expr="//div[contains(@@data-asin, 'B')][not(@@class='asinImage')][not(a)]">
-				<Compute Expr="https://www.amazon.com@(Utils.HtmlDecode(Model.Inp))" Id="Url" Title="URL">
-					<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Attribute="href" Id="Inp" DefaultValue=""/>
+				<Compute Expr="@(HandleBaseUrl())/dp/@(Model.Inp)" Id="Url" Title="URL">
+					<XPath Expr="." Id="Inp" Attribute="data-asin"/>
         </Compute>
 				<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Id="Title" Title="Title" DefaultValue=""/>
         <XPath Expr="." Id="Asin" Title="ASIN" Attribute="data-asin"/>
@@ -161,7 +161,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				http://www.@(Model.Domain)/dp/product-reviews/@(Model.ASIN)
+				@(HandleBaseUrl())/dp/product-reviews/@(Model.ASIN)
 				?pageNumber=@(Model.PageCursor.Page+1)
 				&sortBy=@(Model.Sort)
 				&filterByStar=@(Model.Rating)
@@ -210,7 +210,7 @@
       </XPath>
     </Parse>
   </RestConnector>
-	
+
 	<RestConnector Id="ASINLookup" Title="ASIN Lookup">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true"/>
@@ -223,12 +223,12 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-       http://www.@(Model.Domain)/dp/@(Model.ASIN)
+				@(HandleBaseUrl())/dp/@(Model.ASIN)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<Compute Expr="https://www.amazon.com/dp/@(Model.ASIN)" Id="Url" Title="URL"/>
+			<Compute Expr="@(HandleBaseUrl())/dp/@(Model.ASIN)" Id="Url" Title="URL"/>
       <XPath Expr="//span[@@id='productTitle']" Id="Title" Title="Title" DefaultValue=""/>
 			<Compute Id="Reviews" Title="Reviews" Converter="Int" DefaultValue="0">
 				<Compute.Expr>
@@ -253,5 +253,15 @@
       <XPath Expr="//a[contains(@@href,'offer-listing')]/text()" Id="Offers" Title="Offers" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string HandleBaseUrl() {
+			return Model.Domain.StartsWith("http")
+				? Model.Domain
+				: "https://" + Utils.UrlProperty(Model.Domain).Domain;
+		}
+    ]]>
+  </RazorFunctions>
 
 </Suite>
