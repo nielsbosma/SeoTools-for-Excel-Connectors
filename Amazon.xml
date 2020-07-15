@@ -111,7 +111,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[contains(@@data-asin, 'B')][not(@@class='asinImage')]">
+      <XPath Expr="//div[contains(@@data-asin, 'B')][not(@@class='asinImage')][not(a)]">
 				<Compute Expr="https://www.amazon.com@(Utils.HtmlDecode(Model.Inp))" Id="Url" Title="URL">
 					<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Attribute="href" Id="Inp" DefaultValue=""/>
         </Compute>
@@ -140,6 +140,7 @@
   <RestConnector Id="Reviews" Title="ASIN Reviews">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true" Multiline="true"/>
+      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
       <Select Id="Rating" Title="Filter by Ratings" Required="false" DefaultValue="all_stars">
         <DataSource>
           <Resource Id="ReviewRatings"/>
@@ -160,7 +161,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://www.amazon.com/dp/product-reviews/@(Model.ASIN)
+				http://www.@(Model.Domain)/dp/product-reviews/@(Model.ASIN)
 				?pageNumber=@(Model.PageCursor.Page+1)
 				&sortBy=@(Model.Sort)
 				&filterByStar=@(Model.Rating)
@@ -213,6 +214,7 @@
 	<RestConnector Id="ASINLookup" Title="ASIN Lookup">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true"/>
+      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
       <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
@@ -221,7 +223,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://www.amazon.com/dp/@(Model.ASIN)
+       http://www.@(Model.Domain)/dp/@(Model.ASIN)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -234,7 +236,7 @@
 						@Regex.Replace(Model.Inp,@"[^0-9]+","")
 					]]>
 				</Compute.Expr>
-				<XPath Expr="//span[@@id='acrCustomerReviewText']" Id="Inp"/>
+				<XPath Expr="//span[@@id='acrCustomerReviewText']" Id="Inp" DefaultValue="0"/>
 			</Compute>
 			<Compute Id="AverageReview" Title="Average Score" Converter="Double" DefaultValue="0">
 				<Compute.Expr>
