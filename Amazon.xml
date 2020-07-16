@@ -1,9 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Amazon" Id="Amazon" Category="Products &amp; Review Sites" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
+<Suite Title="Amazon" Id="Amazon" Category="Products &amp; Review Sites" RequireVersion="8.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Amazon.xml" HelpUrl="http://seotoolsforexcel.com/amazon/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+  <Settings>
+		<Select Id="PrefDomain" Title="Default Amazon Domain" DefaultValue="https://amazon.com">
+      <Resource Id="Domains"/>
+    </Select>
+  </Settings>
+	
   <Resources>
+    <Resource Id="Domains">
+			<DataSource>			
+				<Item Id="https://amazon.com.br" Title="Brazil (amazon.com.br)"/>
+				<Item Id="https://amazon.ca" Title="Canada (amazon.ca)"/>
+				<Item Id="https://amazon.com.mx" Title="Mexico (amazon.com.mx)"/>
+				<Item Id="https://amazon.com" Title="United States (amazon.com)"/>
+				<Item Id="https://amazon.cn" Title="China (amazon.cn)"/>
+				<Item Id="https://amazon.in" Title="India (amazon.in)"/>
+				<Item Id="https://amazon.co.jp" Title="Japan (amazon.co.jp)"/>
+				<Item Id="https://amazon.sg" Title="Singapore (amazon.sg)"/>
+				<Item Id="https://amazon.com.tr" Title="Turkey (amazon.com.tr)"/>
+				<Item Id="https://amazon.ae" Title="United Arab Emirates (amazon.ae)"/>
+				<Item Id="https://amazon.fr" Title="France (amazon.fr)"/>
+				<Item Id="https://amazon.de" Title="Germany (amazon.de)"/>
+				<Item Id="https://amazon.it" Title="Italy (amazon.it)"/>
+				<Item Id="https://amazon.nl" Title="Netherlands (amazon.nl)"/>
+				<Item Id="https://amazon.es" Title="Spain (amazon.es)"/>
+				<Item Id="https://amazon.co.uk" Title="United Kingdom (amazon.co.uk)"/>
+				<Item Id="https://amazon.com.au" Title="Australia (amazon.com.au)"/>
+			</DataSource>
+    </Resource>		
     <Resource Id="Sortings">
       <Item Id="relevanceblender" Title="Relevance"/>
       <Item Id="price-asc-rank" Title="Price: Low to High"/>
@@ -82,7 +109,9 @@
   <RestConnector Id="Search" Title="Search">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="gopro" Required="true"/>
-      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
+			<Select Id="Domain" DefaultSettings="PrefDomain">
+				<Resource Id="Domains"/>
+			</Select>
       <Select Id="Department" Title="Department" Required="false" DefaultValue="aps">
         <DataSource>
           <Resource Id="Departments"/>
@@ -102,7 +131,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        @(HandleBaseUrl())/s?
+        @(Model.Domain)/s?
         url=search-alias=@(Model.Department)
         &field-keywords=@(Utils.UrlEncode(Model.Query))
         &page=@(Model.PageCursor.Page+1)
@@ -112,7 +141,7 @@
     </Fetch>
     <Parse>
       <XPath Expr="//div[contains(@@data-asin, 'B')][not(@@class='asinImage')][not(a)]">
-				<Compute Expr="@(HandleBaseUrl())/dp/@(Model.Inp)" Id="Url" Title="URL">
+				<Compute Expr="@(Model.Domain)/dp/@(Model.Inp)" Id="Url" Title="URL">
 					<XPath Expr="." Id="Inp" Attribute="data-asin"/>
         </Compute>
 				<XPath Expr=".//a[@@class='a-link-normal a-text-normal']" Id="Title" Title="Title" DefaultValue=""/>
@@ -147,7 +176,9 @@
   <RestConnector Id="Reviews" Title="ASIN Reviews">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true" Multiline="true"/>
-      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
+			<Select Id="Domain" DefaultSettings="PrefDomain">
+				<Resource Id="Domains"/>
+			</Select>
       <Select Id="Rating" Title="Filter by Ratings" Required="false" DefaultValue="all_stars">
         <DataSource>
           <Resource Id="ReviewRatings"/>
@@ -168,7 +199,7 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				@(HandleBaseUrl())/dp/product-reviews/@(Model.ASIN)
+				@(Model.Domain)/dp/product-reviews/@(Model.ASIN)
 				?pageNumber=@(Model.PageCursor.Page+1)
 				&sortBy=@(Model.Sort)
 				&filterByStar=@(Model.Rating)
@@ -221,7 +252,9 @@
 	<RestConnector Id="ASINLookup" Title="ASIN Lookup">
     <Parameters>
       <Text Id="ASIN" Title="ASIN(s)" Debug.DefaultValue="0451167716" Required="true"/>
-      <Text Id="Domain" Title="Domain" DefaultValue="amazon.com" Required="true"/>
+			<Select Id="Domain" DefaultSettings="PrefDomain">
+				<Resource Id="Domains"/>
+			</Select>
       <Number Id="Delay" Title="Delay" DefaultValue="0" Minimum="0" Maximum="20000" Required="false"/>
     </Parameters>
     <Fetch>
@@ -230,12 +263,12 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				@(HandleBaseUrl())/dp/@(Model.ASIN)
+				@(Model.Domain)/dp/@(Model.ASIN)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<Compute Expr="@(HandleBaseUrl())/dp/@(Model.ASIN)" Id="Url" Title="URL"/>
+			<Compute Expr="@(Model.Domain)/dp/@(Model.ASIN)" Id="Url" Title="URL"/>
       <XPath Expr="//span[@@id='productTitle']" Id="Title" Title="Title" DefaultValue=""/>
 			<Compute Id="Reviews" Title="Reviews" Converter="Int" DefaultValue="0">
 				<Compute.Expr>
@@ -260,15 +293,5 @@
       <XPath Expr="//a[contains(@@href,'offer-listing')]/text()" Id="Offers" Title="Offers" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
-
-  <RazorFunctions>
-    <![CDATA[
-    string HandleBaseUrl() {
-			return Model.Domain.StartsWith("http")
-				? Model.Domain
-				: "https://" + Utils.UrlProperty(Model.Domain).Domain;
-		}
-    ]]>
-  </RazorFunctions>
 
 </Suite>
