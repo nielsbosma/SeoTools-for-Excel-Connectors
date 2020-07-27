@@ -12,12 +12,12 @@
       </Fail>
     </Resource>
     <Resource Id="Datasource">
-      <Radio Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
+      <Select Id="Datasource" Title="Datasource" DefaultValue="fresh" Required="false">
         <DataSource>
           <Item Id="fresh" Title="Fresh"/>
           <Item Id="historic" Title="Historic"/>
         </DataSource>
-      </Radio>
+      </Select>
     </Resource>
   </Resources>
 
@@ -618,15 +618,22 @@
 
   <RestConnector Id="LinkProfileGraph" Title="Link Profile Graph" HelpUrl="https://developer-support.majestic.com/api/commands/get-link-profile.shtml">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="URL/Domain/Subdomain to query"/>
+      <Text Id="Url" Title="URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true" HelpText="URL/Domain/Subdomain to query"/>
+			<Select Id="DataType" Title="Data Type" DefaultValue="0">
+        <DataSource>
+					<Item Id="0" Title="Link level profile"/>
+					<Item Id="1" Title="Referring domains"/>
+				</DataSource>
+			</Select>
       <Resource Id="Datasource"/>
     </Parameters>
+		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
           https://enterprise.majesticseo.com/api/json?privatekey=82BSGR522WDFQJ2OJX7WXN2X&accesstoken=@(Model.Authenticator.Token)
           &cmd=GetLinkProfile
-          &item0=@Model.Url
+          &item@(Model.DataType)=@Model.Url
           &datasource=@(Model.Datasource)
         ]]>
       </Fetch.Url>
@@ -636,6 +643,7 @@
         <JsonPath Expr="CitationFlow" Id="CitationFlow" Title="CitationFlow" Converter="Int" HelpText="CitationFlow value for this link."/>
         <JsonPath Expr="TrustFlow" Id="TrustFlow" Title="TrustFlow" Converter="Int" HelpText="TrustFlow value for this link."/>
         <JsonPath Expr="Value" Id="Value" Title="Value" Converter="Int" HelpText="Value of this link."/>
+        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
