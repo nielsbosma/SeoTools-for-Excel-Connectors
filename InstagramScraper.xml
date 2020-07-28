@@ -3,30 +3,28 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+	<!--
+	https://github.com/MohanSha/InstagramResearch
+	-->
+
 	<RestConnector Title="Account Lookup" Id="AccountLookupUsername" Group="Accounts">
     <Parameters>
-      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
+      <Text Id="User" Title="Username or User URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
-		<Fetch Url="@(FetchUserString())"/>
+		<Fetch Url="https://www.instagram.com/@(FetchUsernameString())/?__a=1"/>
     <Parse>
-      <Regex Expr="&quot;edge_followed_by&quot;:{&quot;count&quot;:(\d+)}" Id="Followers" Title="Followers"  Group="1" Converter="Int"/>
-      <Regex Expr="&quot;edge_follow&quot;:{&quot;count&quot;:(\d+)}" Id="Follows" Title="Follows" Group="1" Converter="Int"/>
-      <Regex Expr="&quot;edge_owner_to_timeline_media&quot;:{&quot;count&quot;:(\d+)" Id="Posts" Title="Posts" Group="1" Converter="Int"/>
-      <Regex Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;" Id="UserId" Title="User Id" Group="1" Converter="Auto"/>
-      <Regex Expr="&quot;is_private&quot;:(\w+)" Id="Private" Title="Private"  Group="1" Converter="String"/>
-			<Compute Expr="@System.Text.RegularExpressions.Regex.Unescape(Model.Inp)" Id="FullName" Title="Full Name" DefaultValue="">
-				<Regex Expr="&quot;full_name&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
-			</Compute>
-			<Compute Expr="@System.Text.RegularExpressions.Regex.Unescape(Model.Inp)" Id="Bio" Title="Bio" DefaultValue="">
-				<Regex Expr="&quot;biography&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
-			</Compute>
-			<Compute Expr="@System.Text.RegularExpressions.Regex.Unescape(Model.Inp)" Id="Category" Title="Category" DefaultValue="">
-				<Regex Expr="&quot;overall_category_name&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
-			</Compute>
-			<Regex Expr="&quot;external_url&quot;:&quot;(.*?)&quot;" Id="ExternalUrl" Title="External URL" Group="1" Converter="String" DefaultValue=""/>
-			<Compute Expr="@(DecodeAvatarUrl(Model.Inp))" Id="Avatar" Title="Avatar" DefaultValue="">
-				<Regex Expr="&quot;profile_pic_url&quot;:&quot;(.*?)&quot;" Id="Inp" Group="1" DefaultValue=""/>
-			</Compute>
+			<JsonPath Expr="graphql.user.edge_followed_by.count" Id="Followers" Title="Followers" Converter="Int"/>
+			<JsonPath Expr="graphql.user.edge_follow.count" Id="Follows" Title="Follows" Converter="Int"/>
+			<JsonPath Expr="graphql.user.edge_owner_to_timeline_media.count" Id="Posts" Title="Posts" Converter="Int"/>
+			<JsonPath Expr="graphql.user.id" Id="UserId" Title="User Id"/>
+			<JsonPath Expr="graphql.user.full_name" Id="FullName" Title="Full Name"/>
+			<JsonPath Expr="graphql.user.biography" Id="Bio" Title="Bio"/>
+			<JsonPath Expr="graphql.user.overall_category_name" Id="Category" Title="Category"/>
+			<JsonPath Expr="graphql.user.connected_fb_page" Id="FacebookPage" Title="Facebook Page"/>
+			<JsonPath Expr="graphql.user.external_url" Id="ExternalUrl" Title="External URL"/>
+			<JsonPath Expr="graphql.user.profile_pic_url" Id="Avatar" Title="Avatar"/>
+			<JsonPath Expr="graphql.user.is_business_account" Id="BusinessAccount" Title="Business Account" Converter="Bool"/>
+			<JsonPath Expr="graphql.user.is_verified" Id="Verified" Title="Verified" Converter="Bool"/>
     </Parse>
   </RestConnector>
 
@@ -34,64 +32,40 @@
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/CBVJMV1iHsd/"/>
     </Parameters>
-    <Fetch Url="@FetchPostString()"/>
+    <Fetch Url="https://www.instagram.com/p/@(FetchPostString())/?__a=1"/>
     <Parse>
-			<Compute Expr="@FetchPostString()" Id="Url" Title="URL" DefaultValue=""/>
-      <Regex Expr="taken_at_timestamp&quot;:(\d+)" Id="Created" Title="Created" Group="1" Converter="DateTime" Converter.SourceFormat="Unix" DefaultValue=""/>
-      <Regex Expr="media_preview_like&quot;:{&quot;count&quot;:(\d+)" Id="Likes" Title="Likes" Group="1" Converter="Auto" DefaultValue=""/>
-      <Regex Expr="media_preview_comment&quot;:{&quot;count&quot;:(\d+)" Id="Comments" Title="Comments" Group="1" Converter="Auto" DefaultValue=""/>
-      <Regex Expr="&quot;video_view_count&quot;:(\d+)" Id="VideoViews" Title="Video Views" Group="1" Converter="Auto" DefaultValue=""/>
-			<Compute Expr="@Model.Inp" Id="Type" Title="Type" DefaultValue="">
-				<Regex Expr="typename&quot;:&quot;Graph(\w+)" Id="Inp" Group="1" DefaultValue=""/>
+			<Compute Expr="https://www.instagram.com/p/@(Model.Inp)" Id="Url" Title="URL" DefaultValue="">
+				<JsonPath Expr="$.graphql.shortcode_media.shortcode" Id="Inp" DefaultValue=""/>
 			</Compute>
-      <Regex Expr="&quot;display_resources&quot;:\[{&quot;src&quot;:&quot;(.*?)&quot;" Id="ImageUrl" Title="Display URL" Group="1" Converter="String" DefaultValue=""/>
-      <XPath Expr="//meta[@@property='instapp:owner_user_id']" Title="User Id" Id="UserId" Attribute="content" Converter="Auto" DefaultValue=""/>
-			<Compute Expr="@GetUsername()" Id="Username" Title="Username" DefaultValue="">
-				<Regex Expr="\s\(@@(.*?)\)" Id="Inp1" Group="1" DefaultValue=""/>
-				<Regex Expr="@@id&quot;:&quot;https:\\\/\\\/www.instagram.com\\\/(.*?)\\\/" Id="Inp2" Group="1" DefaultValue=""/>
-				<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Inp3" Group="1" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.taken_at_timestamp" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+			<JsonPath Expr="graphql.shortcode_media.edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.edge_media_preview_like.count" Id="Likes" Title="Likes" Converter="Int"/>
+			<JsonPath Expr="graphql.shortcode_media.video_view_count" Id="VideoViews" Title="Video Views" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.video_duration" Id="VideoDuration" Title="Video Duration" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.dimensions.height" Id="Height" Converter="Long"/>
+			<JsonPath Expr="graphql.shortcode_media.dimensions.width" Id="Width" Converter="Long"/>
+			<Compute Expr="@GetPostType()" Id="Type" Title="Type">
+				<JsonPath Expr="graphql.shortcode_media.__typename" Id="Inp" DefaultValue=""/>
 			</Compute>
-			<Compute Expr="https://www.instagram.com/@GetUsername()/" Id="UserUrl" Title="User URL" DefaultValue="">
-				<Regex Expr="\s\(@@(.*?)\)" Id="Inp1" Group="1" DefaultValue=""/>
-				<Regex Expr="@@id&quot;:&quot;https:\\\/\\\/www.instagram.com\\\/(.*?)\\\/" Id="Inp2" Group="1" DefaultValue=""/>
-				<Regex Expr="username&quot;:&quot;([\w\.]+)" Id="Inp3" Group="1" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.display_resources[0].src" Id="ImageUrl" Title="Thumbnail" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.owner.id" Id="UserId" Title="User Id"/>
+			<JsonPath Expr="graphql.shortcode_media.owner.username" Id="Username" Title="Username"/>
+			<Compute Expr="https://www.instagram.com/@(Model.Inp)/" Id="UserUrl" Title="User URL" DefaultValue="">
+				<JsonPath Expr="graphql.shortcode_media.owner.username" Id="Inp"/>
 			</Compute>
-			<Regex Expr="&quot;Place&quot;,&quot;name&quot;:&quot;(.*?)&quot;" Id="Place" Title="Location Place" Group="1" Converter="String" DefaultValue=""/>
-			<Regex Expr="&quot;addressLocality&quot;:&quot;(.*?)&quot;" Id="Locality" Title="Locality" Group="1" Converter="String" DefaultValue=""/>
-			<Regex Expr="&quot;Country&quot;,&quot;name&quot;:&quot;(.*?)&quot;" Id="Country" Title="Country" Group="1" Converter="String" DefaultValue=""/>
-			<Regex Expr="explore\\\/locations\\\/(\d+)" Id="LocationId" Title="Location Id" Group="1" Converter="String" DefaultValue=""/>
-			<Regex Expr="sponsor&quot;:{&quot;id&quot;:&quot;\d+&quot;,&quot;username&quot;:&quot;(.*?)&quot;" Id="Sponsor" Title="Sponsor" Group="1" Converter="String" DefaultValue=""/>
-    </Parse>
+			<JsonPath Expr="graphql.shortcode_media.owner.full_name" Id="FullName" Title="Full Name"/>
+			<JsonPath Expr="graphql.shortcode_media.owner.edge_followed_by.count" Id="Followers" Title="Followers" Converter="Int"/>
+			<JsonPath Expr="graphql.shortcode_media.owner.profile_pic_url" Id="Avatar" Title="Avatar" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.location.name" Id="Locality" Title="Location" DefaultValue=""/>
+			<Regex Expr="&quot;country_code\\&quot;:\s\\&quot;(.*?)\\&quot;" Id="Country" Title="Country" Group="1" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.location.id" Id="LocationId" Title="Location Id" DefaultValue=""/>
+			<JsonPath Expr="graphql.shortcode_media.edge_media_to_sponsor_user.edges[0].node.sponsor.username" Id="Sponsor" Title="Sponsor" DefaultValue=""/>
+	</Parse>
   </RestConnector>
 
-  <RestConnector Id="PostLookupOembed" Title="Post Lookup via Oembed" Group="Posts">
-    <Parameters>
-      <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/BhCZUzgAOhT/"/>
-    </Parameters>
-		<Fetch Url="https://api.instagram.com/oembed/?url=@FetchPostString()"/>
-    <Parse>
-      <JsonPath Expr="media_id" Id="PostId" Title="Post Id"/>
-      <Regex Expr="datetime=\\&quot;(.*?)\\&quot;" Id="Created" Title="Created" Group="1" Converter="DateTime"/>
-      <JsonPath Expr="title" Id="Text" Title="Caption"/>
-      <JsonPath Expr="author_id" Id="AuthorId" Title="Author Id" Converter="String"/>
-      <JsonPath Expr="thumbnail_url" Id="Thumbnail" Title="Thumbnail"/>
-      <JsonPath Expr="author_name" Id="Author" Title="User"/>
-      <JsonPath Expr="author_url" Id="AuthorUrl" Title="User URL"/>
-    </Parse>
-		<Fail>
-			<Regex Expr="^No URL Match$" Group="0" Fail.Action="EmptyResult"/>
-			<Regex Expr="^No Media Match$" Group="0" Fail.Action="EmptyResult"/>
-		</Fail>
-  </RestConnector>
-
-  <RestConnector Id="HashtagFeed" Title="Post Feed" Group="Hashtags">
+  <RestConnector Id="HashtagFeed" Title="Hashtag Post Feed" Group="Hashtags">
     <Parameters>
       <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
-      <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
-        <DataSource>
-          <ISOLanguageCodes/>
-        </DataSource>
-      </Select>
     </Parameters>
     <Paging PageSize="70" EvenPages="false">
       <Parse>
@@ -100,11 +74,6 @@
       </Parse>
     </Paging>
     <Fetch>
-      <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Accept-Language'>@Model.CaptionLanguage</Header>
-        </RequestHeaders>
-      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
@@ -119,12 +88,7 @@
 				</Compute>
 				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
 				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
-				<Compute Id="Type" Title="Type">
-					<Compute.Expr>
-						<![CDATA[
-						@Regex.Replace(Model.Inp, "Graph", "")
-						]]>
-					</Compute.Expr>
+				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
 					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="edge_liked_by.count" Id="Likes" Converter="Long"/>
@@ -132,42 +96,8 @@
 				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
 				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
 				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
-				<JsonPath Expr="thumbnail_src" Id="Thumbnail"/>
+				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
 				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
-				<Compute Id="AccessibilityCaption" Title="Accessibility Caption">
-					<Compute.Expr>
-						<![CDATA[
-						@{
-							string output = Model.Inp;
-							string NoPrediction = "";
-							string IntroSentence = "";
-
-							var dictLangs = new Dictionary<string, string>();
-							dictLangs.Add("en", "No photo description,Image may contain: ");
-							dictLangs.Add("sv", "Ingen fotobeskrivning,Bilden kan innehålla: ");
-							dictLangs.Add("nb", "Ingen bildebeskrivelse er tilgjengelig.,Bildet kan inneholde: ");
-							dictLangs.Add("da", "Ingen tilgængelig billedbeskrivelse.,Billedet indeholder sandsynligvis: ");
-							dictLangs.Add("fi", "Kuvan kuvausta ei ole saatavilla.,Kuvan mahdollinen sisältö: ");
-							dictLangs.Add("de", "Keine Fotobeschreibung verfügbar.,Bild könnte enthalten: ");
-							dictLangs.Add("es", "No hay descripción de la foto disponible.,La imagen puede contener: ");
-
-							if (dictLangs.ContainsKey(Model.CaptionLanguage))
-							{
-								NoPrediction = dictLangs[Model.CaptionLanguage].Split(',')[0];
-								IntroSentence = dictLangs[Model.CaptionLanguage].Split(',')[1];
-
-								if(!Model.Inp.Contains(NoPrediction) && !string.IsNullOrEmpty(Model.Inp))
-								{
-									output = Regex.Replace(Model.Inp, @IntroSentence, "");
-									output = Regex.Replace(output, @"^.*?\.$?", "");
-								}
-							}
-						}
-						@output
-						]]>
-					</Compute.Expr>
-					<JsonPath Expr="accessibility_caption" Id="Inp" DefaultValue=""/>
-				</Compute>
 			</JsonPath>
     </Parse>
   </RestConnector>
@@ -362,26 +292,153 @@
     </Parse>
   </RestConnector>
 
+  <RestConnector Id="AccountFeed" Title="Account Post Feed" Group="Accounts">
+    <Parameters>
+      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="AccountLookupUsernameHidden" Parameters="User"/>
+    </Prepare>
+    <Batch Parameter="User" Separator="\n"/>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				@GetUserFeedRequest()
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.user.edge_owner_to_timeline_media.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_media_preview_like.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
+        <Compute Expr="@Model.User" Id="Input" Title="Input URL" Checked="false"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="AccountFeedBatch" Title="Account Post Feed Batch" Group="Accounts">
+    <Parameters>
+      <Text Id="UserId" Title="User Ids" Required="true" Debug.DefaultValue="9240981" Multiline="true" HelpText="Use 'Account Lookup' to find user ids."/>
+    </Parameters>
+    <Batch Parameter="UserId" Separator="\n"/>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				@GetUserFeedRequest()
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.user.edge_owner_to_timeline_media.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_media_preview_like.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="AccountLookupUsernameHidden" Group="Accounts" Hidden="true">
+    <Parameters>
+      <Text Id="User" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+		<Fetch Url="@(FetchUserString())"/>
+    <Parse>
+      <Regex Expr="&quot;owner&quot;:{&quot;id&quot;:&quot;(\d+)&quot;" Id="UserId" Group="1" Converter="Auto"/>
+    </Parse>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
-    string FetchPostString() {
-			return (Model.Post.Contains("instagram.com") ? Model.Post : "https://www.instagram.com/p/" + Model.Post);
+		string FetchPostString() {
+			if(Model.Post.Contains("instagram.com/p/"))
+			{
+				Regex regex = new Regex(@"instagram.com\/p\/([\w\-]{4,20})");
+
+				if(regex.IsMatch(Model.Post))
+				{
+					Match match = regex.Match(Model.Post);
+					return match.Groups[1].Value;
+				}
+			}
+
+			return Model.Post;
     }
-    string FetchUserString() {
-			string input = Model.User.StartsWith("@") ? Model.User.Substring(1) : Model.User;
-			return input.Contains("instagram.com") ? input : "https://www.instagram.com/" + input;
+
+    string FetchUsernameString() {
+			if(Model.User.StartsWith("@"))
+				return Model.User.Substring(1);
+
+			if(Model.User.Contains("instagram.com"))
+			{
+				Regex regex = new Regex(@"instagram.com\/([\w.]{0,29})");
+
+				if(regex.IsMatch(Model.User))
+				{
+					Match match = regex.Match(Model.User);
+					return match.Groups[1].Value;
+				}
+			}
+
+			return Model.User;
     }
-		string DecodeAvatarUrl(string url) {
-			return url.Replace(@"\u0026","&");
-		}
+
 		string StripHashtag() {
 			return Model.Hashtag.StartsWith("#") ? Model.Hashtag.Substring(1) : Model.Hashtag;
 		}
 
-		string GetUsername() {
-			if(!string.IsNullOrEmpty(Model.Inp1) && Model.Inp1 != "get_repost") return Model.Inp1;
-			if(!string.IsNullOrEmpty(Model.Inp2)) return Model.Inp2;
-			return Model.Inp3;
+		string GetPostType() {
+			return Regex.Replace(Model.Inp, "Graph", "");
+		}
+
+		string GetUserFeedRequest() {
+			Dictionary<string, dynamic> dict = new Dictionary<string, dynamic>();
+			dict.Add("id", Model.UserId);
+			dict.Add("first", 50);
+
+			if(Model.PageCursor.Page != 0 && Model.HasNextPage) {
+				dict.Add("after", Model.Cursor);
+			}
+
+			string url = "https://www.instagram.com/graphql/query/?query_id=17888483320059182";
+			string parameters = "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
+			return url + parameters;
 		}
     ]]>
   </RazorFunctions>
