@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="9.0" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/dataforseo/" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="9.5" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/dataforseo/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -719,6 +719,7 @@
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Text Id="Filter" Title="Filter String" HelpText="Click this icon to see example filters, ie: [&quot;keyword_data.keyword_info.search_volume&quot;,&quot;>&quot;,0]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/related_keywords/live/?csharp"/>
       <Select Id="Depth" Title="Depth" Required="true" DefaultValue="2">
         <DataSource>
 					<Item Id="1" Title="8 keywords"/>
@@ -751,17 +752,23 @@
         <RequestBody>
           <![CDATA[
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							depth = Model.Depth,
-							keyword = Model.Keyword,
-							order_by = new string[] { Model.Sort },
-							limit = Model.PageCursor.NextTake,
-							offset = Model.PageCursor.NextSkip
-            });
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("depth", Model.Depth);
+						dict.Add("keyword", Model.Keyword);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
@@ -800,6 +807,7 @@
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Text Id="Filter" Title="Filter String" HelpText="Click this icon to see example filters, ie: [&quot;keyword_info.search_volume&quot;,&quot;>&quot;,0]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/keyword_suggestions/live/?csharp"/>
 			<Select Id="Sort" Title="Sort results by">
         <DataSource>
           <Item Id="keyword_info.search_volume,desc" Title="Volume Desc"/>
@@ -824,16 +832,22 @@
         <RequestBody>
           <![CDATA[
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							keyword = Model.Keyword,
-							order_by = new string[] { Model.Sort },
-							limit = Model.PageCursor.NextTake,
-							offset = Model.PageCursor.NextSkip
-            });
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("keyword", Model.Keyword);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
@@ -871,6 +885,7 @@
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Filter" Title="Filter String" HelpText="Click this icon to see example filters, ie: [&quot;ranked_serp_element.serp_item.rank_group&quot;,&quot;&lt;=&quot;,10]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/ranked_keywords/live/?csharp"/>
 			<Select Id="Sort" Title="Sort results by">
         <DataSource>
           <Item Id="keyword_data.keyword_info.search_volume,desc" Title="Volume Desc"/>
@@ -895,16 +910,22 @@
         <RequestBody>
           <![CDATA[
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							target = Model.Domain,
-							order_by = new string[] { Model.Sort },
-							limit = Model.PageCursor.NextTake,
-							offset = Model.PageCursor.NextSkip
-						});
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("target", Model.Domain);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
@@ -937,6 +958,7 @@
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Filter" Title="Filter String" HelpText="Click this icon to see example filters, ie: [&quot;metrics.paid.count&quot;,&quot;&gt;&quot;,0]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/relevant_pages/live/?php"/>
 			<Select Id="Sort" Title="Sort results by">
         <DataSource>
           <Item Id="metrics.organic.count,desc" Title="Count Organic Desc"/>
@@ -971,16 +993,22 @@
         <RequestBody>
           <![CDATA[
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							target = Model.Domain,
-							order_by = new string[] { Model.Sort },
-							limit = Model.PageCursor.NextTake,
-							offset = Model.PageCursor.NextSkip
-						});
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("target", Model.Domain);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
@@ -1030,6 +1058,7 @@
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
+			<Text Id="Filter" Title="Filter String" HelpText="Click this icon to see example filters, ie: [&quot;metrics.paid.count&quot;,&quot;&gt;&quot;,0]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/subdomains/live/?php"/>
 			<Select Id="Sort" Title="Sort results by">
         <DataSource>
           <Item Id="metrics.organic.count,desc" Title="Count Organic Desc"/>
@@ -1064,16 +1093,22 @@
         <RequestBody>
           <![CDATA[
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							target = Model.Domain,
-							order_by = new string[] { Model.Sort },
-							limit = Model.PageCursor.NextTake,
-							offset = Model.PageCursor.NextSkip
-						});
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("target", Model.Domain);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
