@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="9.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="9.5" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -108,11 +108,6 @@
   <RestConnector Id="HashtagTopPosts" Title="Top Posts" Group="Hashtags">
     <Parameters>
       <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
-      <Select Id="CaptionLanguage" Title="Accessibility Caption Language" DefaultValue="en">
-        <DataSource>
-          <ISOLanguageCodes/>
-        </DataSource>
-      </Select>
     </Parameters>
     <Paging PageSize="10" MaxTake="10"/>
     <Fetch>
@@ -252,13 +247,14 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AccountFeed" Title="Account Post Feed" Group="Accounts">
+  <RestConnector Id="AccountFeed" Title="Accounts Post Feed" Group="Accounts">
     <Parameters>
-      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
+      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson&#0010;justinbieber" Multiline="true"/>
     </Parameters>
     <Prepare>
       <Connector Id="AccountLookupUsernameHidden" Parameters="User"/>
     </Prepare>
+		<Batch Parameter="User" Separator="\n"/>
     <Paging PageSize="50" EvenPages="false">
       <Parse>
 				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.end_cursor" Id="Cursor"/>
@@ -298,50 +294,20 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AccountFeedBatch" Title="Account Post Feed Batch" Group="Accounts">
-    <Parameters>
-      <Text Id="UserId" Title="User Ids" Required="true" Debug.DefaultValue="9240981" Multiline="true" HelpText="Use 'Account Lookup' to find user ids."/>
-    </Parameters>
-    <Batch Parameter="UserId" Separator="\n"/>
-    <Paging PageSize="50" EvenPages="false">
-      <Parse>
-				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.end_cursor" Id="Cursor"/>
-				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-				@GetUserFeedRequest()
-        ]]>
-      </Fetch.Url>
-		</Fetch>
-    <Parse>
-      <JsonPath Expr="$.data.user.edge_owner_to_timeline_media.edges[*].node">
-				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
-					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
-				</Compute>
-				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
-				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
-				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
-					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
-				</Compute>
-				<JsonPath Expr="edge_media_preview_like.count" Id="Likes" Converter="Long"/>
-				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
-				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
-				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
-				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
-				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
-				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
-			</JsonPath>
-    </Parse>
-  </RestConnector>
-
 	<RestConnector Id="AccountLookupUsernameHidden" Group="Accounts" Hidden="true">
     <Parameters>
       <Text Id="User" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
-		<Fetch Url="https://www.instagram.com/@(FetchUsernameString())/?__a=1"/>
+		<Fetch>
+			<HttpSettings>
+        <Cache>true</Cache>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://www.instagram.com/@(FetchUsernameString())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
     <Parse>
 			<JsonPath Expr="graphql.user.id" Id="UserId"/>
 			<JsonPath Expr="graphql.user.username" Id="Username" Title="Username"/>
