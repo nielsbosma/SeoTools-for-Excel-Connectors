@@ -1,448 +1,639 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" RequireVersion="8.2" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/dataforseo/" HelpText="Documentation">
+<Suite Category="SEO" RequireVersion="9.0" Title="DataForSeo" Id="DataForSeo" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/DataForSeo.xml" HelpUrl="http://seotoolsforexcel.com/dataforseo/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/dataforseo/">
     <Text Id="Email" Title="Email" Required="true"/>
-    <Text Id="Key" Title="API Key" Required="true"/>
+    <Text Id="Key" Title="API Password" Required="true" Password="true"/>
   </Settings>
 
   <Resources>
-    <Resource Id="Depths">
-      <Item Id="1" Title="8 keywords"/>
-      <Item Id="2" Title="72 keywords"/>
-      <Item Id="3" Title="584 keywords"/>
-      <Item Id="4" Title="4680 keywords"/>
-    </Resource>
+		<Resource Id="Headers">
+			<RequestContentType>application/json; charset=utf-8</RequestContentType>
+			<RequestHeaders>
+				<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+			</RequestHeaders>
+		</Resource>
+		<Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="$.tasks_error" Fail.If="IsNotEqual" Fail.ComparedTo="0" Fail.Action="Request" Fail.RequestId="FindError"/>
+				<JsonPath Expr="$.tasks[0].status_message" Id="FindError"/>
+			</Fail>
+		</Resource>
     <Resource Id="SortKeywords">
-      <Item Id="search_volume" Title="Volume"/>
-      <Item Id="competition" Title="Competition"/>
-      <Item Id="cpc" Title="CPC"/>
-    </Resource>
-    <Resource Id="SortRankedKeywords">
-      <Item Id="position" Title="Position"/>
-      <Item Id="resunts_count" Title="Results"/>
-      <Item Id="etv" Title="ETV"/>
-      <Item Id="traffic_cost" Title="Traffic Cost"/>
-      <Item Id="competition" Title="Competition"/>
-      <Item Id="search_volume" Title="Volume"/>
-    </Resource>
-    <Resource Id="SortPages">
-      <Item Id="organic_count" Title="Organic Count"/>
-      <Item Id="paid_count" Title="Paid Count"/>
-      <Item Id="etv" Title="ETV"/>
+			<Select Id="Sort" Title="Sort results by" DefaultValue="search_volume">
+        <DataSource>
+          <Item Id="search_volume" Title="Volume"/>
+          <Item Id="relevance" Title="Relevance"/>
+        </DataSource>
+      </Select>
     </Resource>
   </Resources>
 
-  <RestConnector Id="Locations" HelpUrl="https://docs.dataforseo.com/v2/cmn#list-of-locations" Hidden="true">
+  <RestConnector Id="SerpLocations" HelpUrl="https://docs.dataforseo.com/v3/serp/google/locations/?php" Hidden="true">
     <Fetch>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/cmn_locations?search_engine=google
+				https://api.dataforseo.com/v3/serp/google/locations
         ]]>
       </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="loc_id" Id="Id" Title="Location Id"/>
-        <JsonPath Expr="loc_name" Id="Name" Title="Location Name"/>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="location_code" Id="Id" Title="Location Code"/>
+        <JsonPath Expr="location_name" Id="Name" Title="Location Name"/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Categories" Hidden="true">
+  <RestConnector Id="SerpLanguages" HelpUrl="https://docs.dataforseo.com/v3/serp/google/languages/?php" Hidden="true">
     <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://developers.google.com/adwords/api/docs/appendix/productsservices.csv
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <Csv Separator="," HasHeader="true">
-        <Field Id="Criterion ID" Title="Category Id"/>
-        <Field Id="Category" Title="Category Name"/>
-      </Csv>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="SearchEngines" HelpUrl="https://docs.dataforseo.com/v2/cmn#list-of-search-engines" Hidden="true">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/cmn_se
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
       </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+				https://api.dataforseo.com/v3/serp/google/languages
+        ]]>
+      </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="se_id" Id="Id" Title="Engine Id"/>
-        <JsonPath Expr="se_name" Id="Name" Title="Engine Name"/>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="language_code" Id="Id" Title="Language Code"/>
+        <JsonPath Expr="language_name" Id="Name" Title="Language Name"/>
       </JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SerpInit" Hidden="true">
+  <RestConnector Id="SerpLocations" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/locations/" Hidden="true">
+    <Fetch>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/locations
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="location_code" Id="Id" Title="Location Code"/>
+        <JsonPath Expr="location_name" Id="Name" Title="Location Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="LabLocations" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/locations_and_languages/?csharp" Hidden="true">
+    <Fetch>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/dataforseo_labs/locations_and_languages
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="location_code" Id="Id" Title="Location Code"/>
+        <JsonPath Expr="location_name" Id="Name" Title="Location Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="LabLanguages" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/locations_and_languages/?csharp" Hidden="true">
 		<Parameters>
-      <Text Id="SearchEngineId"/>
-      <Text Id="LocationId"/>
+			<Text Id="LocationCode" Title="Location Code" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+		</Parameters>
+    <Fetch>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/dataforseo_labs/locations_and_languages
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[?(@@.location_code==@(Model.LocationCode))].available_languages[*]">
+        <JsonPath Expr="language_code" Id="Id" Title="Language Code"/>
+        <JsonPath Expr="language_name" Id="Name" Title="Language Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Categories" HelpUrl="https://docs.dataforseo.com/keywords_data/google/categories/?csharp" Hidden="true">
+    <Fetch>
+		  <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/categories
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.tasks[0].result[*]">
+				<JsonPath Expr="category_code" Id="Id" Title="Category Code"/>
+				<JsonPath Expr="category_name" Id="Name" Title="Category Name"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="SerpInit" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_post/?php" Hidden="true">
+		<Parameters>
+      <Text Id="LocationCode"/>
+      <Text Id="LanguageCode"/>
       <Text Id="Keyword"/>
-    </Parameters>
+      <Text Id="Device"/>
+      <Text Id="Depth"/>
+	</Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/srp_tasks_post
+        https://api.dataforseo.com/v3/serp/google/organic/task_post
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "se_id":"@(Model.SearchEngineId)",
-                "loc_id":"@(Model.LocationId)",
-                "key":"@(Model.Keyword.Replace("\"","\\\""))",
-                "priority":2
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							keyword = Model.Keyword,
+							device = Model.Device,
+							depth = Model.Depth
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results.*">
-        <JsonPath Expr="task_id" Id="TaskId"/>
-      </JsonPath>
+      <JsonPath Expr="tasks[0].id" Id="TaskId"/>
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Serp" Title="Get Results" HelpUrl="https://docs.dataforseo.com/v2/srp#setting-serp-tasks" Group="SERP" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
+  <RestConnector Id="Serp" Title="Get Results" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
 		<Parameters>
-			<Text Id="SearchEngineId" Title="Search Engine Id" Syntax="^\d+$" Required="true" Debug.DefaultValue="2893" Select.Connector="SearchEngines" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="LocationId" Title="Location Id" Required="true" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
+			<Select Id="Device" Title="Device" DefaultValue="desktop">
+        <DataSource>
+          <Item Id="desktop" Title="Desktop"/>
+          <Item Id="mobile" Title="Mobile"/>
+        </DataSource>
+      </Select>
     </Parameters>
     <Prepare>
-      <Connector Id="SerpInit" Parameters="SearchEngineId,LocationId,Keyword"/>
+      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/srp_tasks_get/@(Model.TaskId)
+        https://api.dataforseo.com/v3/serp/google/organic/task_get/regular/@(Model.TaskId)
         ]]>
       </Fetch.Url>
       <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results.organic[*]">
-        <JsonPath Expr="result_position" Id="OrganicPosition" Title="Organic Position" Converter="Long" Checked="true"/>
-        <JsonPath Expr="result_url" Id="OrganicUrl" Title="Organic URL" Converter="String" Checked="true"/>
-        <JsonPath Expr="result_title" Id="OrganicTitle" Title="Organic Title" Converter="String" Checked="true"/>
-        <JsonPath Expr="result_snippet" Id="OrganicSnippet" Title="Organic Snippet" Converter="String" Checked="true"/>
-      </JsonPath>
-      <JsonPath Expr="$.results.paid[*]">
-        <JsonPath Expr="result_position" Id="PaidPosition" Title="Paid Position" Converter="Long" Checked="false"/>
-        <JsonPath Expr="result_url" Id="PaidUrl" Title="Paid URL" Converter="String" Checked="false"/>
-        <JsonPath Expr="result_title" Id="PaidTitle" Title="Paid Title" Converter="String" Checked="false"/>
-        <JsonPath Expr="result_snippet" Id="PaidSnippet" Title="Paid Snippet" Converter="String" Checked="false"/>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
+        <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
+        <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
+        <JsonPath Expr="domain" Id="Domain" Title="Domain"/>
+        <JsonPath Expr="url" Id="SerpUrl" Title="SERP URL"/>
+        <JsonPath Expr="title" Id="SerpTitle" Title="SERP Title"/>
+        <JsonPath Expr="breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
+        <JsonPath Expr="description" Id="SerpDescription" Title="SERP Description"/>
       </JsonPath>
     </Parse>
     <Fail>
-      <JsonPath Expr="error.message" Fail.If="RegexMatches" Fail.ComparedTo="did not return results" Fail.Action="EmptyResult"/>
-      <JsonPath Expr="error.code" Fail.If="IsEqual" Fail.ComparedTo="201" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
     </Fail>
   </RestConnector>
 
-  <RestConnector Id="SearchVolume" Title="Search Volume" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search statistics for one or more keywords">
+  <RestConnector Id="SearchVolume" Title="Search Volume" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/search_volume/live/?csharp" HelpText="Receive search statistics for one or more keywords">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_sv_batch
+        https://api.dataforseo.com/v3/keywords_data/google/search_volume/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "keys":@(CreateArr())
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							keywords = CreateArr(700)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
-        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="se_results_count" Id="Results" Title="Results" Converter="Int"/>
+        <JsonPath Expr="items_count" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Double"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchVolumeMonthly" Title="Search Volume Monthly" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data43" HelpText="Receive search volume trends for the last year.">
+  <RestConnector Id="SearchVolumeMonthly" Title="Search Volume Monthly" Group="Keywords HISTORIC" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/search_volume/live/?csharp" HelpText="Receive search volume trends for the last year.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_sv
+        https://api.dataforseo.com/v3/keywords_data/google/search_volume/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "key":"@(Utils.UrlEncode(Model.Keyword))"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							keywords = CreateArr(700)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[0].ms[*]">
-        <JsonPath Expr="year" Id="Year" Title="Year" Converter="Long" Checked="true"/>
-        <JsonPath Expr="month" Id="Month" Title="Month" Converter="Long" Checked="true"/>
-        <JsonPath Expr="count" Id="Count" Title="Count" Converter="Long" Checked="true"/>
-      </JsonPath>
+      <Xpath Expr="//monthly_searches/search_volume">
+				<Xpath Expr="../../keyword" Id="Keyword"/>
+				<Xpath Expr="../year" Id="Year" Converter="Int"/>
+				<Xpath Expr="../month" Id="Month" Converter="Int"/>
+				<Xpath Expr="." Id="Volume" Converter="Int"/>
+      </Xpath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsDomain" Title="Keywords for Domain" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data48" HelpText="Receive keyword statistics for one domain.">
+  <RestConnector Id="KeywordsDomain" Title="Keywords for Domain" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_site/live/?csharp" HelpText="Receive keyword statistics for one domain.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="se" Required="false"/>
-		</Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_for_domain/@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Absolute))
-				@if(!string.IsNullOrEmpty(Model.Country))
-        {
-          @: /@(Model.Country)
-        }
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
-        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" Checked="true"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="KeywordsKeywords" Title="Keywords for Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data53" HelpText="Receive keyword suggestions for one or more keywords.">
-		<Parameters>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Multiline="true" Required="true"/>
+			<Resource Id="SortKeywords"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_for_keywords
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_site/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "keys":@(CreateArr())
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							sort_by = Model.Sort,
+							target = Model.Domain
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
-        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Double"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="KeywordsCategories" Title="Keywords for Categories" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data58" HelpText="Receive keyword for one product category.">
+  <RestConnector Id="KeywordsDomainMonthly" Title="Keywords for Domain Monthly" Group="Keywords HISTORIC" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_site/live/?csharp" HelpText="Receive keyword statistics for one domain for the last year.">
 		<Parameters>
-			<Text Id="CategoryId" Title="Category Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Criterion ID" Select.TitleField="Category"/>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+			<Resource Id="SortKeywords"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_for_category
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_site/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "category_id":@(Model.CategoryId)
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							sort_by = Model.Sort,
+							target = Model.Domain
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="cmp" Id="CMP" Title="CMP" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
-        <JsonPath Expr="sv" Id="SV" Title="SV" Converter="Double" Checked="true"/>
-      </JsonPath>
+      <Xpath Expr="//monthly_searches/search_volume">
+				<Xpath Expr="../../keyword" Id="Keyword"/>
+				<Xpath Expr="../year" Id="Year" Converter="Int"/>
+				<Xpath Expr="../month" Id="Month" Converter="Int"/>
+				<Xpath Expr="." Id="Volume" Converter="Int"/>
+      </Xpath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AdsTrafficKeywords" Title="Ads Traffic for Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data63" HelpText="Receive Ads stats for daily impressions, CPC and clicks estimation.">
+  <RestConnector Id="KeywordsKeywords" Title="Keywords for Keywords" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live/?csharp" HelpText="Receive keyword suggestions for one or more keywords.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
-			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true"/>
-      <Radio Id="Match" Title="Match" DefaultValue="exact">
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Cache>true</Cache>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
+            {
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							keywords = CreateArr(200)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsKeywordsMonthly" Title="Keywords for Keywords Monthly" Group="Keywords HISTORIC" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live/?csharp" HelpText="Receive keyword suggestions for one or more keywords for the last year.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Cache>true</Cache>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
+            {
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							keywords = CreateArr(200)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//monthly_searches/search_volume">
+				<Xpath Expr="../../keyword" Id="Keyword"/>
+				<Xpath Expr="../year" Id="Year" Converter="Int"/>
+				<Xpath Expr="../month" Id="Month" Converter="Int"/>
+				<Xpath Expr="." Id="Volume" Converter="Int"/>
+      </Xpath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsCategories" Title="Keywords for Categories" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_category/live/?csharp" HelpText="Receive keyword for one product category.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="CategoryCode" Title="Category Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Id" Select.TitleField="Name"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_category/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Cache>true</Cache>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
+            {
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							category_code = Model.CategoryCode
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordsCategoriesMonthly" Title="Keywords for Categories Monthly" Group="Keywords HISTORIC" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/keywords_for_category/live/?csharp" HelpText="Receive keyword for one product category for the last year.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="CategoryCode" Title="Category Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="10021" Select.Connector="Categories" Select.IdField="Id" Select.TitleField="Name"/>
+			<Checkbox Id="Partners" Title="Google Search Partners" HelpText="If true, the results will be delivered for Google and search partners."/>
+			<Resource Id="SortKeywords"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/keywords_data/google/keywords_for_category/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Cache>true</Cache>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
+            {
+							location_code = Model.LocationCode,
+							search_partners = Model.Partners,
+							sort_by = Model.Sort,
+							category_code = Model.CategoryCode
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <Xpath Expr="//monthly_searches/search_volume">
+				<Xpath Expr="../../keyword" Id="Keyword"/>
+				<Xpath Expr="../year" Id="Year" Converter="Int"/>
+				<Xpath Expr="../month" Id="Month" Converter="Int"/>
+				<Xpath Expr="." Id="Volume" Converter="Int"/>
+      </Xpath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AdsTrafficKeywords" Title="Ads Traffic for Keywords" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/ad_traffic_by_keywords/live/?csharp" HelpText="Receive Ads stats for daily impressions, CPC and clicks estimation.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+      <Number Id="Bid" Title="Bid" DefaultValue="100" Required="true" Format="N1" HelpText="The price you are willing to pay for an ad; the higher value you specify, the higher positions and price you will get."/>
+      <Select Id="Match" Title="Match" DefaultValue="exact">
         <DataSource>
           <Item Id="exact" Title="Exact" />
           <Item Id="broad" Title="Broad" />
           <Item Id="phrase" Title="Phrase" />
         </DataSource>
-      </Radio>
+      </Select>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_ad_traffic_by_keywords
+        https://api.dataforseo.com/v3/keywords_data/google/ad_traffic_by_keywords/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "keys":@(CreateArr()),
-								"bid":@(Model.Bid),
-								"match":"@(Model.Match)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							match = Model.Match,
+							bid = Model.Bid,
+							keywords = CreateArr(2500)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[0].*">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
         <JsonPath Expr="ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Double" Checked="true"/>
         <JsonPath Expr="ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Double" Checked="true"/>
         <JsonPath Expr="ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Double" Checked="true"/>
@@ -460,64 +651,58 @@
         <JsonPath Expr="daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Double" Checked="true"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AdsTrafficPlatforms" Title="Ads Traffic by Platforms" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#live-data68" HelpText="Receive Ads stats based on one platform.">
+  <RestConnector Id="AdsTrafficPlatforms" Title="Ads Traffic by Platforms" Group="Keywords LIVE" HelpUrl="https://docs.dataforseo.com/v3/keywords_data/google/ad_traffic_by_platforms/live/?csharp" HelpText="Receive Ads stats based on one platform. You will get overall information for a group of keywords you send.">
 		<Parameters>
-			<Text Id="LocationId" Title="Location Id" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
-			<Number Id="Bid" Title="Maximum custom bid" DefaultValue="100" Min="1" Max="1000000" Required="true"/>
-      <Radio Id="Match" Title="Match" DefaultValue="exact">
-        <DataSource>
-          <Item Id="exact" Title="Exact" />
-          <Item Id="broad" Title="Broad" />
-          <Item Id="phrase" Title="Phrase" />
-        </DataSource>
-      </Radio>
-      <Radio Id="Platform" Title="Platform" DefaultValue="desktop">
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="Locations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="trump" Multiline="true" Required="true"/>
+      <Number Id="Bid" Title="Bid" DefaultValue="100" Required="true" Format="N1" HelpText="The price you are willing to pay for an ad; the higher value you specify, the higher positions and price you will get."/>
+      <Select Id="Platform" Title="Platform" DefaultValue="desktop">
         <DataSource>
           <Item Id="desktop" Title="Desktop" />
           <Item Id="mobile" Title="Mobile" />
           <Item Id="tablet" Title="Tablet" />
         </DataSource>
-      </Radio>
+      </Select>
+			<Select Id="Match" Title="Match" DefaultValue="exact">
+        <DataSource>
+          <Item Id="exact" Title="Exact" />
+          <Item Id="broad" Title="Broad" />
+          <Item Id="phrase" Title="Phrase" />
+        </DataSource>
+      </Select>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_ad_traffic_by_platforms
+        https://api.dataforseo.com/v3/keywords_data/google/ad_traffic_by_platforms/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "loc_id":"@(Model.LocationId)",
-                "keys":["@Utils.UrlEncode(Model.Keyword)"],
-								"bid":@(Model.Bid),
-								"match":"@(Model.Match)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							match = Model.Match,
+							bid = Model.Bid,
+							keywords = CreateArr(2500)
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results[0].@(Model.Platform)">
-        <JsonPath Expr="keys[0]" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[0].@(Model.Platform)">
         <JsonPath Expr="ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Double" Checked="true"/>
         <JsonPath Expr="ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Double" Checked="true"/>
         <JsonPath Expr="ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Double" Checked="true"/>
@@ -535,420 +720,431 @@
         <JsonPath Expr="daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Double" Checked="true"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="RelatedKeywords" Title="Related Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-related-keywords" HelpText="Get keywords that are related to a keyword you are going to provide.">
+  <RestConnector Id="RelatedKeywords" Title="Related Keywords" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/related_keywords/live/?csharp" HelpText="Get keywords that are related to a keyword you are going to provide.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
-			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
       <Select Id="Depth" Title="Depth" Required="true" DefaultValue="2">
         <DataSource>
-          <Resource Id="Depths"/>
+					<Item Id="1" Title="8 keywords"/>
+					<Item Id="2" Title="72 keywords"/>
+					<Item Id="3" Title="584 keywords"/>
+					<Item Id="4" Title="4680 keywords"/>
         </DataSource>
       </Select>
-      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
+			<Select Id="Sort" Title="Sort results by">
         <DataSource>
-          <Resource Id="SortKeywords"/>
+          <Item Id="keyword_data.keyword_info.search_volume,desc" Title="Volume Desc"/>
+          <Item Id="keyword_data.keyword_info.search_volume,asc" Title="Volume Asc"/>
+          <Item Id="keyword_data.keyword_info.competition,desc" Title="Competition Desc"/>
+          <Item Id="keyword_data.keyword_info.competition,asc" Title="Competition Asc"/>
+          <Item Id="keyword_data.keyword_info.cpc,desc" Title="CPC Desc"/>
+          <Item Id="keyword_data.keyword_info.cpc,asc" Title="CPC Asc"/>
         </DataSource>
       </Select>
-      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
-        <DataSource>
-          <Item Id="desc" Title="Descending" />
-          <Item Id="asc" Title="Ascending" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_finder_related_keywords_get
+        https://api.dataforseo.com/v3/dataforseo_labs/related_keywords/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "country_code":"@(Model.Country)",
-								"language":"@(Model.Language)",
-                "keyword":"@Utils.UrlEncode(Model.Keyword)",
-								"depth":@(Model.Depth),
-								"limit":@(Model.PageCursor.NextTake),
-								"offset":@(Model.PageCursor.NextSkip),
-								"orderby":"@(Model.Sort),@(Model.Direction)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							depth = Model.Depth,
+							keyword = Model.Keyword,
+							order_by = new string[] { Model.Sort },
+							limit = Model.PageCursor.NextTake,
+							offset = Model.PageCursor.NextSkip
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results..related[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" Checked="true"/>
-        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="keyword_data.keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="keyword_data.keyword_info.competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="keyword_data.keyword_info.cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="keyword_data.keyword_info.search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="depth" Id="Depth" Title="Depth" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.cpc_min" Id="CPCMin" Title="CPC Min" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.cpc_max" Id="CPCMax" Title="CPC Max" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.cpc_average" Id="CPCAvg" Title="CPC Avg" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_impressions_min" Id="DailyImpressionsMin" Title="Daily Impressions Min" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_impressions_max" Id="DailyImpressionsMax" Title="Daily Impressions Max" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_impressions_average" Id="DailyImpressionsAvg" Title="Daily Impressions Avg" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_clicks_min" Id="DailyClicksMin" Title="Daily Clicks Min" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_clicks_max" Id="DailyClicksMax" Title="Daily Clicks Max" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_clicks_average" Id="DailyClicksAvg" Title="Daily Clicks Avg" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_cost_min" Id="DailyCostMin" Title="Daily Cost Min" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_cost_max" Id="DailyCostMax" Title="Daily Cost Max" Converter="Auto"/>
+        <JsonPath Expr="keyword_data.impressions_info.daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Auto"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SimilarKeywords" Title="Similar Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-similar-keywords" HelpText="Receive similar terms for a keyword.">
+  <RestConnector Id="KeywordSuggestions" Title="Keyword Suggestions" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/keyword_suggestions/live/?csharp" HelpText="Based on the full-text search for the specified keyword. Returns only those search terms that contain the keyword you requested with additional words before, after, or within the specified key phrase.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
-			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
-      <Select Id="Depth" Title="Depth" Required="true" DefaultValue="2">
+			<Select Id="Sort" Title="Sort results by">
         <DataSource>
-          <Resource Id="Depths"/>
+          <Item Id="keyword_info.search_volume,desc" Title="Volume Desc"/>
+          <Item Id="keyword_info.search_volume,asc" Title="Volume Asc"/>
+          <Item Id="keyword_info.competition,desc" Title="Competition Desc"/>
+          <Item Id="keyword_info.competition,asc" Title="Competition Asc"/>
+          <Item Id="keyword_info.cpc,desc" Title="CPC Desc"/>
+          <Item Id="keyword_info.cpc,asc" Title="CPC Asc"/>
         </DataSource>
       </Select>
-      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
-        <DataSource>
-          <Resource Id="SortKeywords"/>
-        </DataSource>
-      </Select>
-      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
-        <DataSource>
-          <Item Id="desc" Title="Descending" />
-          <Item Id="asc" Title="Ascending" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_finder_similar_keywords_get
+        https://api.dataforseo.com/v3/dataforseo_labs/keyword_suggestions/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "country_code":"@(Model.Country)",
-								"language":"@(Model.Language)",
-                "keyword":"@Utils.UrlEncode(Model.Keyword)",
-								"depth":@(Model.Depth),
-								"limit":@(Model.PageCursor.NextTake),
-								"offset":@(Model.PageCursor.NextSkip),
-								"orderby":"@(Model.Sort),@(Model.Direction)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							keyword = Model.Keyword,
+							order_by = new string[] { Model.Sort },
+							limit = Model.PageCursor.NextTake,
+							offset = Model.PageCursor.NextSkip
+            });
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results..similar[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" Checked="true"/>
-        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="keyword_info.competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="keyword_info.cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="keyword_info.search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="impressions_info.ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_min" Id="CPCMin" Title="CPC Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_max" Id="CPCMax" Title="CPC Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_average" Id="CPCAvg" Title="CPC Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_min" Id="DailyImpressionsMin" Title="Daily Impressions Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_max" Id="DailyImpressionsMax" Title="Daily Impressions Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_average" Id="DailyImpressionsAvg" Title="Daily Impressions Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_min" Id="DailyClicksMin" Title="Daily Clicks Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_max" Id="DailyClicksMax" Title="Daily Clicks Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_average" Id="DailyClicksAvg" Title="Daily Clicks Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_min" Id="DailyCostMin" Title="Daily Cost Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_max" Id="DailyCostMax" Title="Daily Cost Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Auto"/>
       </JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="RankedKeywords" Title="Ranked Keywords" Group="Keywords" HelpUrl="https://docs.dataforseo.com/#get-ranked-keywords" HelpText="Get keywords for which a website is ranked.">
+  <RestConnector Id="RankedKeywords" Title="Ranked Keywords" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/ranked_keywords/live/?csharp" HelpText="Get keywords for which a website is ranked.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
-			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="position">
+			<Select Id="Sort" Title="Sort results by">
         <DataSource>
-          <Resource Id="SortRankedKeywords"/>
+          <Item Id="keyword_data.keyword_info.search_volume,desc" Title="Volume Desc"/>
+          <Item Id="keyword_data.keyword_info.search_volume,asc" Title="Volume Asc"/>
+          <Item Id="keyword_data.keyword_info.competition,desc" Title="Competition Desc"/>
+          <Item Id="keyword_data.keyword_info.competition,asc" Title="Competition Asc"/>
+          <Item Id="keyword_data.keyword_info.cpc,desc" Title="CPC Desc"/>
+          <Item Id="keyword_data.keyword_info.cpc,asc" Title="CPC Asc"/>
         </DataSource>
       </Select>
-      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
-        <DataSource>
-          <Item Id="desc" Title="Descending" />
-          <Item Id="asc" Title="Ascending" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_finder_ranked_keywords_get
+        https://api.dataforseo.com/v3/dataforseo_labs/ranked_keywords/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
-                "country_code":"@(Model.Country)",
-								"language":"@(Model.Language)",
-								"limit":@(Model.PageCursor.NextTake),
-								"offset":@(Model.PageCursor.NextSkip),
-								"orderby":"@(Model.Sort),@(Model.Direction)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							target = Model.Domain,
+							order_by = new string[] { Model.Sort },
+							limit = Model.PageCursor.NextTake,
+							offset = Model.PageCursor.NextSkip
+						});
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results..ranked[*]">
-        <JsonPath Expr="key" Id="Keyword" Title="Keyword" Converter="String" Checked="true"/>
-        <JsonPath Expr="position" Id="Position" Title="Position" Converter="Long" Checked="true"/>
-        <JsonPath Expr="search_volume" Id="Volume" Title="Volume" Converter="Long" Checked="true"/>
-        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" Checked="true"/>
-        <JsonPath Expr="cpc" Id="CPC" Title="CPC" Converter="Double" Checked="true"/>
-        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" Checked="true"/>
-        <JsonPath Expr="traffic_cost" Id="TrafficCost" Title="Traffic Cost" Converter="Double" Checked="true"/>
-        <JsonPath Expr="competition" Id="Competition" Title="Competition" Converter="Double" Checked="true"/>
-        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" Checked="true"/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="true"/>
-        <JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String" Checked="true"/>
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" Checked="true"/>
-        <JsonPath Expr="exact_domain" Id="ExactDomain" Title="Exact Domain" Converter="String" Checked="true"/>
-      </JsonPath>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="keyword_data.keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="keyword_data.keyword_info.competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="keyword_data.keyword_info.cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="keyword_data.keyword_info.search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.etv" Id="SerpEtv" Title="SERP ETV" Converter="Double"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.estimated_paid_traffic_cost" Id="SerpTrafficCost" Title="SERP Traffic Cost" Converter="Double"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.type" Id="SerpType" Title="SERP Type"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.position" Id="SerpPosition" Title="SERP Position"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.title" Id="SerpTitle" Title="SERP Title"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.url" Id="SerpUrl" Title="SERP URL"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
+        <JsonPath Expr="ranked_serp_element.serp_item.description" Id="SerpDescription" Title="SERP Description"/>
+			</JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="RelevantPages" Title="Relevant Pages" Group="SERP" HelpUrl="https://docs.dataforseo.com/v2/kwrd_finder/?php#get-relevant-pages" HelpText="Get SERP metrics for relevant pages of a website based on a specific location.">
+  <RestConnector Id="RelevantPages" Title="Relevant Pages" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/relevant_pages/live/?php" HelpText="Get SERP metrics for relevant pages of a website based on a specific location.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
-			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
-      <Radio Id="Type" Title="Type" DefaultValue="organic">
+			<Select Id="Sort" Title="Sort results by">
         <DataSource>
-          <Item Id="organic" Title="Organic" />
-          <Item Id="paid" Title="Paid" />
-        </DataSource>
-      </Radio>
-      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
-        <DataSource>
-          <Resource Id="SortPages"/>
+          <Item Id="metrics.organic.count,desc" Title="Count Organic Desc"/>
+          <Item Id="metrics.organic.count,asc" Title="Count Organic Asc"/>
+          <Item Id="metrics.paid.count,desc" Title="Count Paid Desc"/>
+          <Item Id="metrics.paid.count,asc" Title="Count Paid Asc"/>
+          <Item Id="metrics.organic.etv,desc" Title="ETV Organic Desc"/>
+          <Item Id="metrics.organic.etv,asc" Title="ETV Organic Asc"/>
+          <Item Id="metrics.paid.etv,desc" Title="ETV Paid Desc"/>
+          <Item Id="metrics.paid.organic_et,asc" Title="ETV Paid Asc"/>
+          <Item Id="metrics.organic.estimated_paid_traffic_cost,desc" Title="Paid Traffic Cost Organic Desc"/>
+          <Item Id="metrics.organic.estimated_paid_traffic_cost,asc" Title="Paid Traffic Cost Organic Asc"/>
+          <Item Id="metrics.paid.estimated_paid_traffic_cost,desc" Title="Paid Traffic Cost Paid Desc"/>
+          <Item Id="metrics.paid.estimated_paid_traffic_cost,asc" Title="Paid Traffic Cost Paid Asc"/>
+          <Item Id="metrics.organic.impressions_etv,desc" Title="Impressions ETV Organic Desc"/>
+          <Item Id="metrics.organic.impressions_etv,asc" Title="Impressions ETV Organic Asc"/>
+          <Item Id="metrics.paid.impressions_etv,desc" Title="Impressions ETV Paid Desc"/>
+          <Item Id="metrics.paid.impressions_etv,asc" Title="Impressions ETV Paid Asc"/>
         </DataSource>
       </Select>
-      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
-        <DataSource>
-          <Item Id="desc" Title="Descending" />
-          <Item Id="asc" Title="Ascending" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_finder_relevant_pages_get
+        https://api.dataforseo.com/v3/dataforseo_labs/relevant_pages/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
-                "country_code":"@(Model.Country)",
-								"language":"@(Model.Language)",
-                "keyword":"@Utils.UrlEncode(Model.Domain)",
-								"type":"@(Model.Type)",
-								"limit":@(Model.PageCursor.NextTake),
-								"offset":@(Model.PageCursor.NextSkip),
-								"orderby":"@(Model.Sort),@(Model.Direction)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							target = Model.Domain,
+							order_by = new string[] { Model.Sort },
+							limit = Model.PageCursor.NextTake,
+							offset = Model.PageCursor.NextSkip
+						});
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results..relevant_pages[*}">
-        <JsonPath Expr="page_address" Id="Page" Title="Page" Converter="String" Checked="true"/>
-        <JsonPath Expr="organic_count" Id="OrganicCount" Title="Organic Count" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_count" Id="PaidCount" Title="Paid Count" Converter="Long" Checked="true"/>
-        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" Checked="true"/>
-        <JsonPath Expr="pos1" Id="Pos1" Title="Position 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos2_3" Id="Pos1" Title="Position 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos4_10" Id="Pos410" Title="Position 4-10" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos11_20" Id="Pos1120" Title="Position 11-20" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos21_30" Id="Pos2130" Title="Position 21-30" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos31_40" Id="Pos3140" Title="Position 31-40" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos41_50" Id="Pos4150" Title="Position 41-50" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos51_60" Id="Pos5160" Title="Position 51-60" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos61_70" Id="Pos6170" Title="Position 61-70" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos71_80" Id="Pos7180" Title="Position 71-80" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos81_90" Id="Pos8190" Title="Position 81-90" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos91_100" Id="Pos91100" Title="Position 91-100" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos1" Id="PaidPos1" Title="PaidPosition 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos2_3" Id="PaidPos23" Title="PaidPosition 2-3" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos4_10" Id="PaidPos410" Title="PaidPosition 4-10" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos11_20" Id="PaidPos1120" Title="PaidPosition 11-20" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos21_100" Id="PaidPos21100" Title="PaidPosition 21-100" Converter="Long" Checked="true"/>
-      </JsonPath>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="page_address" Id="Page" Title="Page" Converter="String"/>
+        <JsonPath Expr="metrics.organic.count" Id="OrganicCount" Title="Organic Count" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.etv" Id="OrganicETV" Title="Organic ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.estimated_paid_traffic_cost" Id="OrganicPaidTrafficCost" Title="Organic Paid Traffic Cost" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.impressions_etv" Id="OrganicImpressionsETV" Title="Organic Impressions ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.count" Id="PaidCount" Title="Paid Count" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.etv" Id="PaidETV" Title="Paid ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.estimated_paid_traffic_cost" Id="PaidPaidTrafficCost" Title="Paid Paid Traffic Cost" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.impressions_etv" Id="PaidImpressionsETV" Title="Paid Impressions ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.pos_1" Id="OrganicPos1" Title="Organic Position 1" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_2_3" Id="OrganicPos23" Title="Organic Position 2-3" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_4_10" Id="OrganicPos410" Title="Organic Position 4-10" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_11_20" Id="OrganicPos1120" Title="Organic Position 11-20" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_21_30" Id="OrganicPos2130" Title="Organic Position 21-30" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_31_40" Id="OrganicPos3140" Title="Organic Position 31-40" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_41_50" Id="OrganicPos4150" Title="Organic Position 41-50" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_51_60" Id="OrganicPos5160" Title="Organic Position 51-60" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_61_70" Id="OrganicPos6170" Title="Organic Position 61-70" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_71_80" Id="OrganicPos7180" Title="Organic Position 71-80" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_81_90" Id="OrganicPos8190" Title="Organic Position 81-90" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_1" Id="PaidPos1" Title="Paid Position 1" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_2_3" Id="PaidPos23" Title="Paid Position 2-3" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_4_10" Id="PaidPos410" Title="Paid Position 4-10" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_11_20" Id="PaidPos1120" Title="Paid Position 11-20" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_21_30" Id="PaidPos2130" Title="Paid Position 21-30" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_31_40" Id="PaidPos3140" Title="Paid Position 31-40" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_41_50" Id="PaidPos4150" Title="Paid Position 41-50" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_51_60" Id="PaidPos5160" Title="Paid Position 51-60" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_61_70" Id="PaidPos6170" Title="Paid Position 61-70" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_71_80" Id="PaidPos7180" Title="Paid Position 71-80" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_81_90" Id="PaidPos8190" Title="Paid Position 81-90" Converter="Long"/>
+			</JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
- <RestConnector Id="Subdomains" Title="Subdomains" Group="SERP" HelpUrl="https://docs.dataforseo.com/v2/kwrd_finder/?php#get-subdomains" HelpText="Get SERP data for subdomains of a website based on a specific location.">
+  <RestConnector Id="Subdomains" Title="Subdomains" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/subdomains/live/?php" HelpText="Provides you with a list of subdomains of the specified domain, along with the ranking distribution across organic and paid search.">
 		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="Domain" Title="Domain" Debug.DefaultValue="microsoft.com" Required="true"/>
-			<Text Id="Country" Title="Country Code (ISO 2-letter)" Debug.DefaultValue="us" Required="false"/>
-			<Text Id="Language" Title="Language Code (2-letter)" Debug.DefaultValue="en" Required="false"/>
-      <Radio Id="Type" Title="Type" DefaultValue="organic">
+			<Select Id="Sort" Title="Sort results by">
         <DataSource>
-          <Item Id="organic" Title="Organic" />
-          <Item Id="paid" Title="Paid" />
-        </DataSource>
-      </Radio>
-      <Select Id="Sort" Title="Sort" Required="false" DefaultValue="search_volume">
-        <DataSource>
-          <Resource Id="SortPages"/>
+          <Item Id="metrics.organic.count,desc" Title="Count Organic Desc"/>
+          <Item Id="metrics.organic.count,asc" Title="Count Organic Asc"/>
+          <Item Id="metrics.paid.count,desc" Title="Count Paid Desc"/>
+          <Item Id="metrics.paid.count,asc" Title="Count Paid Asc"/>
+          <Item Id="metrics.organic.etv,desc" Title="ETV Organic Desc"/>
+          <Item Id="metrics.organic.etv,asc" Title="ETV Organic Asc"/>
+          <Item Id="metrics.paid.etv,desc" Title="ETV Paid Desc"/>
+          <Item Id="metrics.paid.organic_et,asc" Title="ETV Paid Asc"/>
+          <Item Id="metrics.organic.estimated_paid_traffic_cost,desc" Title="Paid Traffic Cost Organic Desc"/>
+          <Item Id="metrics.organic.estimated_paid_traffic_cost,asc" Title="Paid Traffic Cost Organic Asc"/>
+          <Item Id="metrics.paid.estimated_paid_traffic_cost,desc" Title="Paid Traffic Cost Paid Desc"/>
+          <Item Id="metrics.paid.estimated_paid_traffic_cost,asc" Title="Paid Traffic Cost Paid Asc"/>
+          <Item Id="metrics.organic.impressions_etv,desc" Title="Impressions ETV Organic Desc"/>
+          <Item Id="metrics.organic.impressions_etv,asc" Title="Impressions ETV Organic Asc"/>
+          <Item Id="metrics.paid.impressions_etv,desc" Title="Impressions ETV Paid Desc"/>
+          <Item Id="metrics.paid.impressions_etv,asc" Title="Impressions ETV Paid Asc"/>
         </DataSource>
       </Select>
-      <Radio Id="Direction" Title="Sort Direction" DefaultValue="desc">
-        <DataSource>
-          <Item Id="desc" Title="Descending" />
-          <Item Id="asc" Title="Ascending" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false"/>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/kwrd_finder_subdomains_get
+        https://api.dataforseo.com/v3/dataforseo_labs/subdomains/live
         ]]>
       </Fetch.Url>
       <HttpSettings>
+				<Cache>true</Cache>
         <RequestMethod>POST</RequestMethod>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-          {
-            "data":
+					@{
+					  var postData = new List<object>();
+            postData.Add(new
             {
-              "@(Utils.NewGuid())": {
-                "domain":"@(Utils.UrlProperty(Model.Domain).Absolute)",
-                "country_code":"@(Model.Country)",
-								"language":"@(Model.Language)",
-                "keyword":"@Utils.UrlEncode(Model.Domain)",
-								"type":"@(Model.Type)",
-								"limit":@(Model.PageCursor.NextTake),
-								"offset":@(Model.PageCursor.NextSkip),
-								"orderby":"@(Model.Sort),@(Model.Direction)"
-              }
-            }
-          }
+							location_code = Model.LocationCode,
+							language_code = Model.LanguageCode,
+							target = Model.Domain,
+							order_by = new string[] { Model.Sort },
+							limit = Model.PageCursor.NextTake,
+							offset = Model.PageCursor.NextSkip
+						});
+					}
+					@JsonConvert.SerializeObject(postData)
 					]]>
         </RequestBody>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.results..subdomains[*]">
-        <JsonPath Expr="exact_domain" Id="ExactDomain" Title="Exact Domain" Converter="String" Checked="true"/>
-        <JsonPath Expr="organic_count" Id="OrganicCount" Title="Organic Count" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_count" Id="PaidCount" Title="Paid Count" Converter="Long" Checked="true"/>
-        <JsonPath Expr="etv" Id="ETV" Title="ETV" Converter="Double" Checked="true"/>
-        <JsonPath Expr="pos1" Id="Pos1" Title="Position 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos2_3" Id="Pos1" Title="Position 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos4_10" Id="Pos410" Title="Position 4-10" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos11_20" Id="Pos1120" Title="Position 11-20" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos21_30" Id="Pos2130" Title="Position 21-30" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos31_40" Id="Pos3140" Title="Position 31-40" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos41_50" Id="Pos4150" Title="Position 41-50" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos51_60" Id="Pos5160" Title="Position 51-60" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos61_70" Id="Pos6170" Title="Position 61-70" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos71_80" Id="Pos7180" Title="Position 71-80" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos81_90" Id="Pos8190" Title="Position 81-90" Converter="Long" Checked="true"/>
-        <JsonPath Expr="pos91_100" Id="Pos91100" Title="Position 91-100" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos1" Id="PaidPos1" Title="PaidPosition 1" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos2_3" Id="PaidPos23" Title="PaidPosition 2-3" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos4_10" Id="PaidPos410" Title="PaidPosition 4-10" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos11_20" Id="PaidPos1120" Title="PaidPosition 11-20" Converter="Long" Checked="true"/>
-        <JsonPath Expr="paid_pos21_100" Id="PaidPos21100" Title="PaidPosition 21-100" Converter="Long" Checked="true"/>
-      </JsonPath>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="subdomain" Id="Subdomain" Title="Subdomain" Converter="String"/>
+        <JsonPath Expr="metrics.organic.count" Id="OrganicCount" Title="Organic Count" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.etv" Id="OrganicETV" Title="Organic ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.estimated_paid_traffic_cost" Id="OrganicPaidTrafficCost" Title="Organic Paid Traffic Cost" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.impressions_etv" Id="OrganicImpressionsETV" Title="Organic Impressions ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.count" Id="PaidCount" Title="Paid Count" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.etv" Id="PaidETV" Title="Paid ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.estimated_paid_traffic_cost" Id="PaidPaidTrafficCost" Title="Paid Paid Traffic Cost" Converter="Double"/>
+        <JsonPath Expr="metrics.paid.impressions_etv" Id="PaidImpressionsETV" Title="Paid Impressions ETV" Converter="Double"/>
+        <JsonPath Expr="metrics.organic.pos_1" Id="OrganicPos1" Title="Organic Position 1" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_2_3" Id="OrganicPos23" Title="Organic Position 2-3" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_4_10" Id="OrganicPos410" Title="Organic Position 4-10" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_11_20" Id="OrganicPos1120" Title="Organic Position 11-20" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_21_30" Id="OrganicPos2130" Title="Organic Position 21-30" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_31_40" Id="OrganicPos3140" Title="Organic Position 31-40" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_41_50" Id="OrganicPos4150" Title="Organic Position 41-50" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_51_60" Id="OrganicPos5160" Title="Organic Position 51-60" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_61_70" Id="OrganicPos6170" Title="Organic Position 61-70" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_71_80" Id="OrganicPos7180" Title="Organic Position 71-80" Converter="Long"/>
+        <JsonPath Expr="metrics.organic.pos_81_90" Id="OrganicPos8190" Title="Organic Position 81-90" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_1" Id="PaidPos1" Title="Paid Position 1" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_2_3" Id="PaidPos23" Title="Paid Position 2-3" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_4_10" Id="PaidPos410" Title="Paid Position 4-10" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_11_20" Id="PaidPos1120" Title="Paid Position 11-20" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_21_30" Id="PaidPos2130" Title="Paid Position 21-30" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_31_40" Id="PaidPos3140" Title="Paid Position 31-40" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_41_50" Id="PaidPos4150" Title="Paid Position 41-50" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_51_60" Id="PaidPos5160" Title="Paid Position 51-60" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_61_70" Id="PaidPos6170" Title="Paid Position 61-70" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_71_80" Id="PaidPos7180" Title="Paid Position 71-80" Converter="Long"/>
+        <JsonPath Expr="metrics.paid.pos_81_90" Id="PaidPos8190" Title="Paid Position 81-90" Converter="Long"/>
+			</JsonPath>
     </Parse>
-    <Fail>
-			<JsonPath Expr="error.message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-      <JsonPath Expr="error[0].message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-			<JsonPath Expr="error..message" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Failed '{0}.'"/>
-    </Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="AvailableCredits" Title="Available API Credits" HelpUrl="https://docs.dataforseo.com/#get-pages">
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v2/cmn_user
+        https://api.dataforseo.com/v3/appendix/user_data
         ]]>
       </Fetch.Url>
       <HttpSettings>
-        <RequestContentType>application/json; charset=utf-8</RequestContentType>
-        <RequestHeaders>
-          <Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
-        </RequestHeaders>
+				<Resource Id="Headers"/>
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Id="Balance" Expr="results[0].balance"/>
+      <JsonPath Id="Balance" Expr="$.tasks[0].result[*].money.balance" Converter="Double"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RazorFunctions>
@@ -957,9 +1153,8 @@
       return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Key));
     }
 
-    string CreateArr(){
-      string[] lines = ((string)Model.Keyword).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(2100).ToArray();
-      return JsonConvert.SerializeObject(lines);
+    string[] CreateArr(int limit){
+      return ((string)Model.Keyword).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(limit).ToArray();
     }
     ]]>
   </RazorFunctions>
