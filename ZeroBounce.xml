@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="ZeroBounce" Id="ZeroBounce" Category="Email" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ZeroBounce.xml" HelpUrl="http://seotoolsforexcel.com/zerobounce/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/zerobounce/">
+    <Text Id="Key" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="HttpSettings">
+      <Cache>true</Cache>
+		</Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="errors"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="EmailVerification" Title="Email Verification" HelpUrl="https://www.zerobounce.net/docs/email-validation-api-quickstart/#validate_emails__v2__">
+    <Parameters>
+      <Text Id="Email" Title="Email Address" Debug.DefaultValue="ol@copark.co" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.zerobounce.net/v2/validate?api_key=@(Model.Key)&email=@(Model.Email)&ip_address=
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="address" Id="Address" Title="Address" Converter="String" HelpText="The email address you are validating."/>
+			<JsonPath Expr="status" Id="Status" Title="Status" Converter="String" HelpText="valid, invalid, catch-all, unknown, spamtrap, abuse, do_not_mail"/>
+			<JsonPath Expr="sub_status" Id="SubStatus" Title="Sub Status" Converter="String" HelpText="list of sub statuses, antispam_system, greylisted, mail_server_temporary_error, forcible_disconnect etc"/>
+			<JsonPath Expr="free_email" Id="FreeEmail" Title="Free Email" Converter="Bool" HelpText="If the email comes from a free provider."/>
+			<JsonPath Expr="did_you_mean" Id="DidYouMean" Title="Did You Mean" Converter="String" HelpText="Suggestive Fix for an email typo"/>
+			<JsonPath Expr="account" Id="Account" Title="Account" Converter="String" HelpText="The portion of the email address before the @-symbol."/>
+			<JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String" HelpText="The portion of the email address after the @-symbol."/>
+			<JsonPath Expr="domain_age_days" Id="DomainAgeDays" Title="Domain Age Days" Converter="Int" HelpText="Age of the email domain in days"/>
+			<JsonPath Expr="smtp_provider" Id="SMTPProvider" Title="SMTP Provider" Converter="String" HelpText="The SMTP Provider of the email"/>
+			<JsonPath Expr="mx_found" Id="MXFound" Title="MX Found" Converter="Bool" HelpText="Does the domain have an MX record."/>
+			<JsonPath Expr="mx_record" Id="MXRecord" Title="MX Record" Converter="String" HelpText="The preferred MX record of the domain"/>
+			<JsonPath Expr="firstname" Id="Firstname" Title="Firstname" Converter="String" HelpText="The first name of the owner of the email when available"/>
+			<JsonPath Expr="lastname" Id="Lastname" Title="Lastname" Converter="String" HelpText="The last name of the owner of the email when available"/>
+			<JsonPath Expr="gender" Id="Gender" Title="Gender" Converter="String" HelpText="The gender of the owner of the email when available"/>
+			<JsonPath Expr="country" Id="Country" Title="Country" Converter="String" HelpText="The country of the IP passed in."/>
+			<JsonPath Expr="region" Id="Region" Title="Region" Converter="String" HelpText="The region/state of the IP passed in."/>
+			<JsonPath Expr="city" Id="City" Title="City" Converter="String" HelpText="The city of the IP passed in."/>
+			<JsonPath Expr="zipcode" Id="Zipcode" Title="Zipcode" Converter="String" HelpText="The zipcode of the IP passed in."/>
+		</Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CreditBalance" Title="Credit Balance" HelpUrl="https://www.zerobounce.net/docs/email-validation-api-quickstart/#get_balance__v2__">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+					https://api.zerobounce.net/v2/getcredits?api_key=@(Model.Key)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+       <JsonPath Expr="Credits" Id="Credits" Converter="Int"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
