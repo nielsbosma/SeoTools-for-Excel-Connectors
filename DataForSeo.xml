@@ -31,14 +31,17 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="SerpLocations" HelpUrl="https://docs.dataforseo.com/v3/serp/google/locations/?php" Hidden="true">
-    <Fetch>
+  <RestConnector Id="SerpLocations" Hidden="true">
+		<Parameters>
+      <Text Id="Engine"/>
+		</Parameters>
+   <Fetch>
 		  <HttpSettings>
 				<Resource Id="Headers"/>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				https://api.dataforseo.com/v3/serp/google/locations
+				https://api.dataforseo.com/v3/serp/@(Model.Engine)/locations
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -51,14 +54,17 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SerpLanguages" HelpUrl="https://docs.dataforseo.com/v3/serp/google/languages/?php" Hidden="true">
+  <RestConnector Id="SerpLanguages" Hidden="true">
+		<Parameters>
+      <Text Id="Engine"/>
+		</Parameters>
     <Fetch>
 		  <HttpSettings>
 				<Resource Id="Headers"/>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				https://api.dataforseo.com/v3/serp/google/languages
+				https://api.dataforseo.com/v3/serp/@(Model.Engine)/languages
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -153,18 +159,19 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SerpInit" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_post/?php" Hidden="true">
+  <RestConnector Id="SerpInit" HelpUrl="https://docs.dataforseo.com/v3/serp/overview/?php" Hidden="true">
 		<Parameters>
       <Text Id="LocationCode"/>
       <Text Id="LanguageCode"/>
       <Text Id="Keyword"/>
+      <Number Id="Depth"/>
       <Text Id="Device"/>
-      <Text Id="Depth"/>
-	</Parameters>
+      <Text Id="Engine"/>
+		</Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v3/serp/google/organic/task_post
+        https://api.dataforseo.com/v3/serp/@(Model.Engine)/organic/task_post
         ]]>
       </Fetch.Url>
       <HttpSettings>
@@ -172,16 +179,21 @@
 				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
+					
 					@{
-					  var postData = new List<object>();
-            postData.Add(new
-            {
-							location_code = Model.LocationCode,
-							language_code = Model.LanguageCode,
-							keyword = Model.Keyword,
-							device = Model.Device,
-							depth = Model.Depth
-            });
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("keyword", Model.Keyword);
+						dict.Add("depth", new string[] { Model.Depth });
+
+						if(!string.IsNullOrEmpty(Model.Device))
+						{
+							dict.Add("device", Model.Device);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
 					}
 					@JsonConvert.SerializeObject(postData)
 					]]>
@@ -193,7 +205,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="Serp" Title="Get Results" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results of specified search engines according to a certain keyword.">
+  <RestConnector Id="SerpGoogle" Title="Google Results" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Google according to a certain keyword.">
 		<Parameters>
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations" Select.IdField="Id" Select.TitleField="Name"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages" Select.IdField="Id" Select.TitleField="Name"/>
@@ -205,14 +217,98 @@
           <Item Id="mobile" Title="Mobile"/>
         </DataSource>
       </Select>
+			<Text Id="Engine" DefaultValue="google" Hidden="true"/>
     </Parameters>
     <Prepare>
-      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device"/>
+      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Depth,Device,Engine"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.dataforseo.com/v3/serp/google/organic/task_get/regular/@(Model.TaskId)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
+        <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
+        <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
+        <JsonPath Expr="domain" Id="Domain" Title="Domain"/>
+        <JsonPath Expr="url" Id="SerpUrl" Title="SERP URL"/>
+        <JsonPath Expr="title" Id="SerpTitle" Title="SERP Title"/>
+        <JsonPath Expr="breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
+        <JsonPath Expr="description" Id="SerpDescription" Title="SERP Description"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+    </Fail>
+  </RestConnector>
+
+  <RestConnector Id="SerpBing" Title="Bing Results" HelpUrl="https://docs.dataforseo.com/v3/serp/bing/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Bing according to a certain keyword.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
+			<Select Id="Device" Title="Device" DefaultValue="desktop">
+        <DataSource>
+          <Item Id="desktop" Title="Desktop"/>
+          <Item Id="mobile" Title="Mobile"/>
+        </DataSource>
+      </Select>
+			<Text Id="Engine" DefaultValue="bing" Hidden="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device,Depth,Engine"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/serp/bing/organic/task_get/regular/@(Model.TaskId)
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+				<Resource Id="Headers"/>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
+        <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
+        <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
+        <JsonPath Expr="domain" Id="Domain" Title="Domain"/>
+        <JsonPath Expr="url" Id="SerpUrl" Title="SERP URL"/>
+        <JsonPath Expr="title" Id="SerpTitle" Title="SERP Title"/>
+        <JsonPath Expr="breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
+        <JsonPath Expr="description" Id="SerpDescription" Title="SERP Description"/>
+      </JsonPath>
+    </Parse>
+    <Fail>
+			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+    </Fail>
+  </RestConnector>
+	
+  <RestConnector Id="SerpYahoo" Title="Yahoo Results" HelpUrl="https://docs.dataforseo.com/v3/serp/yahoo/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Yahoo according to a certain keyword.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
+			<Text Id="Device" Hidden="true"/>
+			<Text Id="Engine" DefaultValue="bing" Hidden="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device,Depth,Engine"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/serp/yahoo/organic/task_get/regular/@(Model.TaskId)
         ]]>
       </Fetch.Url>
       <HttpSettings>
