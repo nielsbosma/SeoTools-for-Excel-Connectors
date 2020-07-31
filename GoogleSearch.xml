@@ -4,26 +4,10 @@
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Resources>
-    <Resource Id="Type">
-      <Select Id="Type" Title="Type" DefaultValue="all">
-        <DataSource>
-          <Item Id="all" Title="All"/>
-          <Item Id="news" Title="News"/>
-        </DataSource>
-      </Select>
-		</Resource>
     <Resource Id="DisplayLanguage">
       <Select Id="DisplayLanguage" Title="Display Language" DefaultValue="en">
         <DataSource>
           <ISOLanguageCodes/>
-        </DataSource>
-      </Select>
-		</Resource>
-    <Resource Id="PeriodSorting">
-      <Select Id="PeriodSorting" Title="Sort Period Search" DefaultValue="relevance">
-        <DataSource>
-          <Item Id="relevance" Title="Relevance"/>
-          <Item Id="date" Title="Date"/>
         </DataSource>
       </Select>
 		</Resource>
@@ -41,45 +25,47 @@
   <RestConnector Id="SearchResults" Title="Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
 			<Resource Id="DisplayLanguage"/>
-      <Resource Id="PeriodSorting"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
+			<Checkbox Id="Safe" Title="Safe Search" HelpText="filter out explicit content in Google's search results"/>
     </Parameters>
     <Paging PageSize="10" EvenPages="False"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://google.com/search?safe=off
+        https://google.com/search
+				?safe=@(Model.Safe ? "active" : "off")
 				&hl=@Model.DisplayLanguage
 				&q=@Utils.UrlEncode(Model.Query)
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
-					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
-        }
-        @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
+        @GetDateString()
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
-				@(Model.Type == "news" ? "&tbm=nws" : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="@(ReturnXpath(false))">
+      <XPath Expr="//div[@@class='r']//h3">
         <Xpath Expr="." Id="Title"/>
       </XPath>
       <XPath Expr="//div[@@class='s']/div/span[@@class='st']">
         <Xpath Expr="." Id="Description"/>
       </XPath>
-      <XPath Expr="@(ReturnXpath(true))">
+			<XPath Expr="//div[@@class='r']/a/h3/..">
         <Compute Id="URL" Title="URL" Expr="@Uri.UnescapeDataString(Model.UrlRaw)">
           <Xpath Expr="." Attribute="href" Id="UrlRaw"/>
         </Compute>
       </XPath>
+			<XPath Expr="//div[@@class='r']/a/h3/..">
+        <Compute Id="Domain" Title="Domain" Expr="@(Utils.UrlProperty(Uri.UnescapeDataString(Model.Inp)).Domain)">
+          <Xpath Expr="." Attribute="href" Id="Inp"/>
+        </Compute>
+      </XPath>
+      <XPath Expr="//div[@@class='r']/div/div/cite/span">
+				<Xpath Expr="." Id="Path" DefaultValue=""/>
+      </XPath>
 			<XPath Expr="//div[@@class='s']/div/span[@@class='st']">
-				<Compute Expr="@GetUniqueBoldedWords()" Id="Bolded" Title="Bolded Words" Converter="Auto" DefaultValue="" Checked="false">
+				<Compute Expr="@GetUniqueBoldedWords()" Id="Bolded" Title="Bolded Words" Converter="Auto" DefaultValue="">
 					<Xpath Expr="csv(em)" Id="Inp"/>
 				</Compute>
       </XPath>
@@ -91,23 +77,19 @@
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
 			<Resource Id="DisplayLanguage"/>
-      <Resource Id="PeriodSorting"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
+			<Checkbox Id="Safe" Title="Safe Search" HelpText="filter out explicit content in Google's search results"/>
     </Parameters>
     <Paging PageSize="10" EvenPages="True"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://google.com/search?safe=off
+        https://google.com/search
+				?safe=@(Model.Safe ? "active" : "off")
 				&hl=@Model.DisplayLanguage
 				&q=@Utils.UrlEncode(Model.Query)
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
-					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
-        }
-        @(Model.PeriodSorting == "date" ? ",sbd:1" : "")
+        @GetDateString()
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -127,49 +109,41 @@
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
-			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
+			<Checkbox Id="Safe" Title="Safe Search" HelpText="filter out explicit content in Google's search results"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://google.com/search?safe=off
+        https://google.com/search
+				?safe=@(Model.Safe ? "active" : "off")
 				&q=@Utils.UrlEncode(Model.Query)
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
-					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
-        }
-				@(Model.Type == "news" ? "&tbm=nws" : "")
+        @GetDateString()
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@id='result-stats']/text()" Converter="Int"/>
+      <XPath Expr="//div[@@id='result-stats']/text()" Converter="Int" DefaultValue="0"/>
     </Parse>
   </RestConnector>
 
   <RestConnector Id="DomainIndexedPages" Title="Domain Indexed Pages" HelpText="Returns Number of Indexed pages">
     <Parameters>
       <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="aftonbladet.se"/>
-			<Resource Id="Type"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
+			<Checkbox Id="Safe" Title="Safe Search" HelpText="filter out explicit content in Google's search results"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://google.com/search?safe=off
+        https://google.com/search
+				?safe=@(Model.Safe ? "active" : "off")
 				&q=site:@Utils.UrlEncode(Utils.UrlProperty(Model.Url).Domain)
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-          @: &tbs=cdr:1,cd_min:@Model.DateInterval.StartDate.ToString("MM/dd/yyyy")
-					@: ,cd_max:@Model.DateInterval.EndDate.ToString("MM/dd/yyyy")
-        }
-				@(Model.Type == "news" ? "&tbm=nws" : "")
+        @GetDateString()
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -180,15 +154,19 @@
 
   <RazorFunctions>
     <![CDATA[
-    String ReturnXpath(bool urlField) {
-			if(urlField)
-				return Model.Type == "all" ? "//div[@class='r']/a/h3/.." : "//div[@class='g']//h3/a";
-			else
-				return Model.Type == "all" ? "//div[@class='r']//h3" : "//div[@class='g']//h3";
-    }
-		String GetUniqueBoldedWords() {
+		string GetUniqueBoldedWords() {
 			string[] bolded = Regex.Split(Model.Inp, @", ");
 			return string.Join(", ", bolded.Distinct());
+		}
+
+		string GetDateString() {
+			if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+			{
+				string mindate = ",cd_min:" + Model.DateInterval.StartDate.ToString("MM/dd/yyyy");
+				string maxdate = ",cd_max:" + Model.DateInterval.EndDate.ToString("MM/dd/yyyy");
+				return "&tbs=cdr:1" + mindate + maxdate;
+			}
+			return string.Empty;
 		}
     ]]>
   </RazorFunctions>
