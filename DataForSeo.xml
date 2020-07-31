@@ -179,7 +179,7 @@
 				<Resource Id="Headers"/>
         <RequestBody>
           <![CDATA[
-					
+
 					@{
 						var dict = new Dictionary<string, object>();
 						dict.Add("location_code", Model.LocationCode);
@@ -292,7 +292,7 @@
 			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
     </Fail>
   </RestConnector>
-	
+
   <RestConnector Id="SerpYahoo" Title="Yahoo Results" HelpUrl="https://docs.dataforseo.com/v3/serp/yahoo/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Yahoo according to a certain keyword.">
 		<Parameters>
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations" Select.IdField="Id" Select.TitleField="Name"/>
@@ -1245,6 +1245,86 @@
         <JsonPath Expr="metrics.paid.pos_71_80" Id="PaidPos7180" Title="Paid Position 71-80" Converter="Long"/>
         <JsonPath Expr="metrics.paid.pos_81_90" Id="PaidPos8190" Title="Paid Position 81-90" Converter="Long"/>
 			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="KeywordIdeas" Title="Keyword Ideas" Group="Labs RESEARCH" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/keyword_ideas/live/?csharp" HelpText="Provides search terms that are relevant to the product or service categories of the specified keywords.">
+		<Parameters>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="LabLocations" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="LabLanguages" Select.IdField="Id" Select.TitleField="Name"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="trump" Required="true"/>
+			<Text Id="Filter" Title="Filter" HelpText="Click this icon to see example filters, ie: [&quot;keyword_info.search_volume&quot;,&quot;>&quot;,0]" HelpUrl="https://docs.dataforseo.com/v3/dataforseo_labs/keyword_suggestions/live/?csharp"/>
+			<Checkbox Id="Closely" Title="Closely Variants" HelpText="If set to true the results will be based on the phrase-match search algorithm, otherwise based on the broad-match search algorithm."/>
+			<Select Id="Sort" Title="Sort results by">
+        <DataSource>
+          <Item Id="keyword_info.search_volume,desc" Title="Volume Desc"/>
+          <Item Id="keyword_info.search_volume,asc" Title="Volume Asc"/>
+          <Item Id="keyword_info.competition,desc" Title="Competition Desc"/>
+          <Item Id="keyword_info.competition,asc" Title="Competition Asc"/>
+          <Item Id="keyword_info.cpc,desc" Title="CPC Desc"/>
+          <Item Id="keyword_info.cpc,asc" Title="CPC Asc"/>
+        </DataSource>
+      </Select>
+		</Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/dataforseo_labs/keyword_ideas/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+						var dict = new Dictionary<string, object>();
+						dict.Add("location_code", Model.LocationCode);
+						dict.Add("language_code", Model.LanguageCode);
+						dict.Add("keywords", new string[] { Model.Keyword });
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+						dict.Add("closely_variants", Model.Closely);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="keyword" Id="Keyword" Title="Keyword" Converter="String"/>
+        <JsonPath Expr="keyword_info.competition" Id="Competition" Title="Competition" Converter="Double"/>
+        <JsonPath Expr="keyword_info.cpc" Id="CPC" Title="CPC" Converter="Double"/>
+        <JsonPath Expr="keyword_info.search_volume" Id="Volume" Title="Volume" Converter="Double"/>
+        <JsonPath Expr="impressions_info.ad_position_min" Id="AdPositionMin" Title="Ad Position Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.ad_position_max" Id="AdPositionMax" Title="Ad Position Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.ad_position_average" Id="AdPositionAvg" Title="Ad Position Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_min" Id="CPCMin" Title="CPC Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_max" Id="CPCMax" Title="CPC Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.cpc_average" Id="CPCAvg" Title="CPC Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_min" Id="DailyImpressionsMin" Title="Daily Impressions Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_max" Id="DailyImpressionsMax" Title="Daily Impressions Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_impressions_average" Id="DailyImpressionsAvg" Title="Daily Impressions Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_min" Id="DailyClicksMin" Title="Daily Clicks Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_max" Id="DailyClicksMax" Title="Daily Clicks Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_clicks_average" Id="DailyClicksAvg" Title="Daily Clicks Avg" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_min" Id="DailyCostMin" Title="Daily Cost Min" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_max" Id="DailyCostMax" Title="Daily Cost Max" Converter="Auto"/>
+        <JsonPath Expr="impressions_info.daily_cost_average" Id="DailyCostAvg" Title="Daily Cost Avg" Converter="Auto"/>
+      </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
