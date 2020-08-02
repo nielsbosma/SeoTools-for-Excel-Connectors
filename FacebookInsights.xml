@@ -30,20 +30,20 @@
 
   <RestConnector Id="GetPageToken" Hidden="true">
     <Parameters>
-      <Text Id="Id" Required="true" Debug.DefaultValue="324952857522514_2209241562426958"/>
+      <Text Id="Id" Required="true" Debug.DefaultValue="130022160902_10158547050710903"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://graph.facebook.com/v3.2/me/accounts?&access_token=@(Model.Authenticator.Token)&fields=access_token&limit=200
+        https://graph.facebook.com/v3.2/@(ExtractPageId())?&access_token=@(Model.Authenticator.Token)&fields=access_token
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.data[?(@@.id=='@(ExtractPageId())')].access_token" Id="PageToken" Title="PageToken"/>
+      <JsonPath Expr="$.access_token" Id="PageToken" Title="PageToken"/>
     </Parse>
       <Fail>
-				<JsonPath Expr="$.data[0].access_token" Id="Inp1" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Access denied. Did you grant the page access in browser authentication? Try Login/Logout."/>
+				<JsonPath Expr="$.access_token" Id="Inp1" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Access denied. Did you grant the page access in browser authentication? Try Login/Logout."/>
       </Fail>
 		</RestConnector>
 
@@ -58,15 +58,7 @@
     <Parse>
       <JsonPath Expr="data[*]">
         <JsonPath Expr="id" Id="PageId" Title="Page Id" Converter="String"/>
-				<Compute Id="PageName" Title="Page Name/Website" DefaultValue="">
-					<Compute.Expr>
-            <![CDATA[
-						@{
-							string url = !string.IsNullOrEmpty(Model.Inp2) ? "(" + Model.Inp2 + ")" : "";
-						}
-						@Model.Inp1  @url
-            ]]>
-          </Compute.Expr>
+				<Compute Expr="@GetSelectValueInfo()" Id="PageName" Title="Page Name/Website" DefaultValue="">
 					<JsonPath Expr="name" Id="Inp1" DefaultValue=""/>
 					<JsonPath Expr="website" Id="Inp2" DefaultValue=""/>
 				</Compute>
@@ -822,14 +814,16 @@
 			}
 
 			string ExtractPageId() {
-				if(!Model.Id.Contains("_"))
-					return Model.Id;
-
+				if(!Model.Id.Contains("_")) return Model.Id;
 				Regex regex = new Regex(@"^\d+");
 				Match match = regex.Match(Model.Id);
 				return match.Value;
 			}
-
+			
+			string GetSelectValueInfo() {
+				string url = !string.IsNullOrEmpty(Model.Inp2) ? "(" + Model.Inp2 + ")" : string.Empty;		
+				return Model.Inp1 + " " + url;
+			}
     ]]>
   </RazorFunctions>
 
