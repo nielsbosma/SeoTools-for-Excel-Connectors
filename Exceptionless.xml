@@ -4,27 +4,41 @@
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/exceptionless">
-    <Text Id="Token" Title="Token" Required="true" HelpUrl="http://seotoolsforexcel.com/exceptionless"/>
+    <Text Id="Email" Title="Email" Required="true" HelpUrl="http://seotoolsforexcel.com/exceptionless"/>
+    <Text Id="Password" Title="Password" Required="true" Password="true" HelpUrl="http://seotoolsforexcel.com/exceptionless"/>
   </Settings>
 
   <Resources>
     <Resource Id="StackSortings">
-      <Item Id="default" Title="Default"/>
-      <Item Id="-total_occurrences" Title="Occurances Desc"/>
-      <Item Id="total_occurrences" Title="Occurances Asc"/>
-      <Item Id="-last_occurrence" Title="Last Seen Desc"/>
-      <Item Id="last_occurrence" Title="Last Seen Asc"/>
-      <Item Id="-type" Title="Type Desc"/>
-      <Item Id="type" Title="Type Asc"/>
+			<Select Id="Sort" DefaultValue="default">
+        <DataSource>
+          <Item Id="default" Title="Default"/>
+					<Item Id="-total_occurrences" Title="Occurances Desc"/>
+					<Item Id="total_occurrences" Title="Occurances Asc"/>
+					<Item Id="-last_occurrence" Title="Last Seen Desc"/>
+					<Item Id="last_occurrence" Title="Last Seen Asc"/>
+					<Item Id="-type" Title="Type Desc"/>
+					<Item Id="type" Title="Type Asc"/>
+        </DataSource>
+      </Select>
     </Resource>
     <Resource Id="EventSortings">
-      <Item Id="default" Title="Default"/>
-      <Item Id="-created_utc" Title="Created Desc"/>
-      <Item Id="created_utc" Title="Created Asc"/>
-      <Item Id="-updated_utc" Title="Updated Desc"/>
-      <Item Id="updated_utc" Title="Updated Asc"/>
-      <Item Id="-type" Title="Type Desc"/>
-      <Item Id="type" Title="Type Asc"/>
+			<Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
+        <DataSource>
+					<Item Id="default" Title="Default"/>
+					<Item Id="-created_utc" Title="Created Desc"/>
+					<Item Id="created_utc" Title="Created Asc"/>
+					<Item Id="-updated_utc" Title="Updated Desc"/>
+					<Item Id="updated_utc" Title="Updated Asc"/>
+					<Item Id="-type" Title="Type Desc"/>
+					<Item Id="type" Title="Type Asc"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Prepare">
+			<Prepare>
+				<Connector Id="GenerateToken"/>
+			</Prepare>
     </Resource>
     <Resource Id="HttpSettings">
       <HttpSettings>
@@ -42,7 +56,38 @@
     </Resource>
   </Resources>
 
+  <RestConnector Id="GenerateToken" Hidden="true">
+    <Fetch>
+      <HttpSettings>
+				<Cache>true</Cache>
+				<RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Accept'>application/json</Header>
+        </RequestHeaders>
+        <RequestBody>
+						<![CDATA[
+						 {
+							"email": "@(Model.Email)",
+							"password": "@(Model.Password)"
+						 }
+						]]>
+					</RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.exceptionless.io/api/v2/auth/login
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="token" Id="Token"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="ProjectsHidden" Hidden="true">
+		<Resource Id="Prepare"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -61,6 +106,7 @@
   </RestConnector>
 
   <RestConnector Id="StacksHidden" Hidden="true">
+		<Resource Id="Prepare"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -80,13 +126,10 @@
 
   <RestConnector Id="Stacks" Title="Stacks List" Group="Stacks" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
-        <DataSource>
-          <Resource Id="StackSortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Resource Id="StackSortings"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -123,13 +166,10 @@
   <RestConnector Id="StacksProject" Title="Stacks in Project" Group="Stacks" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
       <Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="54b6c098870e5b0b8ce53241" Select.Connector="ProjectsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
-        <DataSource>
-          <Resource Id="StackSortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Resource Id="StackSortings"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -165,13 +205,10 @@
 
   <RestConnector Id="Events" Title="Events List" Group="Events" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
-        <DataSource>
-          <Resource Id="EventSortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Resource Id="EventSortings"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -207,13 +244,10 @@
   <RestConnector Id="EventsProject" Title="Events in Project" Group="Events" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
       <Text Id="ProjectId" Title="Project Id" Debug.DefaultValue="54b6c098870e5b0b8ce53241" Select.Connector="ProjectsHidden" Select.IdField="Id" Select.TitleField="Name" Required="true"/>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
-        <DataSource>
-          <Resource Id="EventSortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Resource Id="EventSortings"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -249,13 +283,10 @@
   <RestConnector Id="EventsStack" Title="Events in Stack" Group="Events" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
       <Text Id="StackId" Title="Stack Id" Debug.DefaultValue="54bdb60ca6b54e056cd6d3c4" Select.Connector="StacksHidden" Select.IdField="Id" Select.TitleField="Title" Required="true"/>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
-      <Select Id="Sort" Title="Sort" Required="true" DefaultValue="default">
-        <DataSource>
-          <Resource Id="EventSortings"/>
-        </DataSource>
-      </Select>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Resource Id="EventSortings"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -290,14 +321,14 @@
 
   <RestConnector Id="Sessions" Title="Sessions List" Group="Sessions" HelpUrl="https://api.exceptionless.io/docs/index.html">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
+      <Text Id="Filter" Title="Filter" HelpText="Use the reference term to filter events by the reference ID, for example 'type:session'" Required="false"/>
     </Parameters>
+		<Resource Id="Prepare"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-				https://api.exceptionless.io/api/v2/events/sessions
-				?limit=100
+				https://api.exceptionless.io/api/v2/events/sessions?limit=100
         @(!string.IsNullOrEmpty(Model.Filter) ? "&filter=" + @Utils.UrlEncode(Model.Filter) : "")
         ]]>
       </Fetch.Url>
