@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Productivity" RequireVersion="8.2" Id="GoogleSheets" Title="Google Sheets" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSheets.xml" HelpUrl="http://seotoolsforexcel.com/google-sheets/" HelpText="Documentation">
+<Suite Category="Productivity" RequireVersion="9.5.2" Id="GoogleSheets" Title="Google Sheets" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSheets.xml" HelpUrl="http://seotoolsforexcel.com/google-sheets/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -21,11 +21,19 @@
   </Resources>
 
   <RestConnector Id="Spreadsheets" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list" Hidden="true">
+		<Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.googleapis.com/drive/v3/files?q=mimeType+contains+%27google-apps.spreadsheet%27
+				&orderBy=modifiedTime%20desc
+				&pageSize=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
         ]]>
       </Fetch.Url>
     </Fetch>
