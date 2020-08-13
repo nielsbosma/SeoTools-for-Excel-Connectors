@@ -20,11 +20,13 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ChannelsHidden" HelpUrl="https://api.slack.com/methods/channels.list" Hidden="true">
+  <RestConnector Id="ChannelsHidden" HelpUrl="https://api.slack.com/methods/conversations.list" Hidden="true">
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
-        <![CDATA[https://slack.com/api/channels.list]]>
+        <![CDATA[
+				https://slack.com/api/conversations.list?types=public_channel,private_channel
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -36,24 +38,8 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PrivateChannelsHidden" HelpUrl="https://api.slack.com/methods/groups.list" Hidden="true">
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[https://slack.com/api/groups.list]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.groups[*]">
-        <JsonPath Expr="id" Id="Id" Title="Channel Id"/>
-        <JsonPath Expr="name" Id="Name" Title="Channel Name"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Channels" Title="Channels List" Group="Channels" HelpText="This method returns a list of all channels in the team." HelpUrl="https://api.slack.com/methods/channels.list">
-    <Paging PageSize="20" EvenPages="true">
+  <RestConnector Id="Channels" Title="Channels List" HelpText="This method returns a list of all channels in the team." HelpUrl="https://api.slack.com/methods/channels.list">
+    <Paging PageSize="200" EvenPages="true">
       <Parse>
         <JsonPath Id="Cursor" Expr="response_metadata.next_cursor"/>
       </Parse>
@@ -62,7 +48,8 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://slack.com/api/channels.list?limit=@(Model.PageCursor.NextTake)
+        https://slack.com/api/conversations.list?types=public_channel,private_channel
+				&limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
@@ -73,103 +60,20 @@
         <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
         <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
         <JsonPath Expr="creator" Id="Creator" Title="Creator" Converter="String"/>
+        <JsonPath Expr="is_group" Id="Group" Title="Group" Converter="Bool"/>
         <JsonPath Expr="is_shared" Id="Shared" Title="Shared" Converter="Bool"/>
         <JsonPath Expr="is_member" Id="Member" Title="Member" Converter="Bool"/>
-        <JsonPath Expr="is_private" Id="Private" Title="Private" Converter="Bool"/>
-        <JsonPath Expr="csv(members)" Id="Members" Title="Members"  Converter="String"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ChannelLookup" Title="Channel Lookup" Group="Channels" HelpText="Gets information about a channel." HelpUrl="https://api.slack.com/methods/channels.info">
-    <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="C497RQTBQ" Select.Connector="ChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://slack.com/api/channels.info?channel=@(Model.ChannelId)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.channel">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
-        <JsonPath Expr="creator" Id="Creator" Title="Creator" Converter="String"/>
-        <JsonPath Expr="is_shared" Id="Shared" Title="Shared" Converter="Bool"/>
-        <JsonPath Expr="is_member" Id="Member" Title="Member" Converter="Bool"/>
-        <JsonPath Expr="is_private" Id="Private" Title="Private" Converter="Bool"/>
-        <JsonPath Expr="csv(members)" Id="Members" Title="Members"  Converter="String"/>
-        <JsonPath Expr="latest.text" Id="Latest" Title="Latest" Converter="String"/>
-        <JsonPath Expr="unread_count" Id="Unread" Title="Unread" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="PrivateChannels" Title="Private Channels List" Group="Private Channels" HelpText="Lists private channels that the calling user has access to." HelpUrl="https://api.slack.com/methods/groups.list">
-    <Paging PageSize="20" EvenPages="true">
-      <Parse>
-        <JsonPath Id="Cursor" Expr="response_metadata.next_cursor"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://slack.com/api/groups.list?limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.groups[*]">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
-        <JsonPath Expr="creator" Id="Creator" Title="Creator" Converter="String"/>
-        <JsonPath Expr="csv(members)" Id="Members" Title="Members"  Converter="String"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="PrivateChannelsLookup" Title="Private Channels Lookup" Group="Private Channels" HelpText="Gets information about a private channel." HelpUrl="https://api.slack.com/methods/groups.info">
-    <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="G9J8AKYH5" Select.Connector="PrivateChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-		</Parameters>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://slack.com/api/groups.info?channel=@(Model.ChannelId)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.group">
-        <JsonPath Expr="id" Id="Id" Title="Id" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
-        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
-        <JsonPath Expr="creator" Id="Creator" Title="Creator" Converter="String"/>
-        <JsonPath Expr="csv(members)" Id="Members" Title="Members"  Converter="String"/>
-        <JsonPath Expr="latest.text" Id="Latest" Title="Latest" Converter="String"/>
-        <JsonPath Expr="unread_count" Id="Unread" Title="Unread" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ChannelHistory" Title="Channel History" Group="Channels" HelpText="Fetches history of messages and events from a channel." HelpUrl="https://api.slack.com/methods/channels.history">
+  <RestConnector Id="ChannelHistory" Title="Channel History" HelpText="Fetches history of messages and events from a channel." HelpUrl="https://api.slack.com/methods/channels.history">
     <Parameters>
       <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="CAXNW7C31" Select.Connector="ChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
 		</Parameters>
-    <Paging PageSize="25" EvenPages="true" Maximum="1000">
+    <Paging PageSize="100" EvenPages="true" Maximum="1000">
       <Parse>
         <JsonPath Expr="$.has_more" Id="HasMore" Converter="Bool"/>
         <JsonPath Expr="$.messages[-1:].ts" Id="PageOld" Converter="String"/>
@@ -179,7 +83,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://slack.com/api/channels.history?channel=@(Model.ChannelId)
+        https://slack.com/api/conversations.history?channel=@(Model.ChannelId)
 				&count=@(Model.PageCursor.NextTake)
         @if(Model.PageCursor.Page == 0)
         {
@@ -215,58 +119,7 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PrivateChannelHistory" Title="Private Channel History" Group="Private Channels" HelpText="Fetches history of messages and events from a private channel." HelpUrl="https://api.slack.com/methods/groups.history">
-    <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="GACQNR5U3" Select.Connector="PrivateChannelsHidden" Select.IdField="Id" Select.TitleField="Name"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
-		</Parameters>
-    <Paging PageSize="100" EvenPages="true" Maximum="1000">
-      <Parse>
-        <JsonPath Expr="$.has_more" Id="HasMore" Converter="Bool"/>
-        <JsonPath Expr="$.messages[-1:].ts" Id="PageOld" Converter="String"/>
-      </Parse>
-    </Paging>
-    <Fetch>
-			<Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-        https://slack.com/api/groups.history?channel=@(Model.ChannelId)
-				&count=@(Model.PageCursor.NextTake)
-        @if(Model.PageCursor.Page == 0)
-        {
-					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-					@: &latest=@(((DateTime)Model.DateInterval.EndDate).AddDays(1).UnixTimeStampUtc())
-				}
-				else if(Model.HasMore)
-				{
-					@: &oldest=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
-					@: &latest=@(Model.PageOld)
-				}
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.messages[*]">
-        <JsonPath Expr="ts" Id="Identifier" Title="Identifier" Converter="String"/>
-        <Compute Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix">
-          <Compute.Expr>
-            <![CDATA[
-              @Regex.Replace(Model.Inp,@"\.\d+","")
-            ]]>
-          </Compute.Expr>
-          <JsonPath Expr="ts" Id="Inp" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String"/>
-        <JsonPath Expr="subtype" Id="Subtype" Title="Subtype" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="user" Id="User" Title="User" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="username" Id="Username" Title="Username" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="String"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="MessagesSearch" Title="Search Messages" HelpText="Searches for messages matching a query." HelpUrl="https://api.slack.com/methods/search.messages	">
+  <RestConnector Id="MessagesSearch" Title="Messages Search" HelpText="Searches for messages matching a query." HelpUrl="https://api.slack.com/methods/search.messages">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="seotools"/>
 		</Parameters>
