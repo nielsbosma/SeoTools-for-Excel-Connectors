@@ -1,11 +1,48 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="SEO" Title="AccuApi Rank Tracking" Id="AccuApi" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AccuApi.xml" HelpUrl="http://links.seotoolsforexcel.com/accuapi/" HelpText="Documentation">
+<Suite Category="SEO" Title="AccuApi Rank Tracking" Id="AccuApi" RequireVersion="9.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/AccuApi.xml" HelpUrl="http://links.seotoolsforexcel.com/accuapi/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <Settings HelpUrl="http://links.seotoolsforexcel.com/accuapi/" HelpText="Sign up for a free trial">
     <Text Id="AuthToken" Title="API Token" Required="true" HelpUrl="http://links.seotoolsforexcel.com/accuapi/"/>
   </Settings>
+
+	<Resources>
+		<Resource Id="Parameters">
+			<Parameters>
+				<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="SEO" Required="true"/>
+				<Text Id="Locale" Title="Locale" DefaultValue="en-US" Select.Connector="Locales"/>
+				<Text Id="Geo" Title="Location" Debug.DefaultValue="New York"/>
+				<Text Id="Domain" Title="Domain or Host"/>
+				<Radio Id="Device" Title="Device" DefaultValue="desktop">
+					<DataSource>
+						<Item Id="desktop" Title="Desktop" />
+						<Item Id="mobile" Title="Mobile" />
+						<Item Id="tablet" Title="Tablet" />
+					</DataSource>
+				</Radio>
+			</Parameters>
+		</Resource>
+		<Resource Id="Prepare">
+			<Prepare>
+				<Connector Id="SerpInit" Parameters="Keyword,Locale,Geo,Domain,Device,Device"/>
+			</Prepare>
+		</Resource>
+		<Resource Id="Fetch">
+			<Fetch>
+				<Fetch.Url>
+					<![CDATA[
+					http://api.accuranker.com/results?auth_token=@(Model.AuthToken)&id=@(Model.TaskId)
+					]]>
+				</Fetch.Url>
+			</Fetch>
+		</Resource>
+		<Resource Id="Fail">
+			<Fail>
+				<Regex Expr="keyword" Group="0" Fail.If="IsEmpty" Fail.Action="Retry" Fail.RetryAfter="4000" Fail.RetryTimes="20"/>
+			</Fail>
+		</Resource>
+  </Resources>
 
   <RestConnector Id="Locales" Title="Locales" Hidden="true">
     <Fetch Url="http://api.accuapi.com/engines?auth_token=@(Model.AuthToken)"/>
@@ -17,70 +54,80 @@
     </Parse>
   </RestConnector>
 
-  <AssemblyConnector Id="SERP" Title="SERP" Type="SeoTools.Addins.AccuApi.SerpConnector">
+	<RestConnector Id="SerpInit" Hidden="true">
     <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="SEO" Required="true"/>
-      <Select Id="Engine" Title="Search Engine" Required="true" DefaultValue="google">
-        <DataSource>
-          <Item Id="google" Title="Google"/>
-        </DataSource>
-      </Select>
-      <Text Id="Locale" Title="Locale" Required="true" DefaultValue="en-US" Select.Connector="Locales"/>
-      <Text Id="Geo" Title="Location" Debug.DefaultValue="New York" Required="true"/>
-      <Text Id="Domain" Title="Domain or Host" Debug.DefaultValue="" Required="false"/>
-      <Radio Id="Device" Title="Device" DefaultValue="desktop">
-        <DataSource>
-          <Item Id="desktop" Title="Desktop" />
-          <Item Id="mobile" Title="Mobile" />
-          <Item Id="tablet" Title="Tablet" />
-        </DataSource>
-      </Radio>
-      <Number Id="Skip" Title="Skip" DefaultValue="0" Minimum="0" Maximum="99" Required="false"/>
-      <Number Id="Take" Title="Take" DefaultValue="100" Minimum="1" Maximum="100" Required="false"/>
+      <Text Id="Keyword" Debug.DefaultValue="SEO"/>
+      <Text Id="Locale" DefaultValue="en-US"/>
+      <Text Id="Geo" Debug.DefaultValue="New York"/>
+      <Text Id="Domain"/>
+      <Text Id="Device" Debug.DefaultValue="desktop"/>
     </Parameters>
-  </AssemblyConnector>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        http://api.accuranker.com/keywords?&engine=google
+				&auth_token=@(Model.AuthToken)
+				&keyword=@(Utils.UrlEncode(Model.Keyword))
+				&locale=@(Utils.UrlEncode(Model.Locale))
+				&geo=@(Utils.UrlEncode(Model.Geo))
+				&mobile=@(Model.Device == "mobile")
+				&tablet=@(Model.Device == "tablet")
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+			<RequestHeaders>
+				<Header Name='X-Affiliate'>seotoolexcel</Header>
+			</RequestHeaders>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.id" Id="TaskId"/>
+    </Parse>
+  </RestConnector>
 
-  <AssemblyConnector Id="NumberOfResults" Title="Number of Results" Type="SeoTools.Addins.AccuApi.NumberOfResultsConnector">
-    <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="SEO" Required="true"/>
-      <Select Id="Engine" Title="Search Engine" Required="true" DefaultValue="google">
-        <DataSource>
-          <Item Id="google" Title="Google"/>
-        </DataSource>
-      </Select>
-      <Text Id="Locale" Title="Locale" Required="true" DefaultValue="en-US" Select.Connector="Locales"/>
-      <Text Id="Geo" Title="Location" Debug.DefaultValue="Stockholm" Required="true"/>
-      <Radio Id="Device" Title="Device" DefaultValue="desktop">
-        <DataSource>
-          <Item Id="desktop" Title="Desktop" />
-          <Item Id="mobile" Title="Mobile" />
-          <Item Id="tablet" Title="Tablet" />
-        </DataSource>
-      </Radio>
-    </Parameters>
-  </AssemblyConnector>
+  <RestConnector Id="SERP" Title="SERP">
+		<Resource Id="Parameters"/>
+		<Resource Id="Prepare"/>
+		<Paging PageSize="100" Maximum="100"/>
+    <Resource Id="Fetch"/>
+		<Parse>
+      <JsonPath Expr="$.serp.*">
+				<JsonPath Expr="url" Id="Url" Title="URL"/>
+				<JsonPath Expr="base_domain" Id="Domain" Title="Domain"/>
+				<JsonPath Expr="title" Id="Title" Title="Title"/>
+				<JsonPath Expr="description" Id="Description" Title="Description"/>
+				<JsonPath Expr="local" Id="Local" Title="Local" Converter="Bool"/>
+				<JsonPath Expr="video" Id="Video" Title="Video" Converter="Bool"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
-  <AssemblyConnector Id="Ads" Title="Ads" Type="SeoTools.Addins.AccuApi.AdsConnector">
-    <Parameters>
-      <Text Id="Keyword" Title="Keyword" Debug.DefaultValue="SEO" Required="true"/>
-      <Select Id="Engine" Title="Search Engine" Required="true" DefaultValue="google">
-        <DataSource>
-          <Item Id="google" Title="Google"/>
-        </DataSource>
-      </Select>
-      <Text Id="Locale" Title="Locale" Required="true" DefaultValue="en-US" Select.Connector="Locales"/>
-      <Text Id="Geo" Title="Location" Debug.DefaultValue="Stockholm" Required="true"/>
-      <Text Id="Domain" Title="Domain or Host" Debug.DefaultValue="bebetteronline.se" Required="false"/>
-      <Radio Id="Device" Title="Device" DefaultValue="desktop">
-        <DataSource>
-          <Item Id="desktop" Title="Desktop" />
-          <Item Id="mobile" Title="Mobile" />
-          <Item Id="tablet" Title="Tablet" />
-        </DataSource>
-      </Radio>
-      <Number Id="Skip" Title="Skip" DefaultValue="0" Minimum="0" Maximum="99" Required="false"/>
-      <Number Id="Take" Title="Take" DefaultValue="100" Minimum="1" Maximum="100" Required="false"/>
-    </Parameters>
-  </AssemblyConnector>
+  <RestConnector Id="Ads" Title="Ads">
+		<Resource Id="Parameters"/>
+		<Resource Id="Prepare"/>
+		<Paging PageSize="100" Maximum="100"/>
+    <Resource Id="Fetch"/>
+		<Parse>
+      <JsonPath Expr="$.ads.*">
+				<JsonPath Expr="headline" Id="Headline" Title="Headline"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="destination_url" Id="DestinationUrl" Title="Destination URL"/>
+				<JsonPath Expr="ad_location" Id="AdLocation" Title="Ad Location"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NumberOfResults" Title="Number Of Results">
+		<Resource Id="Parameters"/>
+		<Resource Id="Prepare"/>
+    <Resource Id="Fetch"/>
+		<Parse>
+			<JsonPath Expr="total_number_of_results" Id="Results" Converter="Int" DefaultValue="0"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
 </Suite>
