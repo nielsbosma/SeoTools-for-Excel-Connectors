@@ -394,11 +394,12 @@
         <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pifp" Tag="post_impressions_fan_paid" Title="Impressions Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid_unique' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="pifpu" Tag="post_impressions_fan_paid_unique" Title="Impressions Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
 				<JsonPath Expr="likes.summary.total_count" Id="Likes" Tag="likes.limit(0).summary(true)" Title="Likes" Converter="Int" DefaultValue="0"/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_love_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Love" Tag="post_reactions_love_total" Title="Love" Converter="Int" DefaultValue="0" HelpText="Total 'love' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_wow_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Wow" Tag="post_reactions_wow_total" Title="Wow" Converter="Int" DefaultValue="0" HelpText="Total 'wow' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_haha_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Haha" Tag="post_reactions_haha_total" Title="Haha" Converter="Int" DefaultValue="0" HelpText="Total 'haha' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_sorry_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Sorry" Tag="post_reactions_sorry_total" Title="Sorry" Converter="Int" DefaultValue="0" HelpText="Total 'sorry' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_anger_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Anger" Tag="post_reactions_anger_total" Title="Anger" Converter="Int" DefaultValue="0" HelpText="Total 'anger' reactions of a post."/>
+        <JsonPath Expr="reactions_love.summary.total_count" Id="Love" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
+        <JsonPath Expr="reactions_wow.summary.total_count" Id="Wow" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
+        <JsonPath Expr="reactions_haha.summary.total_count" Id="Haha" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
+        <JsonPath Expr="reactions_sad.summary.total_count" Id="Sad" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
+        <JsonPath Expr="reactions_angry.summary.total_count" Id="Angry" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
+        <JsonPath Expr="reactions.summary.total_count" Id="Reactions" Title="Reactions" Tag="reactions.limit(0).summary(true)" Converter="Int" DefaultValue="0"/>
 				<JsonPath Expr="comments.summary.total_count" Id="Comments" Tag="comments.filter(stream).limit(0).summary(true)" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
         <JsonPath Expr="shares.count" Id="Shares" Tag="shares" Title="Shares" Converter="Int" DefaultValue="0"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type' &amp;&amp; @@.period=='lifetime')].values[0].['value.link clicks']" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" DefaultValue="0" HelpText="Clicks on links."/>
@@ -463,7 +464,7 @@
 
 	<RestConnector Id="PostComments" Title="Comments to Post" Group="Post Data">
     <Parameters>
-      <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true"/>
+      <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Paging PageSize="100" EvenPages="false">
@@ -471,6 +472,7 @@
         <JsonPath Id="Cursor" Expr="paging.next"/>
       </Parse>
     </Paging>
+    <Batch Parameter="Id" Separator="\n" ItemsPerBatch="50"/>
     <Resource Id="Prepare"/>
     <Fetch>
       <Fetch.Url>
@@ -486,7 +488,7 @@
     <Parse>
 			<JsonPath Expr="$.data[*]">
         <JsonPath Expr="permalink_url" Id="CommentLink" Title="CommentLink" Tag="permalink_url" Converter="String"/>
-        <JsonPath Expr="id" Id="PostId" Title="CommentId" Converter="String"/>
+        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
         <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
         <JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int"/>
@@ -496,9 +498,11 @@
         <JsonPath Expr="reactions_haha.summary.total_count" Id="Haha" Title="Haha" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
         <JsonPath Expr="reactions_sad.summary.total_count" Id="Sad" Title="Sad" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
         <JsonPath Expr="reactions_angry.summary.total_count" Id="Angry" Title="Angry" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
-        <JsonPath Expr="user_likes" Id="UserLikes" Title="UserLikes" Tag="user_likes" Converter="Bool" HelpText="Whether the viewer has liked this comment."/>
+        <JsonPath Expr="reactions.summary.total_count" Id="Reactions" Title="Reactions" Tag="reactions.limit(0).summary(true)" Converter="Int" DefaultValue="0"/>
+				<JsonPath Expr="user_likes" Id="UserLikes" Title="UserLikes" Tag="user_likes" Converter="Bool" HelpText="Whether the viewer has liked this comment."/>
         <JsonPath Expr="from.name" Id="Author" Title="Author" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Expr="from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from" DefaultValue=""/>
+				<Compute Title="Post Id" Id="PostId" Expr="@Model.Id"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -576,11 +580,12 @@
         <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid')].values[0].value" Id="pifp" Tag="post_impressions_fan_paid" Title="Impressions Fan Paid" Converter="Int" HelpText="The number of impressions for your Page post by people who like your Page in an Ad or Sponsored Story"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_impressions_fan_paid_unique')].values[0].value" Id="pifpu" Tag="post_impressions_fan_paid_unique" Title="Impressions Fan Paid Unique" Converter="Int" HelpText="The number of people who have like your Page and saw your Page post in an Ad or Sponsored Story"/>
 				<JsonPath Expr="likes.summary.total_count" Id="Likes" Tag="likes.limit(0).summary(true)" Title="Likes" Converter="Int" DefaultValue="0"/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_love_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Love" Tag="post_reactions_love_total" Title="Love" Converter="Int" DefaultValue="0" HelpText="Total 'love' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_wow_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Wow" Tag="post_reactions_wow_total" Title="Wow" Converter="Int" DefaultValue="0" HelpText="Total 'wow' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_haha_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Haha" Tag="post_reactions_haha_total" Title="Haha" Converter="Int" DefaultValue="0" HelpText="Total 'haha' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_sorry_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Sorry" Tag="post_reactions_sorry_total" Title="Sorry" Converter="Int" DefaultValue="0" HelpText="Total 'sorry' reactions of a post."/>
-				<JsonPath Expr="insights.data[?(@@.name=='post_reactions_anger_total' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Anger" Tag="post_reactions_anger_total" Title="Anger" Converter="Int" DefaultValue="0" HelpText="Total 'anger' reactions of a post."/>
+        <JsonPath Expr="reactions_love.summary.total_count" Id="Love" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
+        <JsonPath Expr="reactions_wow.summary.total_count" Id="Wow" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
+        <JsonPath Expr="reactions_haha.summary.total_count" Id="Haha" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
+        <JsonPath Expr="reactions_sad.summary.total_count" Id="Sad" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
+        <JsonPath Expr="reactions_angry.summary.total_count" Id="Angry" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
+        <JsonPath Expr="reactions.summary.total_count" Id="Reactions" Title="Reactions" Tag="reactions.limit(0).summary(true)" Converter="Int" DefaultValue="0"/>
 				<JsonPath Expr="comments.summary.total_count" Id="Comments" Tag="comments.filter(stream).limit(0).summary(true)" Title="Comments" Converter="Int" DefaultValue="0" HelpText="Number of comments"/>
         <JsonPath Expr="shares.count" Id="Shares" Tag="shares" Title="Shares" Converter="Int" DefaultValue="0"/>
 				<JsonPath Expr="insights.data[?(@@.name=='post_clicks_by_type')].values[0].value.['link clicks']" Id="LinkClicks" Tag="post_clicks_by_type" Title="Link Clicks" Converter="Int" DefaultValue="0" HelpText="Clicks on links."/>
@@ -797,7 +802,15 @@
       }
 
 			string[] defaultFields(){
-				return new string[] { "permalink_url","id","created_time","message","from","type","full_picture","picture","comments.filter(stream).limit(0).summary(true)","likes.limit(0).summary(true)","shares" };
+				return new string[] { "permalink_url","id","created_time","message","from","type","full_picture","picture","shares",
+					"comments.filter(stream).limit(0).summary(true)",
+					"likes.limit(0).summary(true)",
+					"reactions.limit(0).summary(true)",
+					"reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)",
+					"reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)",
+					"reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)",
+					"reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)",
+					"reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" };
 			}
 
 			string FetchIdsBatch() {
