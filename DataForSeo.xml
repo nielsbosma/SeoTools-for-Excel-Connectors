@@ -1336,9 +1336,12 @@
 		<Parameters>
       <Text Id="Target" Debug.DefaultValue="seotoolsforexcel.com"/>
       <Text Id="StartUrl"/>
+      <Text Id="UserAgent"/>
       <Text Id="Pages" Debug.DefaultValue="10"/>
       <Text Id="Depth" Debug.DefaultValue="1"/>
-      <Text Id="Delay" Debug.DefaultValue="500"/>
+      <Text Id="Delay" Debug.DefaultValue="100"/>
+      <Text Id="AllowSubdomains"/>
+      <Text Id="RespectSitemap"/>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
@@ -1354,14 +1357,19 @@
 
 					@{
 						var dict = new Dictionary<string, object>();
-						dict.Add("target", Model.Target);
+						dict.Add("target", Utils.UrlProperty(Model.Target).Domain);
 						dict.Add("max_crawl_pages", Model.Pages);
 						dict.Add("depth", Model.Depth);
 						dict.Add("crawl_delay", Model.Delay);
+						dict.Add("allow_subdomains", Model.AllowSubdomains.Equals("True"));
+						dict.Add("respect_sitemap", Model.RespectSitemap.Equals("True"));
 
-						if(!string.IsNullOrEmpty(Model.StartUrl))
-						{
+						if(!string.IsNullOrEmpty(Model.StartUrl)) {
 							dict.Add("start_url", Model.StartUrl);
+						}
+
+						if(!string.IsNullOrEmpty(Model.UserAgent)) {
+							dict.Add("custom_user_agent", Model.UserAgent);
 						}
 
 						var postData = new List<object>();
@@ -1381,12 +1389,15 @@
 		<Parameters>
 			<Text Id="Target" Title="Target Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
 			<Text Id="StartUrl" Title="Custom Start URL" HelpText="The first url to crawl. You should specify the absolute URL if you want to crawl a single page, specify its URL in this field and set the 'Max Pages' parameter to 1"/>
-			<Number Id="Pages" Title="Max Number of Pages" DefaultValue="10" Minimum="1" HelpText="the number of pages to crawl on the specified domain"/>
-			<Number Id="Depth" HelpText="the linking depth of the pages to crawl, for example, home page is level 0, pages that have links from the home page are level 1, etc."/>
-			<Number Id="Delay" DefaultValue="500" HelpText="The custom delay in ms between crawler hits to the server"/>
+			<Text Id="UserAgent" Title="Custom User-Agent" HelpText="custom user agent for crawling a website, example: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"/>
+			<Number Id="Pages" Title="Max Number of Pages" DefaultValue="10" Debug.DefaultValue="3" Minimum="1" HelpText="the number of pages to crawl on the specified domain"/>
+			<Number Id="Depth" HelpText="the linking depth of the pages to crawl, for example, home page is level 0, pages that have links from the home page are level 1, etc"/>
+			<Number Id="Delay" DefaultValue="100" HelpText="The custom delay in ms between crawler hits to the server"/>
+			<Checkbox Id="AllowSubdomains" Title="Allow Subdomains" HelpText="Check if you want to crawl all subdomains of a target website"/>
+			<Checkbox Id="RespectSitemap" Title="Respect Sitemap" DefaultValue="true" HelpText="Uncheck if you want to ignore the order of pages indicated in the primary sitemap when crawling"/>
     </Parameters>
     <Prepare>
-      <Connector Id="OnPageInit" Parameters="Target,StartUrl,Pages,Depth,Delay"/>
+      <Connector Id="OnPageInit" Parameters="Target,StartUrl,UserAgent,Pages,Depth,Delay,AllowSubdomains,RespectSitemap"/>
     </Prepare>
     <Fetch>
       <Fetch.Url>
@@ -1457,7 +1468,7 @@
     <Fail>
 			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
 			<JsonPath Expr="$.tasks[0].result[0].crawl_progress" Fail.If="IsEqual" Fail.ComparedTo="in_progress" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-    </Fail>
+		</Fail>
   </RestConnector>
 
 	<RestConnector Id="AvailableCredits" Title="Available API Credits" HelpUrl="https://docs.dataforseo.com/#get-pages">
