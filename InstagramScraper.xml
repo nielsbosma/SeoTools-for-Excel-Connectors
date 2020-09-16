@@ -59,14 +59,14 @@
 				<JsonPath Expr="graphql.shortcode_media.owner.username" Id="Inp"/>
 			</Compute>
 			<JsonPath Expr="graphql.shortcode_media.owner.full_name" Id="FullName" Title="Full Name"/>
-			<JsonPath Expr="graphql.shortcode_media.owner.edge_followed_by.count" Id="Followers" Title="Followers" Converter="Int"/>			
+			<JsonPath Expr="graphql.shortcode_media.owner.edge_followed_by.count" Id="Followers" Title="Followers" Converter="Int"/>
 			<JsonPath Expr="graphql.shortcode_media.owner.edge_owner_to_timeline_media.count" Id="Posts" Title="Posts" Converter="Int"/>
 			<JsonPath Expr="graphql.shortcode_media.owner.profile_pic_url" Id="Avatar" Title="Avatar" DefaultValue=""/>
 			<JsonPath Expr="graphql.shortcode_media.location.name" Id="Locality" Title="Location" DefaultValue=""/>
 			<Regex Expr="&quot;country_code\\&quot;:\s\\&quot;(.*?)\\&quot;" Id="Country" Title="Country" Group="1" Converter="String" DefaultValue=""/>
 			<JsonPath Expr="graphql.shortcode_media.location.id" Id="LocationId" Title="Location Id" DefaultValue=""/>
 			<JsonPath Expr="graphql.shortcode_media.edge_media_to_sponsor_user.edges[0].node.sponsor.username" Id="Sponsor" Title="Sponsor" DefaultValue=""/>
-	</Parse>
+		</Parse>
   </RestConnector>
 
   <RestConnector Id="HashtagFeed" Title="Hashtag Post Feed" Group="Hashtags">
@@ -298,6 +298,34 @@
     </Parse>
   </RestConnector>
 
+	<RestConnector Id="PostLikes" Title="Post Likes" Group="Posts">
+    <Parameters>
+      <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/CBVJMV1iHsd/"/>
+    </Parameters>
+		<Paging PageSize="50" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.data.shortcode_media.edge_liked_by.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.data.shortcode_media.edge_liked_by.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+		<Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				@GetPostLikesRequest()
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+			<JsonPath Expr="$.data.shortcode_media.edge_liked_by.edges[*].node">
+				<JsonPath Expr="id" Id="UserId" Title="User Id"/>
+				<JsonPath Expr="username" Id="Username"/>
+				<JsonPath Expr="full_name" Id="FullName" Title="Full Name"/>
+				<JsonPath Expr="profile_pic_url" Id="Avatar"/>
+				<JsonPath Expr="is_verified" Id="Verified" Converter="Bool"/>
+			</JsonPath>
+		</Parse>
+  </RestConnector>
+
 	<RestConnector Id="AccountLookupUsernameHidden" Group="Accounts" Hidden="true">
     <Parameters>
       <Text Id="User" Required="true" Debug.DefaultValue="zaralarsson"/>
@@ -374,6 +402,20 @@
 			}
 
 			string url = "https://www.instagram.com/graphql/query/?query_id=17888483320059182";
+			string parameters = "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
+			return url + parameters;
+		}
+
+		string GetPostLikesRequest() {
+			Dictionary<string, dynamic> dict = new Dictionary<string, dynamic>();
+			dict.Add("shortcode", FetchPostString());
+			dict.Add("first", 50);
+
+			if(Model.PageCursor.Page != 0 && Model.HasNextPage) {
+				dict.Add("after", Model.Cursor);
+			}
+
+			string url = "https://www.instagram.com/graphql/query/?query_id=17864450716183058";
 			string parameters = "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
 			return url + parameters;
 		}
