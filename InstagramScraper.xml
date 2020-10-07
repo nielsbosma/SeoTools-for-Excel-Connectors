@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="9.5.1" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
+<Suite Title="Instagram Scraper" Id="InstagramScraper" Category="Social" RequireVersion="9.0" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Instagramscraper.xml">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -273,14 +273,13 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="AccountFeed" Title="Accounts Post Feed" Group="Accounts">
+	<RestConnector Id="AccountFeed" Title="Account Post Feed" Group="Accounts">
     <Parameters>
-      <Text Id="User" Title="Usernames or URLs" Required="true" Debug.DefaultValue="zaralarsson&#0010;justinbieber" Multiline="true"/>
+      <Text Id="User" Title="Username or URL" Required="true" Debug.DefaultValue="zaralarsson"/>
     </Parameters>
     <Prepare>
       <Connector Id="AccountLookupUsernameHidden" Parameters="User"/>
     </Prepare>
-		<Batch Parameter="User" Separator="\n"/>
     <Paging PageSize="50" EvenPages="false">
       <Parse>
 				<JsonPath Expr="$.data.user.edge_owner_to_timeline_media.page_info.end_cursor" Id="Cursor"/>
@@ -317,6 +316,20 @@
         <Compute Expr="@Model.Followers" Id="Followers" Title="Followers" Converter="Int"/>
         <Compute Expr="@Model.Avatar" Id="Avatar" Title="Avatar"/>
 			</JsonPath>
+    </Parse>
+  </RestConnector>
+	
+	<RestConnector Id="AccountLookupUsernameHidden" Group="Accounts" Hidden="true">
+    <Parameters>
+      <Text Id="User" Required="true" Debug.DefaultValue="zaralarsson"/>
+    </Parameters>
+		<Fetch Url="https://www.instagram.com/@(FetchUsernameString())/?__a=1"/>
+    <Parse>
+			<JsonPath Expr="graphql.user.id" Id="UserId"/>
+			<JsonPath Expr="graphql.user.username" Id="Username" Title="Username"/>
+			<JsonPath Expr="graphql.user.full_name" Id="FullName" Title="Full Name"/>
+			<JsonPath Expr="graphql.user.edge_followed_by.count" Id="Followers"/>
+			<JsonPath Expr="graphql.user.profile_pic_url" Id="Avatar" Title="Avatar"/>
     </Parse>
   </RestConnector>
 
