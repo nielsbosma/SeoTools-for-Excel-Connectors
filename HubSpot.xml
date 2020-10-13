@@ -266,10 +266,10 @@
         </DataSource>
       </Select>
     </Parameters>
-    <Paging PageSize="100" EvenPages="false">
+    <Paging PageSize="250" EvenPages="false">
       <Parse>
         <JsonPath Id="Offset" Expr="offset"/>
-        <JsonPath Id="HasMore" Expr="hasMore"/>
+        <JsonPath Id="HasMore" Expr="has-more" Converter="Bool"/>
       </Parse>
     </Paging>
     <Fetch>
@@ -278,8 +278,8 @@
         <![CDATA[
         https://api.hubapi.com/companies/v2/companies/
         @(Model.ReturnType == "all" ? "paged?properties=" + SelectedPropertiesFields() + "&" : "recent/" + Model.ReturnType + "?")
-        count=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 && Model.HasMore == "true" ? "&vidOffset=" + Model.VidOffset : "")
+        limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 && Model.HasMore ? "&offset=" + Model.Offset : "")
         ]]>
         </Fetch.Url>
       </Fetch>
@@ -296,36 +296,56 @@
         <JsonPath Expr="properties.website.value" Id="Website" Title="Website" Converter="String" Tag="website" HelpText="The website of the company." DefaultValue=""/>
         <JsonPath Expr="properties.country.value" Id="Country" Title="Country" Converter="String" Tag="country" HelpText="The country of the company." DefaultValue=""/>
         <JsonPath Expr="properties.city.value" Id="City" Title="City" Converter="String" Tag="city" HelpText="The city of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="Modified" Tag="hs_lastmodifieddate" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.createdate.value" Id="Created" Tag="createdate" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CompaniesbyDomain" Title="Companies by Domain" Group="Companies" HelpText="Returns a list of all companies that have a matching domain to the specified domai	.">
+  <RestConnector Id="CompaniesbyDomain" Title="Companies by Domain" Group="Companies" HelpText="Returns a list of all companies that have a matching domain to the specified domain.">
     <Parameters>
-      <Text Id="Domain" Title="Domain" Debug.DefaultValue="jollo.se" Required="true"/>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="aksnb.com" Required="true"/>
     </Parameters>
     <Fetch>
-			<Resource Id="Authentication"/>
+			<HttpSettings>
+				<RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+				<RequestBody>
+          <![CDATA[
+					{
+						"limit": 1,
+						"requestOptions": {
+							"properties": @(SelectedPropertyFieldsJson())
+						}
+					}
+					]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.hubapi.com/companies/v2/companies/domain/
-        @Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)
+        https://api.hubapi.com/companies/v2/domains/
+        @Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain)/companies
         ]]>
         </Fetch.Url>
       </Fetch>
     <Parse>
-      <JsonPath Expr="$[*]">
-        <JsonPath Expr="companyId" Id="CompanyId" Title="Company Id" Converter="String" HelpText="The internal ID of the company."/>
-        <JsonPath Expr="properties.name.value" Id="Name" Title="Name" Converter="String" HelpText="The name of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.num_associated_contacts.value" Id="Contacts" Title="Contacts" Converter="Int" HelpText="Number of associated contacts." DefaultValue=""/>
-        <JsonPath Expr="properties.num_notes.value" Id="Notes" Title="Notes" Converter="Int" HelpText="Number of notes." DefaultValue=""/>
-        <JsonPath Expr="properties.description.value" Id="Description" Title="Description" Converter="String" HelpText="The description of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.industry.value" Id="Industry" Title="Industry" Converter="String" HelpText="The industry of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.domain.value" Id="Domain" Title="Domain" Converter="String" HelpText="The domain of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.website.value" Id="Website" Title="Website" Converter="String" HelpText="The website of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.country.value" Id="Country" Title="Country" Converter="String" HelpText="The country of the company." DefaultValue=""/>
-        <JsonPath Expr="properties.city.value" Id="City" Title="City" Converter="String" HelpText="The city of the company." DefaultValue=""/>
+      <JsonPath Expr="$.results[*]">
+        <JsonPath Expr="companyId" Id="CompanyId" Title="Company Id" HelpText="The internal ID of the company."/>
+        <JsonPath Expr="properties.name.value" Id="Name" Title="Name" Tag="name" HelpText="The name of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.num_associated_contacts.value" Id="Contacts" Title="Contacts" Converter="Int" Tag="num_associated_contacts" HelpText="Number of associated contacts." DefaultValue=""/>
+        <JsonPath Expr="properties.num_notes.value" Id="Notes" Title="Notes" Converter="Int" Tag="num_notes" HelpText="Number of notes." DefaultValue=""/>
+        <JsonPath Expr="properties.description.value" Id="Description" Title="Description" Tag="description" HelpText="The description of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.industry.value" Id="Industry" Title="Industry" Converter="String" Tag="industry" HelpText="The industry of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.domain.value" Id="Domain" Title="Domain" Tag="domain" HelpText="The domain of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.website.value" Id="Website" Title="Website" Tag="website" HelpText="The website of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.country.value" Id="Country" Title="Country" Tag="country" HelpText="The country of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.city.value" Id="City" Title="City" Tag="city" HelpText="The city of the company." DefaultValue=""/>
+        <JsonPath Expr="properties.hs_lastmodifieddate.value" Id="Modified" Tag="hs_lastmodifieddate" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="" DefaultValue=""/>
+        <JsonPath Expr="properties.createdate.value" Id="Created" Tag="createdate" Converter="DateTime" Converter.SourceFormat="UnixMs" HelpText="" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -466,6 +486,14 @@
   string SelectedPropertyFields() {
     string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
     return string.Join("&property=",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).ToArray());
+  }
+
+	string SelectedPropertyFieldsJson() {
+		string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+    string[] selected = ((ResultField[])Model.Headers)
+			.Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower()))
+			.Select(e => e.Tag).Distinct().ToArray();
+		return JsonConvert.SerializeObject(selected);
   }
   ]]>
   </RazorFunctions>
