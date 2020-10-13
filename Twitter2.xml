@@ -36,9 +36,9 @@
 				<JsonPath Expr="id" Id="Inp2" DefaultValue=""/>
 				<JsonPath Expr="author_id" Id="UserId"/>
 			</Compute>
-			<JsonPath Expr="id" Id="Id" Tag="tweet.id"/>
+			<JsonPath Expr="id" Id="Id"/>
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Tag="tweet.created_at" Converter="DateTime"/>
-			<JsonPath Expr="text" Id="Text" Converter="String" DefaultValue=""/>
+			<JsonPath Expr="text" Id="Text" Converter="String" Tag="tweet.text" DefaultValue=""/>
 			<Compute Expr="@(GetTweetType(Model.txt))" Id="Type">
 				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
 			</Compute>
@@ -267,10 +267,14 @@
 		}
 
 		string SelectedTweetFields() {
+			string[] defaults = new string[] { "author_id", "id" };
 			string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
-			return "author_id,text," + string.Join(",",((ResultField[])Model.Headers)
+			string[] selected = ((ResultField[])Model.Headers)
 				.Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower()) && e.Tag.StartsWith("tweet."))
-				.Select(e => e.Tag.Replace("tweet.",string.Empty)).Distinct().ToArray());
+				.Select(e => e.Tag.Replace("tweet.",string.Empty)).Distinct().ToArray();
+
+			string[] all = defaults.Concat(selected).ToArray();
+			return string.Join(",",all);
 		}
 
     string FetchUserString() {
