@@ -22,6 +22,11 @@
 			<Item Id="serverError" Title="ServerError"/>
 			<Item Id="soft404" Title="Soft404"/>
     </Resource>
+		<Resource Id="RequestHeaders">
+			<RequestHeaders>
+				<Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
+			</RequestHeaders>
+    </Resource>
     <Resource Id="Fail">
       <Fail>
         <Regex Expr="^Not Found$" Group="0"/>
@@ -86,9 +91,7 @@
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites?fields=siteEntry">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
+        <Resource Id="RequestHeaders"/>
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -119,10 +122,9 @@
     <Paging PageSize="10000" DefaultTake="1000" EvenPages="false"/>
     <Fetch>
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
+        <Resource Id="RequestHeaders"/>
         <RequestMethod>POST</RequestMethod>
+				<IntervalBetweenRequests RandomFrom="10" RandomTo="20" IfSame="Domain"/>
         <RequestContentType>application/json</RequestContentType>
         <RequestBody>
           {
@@ -166,9 +168,7 @@
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps?fields=sitemap">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
+        <Resource Id="RequestHeaders"/>
       </HttpSettings>
     </Fetch>
     <Parse>
@@ -187,14 +187,12 @@
 
   <RestConnector Id="SitemapContents" Title="Sitemap Status" HelpUrl="https://developers.google.com/webmaster-tools/search-console-api-original/v3/sitemaps/get">
     <Parameters>
-      <Text Id="Site" Title="Site" Debug.DefaultValue="http://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Site" Select.TitleField="Domain"/>
-      <Text Id="Sitemap" Title="Sitemap" Debug.DefaultValue="http://seotoolsforexcel.com/sitemap.xml" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="LastSubmitted"/>
+      <Text Id="Site" Title="Site" Debug.DefaultValue="https://seotoolsforexcel.com/" Required="true" Select.Connector="Sites" Select.IdField="Site" Select.TitleField="Domain"/>
+      <Text Id="Sitemap" Title="Sitemap" Debug.DefaultValue="https://seotoolsforexcel.com/sitemap.xml" Required="true" Select.Connector="Sitemaps" Select.IdField="Path" Select.TitleField="LastSubmitted"/>
     </Parameters>
     <Fetch Url="https://www.googleapis.com/webmasters/v3/sites/@(Utils.UrlEncode(Model.Site))/sitemaps/@(Utils.UrlEncode(Model.Sitemap))?fields=contents">
       <HttpSettings>
-        <RequestHeaders>
-          <Header Name='Authorization'><![CDATA[Bearer @(Model.Authenticator.AccessToken)]]></Header>
-        </RequestHeaders>
+        <Resource Id="RequestHeaders"/>
       </HttpSettings>
     </Fetch>
     <Parse>
