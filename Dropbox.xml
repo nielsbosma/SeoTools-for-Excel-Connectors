@@ -9,6 +9,7 @@
     <Resource Id="Fail">
 			<Fail>
 				<Regex Expr="did not match pattern \'\(\/" Group="0" Fail.Action="Message" Fail.Message="Invalid folder syntax"/>
+				<Regex Expr="^Error" Group="0" Fail.Action="Message" Fail.Message="Error. Invalid folder syntax?"/>
 				<JsonPath Expr="user_message"/>
 				<JsonPath Expr="error_summary"/>
 			</Fail>
@@ -81,22 +82,23 @@
 
   <RestConnector Id="Search" Title="Search" Group="Content" HelpUrl="https://www.dropbox.com/developers/documentation/http/documentation#files-search" HelpText="Searches for files and folders.">
     <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="xlsm" Required="false"/>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="xls" Required="true"/>
       <Text Id="Path" Title="Path" Required="false" HelpText="pattern=(/(.|[\r\n])*)?|id:.*|(ns:[0-9]+(/.*)?)"/>
     </Parameters>
-    <Paging PageSize="100" EvenPages="true"/>
-    <Fetch>
+    <Paging PageSize="100" EvenPages="true">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="cursor"/>
+      </Parse>
+    </Paging>
+		<Fetch>
       <HttpSettings>
         <Resource Id="Authentication"/>
         <RequestBody>
 					<![CDATA[
 						@{
-							var dict = new Dictionary<string, object>();
-							dict.Add("query", Model.Query);
-							dict.Add("path", Utils.UrlEncode(Model.Path));
-							dict.Add("max_results", Model.PageCursor.PageSize);
-							dict.Add("start", Model.PageCursor.NextSkip);
-							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+							var output = Model.PageCursor.Page != 0
+								? GetToken()
+								: GetRequestData();
 						}
 						@output
 					]]>
@@ -104,12 +106,13 @@
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				https://api.dropboxapi.com/2/files/search
+				https://api.dropboxapi.com/2/files/
+				@(Model.PageCursor.Page != 0 ? "search/continue_v2" : "search_v2")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="matches[*].metadata">
+			<JsonPath Expr="matches[*].metadata.metadata">
 				<JsonPath Expr="['.tag']" Id="Tag" Title="Tag" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="id" Id="Id" Title="Id" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="name" Id="Name" Title="Name" Converter="String"/>
@@ -233,5 +236,31 @@
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
+
+	  <RazorFunctions>
+    <![CDATA[
+		string GetToken() {
+			var dictCursor = new Dictionary<string, object>();
+			dictCursor.Add("cursor", Model.NextToken);
+			return Newtonsoft.Json.JsonConvert.SerializeObject(dictCursor);
+		}
+
+		string GetRequestData() {
+			var dict = new Dictionary<string, object>();
+			var dictOptions = new Dictionary<string, object>();
+
+			if(!string.IsNullOrEmpty(Model.Path)){
+				dictOptions.Add("path", Model.Path);
+			}
+
+			dictOptions.Add("max_results", Model.PageCursor.NextTake);
+
+			dict.Add("query", Model.Query);
+			dict.Add("options", dictOptions);
+
+			return Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+		}
+    ]]>
+  </RazorFunctions>
 
 </Suite>
