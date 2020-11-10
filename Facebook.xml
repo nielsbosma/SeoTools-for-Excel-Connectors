@@ -347,6 +347,56 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="GroupFeed" Title="Posts from Groups Feeds" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/group/feed">
+    <Parameters>
+      <Text Id="Id" Title="Group Ids" Debug.DefaultValue="1442243072653847" Required="true" Multiline="true"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
+    </Parameters>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="paging.next"/>
+      </Parse>
+    </Paging>
+    <Batch Parameter="Id" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://graph.facebook.com/v3.3/@(Model.Id)/feed?
+        fields=@SelectedFields()
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null && Model.PageCursor.Page == 0)
+        {
+          @: &since=@(((DateTime)Model.DateInterval.StartDate).UnixTimeStampUtc())
+          @: &until=@(((DateTime)Model.DateInterval.EndDate.AddDays(1)).UnixTimeStampUtc())
+        }
+        &access_token=@(Model.Authenticator.Token)
+        &limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Title="Post Id" Id="PostId" Expr="id" Converter="String"/>
+        <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
+        <JsonPath Title="Message" Id="Message" Expr="message" Converter="String" Tag="message" DefaultValue=""/>
+        <JsonPath Title="Title" Id="Title" Expr="attachments.data[0].title" Converter="String" Tag="attachments" DefaultValue=""/>
+				<JsonPath Title="Description" Id="Description" Expr="attachments.data[0].description" Converter="String" Tag="attachments" DefaultValue=""/>
+				<JsonPath Title="Type" Id="Type" Expr="attachments.data[0].type" Converter="String" Tag="attachments" DefaultValue="status"/>
+        <JsonPath Title="Comments" Id="Comments" Expr="comments.summary.total_count" Converter="Int" Tag="comments.filter(stream).limit(0).summary(true)" DefaultValue="0"/>
+        <JsonPath Title="Shares" Id="Shares" Expr="$.shares.count" Converter="Int" Tag="shares" DefaultValue="0"/>
+        <JsonPath Title="Reactions" Id="Reactions" Expr="reactions.summary.total_count" Converter="Int" Tag="reactions.limit(0).summary(total_count).as(reactions)" DefaultValue=""/>
+        <JsonPath Title="Width" Id="Width" Expr="attachments.data[0].media.image.width" Converter="Auto" Tag="attachments" DefaultValue=""/>
+        <JsonPath Title="Height" Id="Height" Expr="attachments.data[0].media.image.height" Converter="Auto" Tag="attachments" DefaultValue=""/>
+        <JsonPath Title="Video Length" Id="VideoLength" Expr="properties[?(@@.name=='Length')].text" Converter="String" Tag="properties" DefaultValue=""/>
+        <JsonPath Title="Permalink" Id="PostLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
+				<JsonPath Title="Picture" Id="PictureUrl" Expr="$.full_picture" Converter="String" Tag="full_picture" DefaultValue=""/>
+        <JsonPath Title="Thumbnail" Id="ThumbnailUrl" Expr="$.picture" Converter="String" Tag="picture" DefaultValue=""/>
+        <Compute Title="Group Id" Id="GroupId" Expr="@Model.Id"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
 	<RestConnector Id="PageAlbums" Title="Albums from Pages" Group="Album Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/page/albums/">
     <Parameters>
       <Text Id="Id" Title="Page Ids" Required="true" Debug.DefaultValue="104266592953439" Multiline="true"/>
