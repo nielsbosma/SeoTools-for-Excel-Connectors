@@ -73,7 +73,8 @@
   <RestConnector Id="GoogleImages" Title="Google Images">
     <Parameters>
       <Text Id="Url" Title="Google Image-based Sitemap URL(s)" Debug.DefaultValue="https://www.ikea.com/sitemaps/edit-en-QA_1.xml" Multiline="true"/>
-    </Parameters>
+			<Checkbox Id="AllImages" Title="Include all images in csv format"/>
+		</Parameters>
 		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
@@ -89,11 +90,22 @@
 				<XPath Expr="../lastmod" Id="Modified" Converter="Auto" DefaultValue="" HelpText="The date of last modification of the file."/>
 				<XPath Expr="../changefreq" Id="Frequency" Converter="Auto" DefaultValue="" HelpText="How frequently the page is likely to change."/>
 				<XPath Expr="../priority" Id="Priority" Converter="Auto" DefaultValue="" HelpText="The priority of this URL relative to other URLs on your site."/>
-				<XPath Expr="..//*[name()='image:loc']" Id="ImageLocation" Title="Image Location" Converter="Auto" DefaultValue=""/>
-				<XPath Expr="..//*[name()='image:title']" Id="ImageTitle" Title="Image Title" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="@GetImageLoc()" Id="ImageLocation" Title="Image Location" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="@GetImageTitle()" Id="ImageTitle" Title="Image Title" Converter="Auto" DefaultValue=""/>
 			</XPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
+	
+	  <RazorFunctions>
+		<![CDATA[
+		string GetImageLoc() {
+			return Model.AllImages == true ? "csv(..//*[name()='image:loc'])" : "..//*[name()='image:loc']"; 
+		}
+		string GetImageTitle() {
+			return Model.AllImages == true ? "csv(..//*[name()='image:title'])" : "..//*[name()='image:title']"; 
+		}
+		]]>
+  </RazorFunctions>
 
 </Suite>
