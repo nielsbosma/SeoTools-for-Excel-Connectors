@@ -291,7 +291,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				@GetUserFeedRequest()
+				https://www.instagram.com/graphql/query/?query_id=17888483320059182@(GetUserFeedRequest())
         ]]>
       </Fetch.Url>
 		</Fetch>
@@ -312,11 +312,56 @@
 				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
 				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
 				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
-				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
+				<JsonPath Expr="owner.id" Id="OwnerId"/>
         <Compute Expr="@Model.Username" Id="Username" Title="Username"/>
         <Compute Expr="@Model.FullName" Id="FullName" Title="Full Name"/>
         <Compute Expr="@Model.Followers" Id="Followers" Title="Followers" Converter="Int"/>
         <Compute Expr="@Model.Avatar" Id="Avatar" Title="Avatar"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="AccountTagged" Title="Accounts Tagged Feed" Group="Accounts">
+	<Parameters>
+      <Text Id="User" Title="Usernames or URLs" Required="true" Debug.DefaultValue="zaralarsson&#0010;justinbieber" Multiline="true"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="AccountLookupUsernameHidden" Parameters="User"/>
+    </Prepare>
+		<Batch Parameter="User" Separator="\n"/>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.data.user.edge_user_to_photos_of_you.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.data.user.edge_user_to_photos_of_you.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://www.instagram.com/graphql/query/?query_hash=31fe64d9463cbbe58319dced405c6206@(GetUserFeedRequest())
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.user.edge_user_to_photos_of_you.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_media_preview_like.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="video_view_count" Id="VideoViews" Title="Video Views" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId"/>
+				<JsonPath Expr="owner.username" Id="Username" Title="Username"/>
+        <Compute Expr="@Model.Username" Id="TaggedUser" Title="Tagged User"/>
 			</JsonPath>
     </Parse>
   </RestConnector>
@@ -457,9 +502,7 @@
 				dict.Add("after", Model.Cursor);
 			}
 
-			string url = "https://www.instagram.com/graphql/query/?query_id=17888483320059182";
-			string parameters = "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
-			return url + parameters;
+			return "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
 		}
 
 		string GetPostLikesRequest() {
