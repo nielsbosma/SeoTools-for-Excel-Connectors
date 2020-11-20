@@ -365,6 +365,47 @@
 			</JsonPath>
     </Parse>
   </RestConnector>
+	
+	<RestConnector Id="PlaceFeed" Title="Place Feed" Group="Places">
+    <Parameters>
+      <Text Id="PlaceId" Title="Place Ids" Required="true" Debug.DefaultValue="491874437" Multiline="true"/>
+    </Parameters>
+		<Batch Parameter="PlaceId" Separator="\n"/>
+    <Paging PageSize="50" EvenPages="false">
+      <Parse>
+				<JsonPath Expr="$.data.location.edge_location_to_media.page_info.end_cursor" Id="Cursor"/>
+				<JsonPath Expr="$.data.location.edge_location_to_media.page_info.has_next_page" Id="HasNextPage" Converter="Bool" DefaultValue="false"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://www.instagram.com/graphql/query/?query_hash=36bd0f2bf5911908de389b8ceaa3be6d@(GetPlaceFeedRequest())
+        ]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.data.location.edge_location_to_media.edges[*].node">
+				<Compute Expr="https://www.instagram.com/p/@Model.Inp" Id="Url" Title="URL">
+					<JsonPath Expr="shortcode" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="taken_at_timestamp" Id="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+				<JsonPath Expr="edge_media_to_caption.edges[0].node.text" Id="Caption" DefaultValue=""/>
+				<Compute Expr="@GetPostType()" Id="Type" Title="Type">
+					<JsonPath Expr="__typename" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="edge_media_preview_like.count" Id="Likes" Converter="Long"/>
+				<JsonPath Expr="edge_media_to_comment.count" Id="Comments" Converter="Long"/>
+				<JsonPath Expr="video_view_count" Id="VideoViews" Title="Video Views" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="dimensions.height" Id="Height" Converter="Long"/>
+				<JsonPath Expr="dimensions.width" Id="Width" Converter="Long"/>
+				<JsonPath Expr="display_url" Id="DisplayUrl" Title="Display URL"/>
+				<JsonPath Expr="thumbnail_src" Id="ImageUrl" Title="Thumbnail"/>
+				<JsonPath Expr="owner.id" Id="OwnerId"/>
+        <Compute Expr="@Model.PlaceId" Id="PlaceId" Title="Place Id"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
 
 	<RestConnector Id="PostLikes" Title="Posts Likes" Group="Posts">
     <Parameters>
@@ -496,6 +537,18 @@
 		string GetUserFeedRequest() {
 			Dictionary<string, dynamic> dict = new Dictionary<string, dynamic>();
 			dict.Add("id", Model.UserId);
+			dict.Add("first", 50);
+
+			if(Model.PageCursor.Page != 0 && Model.HasNextPage) {
+				dict.Add("after", Model.Cursor);
+			}
+
+			return "&variables=" + @Utils.UrlEncode(Newtonsoft.Json.JsonConvert.SerializeObject(dict));
+		}
+		
+		string GetPlaceFeedRequest() {
+			Dictionary<string, dynamic> dict = new Dictionary<string, dynamic>();
+			dict.Add("id", Model.PlaceId);
 			dict.Add("first", 50);
 
 			if(Model.PageCursor.Page != 0 && Model.HasNextPage) {
