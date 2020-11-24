@@ -74,7 +74,7 @@
       </Fail>
 		</RestConnector>
 
-	<RestConnector Id="PageMetrics" Title="Page Lookup" Group="Page Data">
+	<RestConnector Id="PageMetrics" Title="Page Metrics" Group="Page Data">
     <Parameters>
       <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="324952857522514" Select.Connector="ListPages"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
@@ -195,7 +195,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageDemographicsAgeGender" Title="Page Demographics Age/Gender" Group="Page Data">
+  <RestConnector Id="PageDemographicsAgeGender" Title="Page Stats by Age/Gender" Group="Page Data">
     <Parameters>
       <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="324952857522514" Select.Connector="ListPages"/>
       <Select Id="Metric" Title="Metric" Required="false" DefaultValue="page_fans_gender_age">
@@ -251,14 +251,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PageFansLocations" Title="Page Fans by Locations" Group="Page Data">
+  <RestConnector Id="PageMetricsLocation" Title="Page Stats by Location/Language" Group="Page Data">
     <Parameters>
       <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="324952857522514" Select.Connector="ListPages"/>
       <Select Id="Dimension" Title="Dimension" Required="false" DefaultValue="page_fans_country">
         <DataSource>
-          <Item Id="page_fans_country" Title="Country"/>
-          <Item Id="page_fans_city" Title="City"/>
-          <Item Id="page_fans_locale" Title="Locale"/>
+          <Item Id="page_fans_country" Title="Fans by Country"/>
+          <Item Id="page_fans_city" Title="Fans by City"/>
+          <Item Id="page_fans_locale" Title="Fans by Locale"/>
+					<Item Id="page_impressions_by_country_unique" Title="Unique Impressions by Country"/>
+          <Item Id="page_impressions_by_city_unique" Title="Unique Impressions by City"/>
+          <Item Id="page_impressions_by_locale_unique" Title="Unique Impressions by Locale"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -278,7 +281,7 @@
 					<Compute.Expr>
 						<![CDATA[
 						@{
-						string output = Model.Dimension == "page_fans_country"
+						string output = Model.Dimension.Contains("page_fans_country")
 							? Utils.IsoCountryCodeToName(Model.Inp)
 							: Model.Inp;
 						}
@@ -288,55 +291,6 @@
 					<JsonPath Expr="key" Id="Inp" DefaultValue=""/>
 				</Compute>
         <JsonPath Expr="value" Id="Fans" Title="Fans" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="PageUniqueImpressionsLocations" Title="Page Unique Impressions by Locations" Group="Page Data">
-    <Parameters>
-      <Text Id="Id" Title="Page Id" Required="true" Debug.DefaultValue="324952857522514" Select.Connector="ListPages"/>
-      <Select Id="Dimension" Title="Dimension" Required="false" DefaultValue="page_fans_country">
-        <DataSource>
-          <Item Id="page_impressions_by_country_unique" Title="Country"/>
-          <Item Id="page_impressions_by_city_unique" Title="City"/>
-          <Item Id="page_impressions_by_locale_unique" Title="Locale"/>
-        </DataSource>
-      </Select>
-			<Select Id="AggregationPeriod" Title="Period" Required="false" DefaultValue="day">
-        <DataSource>
-          <Item Id="day" Title="Last Day"/>
-          <Item Id="week" Title="Last Week"/>
-          <Item Id="days_28" Title="Last 28 Days"/>
-        </DataSource>
-      </Select>
-    </Parameters>
-    <Resource Id="Prepare"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v3.2/@(Model.Id)/insights/@(Model.Dimension)?access_token=@(Model.PageToken)
-				&since=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
-				&until=@((DateTime.Today.AddDays(-1)).ToString("yyyy-MM-dd"))
-      ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="keys(data[?(@@.period=='@(Model.AggregationPeriod)')].values[*].value)">
-				<Compute Id="Dimension" Converter="Auto">
-					<Compute.Expr>
-						<![CDATA[
-						@{
-						string output = Model.Dimension == "page_impressions_by_country_unique"
-							? Utils.IsoCountryCodeToName(Model.Inp)
-							: Model.Inp;
-						}
-						@output
-						]]>
-					</Compute.Expr>
-					<JsonPath Expr="key" Id="Inp" DefaultValue=""/>
-				</Compute>
-        <JsonPath Expr="value" Id="ImpressionsUnique" Title="Impressions Unique" Converter="Int"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
