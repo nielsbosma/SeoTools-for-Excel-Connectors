@@ -3,15 +3,38 @@
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
-	<!--
-	https://github.com/MohanSha/InstagramResearch
-	-->
+	<Settings HelpText="Optional Authentication">
+		<Text Id="SessionId" Title="Session Id" HelpText="Use view: Others -> Generate Session Id" Required="false"/>
+  </Settings>
+
+  <Resources>
+		<Resource Id="HttpSettings">
+			<HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Cookie'>sessionid=@(Model.SessionId)</Header>
+				</RequestHeaders>
+      </HttpSettings>
+    </Resource>
+		<Resource Id="Fail">
+			<Fail>
+				<Regex Expr="!DOCTYPE\shtml" Group="0" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Try view 'Generate Session Id' with your own account, then add session id to Settings menu."/>
+			</Fail>
+    </Resource>
+  </Resources>
 
 	<RestConnector Title="Account Lookup by Username" Id="AccountLookupUsername" Group="Accounts">
     <Parameters>
       <Text Id="User" Title="Username or User URL" Required="true" Debug.DefaultValue="region_norrbotten"/>
     </Parameters>
-		<Fetch Url="https://www.instagram.com/@(FetchUsernameString())/?__a=1"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/@(FetchUsernameString())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
     <Parse>
 			<JsonPath Expr="graphql.user.edge_followed_by.count" Id="Followers" Title="Followers" Converter="Int"/>
 			<JsonPath Expr="graphql.user.edge_follow.count" Id="Follows" Title="Follows" Converter="Int"/>
@@ -21,7 +44,7 @@
 			<JsonPath Expr="graphql.user.username" Id="Username" Title="Username"/>
 			<JsonPath Expr="graphql.user.full_name" Id="FullName" Title="Full Name"/>
 			<JsonPath Expr="graphql.user.biography" Id="Bio" Title="Bio"/>
-			<JsonPath Expr="graphql.user.business_email" Id="BusinessEmail" Title="Business Email"/>
+			<JsonPath Expr="graphql.user.business_email" Id="BusinessEmail" Title="Business Email" DefaultValue=""/>
 			<JsonPath Expr="graphql.user.business_category_name" Id="BusinessCategory" Title="Business Category"/>
 			<JsonPath Expr="graphql.user.category_enum" Id="Category" Title="Category"/>
 			<JsonPath Expr="graphql.user.connected_fb_page" Id="FacebookPage" Title="Facebook Page"/>
@@ -30,6 +53,7 @@
 			<JsonPath Expr="graphql.user.is_business_account" Id="BusinessAccount" Title="Business Account" Converter="Bool"/>
 			<JsonPath Expr="graphql.user.is_verified" Id="Verified" Title="Verified" Converter="Bool"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Title="Account Lookup by Id" Id="AccountLookupId" Group="Accounts">
@@ -52,14 +76,21 @@
 			<JsonPath Expr="user.username" Id="Username"/>
 			<JsonPath Expr="user.profile_pic_url" Id="Avatar"/>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
-
 
   <RestConnector Id="PostLookup" Title="Post Lookup" Group="Posts">
     <Parameters>
       <Text Id="Post" Title="Post URL or Shortcode" Required="true" Debug.DefaultValue="https://www.instagram.com/p/CBVJMV1iHsd/"/>
     </Parameters>
-    <Fetch Url="https://www.instagram.com/p/@(FetchPostString())/?__a=1"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.instagram.com/p/@(FetchPostString())/?__a=1
+        ]]>
+      </Fetch.Url>
+		</Fetch>
     <Parse>
 			<Compute Expr="https://www.instagram.com/p/@(Model.Inp)" Id="Url" Title="URL" DefaultValue="">
 				<JsonPath Expr="$.graphql.shortcode_media.shortcode" Id="Inp" DefaultValue=""/>
@@ -89,8 +120,8 @@
 			<JsonPath Expr="graphql.shortcode_media.location.id" Id="LocationId" Title="Location Id" DefaultValue=""/>
 			<JsonPath Expr="csv(graphql.shortcode_media.edge_media_to_sponsor_user.edges[*].node.sponsor.username)" Id="Sponsor" Title="Sponsors" DefaultValue=""/>
 			<JsonPath Expr="csv(graphql.shortcode_media.edge_media_to_tagged_user.edges[*].node.user.username)" Id="TaggedAccounts" Title="Tagged Accounts" DefaultValue=""/>
-
 		</Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="HashtagFeed" Title="Hashtag Post Feed" Group="Hashtags">
@@ -104,6 +135,7 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
@@ -131,6 +163,7 @@
 				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="HashtagTopPosts" Title="Top Posts" Group="Hashtags">
@@ -139,6 +172,7 @@
     </Parameters>
     <Paging PageSize="10" MaxTake="10"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
@@ -165,6 +199,7 @@
 				<JsonPath Expr="owner.id" Id="OwnerId" Converter="String"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="RelatedHashtags" Title="Related Hashtags" Group="Hashtags">
@@ -172,6 +207,7 @@
       <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
@@ -183,6 +219,7 @@
 				<JsonPath Expr="name" Id="Name" Converter="String" DefaultValue=""/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="HashtagCount" Title="Post Count" Group="Hashtags">
@@ -190,6 +227,7 @@
       <Text Id="Hashtag" Title="Hashtag" Required="true" Debug.DefaultValue="summer"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/explore/tags/@(StripHashtag())/?__a=1
@@ -207,6 +245,7 @@
     </Parameters>
     <Paging PageSize="100" MaxTake="100"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/web/search/topsearch/?context=user&query=@Utils.UrlEncode(Model.Query)
@@ -226,6 +265,7 @@
 				<JsonPath Expr="profile_pic_url" Id="Avatar" Converter="String"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="HashtagSearch" Title="Search for Hashtags" Group="Hashtags">
@@ -234,6 +274,7 @@
     </Parameters>
     <Paging PageSize="100" MaxTake="100"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/web/search/topsearch/?context=hashtag&query=@Utils.UrlEncode(Model.Query)
@@ -254,6 +295,7 @@
     </Parameters>
     <Paging PageSize="100" MaxTake="100"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://www.instagram.com/web/search/topsearch/?context=place&query=@Utils.UrlEncode(Model.Query)
@@ -273,6 +315,7 @@
 				<JsonPath Expr="location.facebook_places_id" Id="FacebookPlaceId" Title="Facebook Place Id" Converter="String"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="AccountFeed" Title="Account Post Feed" Group="Accounts">
@@ -289,6 +332,7 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
 				https://www.instagram.com/graphql/query/?query_id=17888483320059182@(GetUserFeedRequest())
@@ -319,6 +363,7 @@
         <Compute Expr="@Model.Avatar" Id="Avatar" Title="Avatar"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="AccountTagged" Title="Account Tagged Feed" Group="Accounts">
@@ -335,6 +380,7 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
 				https://www.instagram.com/graphql/query/?query_hash=31fe64d9463cbbe58319dced405c6206@(GetUserFeedRequest())
@@ -362,6 +408,7 @@
         <JsonPath Expr="owner.username" Id="Username" Title="Username"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="PlaceFeed" Title="Place Feed" Group="Places">
@@ -375,6 +422,7 @@
       </Parse>
     </Paging>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
 				https://www.instagram.com/graphql/query/?query_hash=36bd0f2bf5911908de389b8ceaa3be6d@(GetPlaceFeedRequest())
@@ -401,6 +449,7 @@
 				<JsonPath Expr="owner.id" Id="OwnerId"/>
 			</JsonPath>
     </Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="PostLikes" Title="Posts Likes" Group="Posts">
@@ -415,6 +464,7 @@
     </Paging>
     <Batch Parameter="Post" Separator="\n"/>
 		<Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
 				@GetPostLikesRequest()
@@ -431,6 +481,7 @@
         <Compute Expr="@Model.Post" Id="Post"/>
 			</JsonPath>
 		</Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="PostComments" Title="Posts Comments" Group="Posts">
@@ -445,6 +496,7 @@
     </Paging>
     <Batch Parameter="Post" Separator="\n"/>
 		<Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
 				@GetPostCommentsRequest()
@@ -462,6 +514,7 @@
         <Compute Expr="@Model.Post" Id="Post"/>
 			</JsonPath>
 		</Parse>
+		<Resource Id="Fail"/>
   </RestConnector>
 
 	<RestConnector Id="AccountLookupUsernameHidden" Group="Accounts" Hidden="true">
@@ -471,6 +524,9 @@
 		<Fetch>
 			<HttpSettings>
         <Cache>true</Cache>
+				<RequestHeaders>
+					<Header Name='Cookie'>sessionid=@(Model.SessionId)</Header>
+				</RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
@@ -484,6 +540,75 @@
 			<JsonPath Expr="graphql.user.full_name" Id="FullName" Title="Full Name"/>
 			<JsonPath Expr="graphql.user.edge_followed_by.count" Id="Followers"/>
 			<JsonPath Expr="graphql.user.profile_pic_url" Id="Avatar" Title="Avatar"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<!-- AUTHENTICATION -->
+
+	<RestConnector Id="GetSessionId" Title="Generate Session Id">
+		<Parameters>
+      <Text Id="Username" Required="true" Debug.DefaultValue=""/>
+      <Text Id="Password" Required="true" Debug.DefaultValue="" Password="true"/>
+    </Parameters>
+	  <Prepare>
+      <Connector Id="GetToken"/>
+    </Prepare>
+		<Fetch>
+		<HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+				<RequestForm>
+          <Param Name='username'>@(Model.Username)</Param>
+          <Param Name='enc_password'>#PWD_INSTAGRAM_BROWSER:0:@(DateTime.Now.UnixTimeStampUtc()):@(Model.Password)</Param>
+          <Param Name='queryParams'>{}</Param>
+          <Param Name='optIntoOneTap'>false</Param>
+				</RequestForm>
+				<RequestHeaders>
+					<Header Name='x-csrftoken'>@(Model.csrftoken)</Header>
+					<Header Name='X-Requested-With'>XMLHttpRequest</Header>
+					<Header Name='Referer'>https://www.instagram.com/</Header>
+					<Header Name='User-Agent'>Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0</Header>
+				</RequestHeaders>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+					https://www.instagram.com/accounts/login/ajax/
+				]]>
+			</Fetch.Url>
+		</Fetch>
+    <Parse>
+		  <Compute Id="Converted">
+        <Compute.Expr>
+          <![CDATA[
+          @{
+            var headers = Model.FetchedResult.Headers;
+						string cookie = headers["Set-Cookie"];
+
+						Regex regex = new Regex("sessionid=(.*?);");
+            Match match = regex.Match(cookie);
+            string sessionId = match.Groups[1].Value;
+						}
+           @sessionId
+          ]]>
+        </Compute.Expr>
+      </Compute>
+    </Parse>
+		<Fail>
+			<JsonPath Expr="authenticated" Fail.If="IsEqual" Fail.ComparedTo="false" Fail.Action="Message" Fail.Message="Wrong credentials"/>
+		</Fail>
+  </RestConnector>
+
+	<RestConnector Id="GetToken" Hidden="true">
+		<Fetch>
+			<Fetch.Url>
+				<![CDATA[
+					https://www.instagram.com/accounts/login/
+				]]>
+			</Fetch.Url>
+		</Fetch>
+    <Parse>
+      <Regex Id="csrftoken" Expr="csrf_token&quot;:&quot;(.*?)&quot;" Group="1"/>
     </Parse>
   </RestConnector>
 
