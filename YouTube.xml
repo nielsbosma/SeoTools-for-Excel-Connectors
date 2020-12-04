@@ -35,13 +35,13 @@
 
   <RestConnector Id="VideoStatistics" Title="Video Statistics" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/videos/list">
     <Parameters>
-      <Text Id="Ids" Title="Video Ids" Required="true" Debug.DefaultValue="k5kJlDJfHgQ" Multiline="true" HelpText="One or more Video Ids separated by newline"/>
+      <Text Id="Ids" Title="Video URLs or Ids" Required="true" Debug.DefaultValue="k5kJlDJfHgQ" Multiline="true"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
 				<![CDATA[
-					https://www.googleapis.com/youtube/v3/videos?id=@(FetchIds())&part=statistics,snippet,contentDetails
+					https://www.googleapis.com/youtube/v3/videos?id=@(FetchIds("video"))&part=statistics,snippet,contentDetails
 				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
@@ -79,7 +79,7 @@
 
   <RestConnector Id="ChannelStatisticsUsername" Title="Channel Statistics by Username" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
     <Parameters>
-      <Text Id="Username" Title="Channel" Debug.DefaultValue="RioGrande51" Required="true"/>
+      <Text Id="Username" Title="Username" Debug.DefaultValue="RioGrande51" Required="true"/>
     </Parameters>
     <Fetch>
       <Fetch.Url>
@@ -103,15 +103,15 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ChannelStatisticsIds" Title="Channel Statistics by Ids" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
+  <RestConnector Id="ChannelStatisticsIds" Title="Channel Statistics" Group="Channels" HelpUrl="https://developers.google.com/youtube/v3/docs/channels/list">
     <Parameters>
-      <Text Id="Ids" Title="Channel Ids" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Required="true" Multiline="true"/>
+      <Text Id="Ids" Title="Channel URLs or Ids" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Required="true" Multiline="true"/>
     </Parameters>
     <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
     <Fetch>
       <Fetch.Url>
 				<![CDATA[
-					https://www.googleapis.com/youtube/v3/channels?id=@(FetchIds())&part=statistics,snippet
+					https://www.googleapis.com/youtube/v3/channels?id=@(FetchIds("channel"))&part=statistics,snippet
 				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
@@ -316,7 +316,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					https://www.googleapis.com/youtube/v3/playlists?id=@(FetchIds())&part=snippet,contentDetails
+					https://www.googleapis.com/youtube/v3/playlists?id=@(FetchIds("playlist"))&part=snippet,contentDetails
 				]]>
       </Fetch.Url>
       <Resource Id="Authorization"/>
@@ -341,7 +341,7 @@
 
   <RestConnector Id="PlaylistsFromChannels" Title="Playlists from Channels" Group="Playlists" HelpUrl="https://developers.google.com/youtube/v3/docs/search/listhttps://developers.google.com/youtube/v3/docs/playlists/list">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Id" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
+      <Text Id="ChannelId" Title="Channel URLs or Ids" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
     </Parameters>
     <Paging PageSize="50" EvenPages="False">
       <Parse>
@@ -353,7 +353,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-					https://www.googleapis.com/youtube/v3/playlists?channelId=@(Model.ChannelId)&part=snippet,contentDetails
+					https://www.googleapis.com/youtube/v3/playlists?channelId=@(FetchChannelId(Model.ChannelId))&part=snippet,contentDetails
 					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
 				]]>
       </Fetch.Url>
@@ -379,7 +379,7 @@
 
   <RestConnector Id="VideosFromChannels" Title="Videos from Channels" Group="Videos" HelpUrl="https://developers.google.com/youtube/v3/docs/search/list">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Ids" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
+      <Text Id="ChannelId" Title="Channel URLs or Ids" Required="true" Debug.DefaultValue="UC0aVoboXBUx2-tVIWHc3W2Q" Multiline="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
       <Select Id="Sorting" Title="Sorting" Required="false" DefaultValue="date">
         <DataSource>
@@ -398,7 +398,7 @@
       <Fetch.Url>
         <![CDATA[
 					https://www.googleapis.com/youtube/v3/search?&part=snippet&type=video
-					&channelId=@(Model.ChannelId)
+					&channelId=@(FetchChannelId(Model.ChannelId))
 					&order=@(Model.Sorting)
 					@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
 					{
@@ -480,7 +480,7 @@
 
   <RestConnector Id="VideoComments" Title="Comments on Videos" Group="Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
     <Parameters>
-      <Text Id="VideoId" Title="Video Ids" Required="true" Debug.DefaultValue="MbHQo4KkBWc" Multiline="true"/>
+      <Text Id="VideoId" Title="Video URLs or Ids" Required="true" Debug.DefaultValue="MbHQo4KkBWc" Multiline="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="time">
         <DataSource>
           <Item Id="time" Title="Time"/>
@@ -498,7 +498,7 @@
       <Fetch.Url>
         <![CDATA[
 					https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&textFormat=plainText
-					&videoId=@(Model.VideoId)
+					&videoId=@(FetchVideoId(Model.VideoId))
 					&order=@(Model.Sorting)
 					&maxResults=@(Model.PageCursor.NextTake)
 					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
@@ -525,7 +525,7 @@
 
   <RestConnector Id="ChannelComments" Title="Comments on Channels" Group="Comments" HelpUrl="https://developers.google.com/youtube/v3/docs/comments/list">
     <Parameters>
-      <Text Id="ChannelId" Title="Channel Ids" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w" Multiline="true"/>
+      <Text Id="ChannelId" Title="Channel URLs or Ids" Required="true" Debug.DefaultValue="UCC3L8QaxqEGUiBC252GHy3w" Multiline="true"/>
       <Select Id="Sorting" Title="Sorting" DefaultValue="time" >
         <DataSource>
           <Item Id="time" Title="Time"/>
@@ -543,7 +543,7 @@
       <Fetch.Url>
         <![CDATA[
 					https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&textFormat=plainText
-					&channelId=@(Model.ChannelId)
+					&channelId=@(FetchChannelId(Model.ChannelId))
 					&order=@(Model.Sorting)
 					&maxResults=@(Model.PageCursor.NextTake)
 					@(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextPageToken : "")
@@ -606,11 +606,10 @@
 
   <RestConnector Id="UserConverter" Title="Channel URL to Id" Group="Converters">
     <Parameters>
-      <Text Id="ChannelUrl" Title="Channel URL" Debug.DefaultValue="https://www.youtube.com/user/LionelY2K" Required="true"/>
+      <Text Id="ChannelUrl" Title="Channel URL" HelpText="Only works when channel id is present in the URL" Debug.DefaultValue="https://www.youtube.com/channel/UCLwNTXWEjVd2qIHLcXxQWxA" Required="true"/>
     </Parameters>
-    <Fetch Url="@(Model.ChannelUrl)"/>
     <Parse>
-      <Regex Id="ChannelId" Expr="&quot;https:\/\/www.youtube.com\/channel\/(.*?)&quot;"/>
+      <Compute Id="ChannelId" Expr="@(FetchChannelId(Model.ChannelUrl))"/>
     </Parse>
   </RestConnector>
 
@@ -618,17 +617,42 @@
     <Parameters>
       <Text Id="VideoUrl" Title="Video URL" Debug.DefaultValue="https://www.youtube.com/watch?v=APLCiryMFdk" Required="true"/>
     </Parameters>
-    <Fetch Url="@(Model.VideoUrl)"/>
     <Parse>
-      <Regex Id="VideoId" Expr="&quot;videoId\\&quot;:\\&quot;(.*?)\\"/>
+      <Compute Id="VideoId" Expr="@(FetchVideoId(Model.VideoUrl))"/>
     </Parse>
   </RestConnector>
 
   <RazorFunctions>
     <![CDATA[
-      string FetchIds() {
+      string FetchIds(string inputType) {
 				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
-        return string.Join(",",lines.Select((e) => Utils.UrlEncode(e)).ToArray());
+
+				if(inputType == "video")
+					return string.Join(",",lines.Select((e) => FetchVideoId(e)).ToArray());
+				else if(inputType == "channel")
+					return string.Join(",",lines.Select((e) => FetchChannelId(e)).ToArray());
+				else
+					return string.Join(",",lines.Select((e) => e).ToArray());
+			}
+
+			string FetchVideoId(string input) {
+				Regex regex = new Regex(@"^.*(youtu.be\/|v\/|e\/|u\/\w+\/|(embed|watch)\/|v=)([^#\&\?]*).*");
+
+				if(!regex.IsMatch(input))
+					return input;
+
+				Match match = regex.Match(input);
+				return match.Groups[3].Value;
+      }
+
+			string FetchChannelId(string input) {
+				Regex regex = new Regex(@"^(?:http|https):\/\/[a-zA-Z-]*\.{0,1}[a-zA-Z-]{3,}\.[a-z]{2,}\/channel\/([a-zA-Z0-9_\-]{3,24})");
+
+				if(!regex.IsMatch(input))
+					return input;
+
+				Match match = regex.Match(input);
+				return match.Groups[1].Value;
       }
     ]]>
   </RazorFunctions>
