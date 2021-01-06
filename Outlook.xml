@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Email" Title="Outlook" Id="Outlook" RequireVersion="9.3" LoginButton="https://seotoolsforexcel.com/logins/microsoft.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Outlook.xml" HelpUrl="http://seotoolsforexcel.com/outlook/">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <DefaultOAuthAuthenticator
+		StayAuthenticated="true"
+		TokenName="access_token"
+		AuthUrl="https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=0e2cfd8f-ddc6-429b-b152-fed75781a14e&amp;scope=https%3A%2F%2Fgraph.microsoft.com%2Fmail.read,https%3A%2F%2Fgraph.microsoft.com%2Fcontacts.read&amp;response_type=token&amp;redirect_uri={0}&amp;state=hf7FD437we89&amp;prompt=select_account"
+	/>
+
+	 <Resources>
+    <Resource Id="Paging">
+			<Paging PageSize="100" EvenPages="false">
+				<Parse>
+					<JsonPath Id="NextPageToken" Expr="['@@odata.nextLink']"/>
+				</Parse>
+			</Paging>
+    </Resource>
+    <Resource Id="HttpSettings">
+			<HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Bearer @(Model.Authenticator.Token)</Header>
+				</RequestHeaders>
+			</HttpSettings>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="$.error.message" Id="Error"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+	<RestConnector Id="InboxMessages" Title="Inbox Messages" HelpUrl="https://docs.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0">
+		<Resource Id="Paging"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				@{
+				string url = Model.PageCursor.Page == 0
+					? "https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages"
+						+ "?$select=subject,from,receivedDateTime,hasAttachments,sender"
+						+ "&$top=" + Model.PageCursor.NextTake
+						+ "&$orderby=receivedDateTime%20DESC"
+					: Model.NextPageToken;
+				}
+				@url
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.value[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="receivedDatetime" Id="Received" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Expr="subject" Id="Subject"/>
+				<JsonPath Expr="hasAttachments" Id="HasAttachments" Title="Attachments" Converter="Bool"/>
+        <JsonPath Expr="from.emailAddress.name" Id="FromName" Title="From Name"/>
+        <JsonPath Expr="from.emailAddress.address" Id="FromAddress" Title="From Address"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Contacts" Title="Contacts" HelpUrl="https://docs.microsoft.com/en-us/graph/api/user-list-contacts?view=graph-rest-1.0">
+    <Parameters>
+      <Text Id="Email" Title="Filter by Email address" Debug.DefaultValue="victor@seotoolsforexcel.com" Required="false"/>
+    </Parameters>
+		<Resource Id="Paging"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				@{
+				string emailFilter = !string.IsNullOrEmpty(Model.Email)
+					? "?$filter=emailAddresses/any(a:a/address%20eq%20'" + Model.Email + "')"
+					: string.Empty;
+				string url = Model.PageCursor.Page == 0
+					? "https://graph.microsoft.com/v1.0/me/contacts"
+						+ "?$top=" + Model.PageCursor.NextTake
+						+ emailFilter
+					: Model.NextPageToken;
+				}
+				@url
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.value[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="displayName" Id="Display Name"/>
+        <JsonPath Expr="givenName" Id="Given Name"/>
+        <JsonPath Expr="surname" Id="Surname"/>
+        <JsonPath Expr="emailAddresses[0].address" Id="Email"/>
+        <JsonPath Expr="createdTime" Id="Created" Converter="DateTime" DefaultValue=""/>
+        <JsonPath Expr="lastModified" Id="Modified" Converter="DateTime" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
