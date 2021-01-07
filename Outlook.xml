@@ -32,7 +32,7 @@
     </Resource>
   </Resources>
 
-	<RestConnector Id="InboxMessages" Title="Inbox Messages" HelpUrl="https://docs.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0">
+	<RestConnector Id="MailFolders"  HelpUrl="https://docs.microsoft.com/en-us/graph/api/user-list-mailfolders?view=graph-rest-1.0">
 		<Resource Id="Paging"/>
 		<Fetch>
 			<Resource Id="HttpSettings"/>
@@ -40,9 +40,40 @@
         <![CDATA[
 				@{
 				string url = Model.PageCursor.Page == 0
-					? "https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages"
-						+ "?$select=subject,from,receivedDateTime,hasAttachments,sender"
-						+ "&$top=" + Model.PageCursor.NextTake
+					? "https://graph.microsoft.com/v1.0/me/mailFolders"
+						+ "?top=" + Model.PageCursor.NextTake
+						+ "&$filter=totalItemCount%20gt%20 0"
+						+ "&$orderby=totalItemCount%20DESC"
+					: Model.NextPageToken;
+				}
+				@url
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.value[*]">
+        <JsonPath Expr="id" Id="FolderId" Title="Folder Id"/>
+        <JsonPath Expr="displayName" Id="FolderDisplayName" Title="Folder Display Name"/>
+        <JsonPath Expr="totalItemCount" Id="Items"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="Messages" Title="Messages" HelpUrl="https://docs.microsoft.com/en-us/graph/api/resources/message?view=graph-rest-1.0">
+		<Parameters>
+			<Text Id="MailFolder" Title="Mail Folder" Select.Connector="MailFolders" HelpText="Optional, default is 'Inbox'"/>
+		</Parameters>
+		<Resource Id="Paging"/>
+		<Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				@{
+				string mailFolder = !string.IsNullOrEmpty(Model.MailFolder) ? Model.MailFolder : "inbox";
+				string url = Model.PageCursor.Page == 0
+					? "https://graph.microsoft.com/v1.0/me/mailfolders/" + mailFolder + "/messages"
+						+ "?top=" + Model.PageCursor.NextTake
 						+ "&$orderby=receivedDateTime%20DESC"
 					: Model.NextPageToken;
 				}
@@ -52,12 +83,20 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.value[*]">
-        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="id" Id="EmailId" Title="Email Id"/>
         <JsonPath Expr="receivedDatetime" Id="Received" Converter="DateTime" DefaultValue=""/>
         <JsonPath Expr="subject" Id="Subject"/>
+				<JsonPath Expr="bodyPreview" Id="BodyPreview" Title="Body Preview"/>
+				<JsonPath Expr="importance" Id="Importance"/>
+				<JsonPath Expr="isRead" Id="IsRead" Title="Is Read" Converter="Bool"/>
+				<JsonPath Expr="isDraft" Id="IsDraft" Title="Is Draft" Converter="Bool"/>
 				<JsonPath Expr="hasAttachments" Id="HasAttachments" Title="Attachments" Converter="Bool"/>
+				<JsonPath Expr="conversationId" Id="ConversationId" Title="Conversation Id"/>
         <JsonPath Expr="from.emailAddress.name" Id="FromName" Title="From Name"/>
         <JsonPath Expr="from.emailAddress.address" Id="FromAddress" Title="From Address"/>
+				<JsonPath Expr="csv(toRecipients[*].emailAddress.address)" Id="ToRecipients" Title="To Recipients" DefaultValue=""/>
+				<JsonPath Expr="csv(ccRecipients[*].emailAddress.address)" Id="CCRecipients" Title="CC Recipients" DefaultValue=""/>
+				<JsonPath Expr="csv(bccRecipients[*].emailAddress.address)" Id="BCCRecipients" Title="BCC Recipients" DefaultValue=""/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -106,10 +145,10 @@
         <JsonPath Expr="officeLocation" Id="OfficeLocation" Title="Office Location"/>
         <JsonPath Expr="profession" Id="Profession"/>
         <JsonPath Expr="businessHomePage" Id="BusinessHomePage" Title="Business Homepage"/>
-        <JsonPath Expr="manager" Id="Manager"/>				
+        <JsonPath Expr="manager" Id="Manager"/>
         <JsonPath Expr="createdTime" Id="Created" Converter="DateTime" DefaultValue=""/>
         <JsonPath Expr="lastModified" Id="Modified" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="personalNotes" Id="PersonalNotes" Title="Personal Notes"/>				
+        <JsonPath Expr="personalNotes" Id="PersonalNotes" Title="Personal Notes"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
