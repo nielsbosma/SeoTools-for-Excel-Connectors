@@ -30,7 +30,7 @@
       <Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="2000" Minimum="0" Maximum="20000"/>
 			<Checkbox Id="Safe" Title="Safe Search" HelpText="filter out explicit content in Google's search results"/>
     </Parameters>
-    <Paging PageSize="10" EvenPages="False"/>
+    <Paging PageSize="8" EvenPages="False"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -45,33 +45,49 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//a/h3/..">
-        <Xpath Expr="." Id="Title"/>
-      </XPath>
-      <XPath Expr="//div[@@class='g']/div/div/div/span">
-        <Xpath Expr="." Id="Description"/>
-      </XPath>
-			<XPath Expr="//a/h3/..">
-        <Compute Id="URL" Title="URL" Expr="@Uri.UnescapeDataString(Model.UrlRaw)">
-          <Xpath Expr="." Attribute="href" Id="UrlRaw"/>
-        </Compute>
-      </XPath>
-			<XPath Expr="//a/h3/..">
-        <Compute Id="Domain" Title="Domain" Expr="@(Utils.UrlProperty(Uri.UnescapeDataString(Model.Inp)).Domain)">
-          <Xpath Expr="." Attribute="href" Id="Inp"/>
-        </Compute>
-      </XPath>
-      <XPath Expr="//a/h3/../div/cite">
-				<Xpath Expr="." Id="Path" DefaultValue=""/>
-      </XPath>
-			<XPath Expr="//div[@@class='g']/div/div/div/span">
-				<Compute Expr="@GetUniqueBoldedWords()" Id="Bolded" Title="Bolded Words" Converter="Auto" DefaultValue="">
-					<Xpath Expr="csv(span/em)" Id="Inp"/>
+      <XPath Expr="//a/h3/../../..">
+        <Xpath Expr="div/a/h3" Id="Title"/>
+        <Xpath Expr="div[3]/div" Id="Description"/>
+        <Compute Id="URL" Title="URL">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = "";
+							Regex regex = new Regex(@"url=(.*?)&amp;ved=");
+
+							if(regex.IsMatch(Model.UrlRaw))
+							{
+								Match match = regex.Match(Model.UrlRaw);
+								output = match.Groups[1].Value;
+							}
+						}
+						@Utils.UrlDecode(Utils.UrlDecode(output))
+						]]>
+					</Compute.Expr>
+        	<Xpath Expr="div/a" Attribute="href" Id="UrlRaw"/>
+				</Compute>
+        <Compute Id="Domain" Title="Domain">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = "";
+							Regex regex = new Regex(@"url=(.*?)&amp;ved=");
+
+							if(regex.IsMatch(Model.UrlRaw))
+							{
+								Match match = regex.Match(Model.UrlRaw);
+								output = match.Groups[1].Value;
+							}
+						}
+						@Utils.UrlProperty(Utils.UrlDecode(Utils.UrlDecode(output))).Domain
+						]]>
+					</Compute.Expr>
+        	<Xpath Expr="div/a" Attribute="href" Id="UrlRaw"/>
 				</Compute>
       </XPath>
     </Parse>
   </RestConnector>
-
+<!--
   <RestConnector Id="NumberOfResults" Title="Number of Results" HelpText="Returns Number Search Results">
     <Parameters>
       <Text Id="Query" Title="Query" Debug.DefaultValue="zlatan" Required="true"/>
@@ -91,7 +107,26 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@id='result-stats']/text()" Converter="Int" DefaultValue="0"/>
+        <Compute Id="Hits">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+							string output = "";
+							Regex regex = new Regex(@"\w+\s(.*?)\s[a-z\s]+\(");
+
+							if(regex.IsMatch(Model.Inp))
+							{
+								Match match = regex.Match(Model.Inp);
+								output = match.Value;
+							}
+						}
+						@output
+						]]>
+					</Compute.Expr>
+        	<Xpath Expr="div/a" Attribute="href" Id="Inp" DefaultValue=""/>
+
+				</Compute>
+					        <Xpath Expr="//div[@@id='result-stats']" Attribute="href" Id="Infdfp" DefaultValue=""/>
     </Parse>
   </RestConnector>
 
@@ -117,7 +152,7 @@
       <XPath Expr="//div[@@id='result-stats']/text()" Converter="Int"/>
     </Parse>
   </RestConnector>
-
+-->
   <RazorFunctions>
     <![CDATA[
 		string GetUniqueBoldedWords() {
