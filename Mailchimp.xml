@@ -118,6 +118,29 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="CampaignsStatisticsHidden" Hidden="true">
+    <Parameters>
+      <Text Id="CampaignId"/>
+    </Parameters>
+		<Resource Id="Prepare"/>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(Model.Base)/3.0/reports/@Model.CampaignId
+				?sort_field=send_time
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Id="Title" Expr="campaign_title"/>
+			<JsonPath Id="Subject" Expr="subject_line"/>
+			<JsonPath Id="Send" Expr="send_time"/>
+			<JsonPath Id="Clicks" Expr="clicks.clicks_total"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="CampaignsList" Title="Campaigns List" Group="Campaigns" HelpText="Get all campaigns in an account." HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
     <Parameters>
       <Text Id="ListId" Title="Filter by List Id" Required="false" HelpText="Leave Empty to include all Lists" Select.Connector="ListsHidden"/>
@@ -333,7 +356,7 @@
       <JsonPath Expr="$.abuse_reports[*]">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
         <JsonPath Title="Date" Id="Date" Expr="date" Converter="DateTime" HelpText="Date for the abuse report"/>
-        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>				
+        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -344,6 +367,10 @@
       <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
     </Parameters>
     <Resource Id="Paging"/>
+		<Prepare>
+			<Connector Id="GetBaseUrl"/>
+			<Connector Id="CampaignsStatisticsHidden"/>
+		</Prepare>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
@@ -354,13 +381,16 @@
         ]]>
       </Fetch.Url>
     </Fetch>
-		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.members[*]">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
         <JsonPath Title="Opens" Id="Opens" Expr="opens_count" Converter="Long" HelpText="The total number of times the this campaign was opened by the list member."/>
         <JsonPath Title="Open" Id="Open" Expr="opens[0].timestamp" Converter="DateTime" HelpText="Timestamp for member opening the campaign."/>
-        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>				
+        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>
+				<Compute Expr="@Model.Title" Id="CampaignTitle" Title="Campaign Title"/>
+				<Compute Expr="@Model.Subject" Id="CampaignSubject" Title="Campaign Subject"/>
+				<Compute Expr="@Model.Send" Id="CampaignSend" Title="Campaign Send" Converter="DateTime"/>
+				<Compute Expr="@Model.Clicks" Id="CampaignClicks" Title="Campaign Emails Sent" Converter="Int"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
