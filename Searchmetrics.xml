@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Suite Category="SEO" Title="Searchmetrics" Id="Searchmetrics" RequireVersion="9.5.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="http://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
+<Suite Category="SEO" Title="Searchmetrics" Id="Searchmetrics" RequireVersion="9.5.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Searchmetrics.xml" HelpUrl="https://seotoolsforexcel.com/searchmetrics/" HelpText="Documentation">
 
-  <Author Name="Niels Bosma" Url="http://seotoolsforexcel.com"/>
+  <Author Name="Niels Bosma" Url="https://seotoolsforexcel.com"/>
 
-  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/searchmetrics/">
+  <Settings HelpText="What's this?" HelpUrl="https://seotoolsforexcel.com/searchmetrics/">
     <Text Id="OAuthConsumerKey" Title="API Key" Required="true"/>
     <Text Id="OAuthConsumerSecret" Title="API Secret" Required="true"/>
   </Settings>
@@ -60,18 +60,27 @@
 				<Connector Id="Authorization"/>
 			</Prepare>
     </Resource>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+				<RequestHeaders>
+					<Header Name='User-Agent'>bosma_interactive/SeoTools</Header>
+				</RequestHeaders>
+      </HttpSettings>
+    </Resource>
   </Resources>
 
-  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="http://api.searchmetrics.com/v3/documentation/start" Hidden="true">
-    <Fetch Url="http://api.searchmetrics.com/v3/token">
+  <RestConnector Id="Authorization" Title="Authorization" HelpUrl="https://developer.searchmetrics.com/docs/apiv4-documentation/docs/Getting-Started.md" Hidden="true">
+    <Fetch Url="https://api.searchmetrics.com/v4/token">
       <HttpSettings>
 				<Cache>True</Cache>
         <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
         <RequestMethod>POST</RequestMethod>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+					<Header Name='User-Agent'>bosma_interactive/SeoTools</Header>
+				</RequestHeaders>
         <RequestForm>
           <Param Name='grant_type'>client_credentials</Param>
-          <Param Name='client_id'>@(Model.OAuthConsumerKey)</Param>
-          <Param Name='client_secret'>@(Model.OAuthConsumerSecret)</Param>
         </RequestForm>
       </HttpSettings>
     </Fetch>
@@ -80,7 +89,7 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Domain Keyword Count" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetCountDomainKeyword" HelpText="Number of organic keywords for a given domain.">
+  <RestConnector Id="ResearchOrganicGetCountDomainKeyword" Title="Domain Keyword Count" Group="Organic Research" HelpText="Number of organic keywords for a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
@@ -88,9 +97,10 @@
     </Parameters>
 		<Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetCountDomainKeyword
+        https://api.searchmetrics.com/v4/ResearchOrganicGetCountDomainKeyword
 				@(!string.IsNullOrEmpty(Model.FilterMonth) ? "Filter" : "").json?access_token=@(Model.Authorization)
         &countrycode=@(Model.Country)
         &url=@(Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host))
@@ -104,7 +114,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListCompetitors" Title="Competitors in Organic Search" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListCompetitors" HelpText="Competitor domains in the organic search.">
+  <RestConnector Id="ResearchOrganicGetListCompetitors" Title="Competitors in Organic Search" Group="Organic Research" HelpText="Competitor domains in the organic search.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -113,9 +123,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListCompetitors.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListCompetitors.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -140,7 +151,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListIndustrySpread" Title="Domain Keyword Industry Spread" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListIndustrySpread" HelpText="Industry sector classification of a domain">
+  <RestConnector Id="ResearchOrganicGetListIndustrySpread" Title="Domain Keyword Industry Spread" Group="Organic Research" HelpText="Industry sector classification of a domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
@@ -148,9 +159,10 @@
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListIndustrySpread.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListIndustrySpread.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         ]]>
@@ -195,7 +207,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListSubdomains" Title="Subdomains for Domain" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSubdomains" HelpText="Subdomains for one given domain">
+  <RestConnector Id="ResearchOrganicGetListSubdomains" Title="Subdomains for Domain" Group="Organic Research" HelpText="Subdomains for one given domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -204,9 +216,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListSubdomains.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListSubdomains.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -224,7 +237,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListRankingsDomain" Title="Domain Keyword Rankings" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListRankingsDomain" HelpText="Keyword rankings for a given domain in organic search results.">
+  <RestConnector Id="ResearchOrganicGetListRankingsDomain" Title="Domain Keyword Rankings" Group="Organic Research" HelpText="Keyword rankings for a given domain in organic search results.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain" Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -233,9 +246,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListRankingsDomain.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListRankingsDomain.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -264,7 +278,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListRankingsKeyword" Title="Keyword Rankings" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListRankingsKeyword" HelpText="Rankings for a given keyword in organic search results.">
+  <RestConnector Id="ResearchOrganicGetListRankingsKeyword" Title="Keyword Rankings" Group="Organic Research" HelpText="Rankings for a given keyword in organic search results.">
     <Parameters>
       <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="dogs" Required="true" Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
@@ -274,9 +288,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListRankingsKeyword
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListRankingsKeyword
         @(!Utils.IsNullDate(Model.DisplayDate) ? "Historic" : "").json?access_token=@(Model.Authorization)
         &keyword=@(Utils.UrlEncode(Model.Keyword))
         &countrycode=@Model.Country
@@ -301,15 +316,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListSeoVisibilityCountry" Title="SEO Visibility by Country" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityCountry" HelpText="Searchmetrics SEO Visibility per country for a given URL.">
+  <RestConnector Id="ResearchOrganicGetListSeoVisibilityCountry" Title="SEO Visibility by Country" Group="Organic Research" HelpText="Searchmetrics SEO Visibility per country for a given URL.">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="http://searchmetrics.de" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="http://microsoft.com" Required="true" HelpText="Either a domain or a subdomain."/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListSeoVisibilityCountry.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListSeoVisibilityCountry.json?access_token=@(Model.Authorization)
         &url=@(Utils.UrlEncode(Model.Url))
         ]]>
       </Fetch.Url>
@@ -323,15 +339,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListSeoVisibilityTop100Losers" Title="Organic Visibility Top100 Losers" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityTop100Losers" HelpText="Top100 Searchmetrics Organic Visibility losers in a given country">
+  <RestConnector Id="ResearchOrganicGetListSeoVisibilityTop100Losers" Title="Organic Visibility Top100 Losers" Group="Organic Research" HelpText="Top100 Searchmetrics Organic Visibility losers in a given country">
     <Parameters>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListSeoVisibilityTop100Losers.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListSeoVisibilityTop100Losers.json?access_token=@(Model.Authorization)
         &countrycode=@Model.Country
         ]]>
       </Fetch.Url>
@@ -348,15 +365,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListSeoVisibilityTop100Winners" Title="Organic Visibility Top100 Winners" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityTop100Winners" HelpText="Top100 Organic Visibility winners in a given country">
+  <RestConnector Id="ResearchOrganicGetListSeoVisibilityTop100Winners" Title="Organic Visibility Top100 Winners" Group="Organic Research" HelpText="Top100 Organic Visibility winners in a given country">
     <Parameters>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListSeoVisibilityTop100Winners.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListSeoVisibilityTop100Winners.json?access_token=@(Model.Authorization)
         &countrycode=@Model.Country
         ]]>
       </Fetch.Url>
@@ -373,16 +391,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetValueSeoVisibility" Title="Organic Visibility" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetValueSeoVisibility" HelpText="Searchmetrics SEO Visibility for a given URL in a given country.">
+  <RestConnector Id="ResearchOrganicGetValueSeoVisibility" Title="Organic Visibility" Group="Organic Research" HelpText="Searchmetrics SEO Visibility for a given URL in a given country.">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="http://searchmetrics.de" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://microsoft.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetValueSeoVisibility.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetValueSeoVisibility.json?access_token=@(Model.Authorization)
         &url=@(Utils.UrlEncode(Model.Url))
         &countrycode=@Model.Country
         ]]>
@@ -397,17 +416,18 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetListBacklinks" Title="Backlinks for Domain" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListBacklinks" HelpText="Number of backlinks for a given domain, subdomain or URL.">
+  <RestConnector Id="ResearchLinksGetListBacklinks" Title="Backlinks for Domain" Group="Link Research" HelpText="Number of backlinks for a given domain, subdomain or URL.">
     <Parameters>
-      <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" Multiline="true"/>
+      <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetListBacklinks.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetListBacklinks.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
@@ -436,16 +456,17 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
-  <RestConnector Id="ResearchLinksGetValuePageStrength" Title="Page Strength Lookup" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetValuePageStrength" HelpText="Returns the Searchmetrics Page Strength (SPS) an indicator for the value of a link from the respective page.">
+
+  <RestConnector Id="ResearchLinksGetValuePageStrength" Title="Page Strength Lookup" Group="Link Research" HelpText="Returns the Searchmetrics Page Strength (SPS) an indicator for the value of a link from the respective page.">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true" />
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" />
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetValuePageStrength.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetValuePageStrength.json?access_token=@(Model.Authorization)
         &url=@(Utils.UrlEncode(Model.Url))
         ]]>
       </Fetch.Url>
@@ -456,16 +477,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetCountDeeplinkRatio" Title="Deeplink Ratio" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetCountDeeplinkRatio" HelpText="Ratio of homepage links and deeplinks for a given domain">
+  <RestConnector Id="ResearchLinksGetCountDeeplinkRatio" Title="Deeplink Ratio" Group="Link Research" HelpText="Ratio of homepage links and deeplinks for a given domain">
     <Parameters>
-      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="http://seotoolsforexcel.com" Required="true"/>
+      <Text Id="Url" Title="Domain/URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetCountDeeplinkRatio.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetCountDeeplinkRatio.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
       ]]>
       </Fetch.Url>
@@ -477,16 +499,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetValueSeoRank" Title="SEO Rank for Domain" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetValueSeoRank" HelpText="SEO visibility rank of the domain (SEORank).">
+  <RestConnector Id="ResearchOrganicGetValueSeoRank" Title="SEO Rank for Domain" Group="Organic Research" HelpText="SEO visibility rank of the domain (SEORank).">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetValueSeoRank.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetValueSeoRank.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
       ]]>
@@ -502,15 +525,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetValueSeoVisibilityWorld" Title="Global Visibility for Domain" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetValueSeoVisibilityWorld" HelpText="Searchmetrics SEO Worldwide Visibility for a given URL.">
+  <RestConnector Id="ResearchOrganicGetValueSeoVisibilityWorld" Title="Global Visibility for Domain" Group="Organic Research" HelpText="Searchmetrics SEO Worldwide Visibility for a given URL.">
     <Parameters>
       <Text Id="Domain" Title="Domain or URL" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetValueSeoVisibilityWorld.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetValueSeoVisibilityWorld.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Domain)
       ]]>
       </Fetch.Url>
@@ -521,7 +545,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListKeywordInfo" Title="Info about Keyword" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListKeywordinfo" HelpText="This call returns search-related information for a given keyword for a given country for the current month.">
+  <RestConnector Id="ResearchKeywordsGetListKeywordInfo" Title="Info about Keyword" Group="Keyword Research" HelpText="This call returns search-related information for a given keyword for a given country for the current month.">
     <Parameters>
       <Text Id="keyword" Title="Keyword" Debug.DefaultValue="boat" Required="true"/>
       <Resource Id="SelectCountry"/>
@@ -529,9 +553,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListKeywordinfo.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListKeywordinfo.json?access_token=@(Model.Authorization)
         &keyword=@(Utils.UrlEncode(Model.keyword).ToLower())
         &countrycode=@Model.Country
         &currency=@(Model.Currency)
@@ -553,7 +578,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListLosers" Title="Loser-Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListLosers" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain">
+  <RestConnector Id="ResearchKeywordsGetListLosers" Title="Loser-Keywords" Group="Keyword Research" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -562,9 +587,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListLosers.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListLosers.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -590,7 +616,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListLosersHistoric" Title="Losers-Keywords History" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListLosersHistoric" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain for a given date">
+  <RestConnector Id="ResearchKeywordsGetListLosersHistoric" Title="Losers-Keywords History" Group="Keyword Research" HelpText="Keywords with the highest absolute losses in organic search traffic for a given domain for a given date">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
@@ -600,9 +626,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListLosersHistoric.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListLosersHistoric.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &date=&date=@Model.DisplayDate.ToString("yyyMMdd")
@@ -629,7 +656,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListWinners" Title="Winner-Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListWinners" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain">
+  <RestConnector Id="ResearchKeywordsGetListWinners" Title="Winner-Keywords" Group="Keyword Research" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -638,9 +665,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListWinners.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListWinners.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -666,7 +694,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListWinnersHistoric" Title="Winner-Keywords History" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListWInnersHistoric" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain with access to historic data">
+  <RestConnector Id="ResearchKeywordsGetListWinnersHistoric" Title="Winner-Keywords History" Group="Keyword Research" HelpText="Keywords with the highest absolute gains in organic search traffic for a given domain with access to historic data">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Date Id="DisplayDate" Title="Display Date" Required="false" Nullable="true"/>
@@ -676,9 +704,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListWinnersHistoric.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListWinnersHistoric.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &date=&date=@Model.DisplayDate.ToString("yyyMMdd")
@@ -705,7 +734,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetListAdVariations" Title="Ad Variations" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetListAdVariations" HelpText="Get a list of different ad variations">
+  <RestConnector Id="ResearchPaidGetListAdVariations" Title="Ad Variations" Group="Paid Research" HelpText="Get a list of different ad variations">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -714,9 +743,11 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetListAdVariations.json?access_token=@(Model.Authorization)
+
+        https://api.searchmetrics.com/v4/ResearchPaidGetListAdVariations.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -734,7 +765,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetValueTrafficValue" Title="Traffic Value Last Month" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetValueTrafficValue" HelpText="Estimated paid value of organic search traffic.">
+  <RestConnector Id="ResearchOrganicGetValueTrafficValue" Title="Traffic Value Last Month" Group="Organic Research" HelpText="Estimated paid value of organic search traffic.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="cnn.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
@@ -742,9 +773,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetValueTrafficValue.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetValueTrafficValue.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &currency=@(Model.Currency)
@@ -752,12 +784,12 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-        <JsonPath Expr="$..traffic_value" Id="Value" Title="Value" Converter="Double" HelpText="Estimated paid value of organic search traffic."/>
+        <JsonPath Expr="$.response" Id="Value" Converter="Int"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchKeywordsGetListSimilarKeywords" Title="Similar Keywords" Group="Keyword Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchKeywordsGetListSimilarKeywords" HelpText="List of keywords that contain a selected keyword.">
+  <RestConnector Id="ResearchKeywordsGetListSimilarKeywords" Title="Similar Keywords" Group="Keyword Research" HelpText="List of keywords that contain a selected keyword.">
     <Parameters>
       <Text Id="Keyword" Title="Keyword(s)" Debug.DefaultValue="boat" Required="true" Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -766,9 +798,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Keyword" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchKeywordsGetListSimilarKeywords.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchKeywordsGetListSimilarKeywords.json?access_token=@(Model.Authorization)
         &keyword=@Utils.UrlEncode(Model.Keyword.ToLower())
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -791,16 +824,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetCountDomainKeyword" Title="Domain Keyword Count" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetCountDomainKeyword" HelpText="Number of paid keywords for a domain in a given country.">
+  <RestConnector Id="ResearchPaidGetCountDomainKeyword" Title="Domain Keyword Count" Group="Paid Research" HelpText="Number of paid keywords for a domain in a given country.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetCountDomainKeyword.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetCountDomainKeyword.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         ]]>
@@ -812,7 +846,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetListKeywords" Title="Paid Keywords for Domain" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/api-calls/service/ResearchPaidGetListKeywords" HelpText="Paid keywords with advertisements for a given domain.">
+  <RestConnector Id="ResearchPaidGetListKeywords" Title="Paid Keywords for Domain" Group="Paid Research" HelpText="Paid keywords with advertisements for a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -821,9 +855,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetListKeywords.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetListKeywords.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &limit=@(Model.PageCursor.PageSize)
@@ -847,7 +882,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetListCompetitors" Title="Competitors in Paid Search" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetListCompetitors" HelpText="Competitor domains in the paid search.">
+  <RestConnector Id="ResearchPaidGetListCompetitors" Title="Competitors in Paid Search" Group="Paid Research" HelpText="Competitor domains in the paid search.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -857,9 +892,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetListCompetitors.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetListCompetitors.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &currency=@(Model.Currency)
@@ -885,7 +921,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetValuePaidKpis" Title="Paid Search KPIs" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetValuePaidKpis" HelpText="Collection of paid search KPIs: paid traffic, ad budget, clicks per day, average CPC, Paid Rank.">
+  <RestConnector Id="ResearchPaidGetValuePaidKpis" Title="Paid Search KPIs" Group="Paid Research" HelpText="Collection of paid search KPIs: paid traffic, ad budget, clicks per day, average CPC, Paid Rank.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
@@ -893,9 +929,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetValuePaidKpis.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetValuePaidKpis.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &currency=@(Model.Currency)
@@ -912,16 +949,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetValuePaidRank" Title="Paid Visibility Rank for Domain" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetValuePaidRank" HelpText="Searchmetrics Paid Visibility rank of the domain">
+  <RestConnector Id="ResearchPaidGetValuePaidRank" Title="Paid Visibility Rank for Domain" Group="Paid Research" HelpText="Searchmetrics Paid Visibility rank of the domain">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetValuePaidRank.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetValuePaidRank.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         ]]>
@@ -937,16 +975,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchPaidGetValuePaidVisibility" Title="Paid Visibility for URL" Group="Paid Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchPaidGetValuePaidVisibility" HelpText="Searchmetrics Paid Visibility for a given URL and a given country.">
+  <RestConnector Id="ResearchPaidGetValuePaidVisibility" Title="Paid Visibility for URL" Group="Paid Research" HelpText="Searchmetrics Paid Visibility for a given URL and a given country.">
     <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="http://searchmetrics.de" Required="true" HelpText="Either a domain or a subdomain."/>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://microsoft.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchPaidGetValuePaidVisibility.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchPaidGetValuePaidVisibility.json?access_token=@(Model.Authorization)
         &url=@(Utils.UrlEncode(Model.Url))
         &countrycode=@Model.Country
         ]]>
@@ -961,15 +1000,16 @@
 		<Resource Id="Fail"/>
 	</RestConnector>
 
-  <RestConnector Id="ResearchLinksGetCountBacklinks" Title="Backlinks Count" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetCountBacklinks" HelpText="Number of backlinks for a given domain, subdomain or URL.">
+  <RestConnector Id="ResearchLinksGetCountBacklinks" Title="Backlinks Count" Group="Link Research" HelpText="Number of backlinks for a given domain, subdomain or URL.">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Can be either a domain, a subdomain or a page."/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetCountBacklinks.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetCountBacklinks.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         ]]>
       </Fetch.Url>
@@ -980,15 +1020,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetCountReferringDomains" Title="Referring Domains Count" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetCountReferringDomains" HelpText="Number of referring domains for a given URL. Number of referring domains for a given URL (Domain popularity).">
+  <RestConnector Id="ResearchLinksGetCountReferringDomains" Title="Referring Domains Count" Group="Link Research" HelpText="Number of referring domains for a given URL. Number of referring domains for a given URL (Domain popularity).">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Can be either a domain, a subdomain or a page."/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetCountReferringDomains.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetCountReferringDomains.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         ]]>
       </Fetch.Url>
@@ -1001,15 +1042,16 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetCountReferringIps" Title="Referring IPs Count" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetCountReferringIps" HelpText="Number of referring IPs for a given URL (IP popularity).">
+  <RestConnector Id="ResearchLinksGetCountReferringIps" Title="Referring IPs Count" Group="Link Research" HelpText="Number of referring IPs for a given URL (IP popularity).">
     <Parameters>
       <Text Id="Url" Title="URL" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Can be either a domain, a subdomain or a page."/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetCountReferringIps.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetCountReferringIps.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         ]]>
       </Fetch.Url>
@@ -1024,7 +1066,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetListLinkedPages" Title="Linked Pages for URL" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListLinkedPages" HelpText="List of pages of a given URL with links from external pages.">
+  <RestConnector Id="ResearchLinksGetListLinkedPages" Title="Linked Pages for URL" Group="Link Research" HelpText="List of pages of a given URL with links from external pages.">
     <Parameters>
       <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
@@ -1032,9 +1074,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetListLinkedPages.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetListLinkedPages.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
@@ -1053,7 +1096,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchLinksGetListLinktext" Title="Most Frequent Anchor Texts" Group="Link Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchLinksGetListLinktext" HelpText="Most frequently used link anchor texts for a given URL.">
+  <RestConnector Id="ResearchLinksGetListLinktext" Title="Most Frequent Anchor Texts" Group="Link Research" HelpText="Most frequently used link anchor texts for a given URL.">
     <Parameters>
       <Text Id="Url" Title="Domain/URL(s)" Debug.DefaultValue="seotoolsforexcel.com" Required="true" Multiline="true"/>
     </Parameters>
@@ -1061,9 +1104,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchLinksGetListLinktext.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchLinksGetListLinktext.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Model.Url)
         &limit=@(Model.PageCursor.PageSize)
         &offset=@(Model.PageCursor.NextSkip)
@@ -1073,7 +1117,7 @@
     <Parse>
       <JsonPath Expr="response[*]">
         <JsonPath Expr="anchortext" Id="anchortext" Title="Anchor Text" Converter="String"/>
-        <JsonPath Expr="frequency" Id="frequency" Title="Frequency" Converter="String" HelpText="Absolute total frequency of the anchor text."/>
+        <JsonPath Expr="frequency" Id="frequency" Title="Frequency" Converter="Auto" HelpText="Absolute total frequency of the anchor text."/>
         <JsonPath Expr="percentage" Id="percentage" Title="Percentage" Converter="Double" HelpText="Percentual frequency of the anchor text in relation to all anchor texts."/>
         <JsonPath Expr="refdoms" Id="refdoms" Title="Referring Domains" Converter="Int" HelpText="Number of referring domains with the respective anchor text."/>
         <Compute Expr="@Model.Url" Id="Input" Title="Input Url" Checked="false"/>
@@ -1082,7 +1126,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchContentGetListLoserUrls" Title="Loser-URLs for Domain" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetListLoserUrls" HelpText="Get the list of the loser urls of a given domain.">
+  <RestConnector Id="ResearchContentGetListLoserUrls" Title="Loser-URLs for Domain" Group="Content Research" HelpText="Get the list of the loser urls of a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -1091,9 +1135,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchContentGetListLoserUrls.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchContentGetListLoserUrls.json?access_token=@(Model.Authorization)
         &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &keyword_limit=0
@@ -1119,7 +1164,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchContentGetListWinnerUrls" Title="Winner-URLs for Domain" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetListWinnerUrls" HelpText="Get the list of the winner urls of a given domain.">
+  <RestConnector Id="ResearchContentGetListWinnerUrls" Title="Winner-URLs for Domain" Group="Content Research" HelpText="Get the list of the winner urls of a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain(s)" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain." Multiline="true"/>
       <Resource Id="SelectCountry"/>
@@ -1128,9 +1173,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100"/>
     <Batch Parameter="Domain" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchContentGetListWinnerUrls.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchContentGetListWinnerUrls.json?access_token=@(Model.Authorization)
         &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &keyword_limit=0
@@ -1156,7 +1202,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchContentGetValueSeoValueDomain" Title="SEO Value &amp; Potential" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetValueSeoValue" HelpText="Get the SEO value and the SEO value potential of a given domain.">
+  <RestConnector Id="ResearchContentGetValueSeoValueDomain" Title="SEO Value &amp; Potential" Group="Content Research" HelpText="Get the SEO value and the SEO value potential of a given domain.">
     <Parameters>
       <Text Id="Input" Title="Domain or URL" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Select Id="InputType" DefaultValue="domain">
@@ -1170,9 +1216,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchContentGetValueSeoValue.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchContentGetValueSeoValue.json?access_token=@(Model.Authorization)
         @(Model.InputType == "domain" ? "&domain=" + Utils.UrlEncode(Utils.UrlProperty(Model.Input).Host) : "&url=" + Utils.UrlEncode(Model.Input))
         &countrycode=@Model.Country
         &currency=@(Model.Currency)
@@ -1186,16 +1233,17 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchContentGetValueTrafficIndex" Title="Traffic Index" Group="Content Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchContentGetValueTrafficIndex" HelpText="Get the value of traffic index and traffic index potential of a given domain.">
+  <RestConnector Id="ResearchContentGetValueTrafficIndex" Title="Traffic Index" Group="Content Research" HelpText="Get the value of traffic index and traffic index potential of a given domain.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="searchmetrics.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchContentGetValueTrafficIndex.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchContentGetValueTrafficIndex.json?access_token=@(Model.Authorization)
         &domain=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         ]]>
@@ -1208,7 +1256,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ResearchOrganicGetListSeoVisibilityHistoric" Title="Historic SEO Visibility" Group="Organic Research" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ResearchOrganicGetListSeoVisibilityHistoric" HelpText="Searchmetrics SEO Visibility for a given URL in a given country in a given timeframe.">
+  <RestConnector Id="ResearchOrganicGetListSeoVisibilityHistoric" Title="Historic SEO Visibility" Group="Organic Research" HelpText="Searchmetrics SEO Visibility for a given URL in a given country in a given timeframe.">
     <Parameters>
       <Text Id="Domain" Title="Domain" Debug.DefaultValue="seotoolsforexcel.com" Required="true" HelpText="Either a domain or a subdomain."/>
       <Resource Id="SelectCountry"/>
@@ -1216,9 +1264,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ResearchOrganicGetListSeoVisibilityHistoric.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ResearchOrganicGetListSeoVisibilityHistoric.json?access_token=@(Model.Authorization)
         &url=@Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Host)
         &countrycode=@Model.Country
         &date_from=@(Model.DateInterval.StartDate.ToString("yyyyMMdd"))
@@ -1235,12 +1284,13 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AdminStatusGetValueAvailableCredits" Title="Available Credits" Group="Admin" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/AdminStatusGetValueAvailableCredits" HelpText="Returns the amount of available credits for the current period.">
+  <RestConnector Id="AdminStatusGetValueAvailableCredits" Title="Available Credits" Group="Admin" HelpText="Returns the amount of available credits for the current period.">
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/AdminStatusGetValueAvailableCredits.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/AdminStatusGetValueAvailableCredits.json?access_token=@(Model.Authorization)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -1250,12 +1300,13 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AdminStatusGetListProjectsHidden" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/AdminStatusGetListProjects" Hidden="true">
+  <RestConnector Id="AdminStatusGetListProjectsHidden" Hidden="true">
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/AdminStatusGetListProjects.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/AdminStatusGetListProjects.json?access_token=@(Model.Authorization)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -1275,9 +1326,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/AdminStatusGetListProjectSearchEngines.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/AdminStatusGetListProjectSearchEngines.json?access_token=@(Model.Authorization)
 				&project_id=@(Model.ProjectId)
         ]]>
       </Fetch.Url>
@@ -1296,9 +1348,10 @@
     </Parameters>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/AdminStatusGetListProjectDomainsAndBenchmarks.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/AdminStatusGetListProjectDomainsAndBenchmarks.json?access_token=@(Model.Authorization)
 				&project_id=@(Model.ProjectId)
         ]]>
       </Fetch.Url>
@@ -1311,14 +1364,15 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="AdminStatusGetListProjects" Title="List Projects" Group="Admin" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/AdminStatusGetListProjects" HelpText="This call returns a complete list of all projects.">
+  <RestConnector Id="AdminStatusGetListProjects" Title="List Projects" Group="Admin" HelpText="This call returns a complete list of all projects.">
     <Prepare>
       <Connector Id="Authorization"/>
     </Prepare>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/AdminStatusGetListProjects.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v3/AdminStatusGetListProjects.json?access_token=@(Model.Authorization)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -1334,7 +1388,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ProjectPerformanceGetListUrlRankings" Title="URL Rankings" Group="Project Performance" HelpUrl="http://api.searchmetrics.com/v3/documentation/api-calls/service/ProjectPerformanceGetListUrlRankings" HelpText="Get the rankings for all urls, belongs to the given project.">
+  <RestConnector Id="ProjectPerformanceGetListUrlRankings" Title="URL Rankings" Group="Project Performance" HelpText="Get the rankings for all urls, belongs to the given project.">
     <Parameters>
       <Text Id="ProjectId" Debug.DefaultValue="1493497" Required="true" Select.Connector="AdminStatusGetListProjectsHidden"/>
       <Text Id="SearchEngineId" Title="Search Engine Id" Required="true" Select.Connector="AdminStatusGetListProjectSearchEnginesHidden" Parent.Id="ProjectId" Parent.Label="Project Id"/>
@@ -1350,9 +1404,10 @@
     <Paging PageSize="100" MinTake="100" IncrementTake="100" DefaultTake="100" EvenPages="false"/>
     <Resource Id="Prepare"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://api.searchmetrics.com/v3/ProjectPerformanceGetListUrlRankings.json?access_token=@(Model.Authorization)
+        https://api.searchmetrics.com/v4/ProjectPerformanceGetListUrlRankings.json?access_token=@(Model.Authorization)
 				&project_id=@(Model.ProjectId)
 				&se_id=@(Model.SearchEngineId)
 				&url=@(Model.Domain)
@@ -1377,5 +1432,13 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string CreateBasicAuth() {
+      return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.OAuthConsumerKey + ":" + Model.OAuthConsumerSecret));
+    }
+    ]]>
+  </RazorFunctions>
 
 </Suite>
