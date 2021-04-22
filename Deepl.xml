@@ -5,6 +5,12 @@
 
   <Settings HelpText="What's this?" HelpUrl="https://seotoolsforexcel.com/deepl/">
     <Text Id="AuthKey" Title="Auth Key" Required="true" HelpUrl="https://seotoolsforexcel.com/deepl/"/>
+      <Select Id="SubscriptionType" Title="Subscription Type" DefaultValue="free">
+        <DataSource>
+					<Item Id="free" Title="Free"/>
+					<Item Id="paid" Title="Paid"/>
+        </DataSource>
+      </Select>
   </Settings>
 
   <Resources>
@@ -65,7 +71,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://api.deepl.com/v2/translate?auth_key=@(Model.AuthKey)
+				@(GetSubDomain())/v2/translate?auth_key=@(Model.AuthKey)
 				&text=@(Utils.UrlEncode(Model.Text))
 				&target_lang=@(Model.Target)
 				@(Model.HandleXml ? "&tag_handling=xml" : string.Empty)
@@ -84,7 +90,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://api.deepl.com/v2/usage?auth_key=@(Model.AuthKey)
+				@(GetSubDomain())/v2/usage?auth_key=@(Model.AuthKey)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -94,5 +100,13 @@
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+		string GetSubDomain() {
+			return Model.SubscriptionType == "free" ? "https://api-free.deepl.com" : "https://api.deepl.com";
+		}
+    ]]>
+  </RazorFunctions>
 
 </Suite>
