@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Language" RequireVersion="9.3" Title="Article Forge" Id="ArticleForge" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ArticleForge.xml" HelpUrl="http://seotoolsforexcel.com/article-forge/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/article-forge/">
+    <Text Id="APIKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error_message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="InitiateArticle" Title="Initiate Article">
+    <Parameters>
+      <Text Id="Keyword" Debug.DefaultValue="zlatan" Required="true" HelpText="Keyword should not contain URLs, commas, parentheses, brackets, or too many single characters."/>
+      <Text Id="SubKeywords" HelpText="Five sub keyword limit per article.." Multiline="true"/>
+      <Select Id="Length" DefaultValue="short">
+        <DataSource>
+          <Item Id="very_short" Title="Very Short (about 50 words)"/>
+          <Item Id="short" Title="Short (about 250 words)"/>
+          <Item Id="medium" Title="Very Short (about 500 words)"/>
+          <Item Id="long" Title="Very Short (about 750 words)"/>
+        </DataSource>
+      </Select>
+			<Checkbox Id="Title" Title="Include a title"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+				https://af.articleforge.com/api/initiate_article?key=@Model.APIKey
+				&keyword=@Model.Keyword
+				@(!string.IsNullOrEmpty(Model.SubKeywords) ? "&sub_keywords=" + FetchSubkeywords() : "")
+				&length=@Model.Length
+				@(Model.Title == true ? "&title=1" : "")
+				]]>
+      </Fetch.Url>
+		</Fetch>
+			<Parse>
+				<JsonPath Expr="status" Id="Status"/>
+				<JsonPath Expr="ref_key" Id="RefKey" Title="Reference Key"/>
+			</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CheckProgress" Title="Check Progress">
+    <Parameters>
+      <Text Id="RefKey" Title="Reference Key" Debug.DefaultValue="304610130" Required="true"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+				https://af.articleforge.com/api/get_api_progress?key=@Model.APIKey
+				&ref_key=@Model.RefKey
+				]]>
+      </Fetch.Url>
+		</Fetch>
+			<Parse>
+				<JsonPath Expr="status" Id="Status"/>
+				<JsonPath Expr="progress" Id="Progress" Converter="Double" Converter.ResultFormat="0%"/>
+			</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="GetResult" Title="Get Article Result">
+    <Parameters>
+      <Text Id="RefKey" Title="Reference Key" Debug.DefaultValue="304610130" Required="true"/>
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/json</RequestContentType>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+				https://af.articleforge.com/api/get_api_article_result?key=@Model.APIKey
+				&ref_key=@Model.RefKey
+				]]>
+      </Fetch.Url>
+		</Fetch>
+			<Parse>
+				<JsonPath Expr="status" Id="Status"/>
+				<JsonPath Expr="article" Id="Article"/>
+			</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RazorFunctions>
+    <![CDATA[
+    string FetchSubkeywords() {
+			string[] lines = ((string)Model.SubKeywords).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Distinct().ToArray();
+      return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
+    }
+    ]]>
+  </RazorFunctions>
+
+</Suite>
