@@ -140,6 +140,28 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+	
+  <RestConnector Id="CampaignLinkHidden" Hidden="true">
+    <Parameters>
+      <Text Id="CampaignId"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/click-details?count=1000
+          ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.urls_clicked[*]">
+        <JsonPath Id="Id" Expr="id"/>
+        <JsonPath Id="Url" Expr="url"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="CampaignsList" Title="Campaigns List" Group="Campaigns" HelpText="Get all campaigns in an account." HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
     <Parameters>
@@ -310,7 +332,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CampaignLinkClicks" Title="Link Clicks" Group="Campaigns" HelpText="Get detailed information about links clicked in campaigns." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/click-details/">
+  <RestConnector Id="CampaignLinkClicks" Title="Clicked Links" Group="Campaigns" HelpText="Get detailed information about links clicked in campaigns." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/click-details/">
     <Parameters>
       <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
     </Parameters>
@@ -339,6 +361,36 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="CampaignLinkClicksMembers" Title="Clicked Link Members" Group="Campaigns" HelpText="Get information about list members who clicked on a specific link in a campaign." HelpUrl="https://mailchimp.com/developer/marketing/api/link-clickers/list-clicked-link-subscribers/">
+    <Parameters>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="LinkId" Title="Link Id" Required="true" Debug.DefaultValue="80da4644fa" Select.Connector="CampaignLinkHidden"/>			
+    </Parameters>
+		<Resource Id="Paging"/>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/click-details/@(Model.LinkId)/members
+					?count=@(Model.PageCursor.NextTake)
+					&offset=@(Model.PageCursor.NextSkip)
+          ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.members[*]">
+        <JsonPath Title="Email" Id="Email" Expr="email_address" HelpText="Email address for the member who clicked."/>
+        <JsonPath Title="Id" Id="Id" Expr="email_id" Converter="Auto" HelpText="The MD5 hash of the lowercase version of the list member's email address."/>
+				<JsonPath Title="URL Id" Id="UrlId" Expr="url_id" Converter="Auto" HelpText="The id for the tracked URL in the campaign."/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="clicks" Converter="Int" HelpText="The total number of times the subscriber clicked on the link."/>
+				<JsonPath Title="Status" Id="Status" Expr="contact_status" HelpText="The status of the member"/>
+				<JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="Bool" HelpText="VIP status for subscriber."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+	
   <RestConnector Id="CampaignAbuseReports" Title="Abuse Reports" Group="Campaigns" HelpText="Get a list of abuse complaints for a specific campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/abuse-reports/#read-get_reports_campaign_id_abuse_reports">
     <Parameters>
       <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
