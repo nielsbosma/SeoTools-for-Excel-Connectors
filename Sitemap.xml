@@ -3,6 +3,14 @@
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
+	<Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<XPath Expr="//loc" Id="InvalidSitemap" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Not a valid Sitemap XML"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
   <RestConnector Id="General" Title="General Protocol">
     <Parameters>
       <Text Id="Url" Title="Sitemap URL(s)" Debug.DefaultValue="https://www.aftonbladet.se/sitemaps/files/201207-articles.xml" Multiline="true"/>
@@ -14,7 +22,7 @@
 				<RequestContentType>
         <![CDATA[
         @(Model.Gzip ? "gzip" : "application/xml")
-				]]>				
+				]]>
 				</RequestContentType>
 			</HttpSettings>
       <Fetch.Url>
@@ -32,11 +40,9 @@
 				<XPath Expr="../priority" Id="Priority" Converter="Auto" DefaultValue="" HelpText="The priority of this URL relative to other URLs on your site."/>
 			</XPath>
     </Parse>
-			<Fail>
-				<XPath Expr="//loc" Id="InvalidSitemap" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Not a valid Sitemap XML"/>
-			</Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RestConnector Id="GoogleNews" Title="Google News">
     <Parameters>
       <Text Id="Url" Title="Google News Sitemap URL(s)" Debug.DefaultValue="https://www.aftonbladet.se/sitemaps/files/articles-48hrs.xml" Multiline="true"/>
@@ -59,12 +65,47 @@
 				<XPath Expr="..//*[name()='news:title']" Id="Title" Title="Title" Converter="Auto" DefaultValue=""/>
 				<XPath Expr="..//*[name()='news:keywords']" Id="Keywords" Title="Keywords" Converter="Auto" DefaultValue=""/>
 				<XPath Expr="..//*[name()='news:publication_date']" Id="PublicationDate" Title="Publication Date" Converter="Auto" DefaultValue=""/>
-
 			</XPath>
     </Parse>
-			<Fail>
-				<XPath Expr="//loc" Id="InvalidSitemap" Fail.If="IsEmpty" Fail.Action="Message" Fail.Message="Not a valid Sitemap XML"/>
-			</Fail>
+		<Resource Id="Fail"/>
   </RestConnector>
+
+  <RestConnector Id="GoogleImages" Title="Google Images">
+    <Parameters>
+      <Text Id="Url" Title="Google Image-based Sitemap URL(s)" Debug.DefaultValue="https://www.ikea.com/sitemaps/edit-en-QA_1.xml" Multiline="true"/>
+			<Checkbox Id="AllImages" Title="Include all images in csv format"/>
+		</Parameters>
+		<Batch Parameter="Url" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        @Model.Url
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <XPath Expr="//loc">
+				<Compute Expr="@Model.Url" Id="Input" HelpText="Sitemap Input URL."/>
+				<XPath Expr="." Id="Url" DefaultValue="" HelpText="URL of the page."/>
+				<XPath Expr="../lastmod" Id="Modified" Converter="Auto" DefaultValue="" HelpText="The date of last modification of the file."/>
+				<XPath Expr="../changefreq" Id="Frequency" Converter="Auto" DefaultValue="" HelpText="How frequently the page is likely to change."/>
+				<XPath Expr="../priority" Id="Priority" Converter="Auto" DefaultValue="" HelpText="The priority of this URL relative to other URLs on your site."/>
+				<XPath Expr="@GetImageLoc()" Id="ImageLocation" Title="Image Location" Converter="Auto" DefaultValue=""/>
+				<XPath Expr="@GetImageTitle()" Id="ImageTitle" Title="Image Title" Converter="Auto" DefaultValue=""/>
+			</XPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+	  <RazorFunctions>
+		<![CDATA[
+		string GetImageLoc() {
+			return Model.AllImages == true ? "csv(..//*[name()='image:loc'])" : "..//*[name()='image:loc']"; 
+		}
+		string GetImageTitle() {
+			return Model.AllImages == true ? "csv(..//*[name()='image:title'])" : "..//*[name()='image:title']"; 
+		}
+		]]>
+  </RazorFunctions>
 
 </Suite>
