@@ -299,7 +299,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CampaignLinkClicks" Title="Link Clicks" Group="Campaigns" HelpText="Get detailed information about links clicked in campaigns." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/click-details/">
+  <RestConnector Id="CampaignLinkClicks" Title="Clicked Links" Group="Campaigns" HelpText="Get detailed information about links clicked in campaigns." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/click-details/">
     <Parameters>
       <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
@@ -323,6 +323,36 @@
         <JsonPath Title="Clicks Rate" Id="ClicksPCT" Expr="click_percentage" Converter="Double" Converter.ResultFormat="0.00%" HelpText="The percentage of total clicks a link generated for a campaign."/>
         <JsonPath Title="Unique Clicks" Id="UniqueClicks" Expr="unique_clicks" Converter="Int" HelpText="Number of unique clicks for a link."/>
         <JsonPath Title="Unique Clicks Rate" Id="UniqueClicksPCT" Expr="unique_click_percentage" Converter="Double" Converter.ResultFormat="0.00%" HelpText="The percentage of unique clicks a link generated for a campaign."/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CampaignLinkClicksMembers" Title="Clicked Link Members" Group="Campaigns" HelpText="Get information about list members who clicked on a specific link in a campaign." HelpUrl="https://mailchimp.com/developer/marketing/api/link-clickers/list-clicked-link-subscribers/">
+    <Parameters>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="LinkId" Title="Link Id" Required="true" Debug.DefaultValue="80da4644fa" Select.Connector="CampaignLinkHidden"/>			
+    </Parameters>
+		<Resource Id="Paging"/>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/click-details/@(Model.LinkId)/members
+					?count=@(Model.PageCursor.NextTake)
+					&offset=@(Model.PageCursor.NextSkip)
+          ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <JsonPath Expr="$.members[*]">
+        <JsonPath Title="Email" Id="Email" Expr="email_address" HelpText="Email address for the member who clicked."/>
+        <JsonPath Title="Id" Id="Id" Expr="email_id" Converter="Auto" HelpText="The MD5 hash of the lowercase version of the list member's email address."/>
+				<JsonPath Title="URL Id" Id="UrlId" Expr="url_id" Converter="Auto" HelpText="The id for the tracked URL in the campaign."/>
+        <JsonPath Title="Clicks" Id="Clicks" Expr="clicks" Converter="Int" HelpText="The total number of times the subscriber clicked on the link."/>
+				<JsonPath Title="Status" Id="Status" Expr="contact_status" HelpText="The status of the member"/>
+				<JsonPath Title="VIP Status" Id="VIPStatus" Expr="vip" Converter="Bool" HelpText="VIP status for subscriber."/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -356,6 +386,10 @@
       <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Resource Id="Paging"/>
+		<Prepare>
+			<Connector Id="GetBaseUrl"/>
+			<Connector Id="CampaignsStatisticsHidden"/>
+		</Prepare>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
@@ -366,13 +400,16 @@
         ]]>
       </Fetch.Url>
     </Fetch>
-		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.members[*]">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
         <JsonPath Title="Opens" Id="Opens" Expr="opens_count" Converter="Long" HelpText="The total number of times the this campaign was opened by the list member."/>
-        <JsonPath Title="Open" Id="Open" Expr="opens[0].timestamp" Converter="DateTime" HelpText="imestamp for member opening the campaign."/>
-        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>				
+        <JsonPath Title="Open" Id="Open" Expr="opens[0].timestamp" Converter="DateTime" HelpText="Timestamp for member opening the campaign."/>
+        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>
+				<Compute Expr="@Model.Title" Id="CampaignTitle" Title="Campaign Title"/>
+				<Compute Expr="@Model.Subject" Id="CampaignSubject" Title="Campaign Subject"/>
+				<Compute Expr="@Model.Send" Id="CampaignSend" Title="Campaign Send" Converter="DateTime"/>
+				<Compute Expr="@Model.Clicks" Id="CampaignClicks" Title="Campaign Emails Sent" Converter="Int"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -849,7 +886,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-<RazorFunctions>
+	<RazorFunctions>
     <![CDATA[
     string GetJsonPath() {
 			return !string.IsNullOrEmpty(Model.CampaignId) ?  "$" : "$.reports[*]";
