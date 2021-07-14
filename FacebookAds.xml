@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Facebook Ads" RequireVersion="9.3" Id="FacebookAds" Category="Social" LoginButton="https://seotoolsforexcel.com/logins/facebook.png"  SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookAds.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-ads/" HelpText="Documentation">
+<Suite Title="Facebook Ads" RequireVersion="9.5.4" Id="FacebookAds" Category="Social" LoginButton="https://seotoolsforexcel.com/logins/facebook.png"  SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/FacebookAds.xml" HelpUrl="http://seotoolsforexcel.com/Facebook-ads/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -50,6 +50,13 @@
 			<Paging PageSize="25">
 				<Parse>
 					<JsonPath Id="NextResults" Expr="paging.cursors.after"/>
+				</Parse>
+			</Paging>
+    </Resource>
+    <Resource Id="PagingHidden">
+			<Paging PageSize="100">
+				<Parse>
+					<JsonPath Id="Cursor" Expr="paging.next"/>
 				</Parse>
 			</Paging>
     </Resource>
@@ -175,11 +182,14 @@
   </Resources>
 
   <RestConnector Id="ListAccountsHidden" Hidden="true">
+		<Resource Id="PagingHidden"/>
     <Fetch>
       <Fetch.Url>
-      <![CDATA[
-        https://graph.facebook.com/v10.0/me/adaccounts?access_token=@Model.Authenticator.Token&fields=name,account_id&limit=200
-      ]]>
+				<![CDATA[
+					https://graph.facebook.com/v10.0/me/adaccounts?access_token=@Model.Authenticator.Token&fields=name,account_id
+					&limit=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
+				]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
@@ -193,12 +203,15 @@
 
   <RestConnector Id="ListCampaignsHidden" Hidden="true">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
     </Parameters>
+		<Resource Id="PagingHidden"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/campaigns?access_token=@(Model.Authenticator.Token)&fields=id,name&limit=200
+          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/campaigns?access_token=@(Model.Authenticator.Token)&fields=id,name,effective_status
+					&limit=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -206,6 +219,7 @@
       <JsonPath Expr="data[*]">
         <JsonPath Expr="id" Id="CampaignId" Title="Campaign Id"/>
         <JsonPath Expr="name" Id="Name" Title="Campaign Name"/>
+        <JsonPath Expr="effective_status" Id="Status"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -213,12 +227,15 @@
 
   <RestConnector Id="ListAdsetsHidden" Hidden="true">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" equired="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
     </Parameters>
+		<Resource Id="PagingHidden"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/adsets?access_token=@(Model.Authenticator.Token)&fields=id,name&limit=200
+          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/adsets?access_token=@(Model.Authenticator.Token)&fields=id,name,effective_status
+					&limit=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -226,6 +243,7 @@
       <JsonPath Expr="data[*]">
         <JsonPath Expr="id" Id="AdsetId" Title="Adset Id"/>
         <JsonPath Expr="name" Id="Name" Title="Adset Name"/>
+        <JsonPath Expr="effective_status" Id="Status"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -233,12 +251,15 @@
 
   <RestConnector Id="ListAdsHidden" Hidden="true">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" DefaultValue="" Required="true" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Debug.DefaultValue="2066084836749681" Select.Connector="ListAccountsHidden"/>
     </Parameters>
+		<Resource Id="PagingHidden"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/ads?access_token=@(Model.Authenticator.Token)&fields=id,name&limit=200
+          https://graph.facebook.com/v10.0/act_@(Model.AccountId)/ads?access_token=@(Model.Authenticator.Token)&fields=id,name,effective_status
+					&limit=@(Model.PageCursor.NextTake)
+					@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -246,6 +267,7 @@
       <JsonPath Expr="data[*]">
         <JsonPath Expr="id" Id="AdId" Title="Ad Id"/>
         <JsonPath Expr="name" Id="Name" Title="Ad Name"/>
+        <JsonPath Expr="effective_status" Id="Status"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -253,7 +275,7 @@
 
   <RestConnector Id="AccountStatistics" Title="ACCOUNTS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden"/>
       <Select Id="Level" Title="Sub level" DefaultValue="none" Required="false">
         <DataSource>
           <Item Id="none" Title="None"/>
@@ -292,8 +314,8 @@
 
   <RestConnector Id="CampaignStatistics" Title="CAMPAIGNS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
-      <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Select.Connector="ListCampaignsHidden" Select.IdField="CampaignId" Select.TitleField="Name" Parent.Id="AccountId" Parent.Label="Account Id"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Select.Connector="ListCampaignsHidden" Parent.Id="AccountId" Parent.Label="Account Id"/>
       <Select Id="Level" Title="Sub level for filtered campaign" DefaultValue="none" Required="false">
         <DataSource>
           <Item Id="none" Title="None"/>
@@ -332,8 +354,8 @@
 
   <RestConnector Id="AdsetStatistics" Title="ADSETS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
-	    <Text Id="AdsetId" Title="Filter by Adset Id" Required="false" Select.Connector="ListAdsetsHidden" Select.IdField="AdsetId" Select.TitleField="Name" Parent.Id="AccountId" Parent.Label="Account Id"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden"/>
+	    <Text Id="AdsetId" Title="Filter by Adset Id" Required="false" Select.Connector="ListAdsetsHidden" Parent.Id="AccountId" Parent.Label="Account Id"/>
       <Select Id="Level" Title="Sub level for filtered campaign" DefaultValue="none" Required="false">
         <DataSource>
           <Item Id="none" Title="None"/>
@@ -371,8 +393,8 @@
 
   <RestConnector Id="AdStatistics" Title="ADS Statistics">
     <Parameters>
-      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden" Select.IdField="AccountId" Select.TitleField="Name"/>
-      <Text Id="AdId" Title="Filter by Ad Id" Required="false" Select.Connector="ListAdsHidden" Select.IdField="AdId" Select.TitleField="Name" Parent.Id="AccountId" Parent.Label="Account Id"/>
+      <Text Id="AccountId" Title="Account Id" Required="true" Debug.DefaultValue="1382543868624953" Select.Connector="ListAccountsHidden"/>
+      <Text Id="AdId" Title="Filter by Ad Id" Required="false" Select.Connector="ListAdsHidden" Parent.Id="AccountId" Parent.Label="Account Id"/>
 			<Resource Id="Dimensions"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
 			<Resource Id="PeriodIncrement"/>

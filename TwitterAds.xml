@@ -1,14 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Twitter Ads" Id="TwitterAds" Category="Social" RequireVersion="9.4" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TwitterAds.xml" HelpUrl="http://seotoolsforexcel.com/twitter-ads/" HelpText="Documentation">
+<Suite Title="Twitter Ads" Id="TwitterAds" Category="Social" RequireVersion="9.5.4" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/TwitterAds.xml" HelpUrl="http://seotoolsforexcel.com/twitter-ads/" HelpText="Documentation">
 
-  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
 	<SeoToolsAuthenticator StayAuthenticated="true" Key="twitter-ads"/>
 
   <Resources>
     <Resource Id="Params">
-      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Text Id="EntityId" Title="Entity to Analyze" Debug.DefaultValue="3d02l" Required="false"/>
       <Select Id="Granularity" Title="Granularity" DefaultValue="NONE">
         <DataSource>
           <Item Id="TOTAL" Title="None"/>
@@ -22,7 +20,7 @@
           <Item Id="PUBLISHER_NETWORK" Title="Publisher Network"/>
         </DataSource>
       </Select>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval"/>
 		</Resource>
 		<Resource Id="PrepareZip">
 			<Prepare>
@@ -79,8 +77,8 @@
 
   <RestConnector Id="ListCampaigns" Title="Campaigns" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts"/>
+      <Select Id="Sort" Title="Sort Results by" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
 					<Item Id="created_at-asc" Title="Created Asc"/>
@@ -139,8 +137,8 @@
 
   <RestConnector Id="ListLineItems" Title="Line Items" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce53wm5sg" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts"/>
+      <Select Id="Sort" Title="Sort Results by" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
 					<Item Id="created_at-asc" Title="Created Asc"/>
@@ -192,10 +190,10 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListPromotedTweets" Title="Promoted Tweets" Group="List Data">
+  <RestConnector Id="ListPromotedTweets" Title="Promoted Tweets Entities" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts"/>
+      <Select Id="Sort" Title="Sort Results by" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
 					<Item Id="created_at-asc" Title="Created Asc"/>
@@ -224,8 +222,8 @@
     <Parse>
       <JsonPath Expr="$.data[*]">
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="tweet_id" Id="TweetId" Title="TweetId" Converter="String"/>
-        <Compute Expr="http://www.twitter.com/statuses/@(Model.Inp)/" Id="TweetUrl" Title="Tweet URL">
+        <JsonPath Expr="tweet_id" Id="TweetId" Title="Tweet Id" Converter="String"/>
+        <Compute Expr="https://twitter.com/i/web/status/@(Model.Inp)/" Id="TweetUrl" Title="Tweet URL">
           <JsonPath Expr="tweet_id" Id="Inp"/>
         </Compute>
         <JsonPath Expr="line_item_id" Id="LiteItemId" Title="Lite Item Id" Converter="String"/>
@@ -238,10 +236,76 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="ListTweets" Title="Tweets" Group="List Data">
+    <Parameters>
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce54a6tlx" Required="true" Select.Connector="Accounts"/>
+      <Select Id="TweetType" Title="Tweet Type" DefaultValue="PUBLISHED">
+        <DataSource>
+					<Item Id="PUBLISHED" Title="Published"/>
+					<Item Id="SCHEDULED" Title="Scheduled"/>
+					<Item Id="DRAFT" Title="Draft"/>
+        </DataSource>
+      </Select>
+			<Select Id="TimelineType" Title="Timeline Type" DefaultValue="ALL">
+        <DataSource>
+					<Item Id="ALL" Title="All"/>
+					<Item Id="NULLCAST" Title="Promoted-only"/>
+					<Item Id="ORGANIC" Title="Organic"/>
+        </DataSource>
+      </Select>
+			<Checkbox Id="IncludeMentionsReplies" Title="Include Mentions &amp; Replies" DefaultValue="true"/>
+    </Parameters>
+    <Paging PageSize="200" EvenPages="false">
+      <Parse>
+        <JsonPath Id="Cursor" Expr="next_cursor"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://ads-api.twitter.com/8/accounts/@(Model.AccountId)/tweets
+				?tweet_type=@(Model.TweetType)
+				&timeline_type=@(Model.TimelineType)
+				&count=@(Model.PageCursor.NextTake)
+				&include_mentions_and_replies=@(Model.IncludeMentionsReplies)
+				@(Model.PageCursor.Page != 0 ? "&cursor=" + Model.Cursor : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.data[*]">
+				<Compute Expr="https://www.twitter.com/@(Model.Inp1)/statuses/@(Model.Inp2)/" Id="Url" Title="URL">
+					<JsonPath Expr="user.screen_name" Id="Inp1" DefaultValue=""/>
+					<JsonPath Expr="id_str" Id="Inp2" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="id_str" Id="Id"/>
+				<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+				<JsonPath Expr="full_text" Id="Text" DefaultValue=""/>
+				<JsonPath Expr="retweet_count" Id="Retweets" Converter="Int"/>
+				<JsonPath Expr="favorite_count" Id="Likes" Converter="Int"/>
+				<JsonPath Expr="tweet_type" Id="TweetType" Title="Tweet Type"/>
+				<JsonPath Expr="nullcast" Id="PromotedOnly" Title="Promoted-only"/>
+				<JsonPath Expr="csv(entities.hashtags[*].text)" Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="csv(entities.urls[*].url)" Id="UrlEntities" Title="URL Entities" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="csv(entities.user_mentions[*].screen_name)" Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="entities.media[0].media_url" Id="PhotoUrl" Title="Media URL" Converter="String" DefaultValue=""/>
+				<Compute Expr="@Utils.StripTags(Model.Inp)" Id="Source">
+					<JsonPath Expr="source" Id="Inp" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="user.screen_name" Id="Username"/>
+				<Compute Expr="https://www.twitter.com/@(Model.Inp)/" Id="UserUrl" Title="User URL">
+					<JsonPath Expr="user.screen_name" Id="Inp" DefaultValue=""/>
+				</Compute>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="ListFundingInstruments" Title="Funding Instruments" Group="List Data">
     <Parameters>
-      <Text Id="AccountId" Title="AccountId" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
-      <Select Id="Sort" Title="Sort Results by" Required="false" DefaultValue="created_at-desc">
+      <Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts"/>
+      <Select Id="Sort" Title="Sort Results by" DefaultValue="created_at-desc">
         <DataSource>
 					<Item Id="created_at-desc" Title="Created Desc"/>
 					<Item Id="created_at-asc" Title="Created Asc"/>
@@ -374,6 +438,8 @@
         </DataSource>
       </Select>
       <Text Id="MetricType" DefaultValue="ENGAGEMENT" Hidden="true"/>
+			<Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="EntityId" Title="Entity to Analyze" HelpText="Use 'Tweet Id' for organc tweets"/>
 			<Resource Id="Params"/>
 		</Parameters>
     <Resource Id="PrepareZip"/>
@@ -432,6 +498,8 @@
         </DataSource>
       </Select>
       <Text Id="MetricType" DefaultValue="BILLING" Hidden="true"/>
+			<Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="EntityId" Title="Entity to Analyze"/>
       <Resource Id="Params"/>
 		</Parameters>
     <Resource Id="PrepareZip"/>
@@ -463,6 +531,8 @@
         </DataSource>
       </Select>
       <Text Id="MetricType" DefaultValue="VIDEO" Hidden="true"/>
+			<Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="EntityId" Title="Entity to Analyze"/>
       <Resource Id="Params"/>
 		</Parameters>
     <Resource Id="PrepareZip"/>
@@ -494,9 +564,6 @@
       <JsonPath Expr="$.data[*].id_data[*].metrics.video_content_starts[*]">
         <JsonPath Expr="$" Id="ClicksStart" Title="Clicks Start" Converter="Long"/>
       </JsonPath>
-      <JsonPath Expr="$.data[*].id_data[*].metrics.video_mrc_views[*]">
-        <JsonPath Expr="$" Id="ViewsMRC" Title="Views MRC" Converter="Long"/>
-      </JsonPath>
     </Parse>
   </RestConnector>
 
@@ -512,6 +579,8 @@
         </DataSource>
       </Select>
       <Text Id="MetricType" DefaultValue="MEDIA" Hidden="true"/>
+			<Text Id="AccountId" Title="Account Id" Debug.DefaultValue="18ce53ybec6" Required="true" Select.Connector="Accounts" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="EntityId" Title="Entity to Analyze"/>
       <Resource Id="Params"/>
 		</Parameters>
     <Resource Id="PrepareZip"/>

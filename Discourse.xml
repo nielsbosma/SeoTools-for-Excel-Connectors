@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Discourse" RequireVersion="8.2" Id="Discourse" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Discourse.xml" HelpUrl="http://seotoolsforexcel.com/discourse/" HelpText="Documentation">
+<Suite Title="Discourse" RequireVersion="9.5.4" Id="Discourse" Category="Social" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Discourse.xml" HelpUrl="http://seotoolsforexcel.com/discourse/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -82,6 +82,25 @@
 			</Fail>
     </Resource>
   </Resources>
+	
+  <RestConnector Id="CategoriesHidden" Hidden="true">
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        @(ReturnBaseUrl())/categories?api_key=@(Model.ApiKey)&api_username=@(Model.Username)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.category_list.categories[*]">
+				<JsonPath Expr="id" Id="Id" Title="Category Id"/>
+				<JsonPath Expr="name" Id="CategoryName" Title="Category Name"/>
+				<JsonPath Expr="topic_count" Id="Topics" Title="Topics Count"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="PostsLatest" Title="Latest Posts" Group="Post Reports" HelpUrl="https://docs.discourse.org/#tag/Posts%2Fpaths%2F~1posts.json%2Fget">
     <Fetch>
@@ -180,7 +199,7 @@
 
   <RestConnector Id="TopicsInCategory" Title="Topics in Category" Group="Category Reports" HelpUrl="https://docs.discourse.org/#tag/Categories%2Fpaths%2F~1c~1%7Bid%7D.json%2Fget">
     <Parameters>
-      <Text Id="CategoryId" Title="Category Id" Debug.DefaultValue="5" Required="true" Syntax="^\d+$" Select.Connector="Categories" Select.IdField="Id" Select.TitleField="Name"/>
+      <Text Id="CategoryId" Title="Category Id" Debug.DefaultValue="5" Required="true" Syntax="^\d+$" Select.Connector="CategoriesHidden"/>
 		</Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>

@@ -48,8 +48,8 @@
 		</Resource>
     <Resource Id="Tweet">
 			<Compute Expr="https://www.twitter.com/@(Model.Inp1)/statuses/@(Model.Inp2)/" Id="Url" Title="URL">
-				<JsonPath Expr="user.screen_name" Id="Inp1" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="id_str" Id="Inp2" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="user.screen_name" Id="Inp1" DefaultValue=""/>
+				<JsonPath Expr="id_str" Id="Inp2" DefaultValue=""/>
 			</Compute>
 			<JsonPath Expr="id_str" Id="Id" Title="Id" Converter="String"/>
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
@@ -67,16 +67,12 @@
 			</Compute>
 			<JsonPath Expr="csv(entities.hashtags[*].text)" Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.urls[*].url)" Id="UrlEntities" Title="URL Entities" Converter="String" DefaultValue=""/>
-			<JsonPath Expr="csv(entities.urls[*].expanded_url)" Id="UrlExpandedEntities" Title="URL Expanded Entities" Converter="String" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.user_mentions[*].screen_name)" Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="entities.media[0].media_url" Id="PhotoUrl" Title="Media URL" Converter="String" DefaultValue=""/>
-			
 			<JsonPath Expr="csv(retweeted_status.entities.hashtags[*].text)" Id="RTHashtagEntities" Title="Retweeted Hashtag Entities" Converter="Auto" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="csv(retweeted_status.entities.urls[*].url)" Id="RTUrlEntities" Title="Retweeted URL Entities" Converter="String" DefaultValue="" Checked="false"/>
-			<JsonPath Expr="csv(retweeted_status.entities.urls[*].expanded_url)" Id="RTUrlExpandedEntities" Title="Retweeted URL Expanded Entities" Converter="String" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="csv(retweeted_status.entities.user_mentions[*].screen_name)" Id="RTMentionsEntities" Title="Retweeted User Mentions Entities" Converter="Auto" DefaultValue="" Checked="false"/>
 			<JsonPath Expr="retweeted_status.entities.media[0].media_url" Id="RTPhotoUrl" Title="Retweeted Media URL" Converter="String" DefaultValue="" Checked="false"/>
-			
 			<JsonPath Expr="user.id_str" Id="UserId" Title="User ID" Converter="String"/>
 			<JsonPath Expr="user.screen_name" Id="Username" Title="Username" Converter="String"/>
 			<Compute Expr="https://www.twitter.com/@(Model.Inp)/" Id="UserUrl" Title="User URL">
@@ -127,7 +123,6 @@
 			<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Title="Avatar">
 				<JsonPath Expr="profile_image_url" Id="Inp" DefaultValue=""/>
 			</Compute>
-			<JsonPath Expr="verified" Id="Verified" Title="Verified" Converter="Bool"/>
 		</Resource>
   </Resources>
 
@@ -275,6 +270,11 @@
     <Parse>
       <JsonPath Expr="$[*]">
 				<Resource Id="User"/>
+				<Compute Expr="https://www.twitter.com/@(Model.Inp1)/statuses/@(Model.Inp2)/" Id="LastTweet" Title="Last Tweet">
+					<JsonPath Expr="screen_name" Id="Inp1" DefaultValue=""/>
+					<JsonPath Expr="status.id_str" Id="Inp2" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="status.created_at" Id="LastTweeted" Title="Last Tweeted" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -362,7 +362,12 @@
     <Parse>
       <JsonPath Expr="@bool2dim()">
 				<Resource Id="User"/>
-      </JsonPath>
+				<Compute Expr="https://www.twitter.com/@(Model.Inp1)/statuses/@(Model.Inp2)/" Id="LastTweet" Title="Last Tweet">
+					<JsonPath Expr="screen_name" Id="Inp1" DefaultValue=""/>
+					<JsonPath Expr="status.id_str" Id="Inp2" DefaultValue=""/>
+				</Compute>
+				<JsonPath Expr="status.created_at" Id="LastTweeted" Title="Last Tweeted" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy"/>
+			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
@@ -441,7 +446,7 @@
 
   <RestConnector Id="TrendsInPlace" Title="Trends In Place" HelpUrl="https://developer.twitter.com/en/docs/trends/trends-for-location/api-reference/get-trends-place">
     <Parameters>
-      <Text Id="WOEID" Title="WOE Id" Debug.DefaultValue="906057" HelpText="The Yahoo! Where On Earth ID of the location to return trending information for. " Required="true"/>
+      <Text Id="WOEID" Title="WOE Id" Debug.DefaultValue="906057" HelpText="The Yahoo! Where On Earth ID of the location to return trending information for." Required="true"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>

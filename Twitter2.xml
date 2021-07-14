@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="Twitter v2 Beta" Id="Twitter-v2Beta" Category="Social" RequireVersion="9.0" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter.xml" HelpUrl="http://seotoolsforexcel.com/twitter/" HelpText="Documentation">
+<Suite Title="Twitter v2" Id="Twitter2" Category="Social" RequireVersion="9.5.7" LoginButton="https://seotoolsforexcel.com/logins/twitter.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Twitter2.xml" HelpUrl="http://seotoolsforexcel.com/twitter2/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
 
@@ -18,147 +18,80 @@
 		</Resource>
     <Resource Id="Fail">
 		  <Fail>
+				<!--<Regex Expr="!DOCTYPE" Group="0" Fail.If="IsNotEmpty" Fail.Action="Message" Fail.Message="Bad request"/>-->
+				<Regex Expr="!DOCTYPE" Group="0" Fail.If="IsNotEmpty" Fail.Action="EmptyResult"/>
 				<JsonPath Expr="errors.detail" Fail.If="IsEqual" Fail.ComparedTo="Invalid Request"/>
-				<JsonPath Expr="errors[0].title" Fail.If="IsEqual" Fail.ComparedTo="Invalid Request"/>
+				<JsonPath Expr="title" Fail.If="IsEqual" Fail.ComparedTo="Invalid Request"/>
 				<JsonPath Expr="errors.detail" Fail.If="IsEqual" Fail.ComparedTo="General Problem"/>
 				<JsonPath Expr="errors[0].title" Fail.If="IsEqual" Fail.ComparedTo="General Problem"/>
 				<JsonPath Expr="errors.detail" Fail.If="IsEqual" Fail.ComparedTo="Client Forbidden"/>
 				<JsonPath Expr="errors[0].title" Fail.If="IsEqual" Fail.ComparedTo="Client Forbidden"/>
 			</Fail>
 		</Resource>
+		<Resource Id="Paging">
+			<Paging PageSize="100" EvenPages="false">
+				<Parse>
+					<JsonPath Expr="$.meta.next_token" Id="NextResults"/>
+				</Parse>
+			</Paging>
+		</Resource>
     <Resource Id="Tweet">
-			<Compute Id="Url" Title="URL" Tag="id">
-				<Compute.Expr>
-          <![CDATA[
-          https://www.twitter.com/@FetchToken("username")/statuses/@(Model.Inp2)/
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="id" Id="Inp2" DefaultValue=""/>
-				<JsonPath Expr="author_id" Id="UserId"/>
+			<Compute Expr="https://www.twitter.com/@(Model.Username)/statuses/@(Model.Id)" Id="Url" Title="URL" Tag="user.username">
+				<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].username" Id="Username" ParseParent="true"/>
+				<JsonPath Expr="id" Id="Id"/>
 			</Compute>
 			<JsonPath Expr="id" Id="Id"/>
 			<JsonPath Expr="created_at" Id="CreatedAt" Title="Date" Tag="tweet.created_at" Converter="DateTime"/>
 			<JsonPath Expr="text" Id="Text" Converter="String" Tag="tweet.text" DefaultValue=""/>
-			<Compute Expr="@(GetTweetType(Model.txt))" Id="Type">
-				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			<Compute Id="Type" Tag="tweet.text">
+				<Compute.Expr>
+					<![CDATA[
+						@GetTweetType(Model.Txt)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="text" Id="Txt" DefaultValue=""/>
 			</Compute>
-			<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Retweets" Tag="tweet.public_metrics" Converter="Int">
-				<JsonPath Expr="public_metrics.retweet_count" Id="Inp" Converter="Int"/>
-				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			<Compute Id="Retweets" Tag="tweet.public_metrics" Converter="Auto">
+				<Compute.Expr>
+					<![CDATA[
+						@(!Model.IncludeRtEng && GetTweetType(Model.Txt) == "Retweet" ? 0 : Model.Inp)
+					]]>
+				</Compute.Expr>
+				<JsonPath Expr="text" Id="Txt" DefaultValue=""/>
+				<JsonPath Expr="public_metrics.retweet_count" Id="Inp"/>
 			</Compute>
 			<JsonPath Expr="public_metrics.like_count" Id="Likes" Tag="tweet.public_metrics" Converter="Int"/>
 			<JsonPath Expr="public_metrics.reply_count" Id="Replies" Tag="tweet.public_metrics" Converter="Int"/>
 			<JsonPath Expr="public_metrics.quote_count" Id="Quotes" Tag="tweet.public_metrics" Converter="Int"/>
 			<JsonPath Expr="lang" Id="Language" Tag="tweet.lang" DefaultValue=""/>
+			<JsonPath Expr="source" Id="Source" Tag="tweet.source" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.hashtags[*].tag)" Id="HashtagEntities" Title="Hashtag Entities" Tag="tweet.entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.urls[*].expanded_url)" Id="UrlEntities" Title="URL Entities" Tag="tweet.entities" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.mentions[*].username)" Id="MentionsEntities" Title="User Mentions Entities" Tag="tweet.entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="context_annotations" Id="Annotations" Tag="tweet.context_annotations" DefaultValue=""/>
+			<JsonPath Expr="reply_settings" Id="ReplySettings" Title="Reply Settings" Tag="tweet.reply_settings" DefaultValue=""/>
 			<JsonPath Expr="conversation_id" Id="ConversationId" Title="Conversation Id" Tag="tweet.conversation_id" DefaultValue=""/>
-			<JsonPath Expr="author_id" Id="UserId" Title="User Id" Converter="String"/>
-			<Compute Id="Username" Tag="user.username" Title="Username">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("username")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
+			<JsonPath Expr="author_id" Id="UserId" Title="User Id" />
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].username" Id="Username" Tag="user.username" ParseParent="true"/>
+			<Compute Expr="https://www.twitter.com/@Model.Username" Id="UserUrl" Title="User URL" Tag="user.username">
+				<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].username" Id="Username" ParseParent="true"/>
 			</Compute>
-			<Compute Id="UserUrl" Tag="user.username" Title="User URL">
-				<Compute.Expr>
-          <![CDATA[
-          https://www.twitter.com/@FetchToken("username")/
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Followers" Tag="user.public_metrics" Converter="Int">
-				<Compute.Expr>
-          <![CDATA[
-					@FetchToken("public_metrics.followers_count")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Name" Tag="user.name">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("name")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Location" Tag="user.location" DefaultValue="">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("location")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Bio" Tag="user.description" DefaultValue="">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("description")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Follows" Tag="user.public_metrics" Converter="Int">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("public_metrics.following_count")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Lists" Tag="user.public_metrics" Converter="Int">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("public_metrics.listed_count")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Tweets" Tag="user.public_metrics" Converter="Int">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("public_metrics.tweet_count")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Website" Tag="user.entities">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("entities.url.urls[0].expanded_url")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Avatar" Tag="user.profile_image_url">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("profile_image_url").Replace("_normal",string.Empty)
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<Compute Id="Verified" Tag="user.verified">
-				<Compute.Expr>
-          <![CDATA[
-          @FetchToken("verified")
-					]]>
-        </Compute.Expr>
-				<JsonPath Expr="author_id" Id="UserId"/>
-			</Compute>
-			<JsonPath Expr="source" Id="Source" Tag="tweet.source" DefaultValue=""/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].public_metrics.followers_count" Id="Followers" Tag="user.public_metrics" ParseParent="true" Converter="Int" />
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].name" Id="Name" Tag="user.name" ParseParent="true"/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].location" Id="Location" Tag="user.location" ParseParent="true" DefaultValue=""/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].description" Id="Bio" Tag="user.description" ParseParent="true" DefaultValue=""/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].public_metrics.following_count" Id="Follows" Tag="user.public_metrics" ParseParent="true" Converter="Int"/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].public_metrics.listed_count" Id="Lists" Tag="user.public_metrics" ParseParent="true" Converter="Int"/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].public_metrics.tweet_count" Id="Tweets" Tag="user.public_metrics" ParseParent="true" Converter="Int"/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].entities.url.urls[0].expanded_url" Id="Website" Tag="user.entities" ParseParent="true" DefaultValue=""/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].profile_image_url" Id="Avatar" Tag="user.profile_image_url" ParseParent="true"/>
+			<JsonPath Expr="$.includes.users[?(@@.id=='@(Model.UserIdCache)')].verified" Id="Verified" Tag="user.verified" ParseParent="true"/>
 		</Resource>
     <Resource Id="User">
 			<Compute Expr="https://www.twitter.com/@(Model.Inp)/" Id="Url" Title="URL">
 				<JsonPath Expr="username" Id="Inp" Tag="user.username" DefaultValue=""/>
 			</Compute>
-			<JsonPath Expr="id" Id="Id" Title="User Id" Tag="user.id" Converter="String"/>
+			<JsonPath Expr="id" Id="User.Id" Title="User Id" Tag="user.id" Converter="String"/>
 			<JsonPath Expr="username" Id="Username" Tag="user.username"/>
 			<JsonPath Expr="name" Id="Name" Tag="user.name"/>
 			<JsonPath Expr="public_metrics.followers_count" Tag="user.public_metrics" Id="Followers" Converter="Int"/>
@@ -167,8 +100,8 @@
 			<JsonPath Expr="public_metrics.listed_count" Tag="user.public_metrics" Id="Lists" Converter="Int"/>
 			<JsonPath Expr="description" Id="Description" Tag="user.description" DefaultValue=""/>
 			<JsonPath Expr="location" Id="Location" Tag="user.location" DefaultValue=""/>
-			<JsonPath Expr="created_at" Id="CreatedAt" Tag="user.created_at" Converter="DateTime"/>
-			<JsonPath Expr="entities.url.urls[0].expanded_url" Tag="user.entities" Id="Website"/>
+			<JsonPath Expr="created_at" Id="Created" Tag="user.created_at" Converter="DateTime"/>
+			<JsonPath Expr="entities.url.urls[0].expanded_url" Tag="user.entities" Id="Website" DefaultValue=""/>
 			<Compute Expr="@Model.Inp.Replace(&quot;_normal&quot;,string.Empty)" Id="Avatar" Tag="user.profile_image_url">
 				<JsonPath Expr="profile_image_url" Id="Inp" DefaultValue=""/>
 			</Compute>
@@ -195,6 +128,7 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="data[*]">
+				<JsonPath Expr="author_id" Id="UserIdCache" CacheAndHide="true"/>
 				<Resource Id="Tweet"/>
 			</JsonPath>
     </Parse>
@@ -203,21 +137,17 @@
 
   <RestConnector Id="TweetSearch" Title="Tweets Search" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent">
     <Parameters>
-      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
+      <Text Id="Query" Title="Query" Required="true" Syntax="^.{1,512}$" Syntax.HelpText="Up to 512 characters" Debug.DefaultValue="obama" HelpUrl="https://dev.twitter.com/rest/public/search"/>
 			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweet count to 0 for all retweets"/>
     </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Expr="$.meta.next_token" Id="NextResults"/>
-      </Parse>
-    </Paging>
+		<Resource Id="Paging"/>
     <Fetch>
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.twitter.com/2/tweets/search/recent
 				?query=@Utils.UrlEncode(Model.Query)
-				&max_results=@Model.PageCursor.NextTake
+				&max_results=@GetValdPaginationCount()
         @(Model.PageCursor.Page != 0 ? "&next_token=" +  Model.NextResults : "")
 				&expansions=author_id,entities.mentions.username
 				&tweet.fields=@SelectedTweetFields()
@@ -227,8 +157,149 @@
     </Fetch>
     <Parse>
 			<JsonPath Expr="data[*]">
+				<JsonPath Expr="author_id" Id="UserIdCache" CacheAndHide="true"/>
 				<Resource Id="Tweet"/>
       </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UserTweets" Title="Tweets from Users" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/tweets/timelines/api-reference/get-users-id-tweets">
+    <Parameters>
+      <Text Id="Usernames" Title="Usernames" Debug.DefaultValue="justinbieber" Required="true" Multiline="true"/>
+      <Checkbox Id="IncludeRts" Title="Include Retweets" DefaultValue="true"/>
+      <Checkbox Id="IncludeReplies" Title="Include Replies" DefaultValue="true"/>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
+    </Parameters>
+    <Resource Id="Paging"/>
+		<Prepare>
+      <Connector Id="UsersLookupHidden" IgnoreBatches="true"/>
+    </Prepare>
+		<Batch Parameter="Usernames" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/tweets
+				?max_results=@GetValdPaginationCount()
+        @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
+				&expansions=author_id,entities.mentions.username
+				&tweet.fields=@SelectedTweetFields()
+				@SelectedUserFields()
+        ]]>
+      </Fetch.Url>
+      <Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="author_id" Id="UserIdCache" CacheAndHide="true"/>
+				<Resource Id="Tweet"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="MentionsTweets" Title="Tweets Mentioning Users" Group="Tweets" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/tweets/timelines/api-reference/get-users-id-mentions">
+    <Parameters>
+      <Text Id="Usernames" Title="Usernames" Debug.DefaultValue="justinbieber" Required="true" Multiline="true"/>
+      <Checkbox Id="IncludeRts" Title="Include Retweets" DefaultValue="true"/>
+      <Checkbox Id="IncludeReplies" Title="Include Replies" DefaultValue="true"/>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
+    </Parameters>
+    <Resource Id="Paging"/>
+		<Prepare>
+      <Connector Id="UsersLookupHidden" IgnoreBatches="true"/>
+    </Prepare>
+		<Batch Parameter="Usernames" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/mentions
+				?max_results=@GetValdPaginationCount()
+        @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
+				&expansions=author_id,entities.mentions.username
+				&tweet.fields=@SelectedTweetFields()
+				@SelectedUserFields()
+        ]]>
+      </Fetch.Url>
+      <Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="author_id" Id="UserIdCache" CacheAndHide="true"/>
+				<Resource Id="Tweet"/>
+			</JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UserFollowers" Title="User Followers" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/get-users-id-followers">
+    <Parameters>
+      <Text Id="Usernames" Title="Username" Debug.DefaultValue="justinbieber" Required="true"/>
+    </Parameters>
+    <Resource Id="Paging"/>
+		<Prepare>
+      <Connector Id="UsersLookupHidden"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/followers
+				?max_results=@GetValdPaginationCount()
+        @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
+				@SelectedUserFields()
+        ]]>
+      </Fetch.Url>
+      <Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[*]">
+				<Resource Id="User"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="UserFollowing" Title="User Following" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/get-users-id-following">
+    <Parameters>
+      <Text Id="Usernames" Title="Username" Debug.DefaultValue="justinbieber" Required="true"/>
+    </Parameters>
+    <Resource Id="Paging"/>
+		<Prepare>
+      <Connector Id="UsersLookupHidden"/>
+    </Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/following
+				?max_results=@GetValdPaginationCount()
+        @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
+				@SelectedUserFields()
+        ]]>
+      </Fetch.Url>
+      <Resource Id="HttpSettings"/>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[*]">
+				<Resource Id="User"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="UsersLookupHidden" Hidden="true">
+    <Parameters>
+      <Text Id="Usernames" Debug.DefaultValue="zaralarsson" Multiline="true" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.twitter.com/2/users/by?usernames=@FetchUserString()
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Compute Expr="@Model.FetchedResult.Body" Id="UserIds"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
@@ -287,13 +358,6 @@
       return string.Join(",",lines.Select(e => Regex.Replace(e, @"(\w*)\/status", string.Empty)).Select((e, i) => Regex.Replace(e, @"[^\d]", string.Empty)).ToArray());
     }
 
-		string FetchToken(string jsonPath) {
-			string filter = "includes.users[?(@.id=='" + Model.UserId + "')]." + jsonPath;
-			IEnumerable<JToken> matches = JObject.Parse(Model.FetchedResult.Body).SelectTokens(filter);
-			
-			return matches.Count() > 0 ? matches.First().ToString() : string.Empty;
-		}
-
 		string GetTweetType(string txt) {
 			if(txt.StartsWith("RT @"))
 			{
@@ -306,8 +370,23 @@
 			return "Tweet";
 		}
 
-		long AdjustEngagement(string txt) {
-			return (!Model.IncludeRtEng && GetTweetType(txt) == "Retweet") ? 0 : Model.Inp;
+		string FetchUserIdFromUsername() {
+			JObject obj = JObject.Parse(Model.UserIds);
+			var users = obj["data"];
+
+			foreach (JToken user in users)
+			{
+				if(user["username"].ToString().ToLower() == Model.Usernames.ToLower())
+				{
+					return user["id"].ToString();
+					break;
+				}
+			}
+			return string.Empty;
+		}
+		
+		int GetValdPaginationCount() {
+			return Model.PageCursor.NextTake >= 5 ? Model.PageCursor.NextTake : 5;
 		}
     ]]>
   </RazorFunctions>

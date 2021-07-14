@@ -1,11 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Social" RequireVersion="9.4" Title="YouTube Analytics" Identifier="YouTubeAnalytics" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YouTubeAnalytics.xml" HelpUrl="http://seotoolsforexcel.com/youtube-analytics/" HelpText="Documentation">
+<Suite Category="Social" RequireVersion="9.5" Title="YouTube Analytics" Identifier="YouTubeAnalytics" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/YouTubeAnalytics.xml" HelpUrl="http://seotoolsforexcel.com/youtube-analytics/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
   <GoogleOAuth2Authenticator ClientId="" ClientSecret="" Scope="https://www.googleapis.com/auth/youtube.readonly" StayAuthenticated="true"/>
 
   <Resources>
+    <Resource Id="SortBasic">
+			<Item Id="views" FriendlyIdTitle="true"/>
+			<Item Id="likes" FriendlyIdTitle="true"/>
+			<Item Id="dislikes" FriendlyIdTitle="true"/>
+			<Item Id="comments" FriendlyIdTitle="true"/>
+			<Item Id="shares" FriendlyIdTitle="true"/>
+			<Item Id="averageViewDuration" FriendlyIdTitle="true"/>
+			<Item Id="subscribersGained" FriendlyIdTitle="true"/>
+			<Item Id="subscribersLost" FriendlyIdTitle="true"/>
+			<Item Id="videosAddedToPlaylists" FriendlyIdTitle="true"/>
+			<Item Id="videosRemovedFromPlaylists" FriendlyIdTitle="true"/>
+    </Resource>
     <Resource Id="SortChannels">
       <Item Id="-views" Title="Views Descending"/>
       <Item Id="views" Title="Views Ascending"/>
@@ -22,10 +34,6 @@
       <Item Id="-averageViewDuration" Title="Avg View Duration Descending"/>
       <Item Id="averageViewDuration" Title="Avg View Duration Ascending"/>
     </Resource>
-    <Resource Id="SortVideos">
-      <Item Id="-views" Title="Views Descending"/>
-      <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
-    </Resource>
     <Resource Id="SortPlaylists">
       <Item Id="-views" Title="Views Descending"/>
       <Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
@@ -37,6 +45,14 @@
       <Item Id="deviceType" Title="Device"/>
       <Item Id="operatingSystem" Title="Operating System"/>
       <Item Id="insightPlaybackLocationType" Title="Playback Location"/>
+    </Resource>
+    <Resource Id="Direction">
+			<Select Id="Direction" Title="Sort Direction" DefaultValue="desc">
+        <DataSource>
+          <Item Id="desc" Title="Descending"/>
+          <Item Id="asc" Title="Ascending"/>
+        </DataSource>
+      </Select>
     </Resource>
     <Resource Id="Header">
       <HttpSettings>
@@ -64,7 +80,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="ChannelActivity" Title="Channel Activity" Group="Channels" HelpText="Provides statistics related to users' actions on a channel.">
+  <RestConnector Id="ChannelActivity" Title="Channel Activity" Group="Channel" HelpText="Provides statistics related to users' actions on a channel.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -88,81 +104,99 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="ActivityCountry" Title="Channel Activity by Country" Group="Channels" HelpText="Provides statistics related to user activity on a country-by-country basis for a channel.">
+  <RestConnector Id="ChannelActivityByCountry" Title="Channel Activity by Country" Group="Channel" HelpText="">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
-        <DataSource>
-          <Resource Id="SortChannels"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Required="true"/>
+      <Select Id="Sort" Title="Sort by" DefaultValue="views">
+				<DataSource>
+					<Item Id="country" Title="Country"/>
+					<Resource Id="SortBasic"/>
         </DataSource>
       </Select>
+			<Resource Id="Direction"/>
     </Parameters>
-    <Paging PageSize="100"/>
+		<Paging PageSize="100"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: &filters=@Utils.UrlEncode(Model.Filter)
-        }
+				&metrics=@SelectedFields()
+				&sort=@(Model.Direction == "desc" ? "-" : "")@(Model.Sort)
         &dimensions=country
-        &maxResults=@(Model.PageCursor.NextTake)
-				&metrics=views,likes,dislikes,comments,shares,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists
-        &sort=@(Model.Sorting)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
-      ]]>
+				&maxResults=@(Model.PageCursor.NextTake)
+        &startIndex=@(Model.PageCursor.NextSkip+1)
+			]]>
       </Fetch.Url>
       <Resource Id="Header"/>
     </Fetch>
-    <Resource Id="TableParser"/>
+		<Parse>
+			<JsonPath Expr="$.rows[*]">
+				<JsonPath Expr="$[@(GetIndex(Metrics.country))]" Id="Country"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.views))]" Id="Views" Tag="views" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.likes))]" Id="Likes" Tag="likes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.dislikes))]" Id="Dislikes" Tag="dislikes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.comments))]" Id="Comments" Tag="comments" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.shares))]" Id="Shares" Tag="shares" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.estimatedMinutesWatched))]" Tag="estimatedMinutesWatched" Id="EstimatedMinutesWatched" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.averageViewDuration))]" Tag="averageViewDuration" Id="AverageViewDuration" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersGained))]" Tag="subscribersGained" Id="SubscribersGained" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersLost))]" Tag="subscribersLost" Id="SubscribersLost" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosAddedToPlaylists))]" Tag="videosAddedToPlaylists" Id="VideosAddedToPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosRemovedFromPlaylists))]" Tag="videosRemovedFromPlaylists" Id="VideosRemovedFromPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+			</JsonPath>
+		</Parse>
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="ActivityDay" Title="Channel Activity by Day" Group="Channels" HelpText="Provides statistics related to user actions on a daily basis.">
+  <RestConnector Id="ChannelActivityByDay" Title="Channel Activity by Day" Group="Channel" HelpText="">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
-        <DataSource>
-          <Resource Id="SortChannels"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastYear" Required="true"/>
+      <Select Id="Sort" Title="Sort by" DefaultValue="views">
+				<DataSource>
+					<Item Id="day" Title="Day"/>
+					<Resource Id="SortBasic"/>
         </DataSource>
       </Select>
+			<Resource Id="Direction"/>
     </Parameters>
-    <Paging PageSize="100"/>
+		<Paging PageSize="100"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        @if(!string.IsNullOrEmpty(Model.Filter))
-        {
-          @: &filters=@Utils.UrlEncode(Model.Filter)
-        }
+				&metrics=@SelectedFields()
+				&sort=@(Model.Direction == "desc" ? "-" : "")@(Model.Sort)
         &dimensions=day
-				&metrics=views,likes,dislikes,comments,shares,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists
-        &maxResults=@(Model.PageCursor.NextTake)
-        &sort=@(Model.Sorting)
-        @if(Model.PageCursor.Page != 0)
-        {
-          @: &startIndex=@(Model.PageCursor.NextSkip+1)
-        }
-      ]]>
+				&maxResults=@(Model.PageCursor.NextTake)
+        &startIndex=@(Model.PageCursor.NextSkip+1)
+			]]>
       </Fetch.Url>
       <Resource Id="Header"/>
     </Fetch>
-    <Resource Id="TableParser"/>
+		<Parse>
+			<JsonPath Expr="$.rows[*]">
+				<JsonPath Expr="$[@(GetIndex(Metrics.day))]" Id="Day"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.views))]" Id="Views" Tag="views" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.likes))]" Id="Likes" Tag="likes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.dislikes))]" Id="Dislikes" Tag="dislikes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.comments))]" Id="Comments" Tag="comments" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.shares))]" Id="Shares" Tag="shares" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.estimatedMinutesWatched))]" Tag="estimatedMinutesWatched" Id="EstimatedMinutesWatched" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.averageViewDuration))]" Tag="averageViewDuration" Id="AverageViewDuration" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersGained))]" Tag="subscribersGained" Id="SubscribersGained" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersLost))]" Tag="subscribersLost" Id="SubscribersLost" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosAddedToPlaylists))]" Tag="videosAddedToPlaylists" Id="VideosAddedToPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosRemovedFromPlaylists))]" Tag="videosRemovedFromPlaylists" Id="VideosRemovedFromPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+			</JsonPath>
+		</Parse>
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="ViewsDemographics" Title="Views by Demographics" Group="Channels" HelpText="Aggregates viewing statistics based on viewers' age group and gender.">
+  <RestConnector Id="ViewsDemographics" Title="Views by Demographics" Group="Channel" HelpText="Aggregates viewing statistics based on viewers' age group and gender.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -193,32 +227,8 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="VideosSpecific" Title="Lookup Videos" Group="Videos" HelpText="Provides statistics related a list of videos provided by the user.">
-    <Parameters>
-      <Text Id="Ids" Title="Video Ids" Debug.DefaultValue="1lvItfPSWe4" Required="true" Multiline="true" HelpText="Ids separated by newline."/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="200"/>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
-        &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
-        &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        &filters=video==@(FetchIdsBatch())
-        &dimensions=video
-        &maxResults=@(Model.PageCursor.NextTake)
-				&metrics=views,likes,dislikes,comments,shares,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists
-        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
-      ]]>
-      </Fetch.Url>
-      <Resource Id="Header"/>
-    </Fetch>
-    <Resource Id="TableParser"/>
-    <Resource Id="Error"/>
-  </RestConnector>
 
-  <RestConnector Id="VideosRetentionRate" Title="Retention Rate" Group="Videos" HelpText="Provides statistics related a list of videos provided by the user.">
+  <RestConnector Id="VideosRetentionRate" Title="Retention Rate" Group="Video" HelpText="A measurement that shows how well a video retains viewers during playbacks in comparison to all YouTube videos of similar length.">
     <Parameters>
       <Text Id="Id" Title="Video Id" Debug.DefaultValue="HDcRUflNKU4" Required="true"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -240,35 +250,55 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="VideosTop" Title="Top Videos" Group="Videos" HelpText="Lists the Channel's top videos.">
+  <RestConnector Id="VideoAnalytics" Title="Video Analytics" Group="Video" HelpText="Provides statistics related a list of videos provided by the user.">
     <Parameters>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
-        <DataSource>
-          <Resource Id="SortVideos"/>
+      <Text Id="Ids" Title="Filter by video Ids (optional)" Debug.DefaultValue="QIVGpsJMnO8&#0010;w1h2ETPxQ_M&#0010;JycjYOOm0o0" Multiline="true" HelpText="Ids separated by newline."/>
+      <Select Id="Sort" Title="Sort by" DefaultValue="views">
+				<DataSource>
+					<Item Id="video" Title="Video"/>
+					<Resource Id="SortBasic"/>
         </DataSource>
       </Select>
+			<Resource Id="Direction"/>
+			<DateInterval Id="DateInterval" Title="Date Interval" Required="true" DefaultValue="LastYear"/>´
     </Parameters>
-    <Paging PageSize="10"/>
+		<Paging PageSize="100"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
         https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        @(!string.IsNullOrEmpty(Model.Ids) ? "&filters=video==" + FetchIdsBatch() : string.Empty)
         &dimensions=video
+				&sort=@(Model.Direction == "desc" ? "-" : "")@Model.Sort
         &maxResults=@(Model.PageCursor.NextTake)
-        &sort=@(Model.Sorting)
-				&metrics=views,likes,dislikes,comments,shares,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost,videosAddedToPlaylists,videosRemovedFromPlaylists
+				&metrics=@SelectedFields()
+        &startIndex=@(Model.PageCursor.NextSkip+1)
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
     </Fetch>
-    <Resource Id="TableParser"/>
+		<Parse>
+			<JsonPath Expr="$.rows[*]">
+				<JsonPath Expr="$[@(GetIndex(Metrics.video))]" Id="Video"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.views))]" Id="Views" Tag="views" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.likes))]" Id="Likes" Tag="likes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.dislikes))]" Id="Dislikes" Tag="dislikes" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.comments))]" Id="Comments" Tag="comments" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.shares))]" Id="Shares" Tag="shares" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.estimatedMinutesWatched))]" Tag="estimatedMinutesWatched" Id="EstimatedMinutesWatched" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.averageViewDuration))]" Tag="averageViewDuration" Id="AverageViewDuration" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersGained))]" Tag="subscribersGained" Id="SubscribersGained" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.subscribersLost))]" Tag="subscribersLost" Id="SubscribersLost" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosAddedToPlaylists))]" Tag="videosAddedToPlaylists" Id="VideosAddedToPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.videosRemovedFromPlaylists))]" Tag="videosRemovedFromPlaylists" Id="VideosRemovedFromPlaylists" FriendlyIdTitle="true" Converter="Auto"/>
+			</JsonPath>
+		</Parse>
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="ViewsBySegment" Title="Views by Segment" Group="Channels" HelpText="Statistics based on dimension segments.">
+  <RestConnector Id="ViewsBySegment" Title="Views by Segment" Group="Channel" HelpText="Statistics based on dimension segments.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
       <Select Id="Dimension" Title="Select Segment" Required="false" DefaultValue="insightTrafficSourceType">
@@ -279,7 +309,8 @@
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
       <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-views">
         <DataSource>
-          <Resource Id="SortVideos"/>
+					<Item Id="-views" Title="Views Descending"/>
+					<Item Id="-estimatedMinutesWatched" Title="Est Min Watched Descending"/>
         </DataSource>
       </Select>
     </Parameters>
@@ -304,7 +335,7 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="SharesService" Title="Shares by Service" Group="Channels" HelpText="Provides statistics showing how frequently the channel's videos were shared on different social platforms.">
+  <RestConnector Id="SharesService" Title="Shares by Service" Group="Channel" HelpText="Provides statistics showing how frequently the channel's videos were shared on different social platforms.">
     <Parameters>
       <Text Id="Filter" Title="Filter" Debug.DefaultValue="" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
       <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
@@ -329,80 +360,43 @@
     <Resource Id="Error"/>
   </RestConnector>
 
-  <RestConnector Id="PlayListsActivity" Title="Playlists Activity" Group="Playlists" HelpText="Retrieves total playlist starts, estimated minutes watched, views, and views per playlist starts.">
+  <RestConnector Id="PlaylistAnalytics" Title="Playlist Analytics" Group="Playlist" HelpText="Provides statistics related a list of playlists provided by the user.">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Debug.DefaultValue="country==US" Required="false" HelpUrl="https://developers.google.com/youtube/analytics/v2/channel_reports"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
-        &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
-        &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        &filters=isCurated==1
-        &metrics=views,estimatedMinutesWatched,playlistStarts,viewsPerPlaylistStart
-        @(!string.IsNullOrEmpty(Model.Filter) ? "&filters=" + Utils.UrlEncode(Model.Filter) : "")
-      ]]>
-      </Fetch.Url>
-      <Resource Id="Header"/>
-    </Fetch>
-    <Resource Id="TableParser"/>
-    <Resource Id="Error"/>
-  </RestConnector>
-
-  <RestConnector Id="PlaylistsSpecific" Title="Lookup Playlists" Group="Playlists" HelpText="Provides statistics related a list of playlists provided by the user.">
-    <Parameters>
-      <Text Id="Ids" Title="Playlist Ids" Debug.DefaultValue="PLveF1eCPUBjhldDk3sd0Q4GYKFPCIcBCp" Required="true" Multiline="true" HelpText="Ids separated by a newline"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="200"/>
-    <Fetch>
-      <Fetch.Url>
-      <![CDATA[
-        https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
-        &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
-        &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        &filters=isCurated==1;playlist==@(FetchIdsBatch())
-        &dimensions=playlist
-        &maxResults=@(Model.PageCursor.NextTake)
-        &metrics=views,estimatedMinutesWatched,playlistStarts,viewsPerPlaylistStart
-        @(Model.PageCursor.Page != 0 ? "&startIndex=" + Model.PageCursor.NextSkip+1 : "")
-      ]]>
-      </Fetch.Url>
-      <Resource Id="Header"/>
-    </Fetch>
-    <Resource Id="TableParser"/>
-    <Resource Id="Error"/>
-  </RestConnector>
-
-  <RestConnector Id="PlaylistsTop" Title="Top Playlists" Group="Playlists" HelpText="Lists the Channel's top playlists.">
-    <Parameters>
-    <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
-      <Select Id="Sorting" Title="Sort by" Required="false" DefaultValue="-estimatedMinutesWatched">
+      <Text Id="Ids" Title="Filter by playlist Ids (optional)" Debug.DefaultValue="PLveF1eCPUBjhldDk3sd0Q4GYKFPCIcBCp" Required="false" Multiline="true" HelpText="Ids separated by a newline"/>
+			<Select Id="Sort" Title="Sort by Metric" DefaultValue="estimatedMinutesWatched">
         <DataSource>
           <Resource Id="SortPlaylists"/>
         </DataSource>
       </Select>
+			<Resource Id="Direction"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="true"/>
     </Parameters>
-    <Paging PageSize="10"/>
+		<Paging PageSize="100"/>
     <Fetch>
       <Fetch.Url>
       <![CDATA[
-        https://youtubeanalytics.googleapis.com/v2/reports?
-        ids=channel==MINE
+        https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE
         &startDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
         &endDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
-        &filters=isCurated==1
+				&filters=isCurated==1@(!string.IsNullOrEmpty(Model.Ids) ? ";playlist==" + FetchIdsBatch() : string.Empty)
         &dimensions=playlist
         &maxResults=@(Model.PageCursor.NextTake)
-        &sort=@(Model.Sorting)
-        &metrics=views,estimatedMinutesWatched,playlistStarts,viewsPerPlaylistStart
+				&metrics=@SelectedFields()
+        &startIndex=@(Model.PageCursor.NextSkip+1)
+				&sort=@(Model.Direction == "desc" ? "-" : "")@Model.Sort
       ]]>
       </Fetch.Url>
       <Resource Id="Header"/>
     </Fetch>
-    <Resource Id="TableParser"/>
+		<Parse>
+			<JsonPath Expr="$.rows[*]">
+				<JsonPath Expr="$[@(GetIndex(Metrics.playlist))]" Id="Playlist"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.views))]" Id="Views" Tag="views" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.estimatedMinutesWatched))]" Tag="estimatedMinutesWatched" Id="EstimatedMinutesWatched" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.playlistStarts))]" Tag="playlistStarts" Id="PlaylistStarts" FriendlyIdTitle="true" Converter="Auto"/>
+				<JsonPath Expr="$[@(GetIndex(Metrics.viewsPerPlaylistStart))]" Tag="viewsPerPlaylistStart" Id="ViewsPerPlaylistStart" FriendlyIdTitle="true" Converter="Auto"/>
+			</JsonPath>
+		</Parse>
     <Resource Id="Error"/>
   </RestConnector>
 
@@ -412,6 +406,40 @@
 				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
         return string.Join(",",lines.Select((e, i) => Utils.UrlEncode(e)).ToArray());
       }
+
+			string SelectedFields() {
+        string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+        return string.Join(",",((ResultField[])Model.Headers).Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower())).Select(e => e.Tag).Distinct().ToArray());
+      }
+
+			int GetIndex(Metrics metric) {
+				string key = metric == Metrics.Dimension ? Model.Dimension : metric.ToString();
+				JObject obj = JObject.Parse(Model.FetchedResult.Body);
+				var names = obj.SelectTokens("$.columnHeaders[*].name").ToArray();
+				return Array.IndexOf(names, key);
+			}
+
+			enum Metrics
+			{
+				Dimension,
+				country,
+				day,
+				video,
+				playlist,
+				views,
+				likes,
+				dislikes,
+				comments,
+				shares,
+				estimatedMinutesWatched,
+				averageViewDuration,
+				subscribersGained,
+				subscribersLost,
+				videosAddedToPlaylists,
+				videosRemovedFromPlaylists,
+				playlistStarts,
+				viewsPerPlaylistStart
+			}
     ]]>
   </RazorFunctions>
 

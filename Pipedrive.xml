@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="CRM" Title="Pipedrive" Identifier="Pipedrive" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/pipedrive.xml" HelpUrl="http://seotoolsforexcel.com/pipedrive" HelpText="Documentation">
+<Suite Category="CRM" Title="Pipedrive" Identifier="Pipedrive" RequireVersion="9.5.5" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/pipedrive.xml" HelpUrl="http://seotoolsforexcel.com/pipedrive" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -22,40 +22,6 @@
 			</Fail>
     </Resource>
   </Resources>
-
-  <RestConnector Id="FetchUsers" Hidden="True">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/users?api_token=@Model.ApiKey
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="User Id"/>
-        <JsonPath Expr="name" Id="Name" Title="User Name"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="FetchActivityTypes" Hidden="True">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/activityTypes?api_token=@Model.ApiKey
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="key_string" Id="Id" Title="Activity Id"/>
-        <JsonPath Expr="key_string" Id="Name" Title="Activity Name"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
 
   <RestConnector Id="FilterDeals" Hidden="true">
     <Fetch Url="https://api.pipedrive.com/v1/filters?api_token=@(Model.ApiKey)&amp;type=deals"/>
@@ -101,75 +67,51 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Persons" Title="Persons List" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/get_persons">
+	<RestConnector Id="PersonList" Title="Persons List" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/getPersons">
     <Parameters>
-			<Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterPersons" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
-      <Select Id="Sorting" Title="Sort by" DefaultValue="last_name">
-        <DataSource>
-					<Item Id="first_name" Title="First Name"/>
-					<Item Id="last_name" Title="Last Name"/>
-					<Item Id="open_deals_count" Title="Open Deals"/>
-					<Item Id="closed_deals_count" Title="Closed Deals"/>
-					<Item Id="email_messages_count" Title="Emails Sent"/>
-					<Item Id="activities_count" Title="Activities"/>
-					<Item Id="done_activities_count" Title="Activities Done"/>
-					<Item Id="won_deals_count" Title="Won Deals"/>
-					<Item Id="lost_deals_count" Title="Lost Deals"/>
-					<Item Id="followers_count" Title="Followers"/>
-					<Item Id="next_activity_date" Title="Next Activity Day"/>
-					<Item Id="update_time" Title="Updated"/>
-					<Item Id="add_time" Title="Created"/>
-					<Item Id="id" Title="Contact Id"/>
-        </DataSource>
-      </Select>
+			<Text Id="Filter" Select.Connector="FilterPersons" HelpText="Applies an existing filter to limit the results"/>
+      <Text Id="Owner" Title="Filter by User" Select.Connector="ListUsersHidden"/>
+      <Text Id="Sorting" Title="Sort by Field" Select.Connector="ListPersonFields"/>
 			<Resource Id="SortingMode"/>
     </Parameters>
     <Paging PageSize="50"/>
+		<Prepare>
+			<Connector Id="GetPersonFields"/>
+		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.pipedrive.com/v1/persons?api_token=@Model.ApiKey
         &limit=@(Model.PageCursor.NextTake)
-        &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
+				@(!string.IsNullOrEmpty(Model.Owner) ? "&user_id=" + Model.Owner : "")
+        @(!string.IsNullOrEmpty(Model.Sorting) ? "&sort=" + Model.Sorting + "%20" + Model.SortingMode : "")
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="org_id.value" Id="CompanyId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_id.name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="id" Id="ContactId" Title="Person Id" Converter="Int"/>
-        <JsonPath Expr="first_name" Id="FirstName" Title="First Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="last_name" Id="LastName" Title="Last Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="phone[?(@@.primary==true)].value" Id="PrimaryPhone" Title="Phone" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="email[?(@@.primary==true)].value" Id="PrimaryEmail" Title="Email" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="open_deals_count" Id="OpenDealsCount" Title="Open Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="closed_deals_count" Id="ClosedDealsCount" Title="Closed Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="EmailMessagesCount" Title="Emails Sent" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="ActivitiesCount" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="done_activities_count" Id="DoneActivitiesCount" Title="Activities Done" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="won_deals_count" Id="WonDealsCount" Title="Won Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="lost_deals_count" Id="LostDealsCount" Title="Lost Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="followers_count" Id="FollowersCount" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="owner_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_id.name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="NextActivity" Title="Next Activity" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="next_activity_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="next_activity_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="update_time" Id="UpdateTime" Title="Updated" Converter="DateTime"/>
-        <JsonPath Expr="add_time" Id="AddTime" Title="Created" Converter="DateTime"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys($.data[0])" FlatObjects="owner_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys($.data[*])" FlatObjects="owner_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="PersonLookup" Title="Person Lookup" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/get_persons_id">
+  <RestConnector Id="PersonLookup" Title="Person Lookup Details" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/getPerson">
     <Parameters>
-      <Text Id="PersonId" Title="Person Id" Required="true" Debug.DefaultValue="3995" Syntax="^\d+$"/>
+      <Text Id="PersonId" Title="Person Id" Required="true" Debug.DefaultValue="1" Syntax="^\d+$"/>
     </Parameters>
+		<Prepare>
+			<Connector Id="GetPersonFields"/>
+		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -178,265 +120,98 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data">
-        <JsonPath Expr="org_id.value" Id="CompanyId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_id.name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="id" Id="ContactId" Title="Contact Id" Converter="Int"/>
-        <JsonPath Expr="first_name" Id="FirstName" Title="First Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="last_name" Id="LastName" Title="Last Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="phone[?(@@.primary==true)].value" Id="PrimaryPhone" Title="Phone" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="email[?(@@.primary==true)].value" Id="PrimaryEmail" Title="Email" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="open_deals_count" Id="OpenDealsCount" Title="Open Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="closed_deals_count" Id="ClosedDealsCount" Title="Closed Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="EmailMessagesCount" Title="Emails Sent" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="ActivitiesCount" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="done_activities_count" Id="DoneActivitiesCount" Title="Activities Done" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="won_deals_count" Id="WonDealsCount" Title="Won Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="lost_deals_count" Id="LostDealsCount" Title="Lost Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="followers_count" Id="FollowersCount" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="owner_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_id.name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="NextActivity" Title="Next Activity" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="next_activity_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="next_activity_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="update_time" Id="UpdateTime" Title="Updated" Converter="DateTime"/>
-        <JsonPath Expr="add_time" Id="AddTime" Title="Created" Converter="DateTime"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys(data)" FlatObjects="owner_id,org_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys(data)" FlatObjects="owner_id,org_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="SearchPersons" Title="Persons Search" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/get_persons_find">
+  <RestConnector Id="SearchPersons" Title="Persons Search" Group="Persons" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Persons/searchPersons">
     <Parameters>
       <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="Victor"/>
-      <Checkbox Id="Email" Title="Search by Email" DefaultValue="false" HelpText="When enabled, term will only be matched against email addresses of people."/>
+      <Checkbox Id="ExactMatch" Title="Exact Match" HelpText="When enabled, only full exact matches against the given term are returned. It is not case sensitive."/>
     </Parameters>
     <Paging PageSize="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pipedrive.com/v1/persons/find?term=@Utils.UrlEncode(Model.Query)&api_token=@Model.ApiKey
-				&search_by_email=@(Model.Email ? "1" : "0")
+        https://api.pipedrive.com/v1/persons/search?term=@Utils.UrlEncode(Model.Query)&api_token=@Model.ApiKey
+				&exact_match=@(Model.ExactMatch ? "true" : "false")
         &limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="name" Id="Name" Title="Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="phone" Id="Phone" Title="Phone" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="org_id" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="data.items[*]">
+        <JsonPath Expr="item.id" Id="Id" Converter="auto" DefaultValue=""/>
+        <JsonPath Expr="item.name" Id="Name" DefaultValue=""/>
+        <JsonPath Expr="item.owner.id" Id="OwnerId" Title="Owner Id" DefaultValue=""/>
+        <JsonPath Expr="item.organization.id" Id="OrganizationId" Title="Organization Id" Converter="auto" DefaultValue=""/>
+        <JsonPath Expr="item.organization.name" Id="Organization" DefaultValue=""/>
+				<JsonPath Expr="result_score" Id="Score" Title="Score" Converter="Double"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListOrganizations" Title="Organizations List" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/get_organizations">
+  <RestConnector Id="ListOrganizations" Title="Organizations List" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/getOrganizations">
     <Parameters>
-     <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterOrgs" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
-      <Select Id="Sorting" Title="Sort by" DefaultValue="name">
-        <DataSource>
-					<Item Id="name" Title="Organization Name"/>
-					<Item Id="people_count" Title="Contacts Count"/>
-					<Item Id="open_deals_count" Title="Open Deals"/>
-					<Item Id="closed_deals_count" Title="Closed Deals"/>
-					<Item Id="email_messages_count" Title="Emails Sent"/>
-					<Item Id="activities_count" Title="Activities"/>
-					<Item Id="done_activities_count" Title="Activities Done"/>
-					<Item Id="won_deals_count" Title="Won Deals"/>
-					<Item Id="lost_deals_count" Title="Lost Deals"/>
-					<Item Id="followers_count" Title="Followers"/>
-					<Item Id="next_activity_date" Title="Next Activity Day"/>
-					<Item Id="update_time" Title="Updated"/>
-					<Item Id="add_time" Title="Created"/>
-					<Item Id="company_id" Title="Company Id"/>
-        </DataSource>
-      </Select>
-      <Resource Id="SortingMode"/>
+     <Text Id="Filter" Select.Connector="FilterOrgs" HelpText="Applies an existing filter to limit the results"/>
+     <Text Id="Owner" Title="Filter by User" Select.Connector="ListUsersHidden"/>
+     <Text Id="Sorting" Title="Sort by Field" Select.Connector="ListOrganizationFields"/>
+		 <Resource Id="SortingMode"/>
     </Parameters>
+		<Prepare>
+			<Connector Id="GetOrganizationFields"/>
+		</Prepare>
     <Paging PageSize="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.pipedrive.com/v1/organizations?api_token=@Model.ApiKey
         &limit=@(Model.PageCursor.NextTake)
-        &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
+        @(!string.IsNullOrEmpty(Model.Owner) ? "&user_id=" + Model.Owner : "")
+        @(!string.IsNullOrEmpty(Model.Sorting) ? "&sort=" + Model.Sorting + "%20" + Model.SortingMode : "")
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="Organization Id" Converter="Int"/>
-        <JsonPath Expr="name" Id="Name" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="people_count" Id="People" Title="Contacts Count" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="open_deals_count" Id="OpenDeals" Title="Open Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="closed_deals_count" Id="ClosedDeals" Title="Closed Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="Emails" Title="Emails Sent" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="Activities" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="done_activities_count" Id="DoneActivities" Title="Activities Done" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="won_deals_count" Id="WonDeals" Title="Won Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="lost_deals_count" Id="LostDeals" Title="Lost Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="followers_count" Id="Followers" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="owner_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_id.name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="NextActivity" Title="Next Activity" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="next_activity_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="next_activity_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="update_time" Id="Updated" Title="Updated" Converter="DateTime"/>
-        <JsonPath Expr="add_time" Id="Created" Title="Created" Converter="DateTime"/>
-				<JsonPath Expr="address" Id="Address" Title="Address" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="address_postal_code" Id="PostalCode" Title="Postal Code" Converter="Auto" DefaultValue=""/>
-				<JsonPath Expr="address_country" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
-      </JsonPath>
-
+      <Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys($.data[0])" FlatObjects="owner_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys($.data[*])" FlatObjects="owner_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="OrganizationLookup" Title="Organization Lookup" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/get_organizations_id">
+  <RestConnector Id="SearchOrganizations" Title="Organizations Search" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/searchOrganization">
     <Parameters>
-      <Text Id="OrgId" Title="Organization Id" Required="true" Syntax="^\d+$"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/organizations/@(Model.OrgId)?api_token=@Model.ApiKey
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data">
-        <JsonPath Expr="id" Id="Id" Title="Organization Id" Converter="Int"/>
-        <JsonPath Expr="name" Id="Name" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="people_count" Id="People" Title="Contacts Count" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="open_deals_count" Id="OpenDeals" Title="Open Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="closed_deals_count" Id="ClosedDeals" Title="Closed Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="Emails" Title="Emails Sent" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="Activities" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="done_activities_count" Id="DoneActivities" Title="Activities Done" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="won_deals_count" Id="WonDeals" Title="Won Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="lost_deals_count" Id="LostDeals" Title="Lost Deals" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="followers_count" Id="Followers" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="owner_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_id.name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="NextActivity" Title="Next Activity" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="next_activity_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="next_activity_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="update_time" Id="Updated" Title="Updated" Converter="DateTime"/>
-        <JsonPath Expr="add_time" Id="Created" Title="Created" Converter="DateTime"/>
-				<JsonPath Expr="address" Id="Address" Title="Address" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="address_postal_code" Id="PostalCode" Title="Postal Code" Converter="Auto" DefaultValue=""/>
-				<JsonPath Expr="address_country" Id="Country" Title="Country" Converter="String" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ListActivities" Title="Activities List" Group="Activities" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Activities/get_activities">
-    <Parameters>
-     <Text Id="User" Title="User" DefaultValue="" Required="true" Select.Connector="FetchUsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Select a user to display his or her activities."/>
-     <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterActivities" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
-      <Text Id="ActivityType" Title="Activity Type" Required="false" Select.Connector="FetchActivityTypes" Select.IdField="Id" Select.TitleField="Name" HelpText="Filter the results by activity type."/>
-      <Select Id="Done" Title="Activity Status" DefaultValue="all" Required="false">
-        <DataSource>
-          <Item Id="all" Title="All"/>
-          <Item Id="1" Title="Done"/>
-          <Item Id="0" Title="Not done"/>
-        </DataSource>
-      </Select>
-      <DateInterval Id="DateInterval" Title="Interval"/>
-    </Parameters>
-    <Paging PageSize="50"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/activities?api_token=@Model.ApiKey
-        &type=@Utils.UrlEncode(Model.ActivityType)
-        &limit=@(Model.PageCursor.NextTake)
-        &start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
-        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
-        @(Model.Done != "all" ? "&done=" + Model.Done : "")
-        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="Activity Id" Converter="Int"/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="DueDate" Title="Due" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="due_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="due_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="done" Id="Done" Title="Done" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="add_time" Id="Added" Title="Added" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="deal_id" Id="DealId" Title="Deal Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="deal_title" Id="DealTitle" Title="Deal Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="org_id" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="person_id" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="person_name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="user_id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ActivityLookup" Title="Activity Lookup" Group="Activities" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Activities/get_activities_id">
-    <Parameters>
-      <Text Id="ActivityId" Title="Activity Id" Debug.DefaultValue="6" Required="true" Syntax="^\d+$"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/activities/@(Model.ActivityId)?api_token=@Model.ApiKey
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data">
-        <JsonPath Expr="id" Id="Id" Title="Activity Id" Converter="Int"/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" DefaultValue=""/>
-        <Compute Expr="@(Model.InpDate) @(Model.InpTime)" Id="DueDate" Title="Due" Converter="Auto" DefaultValue="">
-          <JsonPath Expr="due_date" Id="InpDate" DefaultValue=""/>
-          <JsonPath Expr="due_time" Id="InpTime" DefaultValue=""/>
-        </Compute>
-        <JsonPath Expr="done" Id="Done" Title="Done" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="add_time" Id="Added" Title="Added" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="subject" Id="Subject" Title="Subject" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="deal_id" Id="DealId" Title="Deal Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="deal_title" Id="DealTitle" Title="Deal Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="org_id" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="person_id" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="person_name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="user_id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="SearchOrganizations" Title="Organizations Search" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/get_organizations">
-    <Parameters>
-      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="Victor"/>
+      <Text Id="Query" Required="true" Debug.DefaultValue="Victor"/>
+			<Checkbox Id="ExactMatch" Title="Exact Match" HelpText="When enabled, only full exact matches against the given term are returned. It is not case sensitive."/>
     </Parameters>
     <Paging PageSize="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
         https://api.pipedrive.com/v1/organizations/find?term=@Utils.UrlEncode(Model.Query)&api_token=@Model.ApiKey
+				&exact_match=@(Model.ExactMatch ? "true" : "false")
         &limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         ]]>
@@ -451,70 +226,128 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListDeals" Title="Deals List" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/get_deals">
+  <RestConnector Id="OrganizationLookup" Title="Organization Lookup Details" Group="Organizations" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Organizations/getOrganization">
     <Parameters>
-      <Text Id="Filter" Title="Filter" Required="false" Select.Connector="FilterDeals" Select.IdField="Id" Select.TitleField="Name" HelpText="Applies an existing filter to limit the results"/>
-      <Select Id="Sorting" Title="Sort By" Required="true" DefaultValue="title">
+      <Text Id="OrgId" Title="Organization Id" Required="true" Debug.DefaultValue="1" Syntax="^\d+$"/>
+    </Parameters>
+		<Prepare>
+			<Connector Id="GetOrganizationFields"/>
+		</Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/organizations/@(Model.OrgId)?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys(data)" FlatObjects="owner_id,org_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys(data)" FlatObjects="owner_id,org_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListActivities" Title="Activities List" Group="Activities" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Activities/getActivities">
+    <Parameters>
+      <Text Id="Filter" Select.Connector="FilterActivities" HelpText="Applies an existing filter to limit the results"/>
+			<Text Id="Owner" Title="Filter by User" Select.Connector="ListUsersHidden"/>
+      <Text Id="ActivityType" Title="Activity Type" Select.Connector="ListActivityTypesHidden" HelpText="Filter the results by activity type."/>
+      <Select Id="Done" Title="Activity Status" DefaultValue="all">
         <DataSource>
-					<Item Id="title" Title="Deal Title"/>
-					<Item Id="id" Title="Deal Id"/>
-					<Item Id="status" Title="Status"/>
-					<Item Id="value" Title="Deal Value"/>
-					<Item Id="org_name" Title="Organization Name"/>
-					<Item Id="person_name" Title="Contact Name"/>
-					<Item Id="update_time" Title="Updated"/>
-					<Item Id="add_time" Title="Added"/>
-					<Item Id="owner_name" Title="Owner Name"/>
-					<Item Id="followers_count" Title="Followers"/>
-					<Item Id="activities_count" Title="Activities"/>
-					<Item Id="participants_count" Title="Participants"/>
-					<Item Id="email_messages_count" Title="Emails"/>
-					<Item Id="expected_close_date" Title="Exp. Close Date"/>
-				</DataSource>
+          <Item Id="all" Title="All"/>
+          <Item Id="1" Title="Done"/>
+          <Item Id="0" Title="Not done"/>
+        </DataSource>
       </Select>
-      <Resource Id="SortingMode"/>
+      <DateInterval Id="DateInterval" Title="Interval" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50"/>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
+        https://api.pipedrive.com/v1/activities?api_token=@Model.ApiKey
+        &type=@Utils.UrlEncode(Model.ActivityType)
+        &limit=@(Model.PageCursor.NextTake)
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+          @: &end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+        }
+        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
+        @(Model.Done != "all" ? "&done=" + Model.Done : "")
+				@(!string.IsNullOrEmpty(Model.Owner) ? "&user_id=" + Model.Owner : "")
+        @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys($.data[0])" SortObjects="false">
+					<Compute Expr="@(Utils.Capitalize(Model.HeaderKey))" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys($.data[*])" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListDeals" Title="Deals List" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/getDeals">
+    <Parameters>
+      <Text Id="Filter" Select.Connector="FilterDeals" HelpText="Applies an existing filter to limit the results"/>
+			<Text Id="Owner" Title="Filter by User" Select.Connector="ListUsersHidden"/>
+      <Text Id="Sorting" Title="Sort by Field" Select.Connector="ListDealFields"/>
+      <Resource Id="SortingMode"/>
+    </Parameters>
+    <Paging PageSize="50"/>
+		<Prepare>
+			<Connector Id="GetDealFields"/>
+		</Prepare>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
         https://api.pipedrive.com/v1/deals?api_token=@Model.ApiKey
         &limit=@(Model.PageCursor.NextTake)
-        &sort=@Utils.UrlEncode(Model.Sorting)%20@(Model.SortingMode)
+				@(!string.IsNullOrEmpty(Model.Owner) ? "&user_id=" + Model.Owner : "")
+				@(!string.IsNullOrEmpty(Model.Sorting) ? "&sort=" + Model.Sorting + "%20" + Model.SortingMode : "")
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         @(!string.IsNullOrEmpty(Model.Filter) ? "&filter_id=" + Model.Filter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="Deal Id" Converter="Int"/>
-        <JsonPath Expr="title" Id="Title" Title="Deal Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="value" Id="Value" Title="Deal Value" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="org_id.value" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="person_id.value" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="person_name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="update_time" Id="Updated" Title="Updated" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="add_time" Id="Added" Title="Added" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="user_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="followers_count" Id="Followers" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="Activities" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="participants_count" Id="Participants" Title="Participants" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="Emails" Title="Emails" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="expected_close_date" Id="ExpCloseDate" Title="Exp. Close Date" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" DefaultValue=""/>
-      </JsonPath>
+      <Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys($.data[0])" FlatObjects="user_id,person_id,org_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys($.data[*])" FlatObjects="user_id,person_id,org_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DealLookup" Title="Deal Lookup" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/get_deals_id">
+  <RestConnector Id="DealLookup" Title="Deal Lookup Details" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/getDeal">
     <Parameters>
-      <Text Id="DealId" Title="Deal Id" Debug.DefaultValue="16" Required="true" Syntax="^\d+$"/>
+      <Text Id="DealId" Title="Deal Id" Debug.DefaultValue="1" Required="true" Syntax="^\d+$"/>
     </Parameters>
+		<Prepare>
+			<Connector Id="GetDealFields"/>
+		</Prepare>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
@@ -523,98 +356,60 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data">
-        <JsonPath Expr="id" Id="Id" Title="Deal Id" Converter="Int"/>
-        <JsonPath Expr="title" Id="Title" Title="Deal Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="value" Id="Value" Title="Deal Value" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="org_id.value" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="org_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="person_id.value" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="person_name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="update_time" Id="Updated" Title="Updated" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="add_time" Id="Added" Title="Added" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="user_id.id" Id="OwnerId" Title="Owner Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="owner_name" Id="OwnerName" Title="Owner" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="followers_count" Id="Followers" Title="Followers" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="activities_count" Id="Activities" Title="Activities" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="participants_count" Id="Participants" Title="Participants" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="email_messages_count" Id="Emails" Title="Emails" Converter="Int" DefaultValue="0"/>
-        <JsonPath Expr="expected_close_date" Id="ExpCloseDate" Title="Exp. Close Date" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" DefaultValue=""/>
-      </JsonPath>
+      <Table DefaultConverter="auto">
+				<JsonPath Id='Headers' Expr="keys($.data)" FlatObjects="user_id,person_id,org_id" SortObjects="false">
+					<Compute Expr="@GetCustomFieldName()" Id="Headers" DefaultValue="">
+						<JsonPath Expr="key" Id="HeaderKey"/>
+					</Compute>
+				</JsonPath>
+				<JsonPath Id='Cells' Expr="keys($.data)" FlatObjects="user_id,person_id,org_id" SortObjects="false">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="DealSearch" Title="Deals Search" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/get_deals_find">
+  <RestConnector Id="DealSearch" Title="Deals Search" Group="Deals" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Deals/searchDeals">
     <Parameters>
-      <Text Id="Query" Title="Query" Required="true" Debug.DefaultValue="sample"/>
-      <Text Id="ContactFilter" Title="Filter by Contact Id" Required="false" Debug.DefaultValue="3993"/>
-      <Text Id="OrgFilter" Title="Filter by Organization Id" Required="false" Debug.DefaultValue="3992"/>
+      <Text Id="Query" Required="true" Debug.DefaultValue="deal"/>
+			<Checkbox Id="ExactMatch" Title="Exact Match" HelpText="When enabled, only full exact matches against the given term are returned. It is not case sensitive."/>
     </Parameters>
+		<Paging PageSize="50"/>
+
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.pipedrive.com/v1/deals/find?term=@Utils.UrlEncode(Model.Query)&api_token=@Model.ApiKey
-        &person_id=@Model.ContactFilter
-        &org_id=@Model.OrgFilter
+        https://api.pipedrive.com/v1/deals/search?term=@Utils.UrlEncode(Model.Query)&api_token=@Model.ApiKey
+				&exact_match=@(Model.ExactMatch ? "true" : "false")
+				&limit=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="Deal Id" Converter="Int"/>
-        <JsonPath Expr="title" Id="Title" Title="Deal Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="status" Id="Status" Title="Status" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="value" Id="Value" Title="Deal Value" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="currency" Id="Currency" Title="Currency" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="organization_id" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="organization_name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="person_id" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
-        <JsonPath Expr="person_name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="data.items[*]">
+        <JsonPath Expr="item.id" Id="Id" Title="Deal Id" Converter="Int"/>
+        <JsonPath Expr="item.title" Id="Title" Title="Deal Title" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="item.status" Id="Status" Title="Status" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="item.value" Id="Value" Title="Deal Value" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="item.currency" Id="Currency" Title="Currency" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="item.stage.id" Id="StageId" Title="Stage Id" Converter="Int"/>
+        <JsonPath Expr="item.stage.name" Id="StageTitle" Title="Stage Title" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="item.organization.id" Id="OrgId" Title="Organization Id" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="item.organization.name" Id="OrgName" Title="Organization" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="item.person.id" Id="ContactId" Title="Contact Id" Converter="Int" DefaultValue=""/>
+        <JsonPath Expr="item.person.name" Id="ContactName" Title="Contact" Converter="String" DefaultValue=""/>
+				<JsonPath Expr="result_score" Id="Score" Title="Score" Converter="Double"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="ListUsers" Title="Users List" Group="Users" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Users/get_users">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.pipedrive.com/v1/users?api_token=@Model.ApiKey
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[*]">
-        <JsonPath Expr="id" Id="Id" Title="User Id" Converter="Int"/>
-        <JsonPath Expr="name" Id="Name" Title="User Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="email" Id="Email" Title="Email" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="last_login" Id="LastLogin" Title="Last Login" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="modified" Id="Modified" Title="Modified" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" DefaultValue=""/>
-        <JsonPath Expr="default_currency" Id="DefaultCurrency" Title="Default Currency" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="timezone_name" Id="TimeZoneName" Title="Time Zone Name" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="activated" Id="Activated" Title="Activated" Converter="String" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="ListNotes" Title="Notes List" Group="Notes" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Notes/get_notes">
+  <RestConnector Id="ListNotes" Title="Notes List" Group="Notes" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Notes/getNotes">
     <Parameters>
-      <Text Id="UserFilter" Title="User Filter" Required="false" Select.Connector="FetchUsers" Select.IdField="Id" Select.TitleField="Name" HelpText="Select a user to display his or her notes."/>
-      <Select Id="Sorting" Title="Sort By" DefaultValue="id">
-        <DataSource>
-					<Item Id="id" Title="Note Id"/>
-					<Item Id="user_id" Title="Owner Id"/>
-					<Item Id="person_id" Title="Contact Id"/>
-					<Item Id="update_time" Title="Updated"/>
-					<Item Id="add_time" Title="Added"/>
-					<Item Id="content" Title="Content"/>
-        </DataSource>
-      </Select>
+      <Text Id="Owner" Title="Filter by User" Select.Connector="ListUsersHidden"/>
+      <Text Id="Sorting" Title="Sort by Field" Select.Connector="ListNoteFields"/>
       <Resource Id="SortingMode"/>
       <Select Id="PinnedDeal" Title="Deal Pin Status" DefaultValue="All">
         <DataSource>
@@ -637,7 +432,7 @@
           <Item Id="0" Title="Not Pinned"/>
         </DataSource>
       </Select>
-      <DateInterval Id="DateInterval" Title="Interval"/>
+      <DateInterval Id="DateInterval" Title="Interval" Nullable="true"/>
     </Parameters>
     <Paging PageSize="50"/>
     <Fetch>
@@ -645,14 +440,17 @@
         <![CDATA[
         https://api.pipedrive.com/v1/notes?api_token=@Model.ApiKey
         &limit=@(Model.PageCursor.NextTake)
-        &start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
-        &end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
-        &sort=@Utils.UrlEncode(Model.Sorting)%20(Model.SortingMode)
+				@if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+          @: &start_date=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
+          @: &end_date=@(Model.DateInterval.EndDate.ToString("yyyy-MM-dd"))
+        }
+        @(!string.IsNullOrEmpty(Model.Sorting) ? "&sort=" + Model.Sorting + " " + Model.SortingMode : "")
+				@(!string.IsNullOrEmpty(Model.Owner) ? "&user_id=" + Model.Owner : "")
         @(Model.PageCursor.Page != 0 ? "&start=" + Model.PageCursor.NextSkip : "")
         @(Model.PinnedDeal != "All" ? "&pinned_to_deal_flag=" + Model.PinnedDeal : "")
         @(Model.PinnedOrg != "All" ? "&pinned_to_organization_flag=" + Model.PinnedOrg : "")
         @(Model.PinnedContact != "All" ? "&pinned_to_person_flag=" + Model.PinnedContact : "")
-        @(!string.IsNullOrEmpty(Model.UserFilter) ? "&user_id=" + Model.UserFilter : "")
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -673,5 +471,160 @@
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
+
+	<RestConnector Id="GetPersonFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/PersonFields/getPersonFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/personFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Compute Expr="@Model.FetchedResult.Body" Id="JsonFields" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="GetDealFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/DealFields/getDealFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/dealFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Compute Expr="@Model.FetchedResult.Body" Id="JsonFields" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="GetOrganizationFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/OrganizationFields/getOrganizationFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/organizationFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Compute Expr="@Model.FetchedResult.Body" Id="JsonFields" DefaultValue=""/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ListPersonFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/PersonFields/getPersonFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/personFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="key" Id="Key"/>
+				<JsonPath Expr="name" Id="Name"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ListNoteFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/NoteFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/noteFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="key" Id="Key"/>
+				<JsonPath Expr="name" Id="Name"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ListDealFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/DealFields/getDealFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/dealFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="key" Id="Key"/>
+				<JsonPath Expr="name" Id="Name"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ListOrganizationFields" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/OrganizationFields/getOrganizationFields">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/organizationFields?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+		<Parse>
+			<JsonPath Expr="data[*]">
+				<JsonPath Expr="key" Id="Key"/>
+				<JsonPath Expr="name" Id="Name"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ListUsersHidden" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/Users">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/users?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="id" Id="Id" Title="User Id"/>
+        <JsonPath Expr="name" Id="Name" DefaultValue=""/>
+        <JsonPath Expr="email" Id="Email" DefaultValue=""/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ListActivityTypesHidden" Hidden="true" HelpUrl="https://developers.pipedrive.com/docs/api/v1/#!/ActivityTypes/getActivityTypes">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.pipedrive.com/v1/activityTypes?api_token=@Model.ApiKey
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data[*]">
+        <JsonPath Expr="key_string" Id="Id" Title="Activity Id"/>
+        <JsonPath Expr="key_string" Id="Name" Title="Activity Name"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RazorFunctions>
+    <![CDATA[
+			string GetCustomFieldName() {
+				JToken fieldValueCustom = JObject.Parse(Model.JsonFields).SelectToken("data[?(@.key=='" + Model.HeaderKey + "')].name");
+				string returnValue = fieldValueCustom != null ? fieldValueCustom : Model.HeaderKey;
+				return  Utils.Capitalize(returnValue);
+			}
+    ]]>
+  </RazorFunctions>
 
 </Suite>

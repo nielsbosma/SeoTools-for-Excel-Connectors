@@ -1,0 +1,292 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="SEO" Title="SEO PowerSuite" Id="SEOPowerSuite" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/SEOPowerSuite.xml" HelpUrl="http://seotoolsforexcel.com/seopowersuite/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/seopowersuite/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Mode">
+      <Select Id="Mode" Title="Mode" DefaultValue="url">
+        <DataSource>
+          <Item Id="url" Title="URL (exact url)"/>
+          <Item Id="domain" Title="Domain (ie: *.example.com/*)"/>
+          <Item Id="host" Title="Host (ie: www.example.com/*)"/>
+        </DataSource>
+      </Select>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="error_description"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="Metrics" Title="Metrics" Group="Key Metrics" HelpText="Returns key statistics for the target.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+      <Resource Id="Mode"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-metrics
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        &mode=@(Model.Mode)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics[0]">
+        <JsonPath Expr="target" Id="Target" HelpText="Aim of the request: root domain, host, or URL"/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Converter="Int" HelpText="Total number of live backlinks"/>
+        <JsonPath Expr="refdomains" Id="RefDomains" Converter="Int" HelpText="Number of unique domains linking to a target"/>
+        <JsonPath Expr="subnets" Id="Subnets" Converter="Int" HelpText="Number of unique subnets / C-blocks linking to a target"/>
+        <JsonPath Expr="ips" Id="IPs" Converter="Int" HelpText="Number of unique IPs linking to a target "/>
+        <JsonPath Expr="nofollow_backlinks" Id="NofollowBacklinks" Title="NoFollow Backlinks" Converter="Int" HelpText="Number of backlinks marked as nofollow with a rel='nofollow' attribute inthe a tag or robots meta tag"/>
+        <JsonPath Expr="dofollow_backlinks" Id="DofollowBacklinks" Title="DoFollow Backlinks" Converter="Int" HelpText="Number of backlinks NOT marked as nofollow with a rel='nofollow' attribute in the a tag or robots meta tag"/>
+        <JsonPath Expr="edu_backlinks" Id="EduBacklinks" Title="EDU Backlinks" Converter="Int" HelpText="Number of backlinks coming from .edu domains"/>
+        <JsonPath Expr="gov_backlinks" Id="GovBacklinks" Title="GOV Backlinks" Converter="Int" HelpText="Number of backlinks coming from .gov domains "/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="InLinkRank" Title="InLink Rank" Group="Key Metrics" HelpText="Returns information about the InLink Rank and Domain InLink Rank for a target URL.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-inlink-rank
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="pages[0]">
+        <JsonPath Expr="url" Id="URL" HelpText="Aim of the request: URL of the page you are getting InLink Rank for"/>
+        <JsonPath Expr="inlink_rank" Id="InLinkRank" Title="InLink Rank" Converter="Int" HelpText="InLink Rank (Page Authority) of the referring page's URL"/>
+        <JsonPath Expr="domain_inlink_rank" Id="DomainInLinkRank" Title="Domain InLink Rank" Converter="Int" HelpText="Domain InLink Rank (Domain Authority) of the referringpage's root domain"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="Backlinks" Title="Backlinks" Group="Backlinks" HelpText="Returns information about the backlinks pointing to a target.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+      <Resource Id="Mode"/>
+      <Select Id="OrderBy" Title="Order By" DefaultValue="date_found">
+        <DataSource>
+          <Item Id="date_found" Title="Date Found"/>
+          <Item Id="inlink_rank" Title="InLink Rank"/>
+          <Item Id="domain_inlink_rank" Title="Domain InLink Rank"/>
+        </DataSource>
+      </Select>
+      <Number Id="Limit" Title="Limit" Minimum="1" Maximum="10000" DefaultValue="100"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-backlinks
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        &mode=@Model.Mode
+				&limit=@Model.Limit
+				&order_by=@Model.OrderBy
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="backlinks[*]">
+        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" HelpText="Referring page's URL"/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="Url To" HelpText="Destination page's URL"/>
+        <JsonPath Expr="title" Id="Title" HelpText="Referring page's title"/>
+        <JsonPath Expr="anchor" Id="Anchor" Converter="Auto" HelpText="Link anchor text for text links and image alt text for image links"/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="The date when the backlink was discovered and added to the index"/>
+        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" HelpText="The date when our crawlers last visited the referring page"/>
+        <JsonPath Expr="inlink_rank" Id="InLinkRank" Title="InLink Rank" Converter="Int" HelpText="InLink Rank (Page Authority) of the referring page's URL"/>
+        <JsonPath Expr="domain_inlink_rank" Id="DomainInLinkRank" Title="Domain InLink Rank" Converter="Int" HelpText="Domain InLink Rank (Domain Authority) of the referring page's root domain"/>
+        <JsonPath Expr="nofollow" Id="NoFollow" Converter="Bool" HelpText="Is set to true if the link has a rel='nofollow' attribute inthe a tag or robots meta tag"/>
+        <JsonPath Expr="image" Id="Image" Converter="Bool" HelpText="Is set to true if the html a tag from which the link was extracted includes an image"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="RefDomains" Title="RefDomains" Group="RefDomains" HelpText="Returns information about the domains/hosts pointing to a target.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+      <Resource Id="Mode"/>
+      <Select Id="OrderBy" Title="Order By" DefaultValue="date_found">
+        <DataSource>
+          <Item Id="date_found" Title="Date Found"/>
+          <Item Id="inlink_rank" Title="InLink Rank"/>
+          <Item Id="domain_inlink_rank" Title="Domain InLink Rank"/>
+        </DataSource>
+      </Select>
+      <Number Id="Limit" Title="Limit" Minimum="1" Maximum="10000" DefaultValue="100"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-refdomains
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        &mode=@Model.Mode
+				&limit=@Model.Limit
+				&order_by=@Model.OrderBy
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="refdomains[*]">
+        <JsonPath Expr="refdomain" Id="RefDomain" HelpText="Name of the referring domain "/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="The date when the oldest live backlink coming from this domain was found"/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Converter="Int" HelpText="Total number of backlinks pointing to the target from this domain "/>
+        <JsonPath Expr="dofollow_backlinks" Id="DofollowBacklinks" Title="DoFollow Backlinks" Converter="Int"	HelpText="Number of backlinks from this domain that are NOT marked as nofollow with a rel='nofollow' attribute in the a tag or robots meta tag"/>
+        <JsonPath Expr="domain_inlink_rank" Id="DomainInLinkRank" Title="Domain InLink Rank" Converter="Int" HelpText="Domain InLink Rank (Domain Authority) of the referring domain"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NewLostBacklinks" Title="New/Lost Backlinks" Group="Backlinks" HelpText="Returns a list of backlinks (newly) found or lost within the specified date range for the specified target.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+      <Text Id="UrlFrom" Title="URL From" Required="false" HelpText="Allows to get a list of backlinks with Referring Page URLs that belong to this domain, including its subdomains."/>
+      <Select Id="Type" DefaultValue="new">
+        <DataSource>
+          <Item Id="new" Title="New"/>
+          <Item Id="lost" Title="Lost"/>
+        </DataSource>
+      </Select>
+      <Resource Id="Mode"/>
+      <Select Id="OrderBy" Title="Order By" DefaultValue="date_found">
+        <DataSource>
+          <Item Id="new_lost_date" Title="New/Lost Date"/>
+          <Item Id="inlink_rank" Title="InLink Rank"/>
+          <Item Id="domain_inlink_rank" Title="Domain InLink Rank"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" DefaultValue="Last7Days" Nullable="true"/>
+      <Number Id="Limit" Title="Limit" Minimum="1" Maximum="10000" DefaultValue="100"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-new-lost-backlinks
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        &mode=@Model.Mode
+				&new_lost_type=@Model.Type
+				&limit=@Model.Limit
+				&order_by=@Model.OrderBy
+				@(!string.IsNullOrEmpty(Model.UrlFrom) ? "&url_from=" + Model.UrlFrom : "")
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+            @: &date_from=@Model.DateInterval.StartDate.ToString("yyyy-MM-dd")
+            @: &date_to=@Model.DateInterval.EndDate.ToString("yyyy-MM-dd")
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="new_lost_backlinks[*]">
+        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" HelpText="Referring page's URL"/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="Url To" HelpText="Destination page's URL"/>
+        <JsonPath Expr="title" Id="Title" HelpText="Referring page's title"/>
+        <JsonPath Expr="anchor" Id="Anchor" Converter="Auto" HelpText="Link anchor text for text links and image alt text for image links"/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="The date when the backlink was discovered and added to the index"/>
+        <JsonPath Expr="new_lost_date" Id="NewLostDate" Title="New/Lost Date" Converter="DateTime" HelpText="The date when the link was found or lost "/>
+        <JsonPath Expr="new_lost_type" Id="Type" HelpText="Indicates whether the backlink is new or lost"/>
+        <JsonPath Expr="link_type" Id="LinkType" HelpText="Type of backlink"/>
+        <JsonPath Expr="reason_lost" Id="Reason" HelpText="Reason why the backlink's status was changed from live to lost" DefaultValue=""/>
+        <JsonPath Expr="inlink_rank" Id="InLinkRank" Title="InLink Rank" Converter="Int" HelpText="InLink Rank (Page Authority) of the referring page's URL"/>
+        <JsonPath Expr="domain_inlink_rank" Id="DomainInLinkRank" Title="Domain InLink Rank" Converter="Int" HelpText="Domain InLink Rank (Domain Authority) of the referring page's root domain"/>
+        <JsonPath Expr="nofollow" Id="NoFollow" Converter="Bool" HelpText="Is set to true if the link has a rel='nofollow' attribute inthe a tag or robots meta tag"/>
+        <JsonPath Expr="image" Id="Image" Converter="Bool" HelpText="Is set to true if the html a tag from which the link was extracted includes an image"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NewLostRefDomains" Title="New/Lost RefDomains" Group="RefDomains" HelpText="Returns a list of referring domains, at least one backlink from which was (newly) found or lost in the specified date range for the specified target.">
+    <Parameters>
+      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true"/>
+      <Select Id="Type" DefaultValue="new">
+        <DataSource>
+          <Item Id="new" Title="New"/>
+          <Item Id="lost" Title="Lost"/>
+        </DataSource>
+      </Select>
+      <Resource Id="Mode"/>
+      <Select Id="OrderBy" Title="Order By" DefaultValue="date_found">
+        <DataSource>
+          <Item Id="new_lost_date" Title="New/Lost Date"/>
+          <Item Id="inlink_rank" Title="InLink Rank"/>
+          <Item Id="domain_inlink_rank" Title="Domain InLink Rank"/>
+        </DataSource>
+      </Select>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" DefaultValue="Last7Days" Nullable="true"/>
+      <Number Id="Limit" Title="Limit" Minimum="1" Maximum="10000" DefaultValue="100"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-new-lost-refdomains
+				?apikey=@(Model.ApiKey)&output=json
+        &target=@Utils.UrlEncode(Model.Url)
+        &mode=@Model.Mode
+				&new_lost_type=@Model.Type
+				&limit=@Model.Limit
+				&order_by=@Model.OrderBy
+        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
+        {
+            @: &date_from=@Model.DateInterval.StartDate.ToString("yyyy-MM-dd")
+            @: &date_to=@Model.DateInterval.EndDate.ToString("yyyy-MM-dd")
+        }
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="new_lost_refdomains[*]">
+				<JsonPath Expr="refdomain" Id="RefDomain" HelpText="Name of the referring domain "/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="The date when the oldest live backlink coming from this domain was found"/>
+        <JsonPath Expr="new_lost_date" Id="NewLostDate" Title="New/Lost Date" Converter="DateTime" HelpText="The date when the oldest live backlink coming from this domain was found or the last backlink from this domain was lost. "/>
+        <JsonPath Expr="new_lost_type" Id="Type" HelpText="Indicates whether the backlink is new or lost"/>
+        <JsonPath Expr="backlinks" Id="Backlinks" Converter="Int" HelpText="Total number of backlinks pointing to the target from this domain "/>
+        <JsonPath Expr="dofollow_backlinks" Id="DofollowBacklinks" Title="DoFollow Backlinks" Converter="Int"	HelpText="Number of backlinks NOT marked with rel nofollow attribute value in the a tag or robots meta tag pointing from this domain."/>
+        <JsonPath Expr="domain_inlink_rank" Id="DomainInLinkRank" Title="Domain InLink Rank" Converter="Int" HelpText="Domain InLink Rank (Domain Authority) of the referring domain"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="SubscriptionInfo" Title="Subscription Info" HelpText="Returns information on existing subscriptions with the current API balance for a given API key.">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.seopowersuite.com/backlinks/v1.0/get-subscription-info?apikey=@(Model.ApiKey)&output=json
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="subscription_info">
+				<JsonPath Expr="status" Id="Status" HelpText="Current status of the API subscription plan."/>
+				<JsonPath Expr="start_date" Id="StartDate" Title="Start Date" Converter="DateTime" HelpText="Subscription start date"/>
+				<JsonPath Expr="expiraton_date" Id="ExpirationDate" Title="Expiration Date" Converter="DateTime" HelpText="Subscription expiration date"/>
+				<JsonPath Expr="units_limit" Id="UnitsLimit" Title="Units Limit" Converter="Int" HelpText="Quota (total number of API units) for this subscription."/>
+				<JsonPath Expr="units_left" Id="UnitsLeft" Title="Units Left" Converter="Int" HelpText="Current API balance, i.e. number of API units left."/>
+			</JsonPath>
+		</Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>

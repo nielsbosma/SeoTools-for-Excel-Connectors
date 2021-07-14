@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="MailChimp" Category="Email" Id="MailChimp" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Mailchimp.xml" HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="Documentation" >
+<Suite Title="MailChimp" Category="Email" Id="MailChimp" RequireVersion="9.5.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Mailchimp.xml" HelpUrl="http://seotoolsforexcel.com/mailchimp/" HelpText="Documentation" >
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -62,30 +62,37 @@
   </RestConnector>
 
   <RestConnector Id="CampaignsHidden" Hidden="true" HelpUrl="http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/#read-get_campaigns">
-    <Fetch>
+		<Resource Id="Paging"/>
+		<Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Base)/3.0/campaigns?count=100
+        @(Model.Base)/3.0/campaigns
+				?count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
 		<Resource Id="Prepare"/>
     <Parse>
       <JsonPath Expr="$.campaigns[*]">
-        <JsonPath Title="Campaign Id" Id="Id" Expr="id"/>
-        <JsonPath Title="Campaign Title" Id="Title" Expr="settings.title"/>
+        <JsonPath Expr="id" Id="Id" Title="Campaign Id"/>
+        <JsonPath Expr="settings.title" Id="Title" Title="Campaign Title"/>
+        <JsonPath Expr="emails_sent" Id="EmailsSent" Title="Emails Sent"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="ListsHidden" Hidden="true">
+		<Resource Id="Paging"/>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Base)/3.0/lists?count=100
+        @(Model.Base)/3.0/lists
+				?count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -94,17 +101,21 @@
       <JsonPath Expr="$.lists[*]">
         <JsonPath Title="List Id" Id="Id" Expr="id"/>
         <JsonPath Title="List Name" Id="Title" Expr="name"/>
+        <JsonPath Expr="date_created" Id="Created" Converter="DateTime" Converter.ResultFormat="yyyy-MM-dd"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AutomationsHidden" Hidden="true">
+		<Resource Id="Paging"/>
     <Fetch>
 			<Resource Id="Headers"/>
       <Fetch.Url>
         <![CDATA[
-        @(Model.Base)/3.0/automations?count=100
+        @(Model.Base)/3.0/automations
+				?count=@(Model.PageCursor.NextTake)
+        &offset=@(Model.PageCursor.NextSkip)
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -113,51 +124,7 @@
       <JsonPath Expr="$.automations[*]">
         <JsonPath Title="Automation Id" Id="Id" Expr="id"/>
         <JsonPath Title="Title" Id="Title" Expr="settings.title" DefaultValue=""/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="CampaignsStatisticsHidden" Hidden="true">
-    <Parameters>
-      <Text Id="CampaignId"/>
-    </Parameters>
-		<Resource Id="Prepare"/>
-    <Fetch>
-			<Resource Id="Headers"/>
-      <Fetch.Url>
-        <![CDATA[
-        @(Model.Base)/3.0/reports/@Model.CampaignId
-				?sort_field=send_time
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Id="Title" Expr="campaign_title"/>
-			<JsonPath Id="Subject" Expr="subject_line"/>
-			<JsonPath Id="Send" Expr="send_time"/>
-			<JsonPath Id="Clicks" Expr="clicks.clicks_total"/>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-	
-  <RestConnector Id="CampaignLinkHidden" Hidden="true">
-    <Parameters>
-      <Text Id="CampaignId"/>
-    </Parameters>
-    <Fetch>
-			<Resource Id="Headers"/>
-      <Fetch.Url>
-        <![CDATA[
-          @(Model.Base)/3.0/reports/@(Model.CampaignId)/click-details?count=1000
-          ]]>
-      </Fetch.Url>
-    </Fetch>
-		<Resource Id="Prepare"/>
-    <Parse>
-      <JsonPath Expr="$.urls_clicked[*]">
-        <JsonPath Id="Id" Expr="id"/>
-        <JsonPath Id="Url" Expr="url"/>
+        <JsonPath Expr="create_time" Id="Created" Converter="DateTime" Converter.ResultFormat="yyyy-MM-dd"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -237,7 +204,7 @@
 
   <RestConnector Id="CampaignsStatistics" Title="Campaigns Statistics" Group="Campaigns" HelpText="Get detailed campaign reports." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/#read-get_reports">
     <Parameters>
-      <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Filter by Campaign Id" Required="false" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
       <Select Id="Type" Title="Type" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -302,7 +269,7 @@
 
   <RestConnector Id="CampaignDomainPerformance" Title="Domain Performance" Group="Campaigns" HelpText="Get statistics for the top-performing domains from a campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/domain-performance/">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -334,7 +301,7 @@
 
   <RestConnector Id="CampaignLinkClicks" Title="Clicked Links" Group="Campaigns" HelpText="Get detailed information about links clicked in campaigns." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/click-details/">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
 		<Resource Id="Paging"/>
     <Fetch>
@@ -390,10 +357,10 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RestConnector Id="CampaignAbuseReports" Title="Abuse Reports" Group="Campaigns" HelpText="Get a list of abuse complaints for a specific campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/abuse-reports/#read-get_reports_campaign_id_abuse_reports">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -408,7 +375,7 @@
       <JsonPath Expr="$.abuse_reports[*]">
         <JsonPath Title="Email" Id="Email" Expr="email_address" Converter="String" HelpText="Email address for a subscriber."/>
         <JsonPath Title="Date" Id="Date" Expr="date" Converter="DateTime" HelpText="Date for the abuse report"/>
-        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>
+        <JsonPath Title="Campaign Id" Id="CampaignId" Expr="campaign_id" Converter="String" HelpText="The campaign id for the report"/>				
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -416,7 +383,7 @@
 
   <RestConnector Id="CampaignOpenReports" Title="Open Reports" Group="Campaigns" HelpText="Get detailed information about any campaign emails that were opened by a list member." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/#read-get_reports">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Resource Id="Paging"/>
 		<Prepare>
@@ -450,7 +417,7 @@
 
   <RestConnector Id="CampaignTopLocations" Title="Top Locations" Group="Campaigns" HelpText="Get top open locations for a specific campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/locations/#read-get_reports_campaign_id_locations">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Resource Id="Paging"/>
     <Fetch>
@@ -478,7 +445,7 @@
 
   <RestConnector Id="CampaignUnsubscribes" Title="Unsubscribes" Group="Campaigns" HelpText="Get information about list members who unsubscribed from a specific campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/unsubscribed/#read-get_reports_campaign_id_unsubscribed">
     <Parameters>
-      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="0306d8ae5e" Select.Connector="CampaignsHidden"/>
     </Parameters>
     <Resource Id="Paging"/>
     <Fetch>
@@ -548,7 +515,7 @@
           <Item Id="exact_matches" Title="Exact"/>
         </DataSource>
       </Radio>
-      <Text Id="ListId" Title="Filter by List Id" Required="false" HelpText="Leave Empty to include all Lists" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="Filter by List Id" Required="false" HelpText="Leave Empty to include all Lists" Select.Connector="ListsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -629,7 +596,7 @@
 
   <RestConnector Id="ListMembers" Title="Members List" Group="Members" HelpText="Get information about members in a specific Mailchimp list." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/members/#read-get_lists_list_id_members">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
       <Select Id="Status" Title="Status" DefaultValue="all" Required="false">
         <DataSource>
           <Item Id="all" Title="All"/>
@@ -681,7 +648,7 @@
 
   <RestConnector Id="ListRecentActivity" Title="Recent Activity" Group="Audiences" HelpText="Get up to the previous 180 days of daily detailed aggregated activity stats for a list." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/activity/#read-get_lists_list_id_activity">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -711,7 +678,7 @@
 
   <RestConnector Id="ListClients" Title="Clients" Group="Audiences" HelpText="Get a list of the top email clients based on user-agent strings." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/clients/#read-get_lists_list_id_clients">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -733,7 +700,7 @@
 
   <RestConnector Id="ListLocations" Title="Locations" Group="Audiences" HelpText="Get the locations (countries) that the list’s subscribers have been tagged to based on geocoding their IP address." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/locations/#read-get_lists_list_id_locations">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
     </Parameters>
     <Fetch>
 			<Resource Id="Headers"/>
@@ -756,7 +723,7 @@
 
   <RestConnector Id="ListAbuseReports" Title="Abuse Reports" Group="Audiences" HelpText="Get all abuse reports for a specific list." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/abuse-reports/#read-get_lists_list_id_abuse_reports">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
     </Parameters>
     <Resource Id="Paging"/>
     <Fetch>
@@ -782,7 +749,7 @@
 
   <RestConnector Id="ListGrowthHistory" Title="Growth History" Group="Audiences" HelpText="Get a month-by-month summary of a specific list’s growth activity." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/growth-history/#read-get_lists_list_id_growth_history">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
 			<Resource Id="SortTime"/>
     </Parameters>
     <Resource Id="Paging"/>
@@ -812,7 +779,7 @@
 
   <RestConnector Id="ListSegments" Title="Segments" Group="Audiences" HelpText="Get information about all available segments for a specific list." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/lists/segments/#read-get_lists_list_id_segments">
     <Parameters>
-      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="ListId" Title="List Id" Required="true" Debug.DefaultValue="56af7eb983" Select.Connector="ListsHidden"/>
       <DateInterval Id="CreatedInterval" Title="Createtd Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Resource Id="Paging"/>
@@ -887,7 +854,7 @@
 
   <RestConnector Id="AutomationEmailsSummary" Title="Automation Emails Summary" Group="Automations" HelpText="Get a summary of the emails in an Automation workflow." HelpUrl="https://mailchimp.com/developer/reference/automation/automation-email/#get_/automations/-workflow_id-/emails">
     <Parameters>
-      <Text Id="AutomationId" Title="Automation Id" Required="true" Debug.DefaultValue="a51d4c9852" Select.Connector="AutomationsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Text Id="AutomationId" Title="Automation Id" Required="true" Debug.DefaultValue="a51d4c9852" Select.Connector="AutomationsHidden"/>
       <DateInterval Id="CreatedInterval" Title="Createtd Interval" Required="false" Nullable="true"/>
     </Parameters>
     <Resource Id="Paging"/>
@@ -919,7 +886,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-<RazorFunctions>
+	<RazorFunctions>
     <![CDATA[
     string GetJsonPath() {
 			return !string.IsNullOrEmpty(Model.CampaignId) ?  "$" : "$.reports[*]";

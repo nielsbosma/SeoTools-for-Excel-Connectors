@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<Suite Category="Productivity" RequireVersion="9.5.2" Id="GoogleSheets" Title="Google Sheets" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSheets.xml" HelpUrl="http://seotoolsforexcel.com/google-sheets/" HelpText="Documentation">
+<Suite Category="Productivity" RequireVersion="9.5.7" Id="GoogleSheets" Title="Google Sheets" LoginButton="https://seotoolsforexcel.com/logins/google.png" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/GoogleSheets.xml" HelpUrl="http://seotoolsforexcel.com/google-sheets/" HelpText="Documentation">
 
   <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
 
@@ -20,7 +20,7 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Spreadsheets" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list" Hidden="true">
+  <RestConnector Id="SpreadsheetsHidden" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list" Hidden="true">
 		<Paging PageSize="200">
       <Parse>
         <JsonPath Id="NextToken" Expr="nextPageToken"/>
@@ -46,9 +46,47 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="Spreadsheets" HelpUrl="https://developers.google.com/drive/api/v3/reference/files/list">
+		<Paging PageSize="200">
+      <Parse>
+        <JsonPath Id="NextToken" Expr="nextPageToken"/>
+      </Parse>
+    </Paging>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://www.googleapis.com/drive/v3/files?q=mimeType+contains+%27google-apps.spreadsheet%27
+				&orderBy=modifiedTime%20desc
+				&fields=nextPageToken,files(id,name,createdTime,modifiedTime,viewedByMeTime,sharedWithMeTime,owners,lastModifyingUser,shared,starred,webViewLink)
+				&pageSize=@(Model.PageCursor.NextTake)
+        @(Model.PageCursor.Page != 0 ? "&pageToken=" + Model.NextToken : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="files[*]">
+        <JsonPath Expr="id" Id="Id"/>
+        <JsonPath Expr="name" Id="Name"/>
+        <JsonPath Expr="createdTime" Id="Created" Converter="DateTime"/>
+        <JsonPath Expr="modifiedTime" Id="Modified" Converter="DateTime"/>
+        <JsonPath Expr="viewedByMeTime" Id="ViewedByMe" Title="Viewed by me" Converter="Auto" DefaultValue=""/>
+        <JsonPath Expr="sharedWithMeTime" Id="SharedWithMe" Title="Shared with me" Converter="Auto" DefaultValue=""/>
+        <JsonPath Expr="owners[0].displayName" Id="Owner" DefaultValue=""/>
+        <JsonPath Expr="owners[0].emailAddress" Id="OwnerEmail" Title="Owner Email" DefaultValue=""/>
+        <JsonPath Expr="lastModifyingUser.displayName" Id="LastModifyingUser" Title="Last modifying user" DefaultValue=""/>
+        <JsonPath Expr="lastModifyingUser.emailAddress" Id="LastModifyingUserEmail" Title="Last modifying user Email" DefaultValue=""/>
+        <JsonPath Expr="shared" Id="Shared" Converter="Bool"/>
+        <JsonPath Expr="starred" Id="Starred" Converter="Bool"/>
+        <JsonPath Expr="webViewLink" Id="Link"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="GetRange" HelpUrl="https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/get">
     <Parameters>
-      <Text Id="SpreadsheetId" Title="Spreadsheet Id" Debug.DefaultValue="166XYski87ZlVWuodjMZdOw4asVYLKzZdTPqiiEShZ1g" Select.Connector="Spreadsheets" Select.IdField="Id" Select.TitleField="Name" HelpText="Use 'Select' to browse all your sheets, or copy from sheet URL" Required="true"/>
+      <Text Id="SpreadsheetId" Title="Spreadsheet Id" Debug.DefaultValue="166XYski87ZlVWuodjMZdOw4asVYLKzZdTPqiiEShZ1g" Required="true" Select.Connector="SpreadsheetsHidden" HelpText="Use 'Select' to browse all your sheets, or copy from sheet URL"/>
       <Text Id="Range" Title="Range to fetch" Debug.DefaultValue="Testing!A1:B1" HelpText="For example: 'A2:C10' or 'A:A' or 'Sheetname!A1'" Required="true"/>
       <Select Id="Rendering" Title="Rendering" DefaultValue="LAST_MODIFIED_ASCENDING">
         <DataSource>
@@ -80,17 +118,16 @@
 						string[,] result = new string[rows, cols];
             for (int i = 0; i < rows; i++)
             {
-                int RowLength = JsonValues[i].Count();
-                for (int j = 0; j < cols; j++)
-                {
-                    result[i, j] = (RowLength > j) ? JsonValues[i][j].ToString() : "";
-                }
+							int RowLength = JsonValues[i].Count();
+							for (int j = 0; j < cols; j++)
+							{
+								result[i, j] = (RowLength > j) ? JsonValues[i][j].ToString() : "";
+							}
             }
-						Utils.StoreArray = result;
+						Model.ArrayParser.Array = result;
 						}
 					]]>
 				</Array.Expr>
-				<JsonPath Expr="."/>
 			</Array>
     </Parse>
 		<Resource Id="Fail"/>
