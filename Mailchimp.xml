@@ -381,6 +381,45 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
+	
+  <RestConnector Id="MemberActivity" Title="Member Activity" Group="Campaigns" HelpText="Get a list of member's subscriber activity in a specific campaign." HelpUrl="https://mailchimp.com/developer/marketing/api/email-activity-reports/list-email-activity/">
+    <Parameters>
+      <Text Id="CampaignId" Title="Campaign Id" Required="true" Debug.DefaultValue="2f9446b329" Select.Connector="CampaignsHidden" Select.IdField="Id" Select.TitleField="Title"/>
+      <Select Id="Action" Title="Action Type" DefaultValue="open" Required="false">
+        <DataSource>
+          <Item Id="open" Title="Open"/>
+          <Item Id="click" Title="Click"/>
+          <Item Id="bounce" Title="Bounce"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+		<Paging PageSize="1000" EvenPages="false">
+			<Parse>
+				<JsonPath Id="AvaliableRows" Expr="total_items"/>
+			</Parse>
+		</Paging>
+    <Fetch>
+			<Resource Id="Headers"/>
+      <Fetch.Url>
+        <![CDATA[
+          @(Model.Base)/3.0/reports/@(Model.CampaignId)/email-activity
+					?count=@(Model.PageCursor.NextTake)
+					&offset=@((Model.PageCursor.Page)*Model.PageCursor.PageSize)
+				]]>
+      </Fetch.Url>
+    </Fetch>
+		<Resource Id="Prepare"/>
+    <Parse>
+      <XPath Expr="//activity[action='@(Model.Action)']">
+        <XPath Expr="action" Title="Action" Id="Action" HelpText="One of the following actions: 'open', 'click', or 'bounce'."/>
+        <XPath Expr="timestamp" Title="Timestamp" Id="Timestamp" Converter="DateTime" HelpText="The date and time recorded for the action."/>
+        <XPath Expr="ip" Title="IP" Id="IP" DefaultValue="" HelpText="The IP address recorded for the action."/>
+        <XPath Expr="../email_address" Title="Email" Id="Email" HelpText="Email address for a subscriber."/>
+        <XPath Expr="../campaign_id" Title="Campaign Id" Id="CampaignId" HelpText="The unique id for the campaign."/>
+      </XPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="CampaignAbuseReports" Title="Abuse Reports" Group="Campaigns" HelpText="Get a list of abuse complaints for a specific campaign." HelpUrl="https://developer.mailchimp.com/documentation/mailchimp/reference/reports/abuse-reports/#read-get_reports_campaign_id_abuse_reports">
     <Parameters>
