@@ -265,7 +265,66 @@
 		</Parse>
   </RestConnector>
 
-	  <RazorFunctions>
+	<RestConnector Id="MajorHoldersBreakdown" Title="Major Holders Breakdown">
+    <Parameters>
+      <Text Id="Symbol" Title="Stock Symbol" Debug.DefaultValue="LB" Required="true"/>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				https://query1.finance.yahoo.com/v10/finance/quoteSummary/@(Model.Symbol)
+				?formatted=true&crumb=RCf3B.8oznv&corsDomain=finance.yahoo.com
+				&lang=en-US&region=US
+				&modules=majorHoldersBreakdown
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.quoteSummary.result[0].majorHoldersBreakdown">
+				<JsonPath Expr="insidersPercentHeld.raw" Id="PercentSharesAllInsider" Title="Percent of Shares Held by All Insider" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="institutionsPercentHeld.raw" Id="PercentSharesInstitutions" Title="Percent of Shares Held by Institutions" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="institutionsFloatPercentHeld.raw" Id="PercentFloatAllInsider" Title="Percent of Float Held by All Insider" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="institutionsCount.raw" Id="InstitutionsHoldingShares" Title="Number of Institutions Holding Shares" Converter="Double" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="TopHolders" Title="Top Holders">
+    <Parameters>
+      <Text Id="Symbol" Title="Stock Symbol" Debug.DefaultValue="LB" Required="true"/>
+      <Select Id="Type" DefaultValue="institutionOwnership" Required="false">
+        <DataSource>
+          <Item Id="institutionOwnership" Title="Institutional"/>
+          <Item Id="fundOwnership" Title="Mutual Fund"/>
+        </DataSource>
+      </Select>			
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				https://query1.finance.yahoo.com/v10/finance/quoteSummary/@(Model.Symbol)
+				?formatted=true&crumb=RCf3B.8oznv&corsDomain=finance.yahoo.com
+				&lang=en-US&region=US
+				&modules=@Model.Type
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.quoteSummary.result[0].@(Model.Type).ownershipList[*]">
+				<JsonPath Expr="organization" Id="Holder" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="position.raw" Id="Shares" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="reportDate.fmt" Id="Reported" Converter="DateTime" DefaultValue=""/>
+				<JsonPath Expr="pctHeld.raw" Id="Percent" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="value.raw" Id="Value" Converter="Auto" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RazorFunctions>
 		<![CDATA[
 			List<string> Reports = new List<string> ()
 			{
