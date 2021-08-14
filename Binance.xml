@@ -31,6 +31,14 @@
       <Item Id="1w" Title="1 week"/>
       <Item Id="1M" Title="1 month"/>
     </Resource>
+		<Resource Id="HttpSettings">
+      <HttpSettings>
+        <RequestMethod>GET</RequestMethod>
+        <RequestHeaders>
+          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+		</Resource>
   </Resources>
 
   <RestConnector Id="ExchangeInfo" Title="Exchange Info" HelpText="List all supported trading pairs" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information">
@@ -275,12 +283,7 @@
     </Parameters>
 		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestHeaders>
-          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v3/openOrders?
@@ -317,12 +320,7 @@
     </Parameters>
 		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestHeaders>
-          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v3/allOrders?
@@ -354,12 +352,7 @@
 
   <RestConnector Id="AccountInformation" Title="Account Information" Group="Account" HelpText="Get current account information." HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#account-information-user_data">
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestHeaders>
-          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v3/account?
@@ -381,12 +374,7 @@
 
   <RestConnector Id="CurrencyBalances" Title="Currency Balances" Group="Account" HelpText="Get balances for all owned currencies" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#account-information-user_data">
     <Fetch>
-      <HttpSettings>
-        <RequestMethod>GET</RequestMethod>
-        <RequestHeaders>
-          <Header Name='X-MBX-APIKEY'>@(Model.ApiKey)</Header>
-        </RequestHeaders>
-      </HttpSettings>
+      <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
         https://api.binance.com/api/v3/account?
@@ -408,7 +396,7 @@
   <RazorFunctions>
     <![CDATA[
     string GetCompleteQueryString(string additionalParams = ""){
-      string query = "timestamp=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString() + additionalParams;
+      string query = "recvWindow=60000&timestamp=" + DateTimeOffset.UtcNow.AddSeconds(-60).ToUnixTimeMilliseconds().ToString() + additionalParams;
       return query + "&signature=" + GetHash(query, Model.SecretKey);
     }
 
