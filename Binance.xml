@@ -39,7 +39,26 @@
         </RequestHeaders>
       </HttpSettings>
 		</Resource>
+		<Resource Id="Prepare">
+    <Prepare>
+      <Connector Id="GetServerTime"/>
+    </Prepare>
+		</Resource>
   </Resources>
+
+  <RestConnector Id="GetServerTime" Hidden="true">
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/api/v3/time
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="serverTime" Id="ServerTime"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
 
   <RestConnector Id="ExchangeInfo" Title="Exchange Info" HelpText="List all supported trading pairs" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information">
     <Fetch Url="https://api.binance.com/api/v1/exchangeInfo"/>
@@ -278,6 +297,7 @@
   </RestConnector>
 
   <RestConnector Id="OpenOrders" Title="Open Orders" HelpText="Get all currently open orders" Group="Account" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#current-open-orders-user_data">
+		<Resource Id="Prepare"/>
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbols" Required="false" Select.Connector="ListSymbolsHidden" Debug.DefaultValue="BNBBTC" Multiline="true"/>
     </Parameters>
@@ -314,6 +334,7 @@
   </RestConnector>
 
   <RestConnector Id="AllOrders" Title="All Orders" Group="Account" HelpText="Get all account orders; active, canceled, or filled." HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#all-orders-user_data">
+		<Resource Id="Prepare"/>
     <Parameters>
       <Text Id="Symbol" Title="Trading pair symbol" Required="true" Select.Connector="ListSymbolsHidden" Debug.DefaultValue="BNBBTC" Multiline="true"/>
       <Number Id="Limit" Title="Limit" DefaultValue="500" Minimum="5" Maximum="500" Required="true" HelpText="Increments of 5"/>
@@ -351,6 +372,7 @@
   </RestConnector>
 
   <RestConnector Id="AccountInformation" Title="Account Information" Group="Account" HelpText="Get current account information." HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#account-information-user_data">
+		<Resource Id="Prepare"/>
     <Fetch>
       <Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -368,11 +390,13 @@
       <JsonPath Expr="canTrade" Id="CanTrade" Title="Can Trade" Converter="Bool"/>
       <JsonPath Expr="canWithdraw" Id="CanWithdraw" Title="Can Withdraw" Converter="Bool"/>
       <JsonPath Expr="canDeposit" Id="CanDeposit" Title="Can Deposit" Converter="Bool"/>
+			<Compute Expr="@Model.ServerTime" Id="Nsfs"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="CurrencyBalances" Title="Currency Balances" Group="Account" HelpText="Get balances for all owned currencies" HelpUrl="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#account-information-user_data">
+		<Resource Id="Prepare"/>
     <Fetch>
       <Resource Id="HttpSettings"/>
       <Fetch.Url>
@@ -396,11 +420,11 @@
   <RazorFunctions>
     <![CDATA[
     string GetCompleteQueryString(string additionalParams = ""){
-      string query = "recvWindow=60000&timestamp=" + DateTimeOffset.UtcNow.AddSeconds(-60).ToUnixTimeMilliseconds().ToString() + additionalParams;
+      string query = "recvWindow=60000&timestamp=" + Model.ServerTime + additionalParams;
       return query + "&signature=" + GetHash(query, Model.SecretKey);
     }
 
-    public static String GetHash(String text, String key) {
+    static String GetHash(String text, String key) {
 			ASCIIEncoding encoding = new ASCIIEncoding();
 			Byte[] textBytes = encoding.GetBytes(text);
 			Byte[] keyBytes = encoding.GetBytes(key);
