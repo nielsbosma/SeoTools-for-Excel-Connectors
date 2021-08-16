@@ -299,7 +299,7 @@
           <Item Id="institutionOwnership" Title="Institutional"/>
           <Item Id="fundOwnership" Title="Mutual Fund"/>
         </DataSource>
-      </Select>			
+      </Select>
 			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
     </Parameters>
     <Fetch>
@@ -320,6 +320,34 @@
 				<JsonPath Expr="reportDate.fmt" Id="Reported" Converter="DateTime" DefaultValue=""/>
 				<JsonPath Expr="pctHeld.raw" Id="Percent" Converter="Double" DefaultValue=""/>
 				<JsonPath Expr="value.raw" Id="Value" Converter="Auto" DefaultValue=""/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="KeyExecutives" Title="Key Executives">
+    <Parameters>
+      <Text Id="Symbol" Title="Stock Symbol" Debug.DefaultValue="LB" Required="true"/>
+			<Number Id="Delay" Title="Delay (Milliseconds)" DefaultValue="1000" Minimum="0" Maximum="20000"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+				https://query1.finance.yahoo.com/v10/finance/quoteSummary/@(Model.Symbol)
+				?formatted=true&crumb=RCf3B.8oznv&corsDomain=finance.yahoo.com
+				&lang=en-US&region=US
+				&modules=assetProfile
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="$.quoteSummary.result[0].assetProfile.companyOfficers[*]">
+				<JsonPath Expr="name" Id="Name" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="title" Id="Title" Converter="Auto" DefaultValue=""/>
+				<JsonPath Expr="totalPay.raw" Id="Pay" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="exercisedValue.raw" Id="Exercised" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="unexercisedValue.raw" Id="Unexercised" Converter="Double" DefaultValue=""/>
+				<JsonPath Expr="yearBorn" Id="Born" Converter="Auto" DefaultValue=""/>
 			</JsonPath>
     </Parse>
   </RestConnector>
