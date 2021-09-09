@@ -14,23 +14,6 @@
         <JsonPath Expr="$.msg"/>
       </Fail>
     </Resource>
-    <Resource Id="Intervals">
-      <Item Id="1m" Title="1 minute"/>
-      <Item Id="3m" Title="3 minutes"/>
-      <Item Id="5m" Title="5 minutes"/>
-      <Item Id="15m" Title="15 minute"/>
-      <Item Id="30m" Title="30 minute"/>
-      <Item Id="1h" Title="1 hour"/>
-      <Item Id="2h" Title="2 hours"/>
-      <Item Id="4h" Title="4 hours"/>
-      <Item Id="6h" Title="6 hours"/>
-      <Item Id="8h" Title="8 hours"/>
-      <Item Id="12h" Title="12 hours"/>
-      <Item Id="1d" Title="1 days"/>
-      <Item Id="3d" Title="3 days"/>
-      <Item Id="1w" Title="1 week"/>
-      <Item Id="1M" Title="1 month"/>
-    </Resource>
 		<Resource Id="HttpSettings">
       <HttpSettings>
         <RequestMethod>GET</RequestMethod>
@@ -256,12 +239,30 @@
       <Text Id="Symbol" Title="Trading pair symbols" Required="true" Select.Connector="ListSymbolsHidden" Debug.DefaultValue="ETHBTC" Multiline="true"/>
       <Select Id="Interval" Title="Chart interval" Required="true" DefaultValue="1m">
         <DataSource>
-          <Resource Id="Intervals"/>
+					<Item Id="1m" Title="1 minute"/>
+					<Item Id="3m" Title="3 minutes"/>
+					<Item Id="5m" Title="5 minutes"/>
+					<Item Id="15m" Title="15 minute"/>
+					<Item Id="30m" Title="30 minute"/>
+					<Item Id="1h" Title="1 hour"/>
+					<Item Id="2h" Title="2 hours"/>
+					<Item Id="4h" Title="4 hours"/>
+					<Item Id="6h" Title="6 hours"/>
+					<Item Id="8h" Title="8 hours"/>
+					<Item Id="12h" Title="12 hours"/>
+					<Item Id="1d" Title="1 days"/>
+					<Item Id="3d" Title="3 days"/>
+					<Item Id="1w" Title="1 week"/>
+					<Item Id="1M" Title="1 month"/>
         </DataSource>
       </Select>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-      <Number Id="Limit" Title="Limit" DefaultValue="100" Minimum="5" Maximum="1000" HelpText="Increments of 5"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="false"/>
     </Parameters>
+		<Paging PageSize="1000">
+			<Parse>
+				<JsonPath Id="LastTimeUnix" Expr="$[-1:][0]"/>
+			</Parse>
+		</Paging>
 		<Batch Parameter="Symbol" Separator="\n"/>
     <Fetch>
       <Fetch.Url>
@@ -270,10 +271,19 @@
         &interval=@(Model.Interval)
         @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
         {
-          @: &startTime=@(((DateTimeOffset)Model.DateInterval.StartDate).ToUnixTimeMilliseconds())
-          @: &endTime=@(((DateTimeOffset)Model.DateInterval.EndDate).ToUnixTimeMilliseconds())
+					long startTime = 0;
+					if(Model.PageCursor.Page == 0)
+					{
+						startTime = (((DateTimeOffset)Model.DateInterval.StartDate).ToUnixTimeMilliseconds());
+					}
+					else
+					{
+						startTime = Convert.ToInt64(Model.LastTimeUnix)+ReturnDatePaginationOffset();
+					}
+          @: &startTime=@startTime
+          @: &endTime=@(((DateTimeOffset)Model.DateInterval.EndDate.AddDays(1)).ToUnixTimeMilliseconds()-1)
         }
-        @(Model.Limit % 5 == 0 ? "&limit=" + Model.Limit : "")
+        &limit=@Model.PageCursor.NextTake
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -434,6 +444,43 @@
 			hashBytes = hash.ComputeHash(textBytes);
 			return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
+
+		long ReturnDatePaginationOffset() {
+			string interval = Model.Interval;
+			switch(interval)
+			{
+				case "1m":
+					return 60*1000;
+				case "3m":
+					return 3*60*1000;
+				case "5m":
+					return 5*60*1000;
+				case "15m":
+					return 15*60*1000;
+				case "30m":
+					return 30*60*1000;
+				case "1h":
+					return 60*60*1000;
+				case "2h":
+					return 2*60*60*1000;
+				case "4h":
+					return 4*60*60*1000;
+				case "6h":
+					return 6*60*60*1000;
+				case "8h":
+					return 8*60*60*1000;
+				case "12h":
+					return 12*60*60*1000;
+				case "1d":
+					return 24*60*60*1000;
+				case "3d":
+					return 3*24*60*60*1000;
+				case "1w":
+					return 7*24*60*60*1000;
+				default:
+					return 60*1000;
+			}
+		}
     ]]>
   </RazorFunctions>
 
