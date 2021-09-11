@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Scraping" RequireVersion="9.3" Title="ScrapingBee" Id="ScrapingBee" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/ScrapingBee.xml" HelpUrl="http://seotoolsforexcel.com/scrapingbee/" HelpText="Documentation" >
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/scrapingbee/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="HtmlParameters">
+      <Select Id="PremiumProxy" Title="Premium Proxy" DefaultValue="None" HelpText="[Cost per request: 25 API credits with Javascript enabled, 10 without] These proxies are rarely blocked and we recommend trying premium proxies for difficult to scrape websites.">
+        <DataSource>
+					<Item Id="None"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+			<Checkbox Id="Javascript" Title="JavaScript Rendering" DefaultValue="true" HelpText="[Cost per request: 5 credits] Fetches the URL to scrape via a headless browser that will execute the JavaScript code on the page."/>
+      <Number Id="Wait" Title="Wait (in ms)" DefaultValue="0" Minimum="0" Maximum="35000" HelpText="Some code-heavy websites need time to fully 'render'. Direct ScrapingBee to wait (max: 35000 ms) before it returns the fully rendered HTML."/>
+    </Resource>
+    <Resource Id="GoogleParameters">
+      <Text Id="Query" Title="Search Query" Debug.DefaultValue="cheap hotels new york" Required="true" HelpText="The text you would put in the Google search bar."/>
+      <Select Id="Country" Title="Country Geolocation" DefaultValue="None" HelpText="The country from which you would like the request to come from.">
+        <DataSource>
+					<Item Id="None"/>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="Language" Title="Display Language" DefaultValue="en" HelpText="The language the search results will be displayed in.">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+   </Resource>
+		<Resource Id="HtmlFetch">
+			<Fetch>
+				<HttpSettings>
+					<IntervalBetweenRequests RandomFrom="1" RandomTo="2" IfSame="Host"/>
+				</HttpSettings>
+				<Fetch.Url>
+					<![CDATA[
+						https://app.scrapingbee.com/api/v1/?api_key=@(Model.ApiKey)
+						&url=@Utils.UrlEncode(Model.Url)
+						&render_js=@Model.Javascript
+						@(Model.PremiumProxy != "None" ? "&premium_proxy=true&country_code=" + Model.PremiumProxy : string.Empty)
+						@(Model.Wait > 0 ? "&wait=" + Model.Wait : string.Empty)
+					]]>
+				</Fetch.Url>
+			</Fetch>
+    </Resource>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+	</Resources>
+
+  <RestConnector Id="XPath" Title="XPath" Group="HTML Page" HelpUrl="https://www.scrapingbee.com/documentation/">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="https://www.seotoolsforexcel.com"/>
+      <Text Id="XPath" Title="XPath" Required="true" Debug.DefaultValue="//a"/>
+      <Text Id="Attribute"/>
+			<Resource Id="HtmlParameters"/>
+    </Parameters>
+		<Resource Id="HtmlFetch"/>
+    <Parse>
+      <XPath Expr="@Model.XPath">
+        <XPath Expr="." Attribute="@Model.Attribute" Converter="Auto"/>
+      </XPath>
+    </Parse>
+  </RestConnector>
+
+  <RestConnector Id="Regex" Title="Regex" Group="HTML Page" HelpUrl="https://www.scrapingbee.com/documentation/">
+    <Parameters>
+      <Text Id="Url" Title="URL" Required="true" Debug.DefaultValue="https://www.seotoolsforexcel.com"/>
+      <Text Id="Regex" Required="true" HelpUrl="https://regex101.com/"/>
+      <Number Id="Group" DefaultValue="0"/>
+			<Resource Id="HtmlParameters"/>
+    </Parameters>
+    <Resource Id="HtmlFetch"/>
+    <Parse>
+      <Regex Expr="@Model.Regex" Group="@Model.Group">
+        <Regex Expr=".*" Group="0" Converter="Auto"/>
+      </Regex>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="ScrapeGoogleResults" Title="Organic Results" Group="Google Search" HelpUrl="https://www.scrapingbee.com/documentation/google/" HelpText="Each successful Google Search request will cost you 25 api credits.">
+    <Parameters>
+			<Resource Id="GoogleParameters"/>
+    </Parameters>
+		<Paging PageSize="100" EvenPages="false"/>
+    <Fetch>
+			<HttpSettings>
+				<IntervalBetweenRequests RandomFrom="1" RandomTo="2" IfSame="Host"/>
+			</HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.scrapingbee.com/api/v1/store/google?api_key=@(Model.ApiKey)
+				&search=@Utils.UrlEncode(Model.Query)
+				@(Model.Country != "None" ? "&country_code=" + Model.Country : string.Empty)
+				&language=@Model.Language
+				&nb_results=@Model.PageCursor.PageSize
+				&page=@(Model.PageCursor.Page+1)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.organic_results[*]">
+				<JsonPath Expr="position" Id="Position" Converter="Int"/>
+				<Compute Expr="@(Model.PageCursor.Page+1)" Id="Page" Converter="Int"/>
+				<JsonPath Expr="url" Id="Url" Title="URL"/>
+				<JsonPath Expr="displayed_url" Id="DisplayedUrl" Title="Displayed URL"/>
+				<JsonPath Expr="title" Id="Title"/>
+				<JsonPath Expr="description" Id="Description"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+	<RestConnector Id="ScrapeGoogleAds" Title="Ads" Group="Google Search" HelpUrl="https://www.scrapingbee.com/documentation/google/" HelpText="Each successful Google Search request will cost you 25 api credits.">
+    <Parameters>
+			<Resource Id="GoogleParameters"/>
+    </Parameters>
+    <Fetch>
+			<HttpSettings>
+				<IntervalBetweenRequests RandomFrom="1" RandomTo="2" IfSame="Host"/>
+			</HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://app.scrapingbee.com/api/v1/store/google?api_key=@(Model.ApiKey)
+				&search=@Utils.UrlEncode(Model.Query)
+				@(Model.Country != "None" ? "&country_code=" + Model.Country : string.Empty)
+				&language=@Model.Language
+				&nb_results=10
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="['top_ads','bottom_ads'][*]">
+				<JsonPath Expr="position" Id="Position" Converter="Int"/>
+				<JsonPath Expr="url" Id="Url" Title="URL"/>
+				<JsonPath Expr="visual_url" Id="VisualUrl" Title="Visual URL"/>
+				<JsonPath Expr="title" Id="Title"/>
+				<JsonPath Expr="description" Id="Description"/>
+			</JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
