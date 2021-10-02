@@ -427,6 +427,36 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="AccountSnapshot" Title="Account Snapshot" Group="Account" HelpUrl="https://binance-docs.github.io/apidocs/spot/en/#all-coins-39-information-user_data">
+    <Parameters>
+			<Select Id="Type" DefaultValue="SPOT">
+				<DataSource>
+						<Item Id="SPOT" Title="Spot"/>
+						<Item Id="MARGIN" Title="Margin"/>
+						<Item Id="FUTURES" Title="Futures"/>
+				</DataSource>
+			</Select>    </Parameters>
+		<Resource Id="Prepare"/>
+    <Fetch>
+      <Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.binance.com/sapi/v1/accountSnapshot?
+				@GetCompleteQueryString("&type=" + Model.Type)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.snapshotVos[-1:].data.balances[*]">
+        <JsonPath Expr="asset" Id="Asset" Title="Asset" Converter="String"/>
+        <JsonPath Expr="free" Id="Free" Title="Free" Converter="Double"/>
+        <JsonPath Expr="locked" Id="Locked" Title="Locked" Converter="Double"/>
+      </JsonPath>
+			<JsonPath Expr="$.snapshotVos[-1:].data.totalAssetOfBtc" Id="TotalAssets" Title="Total Assets" Converter="Double"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RazorFunctions>
     <![CDATA[
     string GetCompleteQueryString(string additionalParams = ""){
