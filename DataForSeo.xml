@@ -74,7 +74,6 @@
       <JsonPath Expr="$.tasks[0].result[*]">
         <JsonPath Expr="language_code" Id="Id" Title="Language Code"/>
         <JsonPath Expr="language_name" Id="Name" Title="Language Name"/>
-        <JsonPath Expr="country_iso_code" Id="Country Code"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
@@ -163,39 +162,50 @@
     </Parse>
   </RestConnector>
 
-  <RestConnector Id="SerpInit" HelpUrl="https://docs.dataforseo.com/v3/serp/overview/?php" Hidden="true">
+  <RestConnector Id="Serp" Title="Organic Results" HelpUrl="https://docs.dataforseo.com/v3/serp/overview/?bash" Group="SERP">
 		<Parameters>
-      <Text Id="LocationCode"/>
-      <Text Id="LanguageCode"/>
-      <Text Id="Keyword"/>
-      <Number Id="Depth"/>
-      <Text Id="Device"/>
-      <Text Id="Engine"/>
+			<Select Id="Engine" DefaultValue="google">
+        <DataSource>
+          <Item Id="google" Title="Google"/>
+          <Item Id="bing" Title="Bing"/>
+          <Item Id="yahoo" Title="Yahoo"/>
+        </DataSource>
+      </Select>
+			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations"/>
+			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Number Id="Depth" Title="Depth" DefaultValue="100" Minimum="1" Maximum="700" HelpText="Parsing depth, max 700"/>
+			<Select Id="Device" DefaultValue="desktop">
+        <DataSource>
+          <Item Id="desktop" Title="Desktop"/>
+          <Item Id="mobile" Title="Mobile"/>
+        </DataSource>
+      </Select>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-        https://api.dataforseo.com/v3/serp/@(Model.Engine)/organic/task_post
+        https://api.dataforseo.com/v3/serp/@(Model.Engine)/organic/live/regular
         ]]>
       </Fetch.Url>
       <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<Resource Id="Headers"/>
+			  <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json; charset=utf-8</RequestContentType>
+				<RequestHeaders>
+					<Header Name='Authorization'>Basic @(CreateBasicAuth())</Header>
+				</RequestHeaders>
         <RequestBody>
           <![CDATA[
-
 					@{
 						var dict = new Dictionary<string, object>();
 						dict.Add("location_code", Model.LocationCode);
 						dict.Add("language_code", Model.LanguageCode);
 						dict.Add("keyword", Model.Keyword);
-						dict.Add("depth", new string[] { Model.Depth.ToString() });
-
+						dict.Add("depth", Model.Depth);
 						if(!string.IsNullOrEmpty(Model.Device))
 						{
 							dict.Add("device", Model.Device);
 						}
-
 						var postData = new List<object>();
             postData.Add(dict);
 					}
@@ -205,39 +215,6 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="tasks[0].id" Id="TaskId"/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="SerpGoogle" Title="Google Results" HelpUrl="https://docs.dataforseo.com/v3/serp/google/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Google according to a certain keyword.">
-		<Parameters>
-			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations"/>
-			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
-			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
-			<Select Id="Device" Title="Device" DefaultValue="desktop">
-        <DataSource>
-          <Item Id="desktop" Title="Desktop"/>
-          <Item Id="mobile" Title="Mobile"/>
-        </DataSource>
-      </Select>
-			<Text Id="Engine" DefaultValue="google" Hidden="true"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Depth,Device,Engine"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v3/serp/google/organic/task_get/regular/@(Model.TaskId)
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-				<Resource Id="Headers"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
       <JsonPath Expr="$.tasks[0].result[0].items[*]">
         <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
         <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
@@ -250,90 +227,8 @@
       </JsonPath>
     </Parse>
     <Fail>
-			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="SerpBing" Title="Bing Results" HelpUrl="https://docs.dataforseo.com/v3/serp/bing/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Bing according to a certain keyword.">
-		<Parameters>
-			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations"/>
-			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
-			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
-			<Select Id="Device" Title="Device" DefaultValue="desktop">
-        <DataSource>
-          <Item Id="desktop" Title="Desktop"/>
-          <Item Id="mobile" Title="Mobile"/>
-        </DataSource>
-      </Select>
-			<Text Id="Engine" DefaultValue="bing" Hidden="true"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device,Depth,Engine"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v3/serp/bing/organic/task_get/regular/@(Model.TaskId)
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-				<Resource Id="Headers"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.tasks[0].result[0].items[*]">
-        <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
-        <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
-        <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
-        <JsonPath Expr="domain" Id="Domain" Title="Domain"/>
-        <JsonPath Expr="url" Id="SerpUrl" Title="SERP URL"/>
-        <JsonPath Expr="title" Id="SerpTitle" Title="SERP Title"/>
-        <JsonPath Expr="breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
-        <JsonPath Expr="description" Id="SerpDescription" Title="SERP Description"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="SerpYahoo" Title="Yahoo Results" HelpUrl="https://docs.dataforseo.com/v3/serp/yahoo/organic/task_get/regular/?php" Group="SERP" HelpText="Receive SERP (Top 100) results from Yahoo according to a certain keyword.">
-		<Parameters>
-			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations"/>
-			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
-			<Number Id="Depth" Title="Depth" DefaultValue="100" Required="true" Maximum="700" HelpText="Parsing depth, max 700"/>
-			<Text Id="Device" Hidden="true"/>
-			<Text Id="Engine" DefaultValue="bing" Hidden="true"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="SerpInit" Parameters="LocationCode,LanguageCode,Keyword,Device,Depth,Engine"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v3/serp/yahoo/organic/task_get/regular/@(Model.TaskId)
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-				<Resource Id="Headers"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.tasks[0].result[0].items[*]">
-        <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
-        <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
-        <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
-        <JsonPath Expr="domain" Id="Domain" Title="Domain"/>
-        <JsonPath Expr="url" Id="SerpUrl" Title="SERP URL"/>
-        <JsonPath Expr="title" Id="SerpTitle" Title="SERP Title"/>
-        <JsonPath Expr="breadcrumb" Id="SerpBreadcrumb" Title="SERP Breadcrumb"/>
-        <JsonPath Expr="description" Id="SerpDescription" Title="SERP Description"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
+			<JsonPath Expr="$.tasks_error" Fail.If="IsNotEqual" Fail.ComparedTo="0" Fail.Action="Request" Fail.RequestId="FindError"/>
+			<JsonPath Expr="$.tasks[0].status_message" Id="FindError"/>
     </Fail>
   </RestConnector>
 
@@ -1332,145 +1227,6 @@
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="OnPageInit" HelpUrl="https://docs.dataforseo.com/v3/on_page/task_post/?php" Hidden="true">
-		<Parameters>
-      <Text Id="Target" Debug.DefaultValue="seotoolsforexcel.com"/>
-      <Text Id="StartUrl"/>
-      <Text Id="UserAgent"/>
-      <Text Id="Pages" Debug.DefaultValue="10"/>
-      <Text Id="Depth" Debug.DefaultValue="1"/>
-      <Text Id="Delay" Debug.DefaultValue="100"/>
-      <Text Id="AllowSubdomains"/>
-      <Text Id="RespectSitemap"/>
-		</Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v3/on_page/task_post
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-        <RequestMethod>POST</RequestMethod>
-				<Resource Id="Headers"/>
-        <RequestBody>
-          <![CDATA[
-
-					@{
-						var dict = new Dictionary<string, object>();
-						dict.Add("target", Utils.UrlProperty(Model.Target).Domain);
-						dict.Add("max_crawl_pages", Model.Pages);
-						dict.Add("depth", Model.Depth);
-						dict.Add("crawl_delay", Model.Delay);
-						dict.Add("allow_subdomains", Model.AllowSubdomains.Equals("True"));
-						dict.Add("respect_sitemap", Model.RespectSitemap.Equals("True"));
-
-						if(!string.IsNullOrEmpty(Model.StartUrl)) {
-							dict.Add("start_url", Model.StartUrl);
-						}
-
-						if(!string.IsNullOrEmpty(Model.UserAgent)) {
-							dict.Add("custom_user_agent", Model.UserAgent);
-						}
-
-						var postData = new List<object>();
-            postData.Add(dict);
-					}
-					@JsonConvert.SerializeObject(postData)
-					]]>
-        </RequestBody>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="tasks[0].id" Id="TaskId"/>
-    </Parse>
-  </RestConnector>
-
-  <RestConnector Id="OnPageSummary" Title="On-Page Summary" HelpUrl="https://docs.dataforseo.com/v3/on_page/summary/?php" Group="On-Page" HelpText="Get the overall information on a website as well as drill down into exact on-page issues of a website that has been scanned.">
-		<Parameters>
-			<Text Id="Target" Title="Target Domain" Required="true" Debug.DefaultValue="seotoolsforexcel.com"/>
-			<Text Id="StartUrl" Title="Custom Start URL" HelpText="The first url to crawl. You should specify the absolute URL if you want to crawl a single page, specify its URL in this field and set the 'Max Pages' parameter to 1"/>
-			<Text Id="UserAgent" Title="Custom User-Agent" HelpText="custom user agent for crawling a website, example: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"/>
-			<Number Id="Pages" Title="Max Number of Pages" DefaultValue="10" Debug.DefaultValue="3" Minimum="1" HelpText="the number of pages to crawl on the specified domain"/>
-			<Number Id="Depth" HelpText="the linking depth of the pages to crawl, for example, home page is level 0, pages that have links from the home page are level 1, etc"/>
-			<Number Id="Delay" DefaultValue="100" HelpText="The custom delay in ms between crawler hits to the server"/>
-			<Checkbox Id="AllowSubdomains" Title="Allow Subdomains" HelpText="Check if you want to crawl all subdomains of a target website"/>
-			<Checkbox Id="RespectSitemap" Title="Respect Sitemap" DefaultValue="true" HelpText="Uncheck if you want to ignore the order of pages indicated in the primary sitemap when crawling"/>
-    </Parameters>
-    <Prepare>
-      <Connector Id="OnPageInit" Parameters="Target,StartUrl,UserAgent,Pages,Depth,Delay,AllowSubdomains,RespectSitemap"/>
-    </Prepare>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://api.dataforseo.com/v3/on_page/summary/@(Model.TaskId)
-        ]]>
-      </Fetch.Url>
-      <HttpSettings>
-				<Resource Id="Headers"/>
-      </HttpSettings>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.tasks[0].result[0].domain_info">
-        <JsonPath Expr="name" Id="Domain"/>
-        <JsonPath Expr="ssl_info.valid_certificate" Id="SSLValidCertificate" Title="SSL Valid Certificate"/>
-        <JsonPath Expr="total_pages" Id="Pages" Converter="Int"/>
-			</JsonPath>
-      <JsonPath Expr="$.tasks[0].result[0].page_metrics">
-        <JsonPath Expr="links_external" Id="LinksInternal" Title="Links Internal" Converter="Int"/>
-        <JsonPath Expr="links_internal" Id="LinksExternal" Title="Links External" Converter="Int"/>
-        <JsonPath Expr="duplicate_title" Id="DuplicateTitle" Title="Duplicate Title" Converter="Int"/>
-        <JsonPath Expr="duplicate_description" Id="DuplicateDescription" Title="Duplicate Description" Converter="Int"/>
-        <JsonPath Expr="duplicate_content" Id="DuplicateContent" Title="Duplicate Content" Converter="Int"/>
-        <JsonPath Expr="broken_links" Id="BrokenLinks" Title="Broken Links" Converter="Int"/>
-        <JsonPath Expr="broken_resources" Id="BrokenResources" Title="Broken Resources" Converter="Int"/>
-				<JsonPath Expr="checks.canonical" Id="Canonical" Title="Canonical" Converter="Int"/>
-				<JsonPath Expr="checks.duplicate_meta_tags" Id="DuplicateMetaTags" Title="Duplicate Meta Tags" Converter="Int"/>
-				<JsonPath Expr="checks.no_description" Id="NoDescription" Title="No Description" Converter="Int"/>
-				<JsonPath Expr="checks.frame" Id="Frame" Title="Frame" Converter="Int"/>
-				<JsonPath Expr="checks.large_page_size" Id="LargePageSize" Title="Large Page Size" Converter="Int"/>
-				<JsonPath Expr="checks.irrelevant_description" Id="IrrelevantDescription" Title="Irrelevant Description" Converter="Int"/>
-				<JsonPath Expr="checks.irrelevant_meta_keywords" Id="IrrelevantMetaKeywords" Title="Irrelevant Meta Keywords" Converter="Int"/>
-				<JsonPath Expr="checks.is_https" Id="IsHttps" Title="Is Https" Converter="Int"/>
-				<JsonPath Expr="checks.is_http" Id="IsHttp" Title="Is Http" Converter="Int"/>
-				<JsonPath Expr="checks.title_too_long" Id="TitleTooLong" Title="Title Too Long" Converter="Int"/>
-				<JsonPath Expr="checks.low_content_rate" Id="LowContentRate" Title="Low Content Rate" Converter="Int"/>
-				<JsonPath Expr="checks.small_page_size" Id="SmallPageSize" Title="Small Page Size" Converter="Int"/>
-				<JsonPath Expr="checks.no_h1_tag" Id="NoH1Tag" Title="No H1 Tag" Converter="Int"/>
-				<JsonPath Expr="checks.no_favicon" Id="NoFavicon" Title="No Favicon" Converter="Int"/>
-				<JsonPath Expr="checks.no_image_alt" Id="NoImageAlt" Title="No Image Alt" Converter="Int"/>
-				<JsonPath Expr="checks.no_image_title" Id="NoImageTitle" Title="No Image Title" Converter="Int"/>
-				<JsonPath Expr="checks.seo_friendly_url" Id="SeoFriendlyUrl" Title="SEO Friendly URL" Converter="Int"/>
-				<JsonPath Expr="checks.seo_friendly_url_characters_check" Id="SeoFriendlyUrlCharactersCheck" Title="SEO Friendly URL Characters Check" Converter="Int"/>
-				<JsonPath Expr="checks.seo_friendly_url_dynamic_check" Id="SeoFriendlyUrlDynamicCheck" Title="SEO Friendly URL Dynamic Check" Converter="Int"/>
-				<JsonPath Expr="checks.seo_friendly_url_keywords_check" Id="SeoFriendlyUrlKeywordsCheck" Title="SEO Friendly URL Keywords Check" Converter="Int"/>
-				<JsonPath Expr="checks.seo_friendly_url_relative_length_check" Id="SeoFriendlyUrlRelativeLengthCheck" Title="SEO Friendly URL Relative Length Check" Converter="Int"/>
-				<JsonPath Expr="checks.title_too_short" Id="TitleTooShort" Title="Title Too Short" Converter="Int"/>
-				<JsonPath Expr="checks.no_content_encoding" Id="NoContentEncoding" Title="No Content Encoding" Converter="Int"/>
-				<JsonPath Expr="checks.high_waiting_time" Id="HighWaitingTime" Title="High Waiting Time" Converter="Int"/>
-				<JsonPath Expr="checks.high_loading_time" Id="HighLoadingTime" Title="High Loading Time" Converter="Int"/>
-				<JsonPath Expr="checks.is_redirect" Id="IsRedirect" Title="Is Redirect" Converter="Int"/>
-				<JsonPath Expr="checks.is_broken" Id="IsBroken" Title="Is Broken" Converter="Int"/>
-				<JsonPath Expr="checks.is_www" Id="IsWww" Title="Is WWW" Converter="Int"/>
-				<JsonPath Expr="checks.no_doctype" Id="NoDoctype" Title="No Doctype" Converter="Int"/>
-				<JsonPath Expr="checks.no_encoding_meta_tag" Id="NoEncodingMetaTag" Title="No Encoding Meta Tag" Converter="Int"/>
-				<JsonPath Expr="checks.high_content_rate" Id="HighContentRate" Title="High Content Rate" Converter="Int"/>
-				<JsonPath Expr="checks.low_character_count" Id="LowCharacterCount" Title="Low Character Count" Converter="Int"/>
-				<JsonPath Expr="checks.high_character_count" Id="HighCharacterCount" Title="High Character Count" Converter="Int"/>
-				<JsonPath Expr="checks.low_readability_rate" Id="LowReadabilityRate" Title="Low Readability Rate" Converter="Int"/>
-				<JsonPath Expr="checks.irrelevant_title" Id="IrrelevantTitle" Title="Irrelevant Title" Converter="Int"/>
-				<JsonPath Expr="checks.deprecated_html_tags" Id="DeprecatedHtmlTags" Title="Deprecated Html Tags" Converter="Int"/>
-				<JsonPath Expr="checks.duplicate_title_tag" Id="DuplicateTitleTag" Title="Duplicate Title Tag" Converter="Int"/>
-				<JsonPath Expr="checks.no_title" Id="NoTitle" Title="No Title" Converter="Int"/>
-				<JsonPath Expr="checks.flash" Id="Flash" Title="Flash" Converter="Int"/>
-				<JsonPath Expr="checks.lorem_ipsum" Id="LoremIpsum" Title="Lorem Ipsum" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-			<JsonPath Expr="$.tasks[0].status_code" Fail.If="IsEqual" Fail.ComparedTo="40602" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-			<JsonPath Expr="$.tasks[0].result[0].crawl_progress" Fail.If="IsEqual" Fail.ComparedTo="in_progress" Fail.Action="Retry" Fail.RetryAfter="5000" Fail.RetryTimes="100"/>
-		</Fail>
   </RestConnector>
 
 	<RestConnector Id="AvailableCredits" Title="Available API Credits" HelpUrl="https://docs.dataforseo.com/#get-pages">
