@@ -462,7 +462,9 @@
     <Parse>
       <JsonPath Expr="data[*]">
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-        <JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String" Tag="id"/>
+				<Compute Expr="@GetCommentId()" Id="CommentId" Title="Comment Id" Converter="Auto">
+					<JsonPath Id="Link" Expr="permalink_url" DefaultValue=""/>
+        </Compute>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
         <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count"/>
@@ -499,7 +501,7 @@
     <Parse>
       <JsonPath Expr="@bool2dim()">
         <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-        <JsonPath Title="Comment Id" Id="CommentId" Expr="id" Converter="String"/>
+				<Compute Expr="@Model.Ids" Id="CommentId" Title="Comment Id" Converter="Auto"/>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
         <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count"/>
@@ -556,6 +558,45 @@
 			string FetchIdsBatch() {
 				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
 				return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
+			}
+
+			string GetCommentId() {
+				Regex regexCommentId = new Regex(@"\?comment_id=(\d+)");
+				Regex regexPostId = new Regex(@"/posts/(\d+)");
+				Regex regexReplyId = new Regex(@"\?reply_comment_id=(\d+)");
+				string commentId = "";
+				string postId = "";
+				string replyId = "";
+				string fullId = "";
+
+				if(regexCommentId.IsMatch(Model.Link))
+				{
+					Match match = regexCommentId.Match(Model.Link);
+					commentId = match.Groups[1].Value;
+				}
+
+				if(regexPostId.IsMatch(Model.Link))
+				{
+					Match match = regexPostId.Match(Model.Link);
+					postId = match.Groups[1].Value;
+				}
+
+				if(regexReplyId.IsMatch(Model.Link))
+				{
+					Match match = regexReplyId.Match(Model.Link);
+					replyId = match.Groups[1].Value;
+				}
+
+				if(!string.IsNullOrEmpty(replyId))
+				{
+					fullId = commentId + "_" + replyId;
+				}
+				else
+				{
+					fullId = postId + "_" + commentId;
+				}
+
+				return fullId;
 			}
     ]]>
   </RazorFunctions>
