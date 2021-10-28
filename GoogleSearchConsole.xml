@@ -60,6 +60,8 @@
       return op == "==" ? "equals" :
         op == "!=" ? "notEquals" :
         op == "=~" ? "contains" :
+				op == "rX" ? "includingRegex" :
+				op == "!rX" ? "excludingRegex" :
         "notContains";
     }
 
@@ -68,7 +70,7 @@
       var lines = ((string)Model.Filter??"").Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e));
 
       var filters = lines
-        .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~)([^!=]+)"))
+        .Select(e => Regex.Match(e, "([^!=]+)(!=|==|!~|=~|rX|!rX)([^!=]+)"))
         .Where(e => e.Success)
         .Select(e => string.Format("{{'dimension':'{0}','operator':'{1}','expression':'{2}'}}",
           e.Groups[1].Value.Trim(),
@@ -125,12 +127,14 @@
       <Text Id="Site" Title="Site" Debug.DefaultValue="https://seotoolsforexcel.com/" Required="true" Select.Connector="SitesHidden"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
       <Text Id="Filter" Title="Filter" HelpUrl="http://seotoolsforexcel.com/google-search-console/" Multiline="true"/>
-      <Select Id="SearchType" Title="Type" DefaultValue="web">
+      <Select Id="SearchType" Title="Type" DefaultValue="web" HelpText="Some metrics and dimensions are compatible only with some data types; for example, queries and positions are not supported by the Google Discover report.">
         <DataSource>
           <Item Id="web" Title="Web"/>
           <Item Id="video" Title="Video"/>
           <Item Id="image" Title="Image"/>
 					<Item Id="news" Title="News"/>
+					<Item Id="googleNews" Title="Google News"/>
+					<Item Id="discover" Title="Google Discover"/>					
         </DataSource>
       </Select>
 			<Checkbox Id="DataState" Title="Include fresh data" HelpText="'All' returns fresh data and 'Final' returns only finalized data."/>
@@ -150,7 +154,7 @@
           "dimensions": [ @SelectedDimensions() ],
           "rowLimit": @(Model.PageCursor.NextTake),
           "startRow": @(Model.PageCursor.NextSkip+Model.Offset),
-          "searchType": "@(Model.SearchType)",
+          "type": "@(Model.SearchType)",
 					"dataState": "@(Model.DataState ? "all" : "final")"
           @RenderFilter()
           }
