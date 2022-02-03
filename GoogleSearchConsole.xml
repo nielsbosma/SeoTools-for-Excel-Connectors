@@ -227,4 +227,46 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+<RestConnector Id="Inspect" Title="Inspect" HelpUrl="https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect">
+    <Parameters>
+      <Text Id="Site" Title="Site" Debug.DefaultValue="https://seotoolsforexcel.com/" Required="true" Select.Connector="SitesHidden"/>
+      <Text Id="InspectionUrl" Title="Inspection URL" Debug.DefaultValue="https://seotoolsforexcel.com/connectors/" Required="true" />
+		</Parameters>
+    <Fetch>
+      <HttpSettings>
+				<Cache>True</Cache>
+        <Resource Id="RequestHeaders"/>
+        <RequestMethod>POST</RequestMethod>
+				<IntervalBetweenRequests RandomFrom="10" RandomTo="20" IfSame="Domain"/>
+        <RequestContentType>application/json</RequestContentType>
+        <RequestBody>
+          {
+          "siteUrl": "@(Model.Site)",
+          "inspectionUrl": "@(Model.InspectionUrl)"
+          }
+        </RequestBody>
+      </HttpSettings>
+			<Fetch.Url>
+				<![CDATA[
+				https://searchconsole.googleapis.com/v1/urlInspection/index:inspect
+				]]>
+      </Fetch.Url>
+		</Fetch>
+    <Parse>
+      <JsonPath Expr="$.inspectionResult.indexStatusResult">
+        <JsonPath Expr="verdict" Id="Verdict" Title="Verdict"/>
+        <JsonPath Expr="coverageState" Id="CoverageState" Title="Coverage State"/>
+        <JsonPath Expr="robotsTxtState" Id="RobotsTextState" Title="Robots Text State"/>
+        <JsonPath Expr="indexingState" Id="IndexingState" Title="Indexing State"/>
+        <JsonPath Expr="lastCrawlTime" Id="LastCrawlTime" Title="Last Crawl" Converter="DateTime"/>
+        <JsonPath Expr="pageFetchState" Id="PageFetchState" Title="Page Fetch State"/>
+        <JsonPath Expr="googleCanonical" Id="GoogleCanonical" Title="Google Canonical"/>
+        <JsonPath Expr="userCanonical" Id="UserCanonical" Title="User Canonical"/>
+        <JsonPath Expr="csv($.sitemap)" Id="Sitemaps"/>
+      </JsonPath>
+			<JsonPath Expr="$.inspectionResult.mobileUsabilityResult.verdict" Id="MobileUsabilityVerdict" Title="Mobile Usability Verdict"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
 </Suite>
