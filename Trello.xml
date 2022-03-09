@@ -108,6 +108,29 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="ChecklistsHidden" Hidden="true">
+    <Parameters>
+      <Text Id="BoardId" Select.Connector="BoardsHidden"/>
+      <Text Id="ListId" Select.Connector="ListsHidden"/>
+      <Text Id="CardId" Select.Connector="CardsHidden"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/cards/@(Model.CardId)/checklists?key=b8cb1a333f8458c07a382e9f3ecf157a&token=@(Model.Authenticator.Token)
+
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$[*]">
+        <JsonPath Expr="id" Id="Id" Title="Checklist Id"/>
+        <JsonPath Expr="name" Id="Name" Title="Checklist Name"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
   <RestConnector Id="BoardCards" Title="Board Cards" Group="Cards" HelpUrl="https://trello.readme.io/v1.0/reference#boardsboardidtest">
     <Parameters>
       <Text Id="BoardId" Title="Filter by Board Id" Required="true" Select.Connector="BoardsHidden"/>
@@ -391,6 +414,56 @@
         <JsonPath Expr="id" Id="MemberId" Title="Member Id" HelpText="The ID of the member"/>
         <JsonPath Expr="username" Id="Username" Title="Username" HelpText="The username for the member"/>
         <JsonPath Expr="fullName" Id="FullName" Title="Name" HelpText="The full display name for the member"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CardChecklists" Title="Card Checklists" Group="Checklists" HelpUrl="https://developer.atlassian.com/cloud/trello/rest/api-group-cards/#api-cards-id-checklists-get">
+    <Parameters>
+      <Text Id="BoardId" Title="Filter by Board ID" Debug.DefaultValue="60ec70568a1bd51c80f6abfc" Select.Connector="BoardsHidden" />
+      <Text Id="ListId" Title="Filter by List ID" Debug.DefaultValue="60ec705fabbc9b1ebdb46832" Select.Connector="ListsHidden" Parent.Id="BoardId" Parent.Label="Board ID"/>
+      <Text Id="CardId" Title="Card ID" Required="true" Debug.DefaultValue="61b085bfd9d77d54577bfb99" Select.Connector="CardsHidden" Parent.Id="ListId" Parent.Label="List ID"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/cards/@(Model.CardId)/checklists
+        ?key=b8cb1a333f8458c07a382e9f3ecf157a&token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.[*]">
+        <JsonPath Expr="id" Id="CheckListId" Title="Checklist Id"/>
+        <JsonPath Expr="name" Id="CheckListName" Title="Checklist Name"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="ChecklistItems" Title="Checklist Items" Group="Checklists" HelpUrl="https://developer.atlassian.com/cloud/trello/rest/api-group-cards/#api-cards-id-checkitemstates-get">
+    <Parameters>
+      <Text Id="BoardId" Title="Filter by Board ID" Debug.DefaultValue="60ec70568a1bd51c80f6abfc" Select.Connector="BoardsHidden" />
+      <Text Id="ListId" Title="Filter by List ID" Debug.DefaultValue="60ec705fabbc9b1ebdb46832" Select.Connector="ListsHidden" Parent.Id="BoardId" Parent.Label="Board ID"/>
+      <Text Id="CardId" Title="Card ID" Required="true" Debug.DefaultValue="61b085bfd9d77d54577bfb99" Select.Connector="CardsHidden" Parent.Id="ListId" Parent.Label="List ID"/>
+      <Text Id="ChecklistId" Title="Checklist ID" Required="true" Debug.DefaultValue="622264aee69a9a3f9c7082e8" Select.Connector="ChecklistsHidden" Parent.Id="CardId" Parent.Label="Card ID"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.trello.com/1/checklists/@(Model.ChecklistId)/checkItems
+        ?key=b8cb1a333f8458c07a382e9f3ecf157a&token=@(Model.Authenticator.Token)
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.[*]">
+        <JsonPath Expr="id" Id="CheckitemId" Title="Checkitem Id"/>
+        <JsonPath Expr="name" Id="CheckitemName" Title="Checkitem Name"/>
+        <JsonPath Expr="state" Id="CheckitemState" Title="Checkitem State"/>
+        <JsonPath Expr="idChecklist" Id="ChecklistId" Title="Checklist Id"/>
+
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
