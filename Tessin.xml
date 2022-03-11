@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Finance" Title="Tessin" Identifier="Tessin" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Tessin.xml">
+
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
+
+  <Settings>
+    <Text Id="ClientId" Title="ClientId" Required="true"/>
+    <Text Id="Secret" Title="Secret" Required="true"/>
+  </Settings>
+
+  <RestConnector Id="GenerateToken" Title="GenerateToken" Hidden="false">
+    <Fetch>
+      <HttpSettings>
+				<Cache>True</Cache>
+        <RequestMethod>POST</RequestMethod>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+				 <RequestForm>
+          <Param Name='client_id'>@(Model.ClientId)</Param>
+          <Param Name='scope'>api://f491555d-fd6c-49a3-a8f5-07682d988826/.default</Param>
+          <Param Name='client_secret'>@(Model.Secret)</Param>
+          <Param Name='grant_type'>client_credentials</Param>
+				</RequestForm>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://login.microsoftonline.com/ce4912e3-5116-4e82-a1f8-1e93ce0d3607/oauth2/v2.0/token
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="access_token" Id="Token"/>
+    </Parse>
+		<Resource Id="Error"/>
+  </RestConnector>
+
+  <RestConnector Id="Engagements" Title="Engagements">
+    <Parameters>
+      <Date Id="AtDate" Title="At Date" Required="true" Nullable="false"/>
+    </Parameters>
+    <Prepare>
+      <Connector Id="GenerateToken"/>
+    </Prepare>
+    <Fetch>
+      <HttpSettings>
+        <RequestContentType>application/x-www-form-urlencoded</RequestContentType>
+        <RequestHeaders>
+          <Header Name='Authorization'>Bearer @(Model.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://data.tessin.com/api/me/engagements/@(Model.AtDate.ToString("yyyy-MM-dd"))
+				]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="data.*">
+        <JsonPath Title="LoanNumber" Id="loanNumber" Expr="loanNumberFormatted"/>
+        <JsonPath Title="ProjectTitle" Id="projectTitle" Expr="projectTitle"/>
+        <JsonPath Title="Currency" Id="currency" Expr="currency"/>
+        <JsonPath Title="DeveloperName" Id="developerName" Expr="developerName"/>
+        <JsonPath Title="DeveloperGovId" Id="developerGovId" Expr="developerGovId"/>
+        <JsonPath Title="OriginalInvestment" Id="originalInvestment" Expr="engagement.originalInvestment" Converter="Double"/>
+        <JsonPath Title="Repaid" Id="repaid" Expr="engagement.repaid" Converter="Double"/>
+        <JsonPath Title="Ledger" Id="ledger" Expr="engagement.ledger" Converter="Double"/>
+        <JsonPath Title="PaidYield" Id="paidYield" Expr="engagement.paidYield" Converter="Double"/>
+        <JsonPath Title="TotalAccumulatedYield" Id="totalAccumulatedYield" Expr="engagement.totalAccumulatedYield" Converter="Double"/>
+        <JsonPath Title="Xirr" Id="xirr" Expr="engagement.xirr" Converter="Double"/>
+        <JsonPath Title="TotalYield" Id="totalYield" Expr="engagement.totalYield" Converter="Double"/>
+        <JsonPath Title="TotalYieldPercentage" Id="totalYieldPercentage" Expr="engagement.totalYieldPercentage" Converter="Double"/>
+        <JsonPath Title="InvestmentHorizon" Id="investmentHorizon" Expr="investmentHorizon" Checked="False"/>
+        <JsonPath Title="InvestmentInstrument" Id="investmentInstrument" Expr="investmentInstrument" Checked="False"/>
+        <JsonPath Title="InvestmentReturn" Id="investmentReturn" Expr="investmentReturn" Checked="False"/>
+        <JsonPath Title="Created" Id="commitmentCreated" Expr="commitmentCreated" Checked="False"/>
+        <JsonPath Title="ProjectHId" Id="projectHId" Expr="projectHId" Checked="False"/>
+        <JsonPath Title="CommitmentId" Id="commitmentId" Expr="commitmentId" Checked="False"/>
+      </JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
