@@ -173,7 +173,7 @@
       </Select>
 			<Text Id="LocationCode" Title="Location Code" Required="true" Syntax="^\d+$" Debug.DefaultValue="2752" Select.Connector="SerpLocations"/>
 			<Text Id="LanguageCode" Title="Language Code" Required="true" Debug.DefaultValue="sv" Select.Connector="SerpLanguages"/>
-			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="&quot;sms lån&quot;" Required="true"/>
+			<Text Id="Keyword" Title="Keyword" Debug.DefaultValue="hotell" Required="true"/>
 			<Number Id="Depth" Title="Depth" DefaultValue="100" Minimum="1" Maximum="700" HelpText="Parsing depth, max 700"/>
 			<Select Id="Device" DefaultValue="desktop">
         <DataSource>
@@ -181,6 +181,7 @@
           <Item Id="mobile" Title="Mobile"/>
         </DataSource>
       </Select>
+			<Checkbox Id="OrganicOnly" Title="Organic Results only"/>
 		</Parameters>
     <Fetch>
       <Fetch.Url>
@@ -215,7 +216,7 @@
       </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+      <JsonPath Expr="@(GetOrganicJsonFilter())">
         <JsonPath Expr="rank_group" Id="SerpRankGroup" Title="SERP Rank Group" Converter="Auto"/>
         <JsonPath Expr="rank_absolute" Id="SerpRankAbsolute" Title="SERP Rank Absolute" Converter="Auto"/>
         <JsonPath Expr="type" Id="SerpType" Title="SERP Type"/>
@@ -1256,6 +1257,12 @@
     string[] CreateArr(int limit){
       return ((string)Model.Keyword).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).Take(limit).ToArray();
     }
+		
+		string GetOrganicJsonFilter() {
+			return Model.OrganicOnly
+				? "$.tasks[0].result[0].items[?(@.type=='organic')]" 
+				: "$.tasks[0].result[0].items[*]";
+		}
     ]]>
   </RazorFunctions>
 
