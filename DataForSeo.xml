@@ -1052,6 +1052,107 @@
 		<Resource Id="Fail"/>
   </RestConnector>
 
+  <RestConnector Id="Backlinks" Title="Backlinks" Group="Backlinks LIVE" HelpUrl="https://docs.dataforseo.com/v3/backlinks/backlinks/live/?csharp" HelpText="Provide you with a list of backlinks and relevant data for the specified domain, subdomain, or webpage.">
+		<Parameters>
+			<Text Id="Target" Title="Target" Debug.DefaultValue="seotoolsforexcel.com" Required="true"/>
+			<Select Id="Mode" Title="Mode">
+        <DataSource>
+          <Item Id="as_is" Title="All Backlinks"/>
+          <Item Id="one_per_domain" Title="One Backlink per Domain"/>
+          <Item Id="one_per_anchor" Title="One Backlink per Anchor"/>
+        </DataSource>
+      </Select>
+			<Text Id="Filter" Title="Filter" HelpText="Click this icon to see example filters, ie: [&quot;rank&quot;,&quot;>&quot;,&quot;80&quot;]" HelpUrl="https://docs.dataforseo.com/v3/backlinks/backlinks/live/?csharp"/>
+			<Select Id="Sort" Title="Sort results by">
+        <DataSource>
+          <Item Id="rank,desc" Title="Rank Desc"/>
+          <Item Id="rank,asc" Title="Rank Asc"/>
+          <Item Id="page_from_rank,desc" Title="Page From Rank Desc"/>
+          <Item Id="page_from_rank,asc" Title="Page From Rank Asc"/>
+          <Item Id="domain_from_rank,desc" Title="Domain From Rank Desc"/>
+          <Item Id="domain_from_rank,asc" Title="Domain From Rank Asc"/>
+          <Item Id="page_from_external_links,desc" Title="Page From External Links Desc"/>
+          <Item Id="page_from_external_links,asc" Title="Page From External Links Asc"/>
+          <Item Id="page_from_internal_links,desc" Title="Page From Internal Links Desc"/>
+          <Item Id="page_from_internal_links,asc" Title="Page From Internal Asc"/>
+          <Item Id="backlink_spam_score,desc" Title="Backlink Spam Score Desc"/>
+          <Item Id="backlink_spam_score,asc" Title="Backlink Spam Score Asc"/>
+        </DataSource>
+      </Select>
+    </Parameters>
+		<Paging PageSize="100" EvenPages="true"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.dataforseo.com/v3/backlinks/backlinks/live
+        ]]>
+      </Fetch.Url>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<Resource Id="Headers"/>
+        <RequestBody>
+          <![CDATA[
+					@{
+						var dict = new Dictionary<string, object>();
+						dict.Add("target", Model.Target);
+						dict.Add("mode", Model.Mode);
+						dict.Add("order_by", new string[] { Model.Sort });
+						dict.Add("limit", Model.PageCursor.NextTake);
+						dict.Add("offset", Model.PageCursor.NextSkip);
+
+						if(!string.IsNullOrEmpty(Model.Filter))
+						{
+							var deserialized = JsonConvert.DeserializeObject(Model.Filter);
+							dict.Add("filters", deserialized);
+						}
+
+						var postData = new List<object>();
+            postData.Add(dict);
+					}
+					@JsonConvert.SerializeObject(postData)
+					]]>
+        </RequestBody>
+      </HttpSettings>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="$.tasks[0].result[0].items[*]">
+        <JsonPath Expr="domain_from" Id="DomainFrom" Title="Domain From" Converter="String"/>
+        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String"/>
+        <JsonPath Expr="domain_to" Id="DomainTo" Title="Domain To" Converter="String"/>
+        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String"/>
+        <JsonPath Expr="is_new" Id="IsNew" Title="New" Converter="Bool"/>
+        <JsonPath Expr="is_lost" Id="IsLost" Title="Lost" Converter="Bool"/>
+        <JsonPath Expr="domain_from_ip" Id="DomainFromIP" Title="Domain From IP" Converter="String"/>
+        <JsonPath Expr="backlink_spam_score" Id="BacklinkSpamScore" Title="Backlink Spam Score" Converter="Int"/>
+        <JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Int"/>
+        <JsonPath Expr="page_from_rank" Id="PageFromRank" Title="Page From Rank" Converter="Int"/>
+        <JsonPath Expr="domain_from_rank" Id="DomainFromRank" Title="Domain From Rank" Converter="Int"/>
+        <JsonPath Expr="page_from_external_links" Id="PageFromExternalLinks" Title="Page From External Links" Converter="Int"/>
+        <JsonPath Expr="page_from_internal_links" Id="PageFromInternalLinks" Title="Page From Internal Links" Converter="Int"/>
+        <JsonPath Expr="page_from_size" Id="PageFromSize" Title="Page From Size" Converter="Int"/>
+        <JsonPath Expr="page_from_language" Id="PageFromLanguage" Title="Page From Language" Converter="String"/>
+        <JsonPath Expr="page_from_title" Id="PageFromTitle" Title="Page From Title" Converter="String"/>
+        <JsonPath Expr="page_from_status_code" Id="PageFromStatusCode" Title="Page From Status Code" Converter="Auto"/>
+        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime"/>
+        <JsonPath Expr="prev_seen" Id="PrevSeen" Title="Prev Seen" Converter="DateTime"/>
+        <JsonPath Expr="last_seen" Id="LastSeen" Title="Last Seen" Converter="DateTime"/>
+        <JsonPath Expr="item_type" Id="ItemType" Title="ItemType" Converter="Bool"/>
+        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Bool"/>
+        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool"/>
+        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="links_count" Id="Links" Title="Links" Converter="Int"/>
+        <JsonPath Expr="is_broken" Id="IsBroken" Title="Broken" Converter="Bool"/>
+        <JsonPath Expr="url_to_status_code" Id="UrlToStatusCode" Title="URL To Status Code" Converter="Auto"/>
+        <JsonPath Expr="url_to_spam_score" Id="UrlToSpamScore" Title="URL To Spam Score" Converter="Int"/>
+        <JsonPath Expr="url_to_redirect_target" Id="UrlToRedirectTarget" Title="URL To Redirect Target" Converter="Auto"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
 	<RestConnector Id="AvailableCredits" Title="Available API Credits" HelpUrl="https://docs.dataforseo.com/#get-pages">
     <Fetch>
       <Fetch.Url>
