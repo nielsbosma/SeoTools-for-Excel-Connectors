@@ -300,6 +300,7 @@
   <RestConnector Id="UpdatesList" Title="Updates List" Group="Updates" HelpText="Returns a list of update events from the from the Company page.">
     <Parameters>
       <Text Id="CompanyId" Title="Company Id" Required="true" Debug.DefaultValue="69208" Select.Connector="CompanyPagesHidden"/>
+			<Checkbox Id="SponsoredOnly" Title="Sponsored only" HelpText="If true, returns posts that are direct sponsored content If false, returns organic posts."/>
     </Parameters>
     <Paging PageSize="100" EvenPages="true"/>
     <Fetch>
@@ -307,13 +308,14 @@
         <RequestHeaders>
           <Header Name="Authorization">Bearer @(Model.Authenticator.Token)</Header>
 					<Header Name="X-Restli-Protocol-Version">2.0.0</Header>
+					<Header Name="LinkedIn-Version">202210</Header>
         </RequestHeaders>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List(urn%3Ali%3Aorganization%3A@(Model.CompanyId))
+        https://api.linkedin.com/rest/posts?author=urn%3Ali%3Aorganization%3A@(Model.CompanyId)&q=author
 				&count=@(Model.PageCursor.NextTake)&start=@(Model.PageCursor.NextSkip)
-				&projection=(elements*(*))
+				&isDsc=@Model.SponsoredOnly.ToString().ToLower()
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -323,9 +325,10 @@
 					<JsonPath Expr="id" Id="Inp"/>
 				</Compute>
         <JsonPath Expr="id" Id="Id" Title="Id" Converter="String"/>
-        <JsonPath Expr="created.time" Id="Published" Title="Published" Converter="DateTime" Converter.SourceFormat="UnixMs" DefaultValue=""/>
-        <JsonPath Expr="specificContent.*.media[0].title.text" Id="Title" Title="Title" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="specificContent.*.shareCommentary.text" Id="Text" Title="Text" Converter="String"/>
+        <JsonPath Expr="publishedAt" Id="Published" Title="Published" Converter="DateTime" Converter.SourceFormat="UnixMs" DefaultValue=""/>
+        <JsonPath Expr="createdAt" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="UnixMs" DefaultValue=""/>
+        <JsonPath Expr="lastModifiedAt" Id="Modified" Title="Modified" Converter="DateTime" Converter.SourceFormat="UnixMs" DefaultValue=""/>
+        <JsonPath Expr="commentary" Id="Commantary" Title="Commantary" Converter="String"/>
         <Compute Id="Type" Title="Type">
           <Compute.Expr>
             <![CDATA[
@@ -333,13 +336,12 @@
             ]]>
           </Compute.Expr>
           <JsonPath Expr="id" Id="Inp"/>
-        </Compute>
-        <JsonPath Expr="specificContent.*.shareMediaCategory" Id="Category" Title="Category" Converter="String"/>
+        </Compute>			
+        <JsonPath Expr="content.article.title" Id="ArticleTitle" Title="Article Title" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="content.article.description" Id="ArticleDescription" Title="Article Description" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="content.article.source" Id="ArticleSource" Title="Article Source" Converter="String" DefaultValue=""/>
         <JsonPath Expr="lifecycleState" Id="State" Title="State" Converter="String"/>
-        <JsonPath Expr="specificContent.*.media[0].originalUrl" Id="OriginalUrl" Title="Original URL" Converter="String" DefaultValue=""/>
-        <JsonPath Expr="specificContent.*.media[0].thumbnails[0].url" Id="Thumbnail" Title="Thumbnail" Converter="String" DefaultValue=""/>
         <JsonPath Expr="author" Id="Author" Title="Author" Converter="String"/>
-        <JsonPath Expr="created.actor" Id="Actor" Title="Actor" Converter="String"/>
       </JsonPath>
     </Parse>
 		<Resource Id="Fail"/>
