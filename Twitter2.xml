@@ -68,6 +68,7 @@
 			<JsonPath Expr="csv(entities.hashtags[*].tag)" Id="HashtagEntities" Title="Hashtag Entities" Tag="tweet.entities" Converter="Auto" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.urls[*].expanded_url)" Id="UrlEntities" Title="URL Entities" Tag="tweet.entities" DefaultValue=""/>
 			<JsonPath Expr="csv(entities.mentions[*].username)" Id="MentionsEntities" Title="User Mentions Entities" Tag="tweet.entities" Converter="Auto" DefaultValue=""/>
+			<JsonPath Expr="$.includes.media[?(@@.media_key=='@(Model.MediaIdCache)')].url" Id="ImageUrl" Title="Image URL" Tag="media.fields.preview_image_url,url" ParseParent="true" DefaultValue="" />
 			<JsonPath Expr="context_annotations" Id="Annotations" Tag="tweet.context_annotations" DefaultValue=""/>
 			<JsonPath Expr="reply_settings" Id="ReplySettings" Title="Reply Settings" Tag="tweet.reply_settings" DefaultValue=""/>
 			<JsonPath Expr="conversation_id" Id="ConversationId" Title="Conversation Id" Tag="tweet.conversation_id" DefaultValue=""/>
@@ -120,8 +121,9 @@
       <Fetch.Url>
         <![CDATA[
 				https://api.twitter.com/2/tweets?ids=@FetchTweetString()
-				&expansions=author_id,entities.mentions.username
+				&expansions=author_id,entities.mentions.username,attachments.media_keys
 				&tweet.fields=@(SelectedTweetFields())
+				@SelectedMediaFields()
 				@SelectedUserFields()
         ]]>
       </Fetch.Url>
@@ -129,6 +131,7 @@
     <Parse>
 			<JsonPath Expr="data[*]">
 				<JsonPath Expr="author_id" Id="UserIdCache" CacheAndHide="true"/>
+				<JsonPath Expr="attachments.media_keys[0]" Id="MediaIdCache" CacheAndHide="true"/>
 				<Resource Id="Tweet"/>
 			</JsonPath>
     </Parse>
@@ -149,8 +152,9 @@
 				?query=@Utils.UrlEncode(Model.Query)
 				&max_results=@GetValdPaginationCount()
         @(Model.PageCursor.Page != 0 ? "&next_token=" +  Model.NextResults : "")
-				&expansions=author_id,entities.mentions.username
+				&expansions=author_id,entities.mentions.username,attachments.media_keys
 				&tweet.fields=@SelectedTweetFields()
+				@SelectedMediaFields()
 				@SelectedUserFields()
 				]]>
       </Fetch.Url>
@@ -182,8 +186,9 @@
         https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/tweets
 				?max_results=@GetValdPaginationCount()
         @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
-				&expansions=author_id,entities.mentions.username
+				&expansions=author_id,entities.mentions.username,attachments.media_keys
 				&tweet.fields=@SelectedTweetFields()
+				@SelectedMediaFields()
 				@SelectedUserFields()
         ]]>
       </Fetch.Url>
@@ -216,8 +221,9 @@
         https://api.twitter.com/2/users/@(FetchUserIdFromUsername())/mentions
 				?max_results=@GetValdPaginationCount()
         @(Model.PageCursor.Page != 0 ? "&pagination_token=" +  Model.NextResults : "")
-				&expansions=author_id,entities.mentions.username
+				&expansions=author_id,entities.mentions.username,attachments.media_keys
 				&tweet.fields=@SelectedTweetFields()
+				@SelectedMediaFields()
 				@SelectedUserFields()
         ]]>
       </Fetch.Url>
@@ -258,7 +264,7 @@
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
-	
+
   <RestConnector Id="UserFollowing" Title="User Following" Group="Users" HelpUrl="https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/get-users-id-following">
     <Parameters>
       <Text Id="Usernames" Title="Username" Debug.DefaultValue="justinbieber" Required="true"/>
@@ -348,6 +354,16 @@
 			return string.Join(",",all);
 		}
 
+		string SelectedMediaFields() {
+			string[] fields = ((string)Model.Fields).Split(',').Select(e => e.Trim().ToLower()).ToArray();
+			string[] selected = ((ResultField[])Model.Headers)
+				.Where(e => !string.IsNullOrEmpty(e.Tag) && fields.Contains(e.Identifier.ToLower()) && e.Tag.StartsWith("media.fields."))
+				.Select(e => e.Tag.Replace("media.fields.",string.Empty)).Distinct().ToArray();
+
+			string csv = string.Join(",",selected);
+			return csv.Length > 0 ? "&media.fields=" + csv : string.Empty;
+		}
+
     string FetchUserString() {
 			string[] lines = ((string)Model.Usernames).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
       return string.Join(",",lines.Select(e => Regex.Replace(e, @"^@", string.Empty)).ToArray());
@@ -384,7 +400,7 @@
 			}
 			return string.Empty;
 		}
-		
+
 		int GetValdPaginationCount() {
 			return Model.PageCursor.NextTake >= 5 ? Model.PageCursor.NextTake : 5;
 		}
