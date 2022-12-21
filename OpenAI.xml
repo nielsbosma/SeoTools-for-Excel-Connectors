@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Suite Title="OpenAI" Id="OpenAI" Category="Language" RequireVersion="9.5.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/OpenAI.xml" HelpUrl="http://seotoolsforexcel.com/openai/" HelpText="Documentation">
+<Suite Title="OpenAI" Id="OpenAI" Category="AI" RequireVersion="9.5.4" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/OpenAI.xml" HelpUrl="http://seotoolsforexcel.com/openai/" HelpText="Documentation">
 
-  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+  <Author Name="Niels Bosma" Url="https://se.linkedin.com/in/bosmaniels"/>
 
   <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/openai/">
     <Text Id="ApiKey" Title="API Key" Required="true"/>
@@ -9,6 +9,7 @@
 
   <Resources>
 		<Resource Id="HttpProps">
+      <IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
 			<RequestContentType>application/json</RequestContentType>
 			<RequestHeaders>
 				<Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
@@ -23,8 +24,27 @@
 
   <RestConnector Id="Completions" Title="Completions" HelpUrl="https://beta.openai.com/docs/api-reference/completions/create">
     <Parameters>
-      <Text Id="Prompt" Debug.DefaultValue="A well regulated Militia, being necessary to the security of a free State" Required="true"/>
-      <Number Id="Temperature" DefaultValue="1" Maximum="1" Minimum="0.1" Required="true" Format="N1" HelpText="A positive number between 0 to 1. Higher values means the model will take more risks."/>
+      <Text Id="Prompt" Debug.DefaultValue="mimetype of filetype bmp" Required="true" Multiline="true"/>
+      <Text Id="PrependPrompt" Title="Prepend Prompt" Multiline="true" HelpText="Added before the prompt. Useful with formulas."/>
+      <Text Id="AppendPrompt" Title="Append Prompt" Multiline="true" HelpText="Added after the prompt. Useful with formulas."/>
+      <Select Id="Model" DefaultValue="text-davinci-003" Required="true">
+        <DataSource>
+          <Item Id="text-davinci-003" Title="text-davinci-003"/>
+          <Item Id="text-curie-001" Title="text-curie-001"/>
+          <Item Id="text-babbage-001" Title="text-babbage-001"/>
+          <Item Id="text-ada-001" Title="text-ada-001"/>
+          <Item Id="code-davinci-002" Title="code-davinci-002"/>
+          <Item Id="code-cushman-001" Title="code-cushman-001"/>
+        </DataSource>
+      </Select>
+      <Number Id="Temperature" Minimum="0.1" DefaultValue="0.7" Maximum="1" Format="N1" HelpText="Controls randomness: Lowering results in fewer random completions. As the temperature approaches zero, the model will become deterministic and repetitive."/>
+      <Number Id="MaxTokens" Title="Maximum Length" Minimum="1" DefaultValue="64" Maximum="4000" HelpText="The maximum number of tokens to generate. Requests can use up to 2,048 or 4,000 tokens shared between prompt and completion. The exact limit varies by model. (One token is roughly 4 characters for normal English text.)"/>
+      <Text Id="StopSequence" Title="Stop Sequence" HelpText="Up to four sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence."/>
+      <Number Id="TopP" Title="Top P" Minimum="0" DefaultValue="1" Maximum="1" Format="N1" HelpText="Controls diversity via nucleus sampling: 0.5 means half of all likelihood-weighted options are considered."/>
+      <Number Id="Frequency" Minimum="0" DefaultValue="0" Maximum="2" Format="N1" HelpText="How much to penalize new tokens based on their existing frequency in the text so far. Decreases the model's likelihood to repeat the same line verbatim."/>
+      <Number Id="PresencePenalty" Title="Presence Penalty" Minimum="0" DefaultValue="0" Maximum="2" Format="N1" HelpText="How much to penalize new tokens based on whether they appear in the text so far. Increases the model's likelihood to talk about new topics."/>
+      <Number Id="BestOf" Title="Best Of" Minimum="1" DefaultValue="1" Maximum="20" HelpText="Generates multiple completions server-side, and displays only the best. Streaming only works when set to 1. Since it acts as a multiplier on the number of completions, this parameter can eat into your token quota very quickly — use caution!"/>
+      <Number Id="Delay" Title="Delay Between Requests (ms)" DefaultValue="1000" Minimum="0" Maximum="1000000" Format="N0" HelpText="The delay between requests in milliseconds. This is useful when you want to avoid hitting the API rate limit." HelpUrl="https://help.openai.com/en/articles/5955598-is-api-usage-subject-to-any-rate-limits"/>
     </Parameters>
     <Fetch>
       <HttpSettings>
@@ -33,15 +53,22 @@
 				<RequestBody>
           <![CDATA[
 					{
-						"prompt":"@(Model.Prompt)",
-						"temperature":@(Model.Temperature)
+            "model": "@(Model.Model)",
+						"prompt":"@((Model.PrependPrompt + Model.Prompt + Model.AppendPrompt).Trim().Replace("\n","\\n").Replace("\r",""))",
+						"temperature":@(Model.Temperature),
+            "max_tokens": @(Model.MaxTokens),
+            "top_p": @(Model.TopP),
+            "best_of": @(Model.BestOf),
+            "frequency_penalty": @(Model.Frequency),
+            "presence_penalty": @(Model.PresencePenalty)
+            @(!string.IsNullOrEmpty(Model.StopSequence) ? ", \"stop\": [\"" + Model.StopSequence + "\"]" : "")
 					}
           ]]>
         </RequestBody>
       </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-        https://api.openai.com/v1/engines/text-davinci-002/completions
+        https://api.openai.com/v1/completions
         ]]>
       </Fetch.Url>
     </Fetch>
