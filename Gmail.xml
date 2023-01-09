@@ -108,7 +108,7 @@
 
   <RestConnector Id="MailLookup" Title="Mail Lookup" Group="Lookup">
     <Parameters>
-      <Text Id="MailId" Title="Mail Id" Required="true"/>
+      <Text Id="MailId" Title="Mail Id" Required="true" Debug.DefaultValue="1853417df3f1b7f7"/>
     </Parameters>
     <Fetch>
 			<Resource Id="HttpSettings"/>
@@ -123,7 +123,19 @@
 			<JsonPath Expr="threadId" Id="ThreadId" Title="Thread Id" Converter="String"/>
 			<JsonPath Expr="internalDate" Id="Date" Converter="DateTime" Converter.SourceFormat="UnixMs"/>
 			<JsonPath Expr="payload.headers[?(@@.name=='Subject')].value" Id="Subject" Title="Subject" Converter="String"/>
-			<JsonPath Expr="snippet" Id="Snippet" Title="Snippet" Converter="String"/>
+			<Compute Id="Body" Title="Body" Converter="String" DefaultValue="">
+        <Compute.Expr>
+          <![CDATA[
+					@{
+						string raw = Model.Inp.Replace("-","+").Replace("_","/");
+						byte[] data = Convert.FromBase64String(raw);
+						string decodedString = Encoding.UTF8.GetString(data);
+					}
+          @decodedString
+          ]]>
+        </Compute.Expr>
+				<JsonPath Expr="payload.parts[0].body.data" Id="Inp" DefaultValue=""/>
+      </Compute>
 			<JsonPath Expr="payload.headers[?(@@.name=='From')].value" Id="From" Title="From" Converter="String"/>
     </Parse>
     <Resource Id="Fail"/>
