@@ -8,6 +8,12 @@
     <Text Id="Password" Title="Password" Required="true"/>
 		<Text Id="Account" Title="Account" Required="true"/>
     <Text Id="Label" Title="Label" Required="true"/>
+      <Radio Id="Endpoint" Title="Endpoint">
+        <DataSource>
+					<Item Id="30day" Title="30-day"/>
+					<Item Id="fullarchive" Title="Full archive"/>
+        </DataSource>
+      </Radio>
   </Settings>
 
   <Resources>
@@ -25,41 +31,35 @@
         <JsonPath Expr="error.message"/>
       </Fail>
     </Resource>
-    <Resource Id="Languages">
-      <Item Id="all" Title="All"/>
-      <Item Id="ar" Title="Arabic"/>
-      <Item Id="cs" Title="Czech"/>
-      <Item Id="da" Title="Danish"/>
-      <Item Id="de" Title="German"/>
-      <Item Id="en" Title="English"/>
-      <Item Id="et" Title="Estonian"/>
-      <Item Id="fi" Title="Finnish"/>
-      <Item Id="fr" Title="French"/>
-      <Item Id="nl" Title="Dutch"/>
-      <Item Id="he" Title="Hebrew"/>
-      <Item Id="hu" Title="Hungarian"/>
-      <Item Id="id" Title="Indonesian"/>
-      <Item Id="it" Title="Italian"/>
-      <Item Id="lt" Title="Lithuanian"/>
-      <Item Id="lv" Title="Latvian"/>
-      <Item Id="no" Title="Norwegian"/>
-      <Item Id="pl" Title="Polish"/>
-      <Item Id="pt" Title="Portuguese"/>
-      <Item Id="ro" Title="Romanian"/>
-      <Item Id="es" Title="Spanish"/>
-      <Item Id="ru" Title="Russian"/>
-      <Item Id="sv" Title="Swedish"/>
-    </Resource>
-  </Resources>
-
-  <RestConnector Id="Search" Title="Search" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
-    <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="false"/>
+		<Resource Id="DefaultParams">
+			<Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="false"/>
       <Text Id="Url" Title="Url"/>
       <Text Id="RetweetsOf" Title="Reweets of"/>
       <Select Id="Language" Title="Language">
         <DataSource>
-          <Resource Id="Languages"/>
+					<Item Id="all" Title="All"/>
+					<Item Id="ar" Title="Arabic"/>
+					<Item Id="cs" Title="Czech"/>
+					<Item Id="da" Title="Danish"/>
+					<Item Id="de" Title="German"/>
+					<Item Id="en" Title="English"/>
+					<Item Id="et" Title="Estonian"/>
+					<Item Id="fi" Title="Finnish"/>
+					<Item Id="fr" Title="French"/>
+					<Item Id="nl" Title="Dutch"/>
+					<Item Id="he" Title="Hebrew"/>
+					<Item Id="hu" Title="Hungarian"/>
+					<Item Id="id" Title="Indonesian"/>
+					<Item Id="it" Title="Italian"/>
+					<Item Id="lt" Title="Lithuanian"/>
+					<Item Id="lv" Title="Latvian"/>
+					<Item Id="no" Title="Norwegian"/>
+					<Item Id="pl" Title="Polish"/>
+					<Item Id="pt" Title="Portuguese"/>
+					<Item Id="ro" Title="Romanian"/>
+					<Item Id="es" Title="Spanish"/>
+					<Item Id="ru" Title="Russian"/>
+					<Item Id="sv" Title="Swedish"/>
         </DataSource>
       </Select>
       <Select Id="Type" Title="Tweet Type" DefaultValue="all">
@@ -72,6 +72,13 @@
       <Checkbox Id="HasLink" Title="Tweets with Links" DefaultValue="false"/>
       <Checkbox Id="HasImage" Title="Tweets with Images" DefaultValue="false"/>
       <Checkbox Id="HasVideo" Title="Tweets with Videos" DefaultValue="false"/>
+      <DateInterval Id="DateInterval" Title="Date Interval" DefaultValue="LastMonth" Required="true"/>
+		</Resource>
+  </Resources>
+
+  <RestConnector Id="Search" Title="Search" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
+    <Parameters>
+			<Resource Id="DefaultParams"/>
       <Select Id="Timezone" Title="Adjust Output Time Zone (Default GMT)" Required="false" DefaultValue="0">
         <DataSource>
 					<Item Id="-12" Title="-12 Hours"/>
@@ -101,7 +108,6 @@
 					<Item Id="12" Title="+12 Hours"/>
         </DataSource>
       </Select>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="true" Nullable="true"/>
     </Parameters>
     <Paging PageSize="500" EvenPages="false">
       <Parse>
@@ -112,7 +118,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label).json
+        https://gnip-api.twitter.com/search/@(Model.Endpoint)/accounts/@(Model.Account)/@(Model.Label).json
 				?query=
 				@(!string.IsNullOrEmpty(Model.Query) ? "(" + Utils.UrlEncode(Model.Query) + ")" : "")
         @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "retweets_of:" + Model.RetweetsOf  + "%20": "")
@@ -122,24 +128,7 @@
 				@(Model.HasImage == true ? "has:images" + "%20" : "")
 				@(Model.HasVideo == true ? "has:videos" + "%20" : "")
 				@(Model.Type != "all" ? Model.Type + ":retweet%20" : "")
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd"))0000
-					}
-					else if(Model.DateInterval.StartDate.ToShortDateString() == DateTime.Now.ToShortDateString())
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToUniversalTime().AddMinutes(-5).ToString("yyyyMMddHHmm"))
-					}
-					else
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToString("yyyyMMdd"))0000
-					}
-        }
+				@ReturnDateRequestParam()
         &maxResults=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&next=" + Model.NextPageToken : "")
         ]]>
@@ -200,9 +189,7 @@
 
   <RestConnector Id="CountGranular" Title="Count Granular" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
     <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="false"/>
-      <Text Id="Url" Title="Url"/>
-      <Text Id="RetweetsOf" Title="Reweets of"/>
+			<Resource Id="DefaultParams"/>
       <Select Id="Granularity" Title="Granularity" DefaultValue="day">
         <DataSource>
           <Item Id="day" Title="Day" />
@@ -210,22 +197,6 @@
           <Item Id="minute" Title="Minute" />
         </DataSource>
       </Select>
-      <Select Id="Type" Title="Tweet Type" DefaultValue="all">
-        <DataSource>
-          <Item Id="all" Title="All" />
-          <Item Id="-is" Title="Tweet" />
-          <Item Id="is" Title="Retweet" />
-        </DataSource>
-      </Select>
-      <Select Id="Language" Title="Language" DefaultValue="all">
-        <DataSource>
-          <Resource Id="Languages"/>
-        </DataSource>
-      </Select>
-      <Checkbox Id="HasLink" Title="Tweets with Links"/>
-      <Checkbox Id="HasImage" Title="Tweets with Images"/>
-      <Checkbox Id="HasVideo" Title="Tweets with Videos"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
     </Parameters>
     <Paging PageSize="10000" EvenPages="false">
       <Parse>
@@ -236,7 +207,7 @@
       <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-				https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label)/counts.json
+				https://gnip-api.twitter.com/search/@(Model.Endpoint)/accounts/@(Model.Account)/@(Model.Label)/counts.json
 				?query=
 				@(!string.IsNullOrEmpty(Model.Query) ? "(" + Utils.UrlEncode(Model.Query) + ")" : "")
         @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "retweets_of:" + Model.RetweetsOf  + "%20": "")
@@ -246,24 +217,7 @@
 				@(Model.HasImage == true ? "has:images" + "%20" : "")
 				@(Model.HasVideo == true ? "has:videos" + "%20" : "")
 				@(Model.Type != "all" ? Model.Type + ":retweet%20" : "")
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd"))0000
-					}
-					else if(Model.DateInterval.StartDate.ToShortDateString() == DateTime.Now.ToShortDateString())
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToUniversalTime().AddMinutes(-5).ToString("yyyyMMddHHmm"))
-					}
-					else
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToString("yyyyMMdd"))0000
-					}
-        }
+				@ReturnDateRequestParam()
 				&bucket=@(Model.Granularity)
         @(Model.PageCursor.Page != 0 ? "&next=" + Model.NextPageToken : "")
         ]]>
@@ -278,74 +232,30 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="CountTotal" Title="Count Total" HelpUrl="http://support.gnip.com/apis/search_api2.0/api_reference.html">
-    <Parameters>
-      <Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="false"/>
-      <Text Id="Url" Title="Url"/>
-      <Text Id="RetweetsOf" Title="Reweets of"/>
-      <Select Id="Language" Title="Language" DefaultValue="all">
-        <DataSource>
-          <Resource Id="Languages"/>
-        </DataSource>
-      </Select>
-      <Select Id="Type" Title="Tweet Type" DefaultValue="all">
-        <DataSource>
-          <Item Id="all" Title="All" />
-          <Item Id="-is" Title="Tweet" />
-          <Item Id="is" Title="Retweet" />
-        </DataSource>
-      </Select>
-      <Checkbox Id="HasLink" Title="Tweets with Links"/>
-      <Checkbox Id="HasImage" Title="Tweets with Images"/>
-      <Checkbox Id="HasVideo" Title="Tweets with Videos"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Nullable="true"/>
-    </Parameters>
-    <Fetch>
-      <Resource Id="HttpSettings"/>
-      <Fetch.Url>
-        <![CDATA[
-				https://gnip-api.twitter.com/search/30day/accounts/@(Model.Account)/@(Model.Label)/counts.json
-				?query=
-				@(!string.IsNullOrEmpty(Model.Query) ? "(" + Utils.UrlEncode(Model.Query) + ")" : "")
-        @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "retweets_of:" + Model.RetweetsOf  + "%20": "")
-        @(!string.IsNullOrEmpty(Model.Url) ? "url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") + "%20" : "")
-				@(Model.Language != "all" ? "lang:" + Model.Language + "%20" : "")
-				@(Model.HasLink == true ? "has:links" + "%20": "")
-				@(Model.HasImage == true ? "has:images" + "%20" : "")
-				@(Model.HasVideo == true ? "has:videos" + "%20" : "")
-				@(Model.Type != "all" ? Model.Type + ":retweet%20" : "")
-        @if(Model.DateInterval.StartDate != null && Model.DateInterval.EndDate != null)
-        {
-					if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd"))0000
-					}
-					else if(Model.DateInterval.StartDate.ToShortDateString() == DateTime.Now.ToShortDateString())
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToUniversalTime().AddMinutes(-5).ToString("yyyyMMddHHmm"))
-					}
-					else
-					{
-            @: &fromDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd"))0000
-            @: &toDate=@Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToString("yyyyMMdd"))0000
-					}
-        }
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-       <JsonPath Expr="$.totalCount" Id="Count" Title="Count" Converter="Long"/>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
   <RazorFunctions>
     <![CDATA[
     String CreateBasicAuth() {
       return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
     }
+
+		string ReturnDateRequestParam() {
+			if(Model.DateInterval.StartDate == null && Model.DateInterval.EndDate == null) return string.Empty;
+
+			if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
+			{
+				return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd")) + "0000" +
+					"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(2).ToUniversalTime().ToString("yyyyMMdd")) + "0000";
+			}
+
+			if(Model.DateInterval.StartDate.ToShortDateString() == DateTime.Now.ToShortDateString())
+			{
+				return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd")) + "0000" +
+					"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToUniversalTime().AddMinutes(-5).ToString("yyyyMMddHHmm")) + "0000";
+			}
+
+			return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd"))+ "0000" +
+				"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToString("yyyyMMdd")) + "0000";
+		}
     ]]>
   </RazorFunctions>
 
