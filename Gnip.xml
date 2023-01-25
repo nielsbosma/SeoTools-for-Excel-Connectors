@@ -232,7 +232,7 @@
     <Resource Id="Fail"/>
   </RestConnector>
 
-  <RazorFunctions>
+ <RazorFunctions>
     <![CDATA[
     String CreateBasicAuth() {
       return Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes(Model.Email + ":" + Model.Password));
@@ -241,22 +241,31 @@
 		string ReturnDateRequestParam() {
 			if(Model.DateInterval.StartDate == null && Model.DateInterval.EndDate == null) return string.Empty;
 
-			if(Model.DateInterval.StartDate != Model.DateInterval.EndDate)
-			{
-				return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd")) + "0000" +
-					"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(2).ToUniversalTime().ToString("yyyyMMdd")) + "0000";
-			}
+			string fromDate = "";
+			string endDate = "";
 
 			if(Model.DateInterval.StartDate.ToShortDateString() == DateTime.Now.ToShortDateString())
 			{
-				return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).ToUniversalTime().ToString("yyyyMMdd")) + "0000" +
-					"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).ToUniversalTime().AddMinutes(-5).ToString("yyyyMMddHHmm")) + "0000";
+				fromDate = DateTime.UtcNow.ToString("yyyyMMdd") + "0000";
+			}
+			else
+			{
+				fromDate = ((DateTime)Model.DateInterval.StartDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd") + "0000";
 			}
 
-			return "&fromDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.StartDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd"))+ "0000" +
-				"&toDate=" + Utils.UrlEncode(((DateTime)Model.DateInterval.EndDate).AddDays(1).ToString("yyyyMMdd")) + "0000";
+			if(Model.DateInterval.EndDate.ToShortDateString() == DateTime.Now.ToShortDateString())
+			{
+				endDate = DateTime.UtcNow.AddSeconds(-10).ToUniversalTime().ToString("yyyyMMddhhmm");
+			}
+			else
+			{
+				endDate = ((DateTime)Model.DateInterval.EndDate).AddDays(1).ToUniversalTime().ToString("yyyyMMdd") + "2350";
+			}
+
+			return "&fromDate=" + fromDate + "&toDate=" + endDate;
 		}
     ]]>
   </RazorFunctions>
+
 
 </Suite>
