@@ -118,7 +118,7 @@
 
   <RestConnector Id="AccountInsights" Title="Account Daily Stats" Group="Account" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights">
     <Parameters>
-      <Text Id="BusinessId" Title="BusinessId Id" Required="true" Debug.DefaultValue="17841401843166450" Select.Connector="ListBusinessesHidden"/>
+      <Text Id="BusinessId" Title="BusinessId Id" Required="true" Debug.DefaultValue="17841401021639281" Select.Connector="ListBusinessesHidden"/>
       <DateInterval Id="DateInterval" Title="Interval"/>
     </Parameters>
     <Paging PageSize="25" DefaultTake="1000" EvenPages="true"/>
@@ -164,6 +164,78 @@
         <JsonPath Expr="value" Id="WebsiteClicks" Title="Website Clicks" Converter="Int" Tag="website_clicks" HelpText="Total number of taps on the website link in the Business User's profile."/>
       </JsonPath>
     </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsTotal" Title="Account Total Stats" Group="Account" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/ig-user/insights">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" Required="true" Debug.DefaultValue="17841401021639281" Select.Connector="ListBusinessesHidden"/>
+			<DateInterval Id="DateInterval" Title="Interval"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				&metric=@SelectedFields()
+				&metric_type=total_value
+				&period=day
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[?(@@.name=='impressions')].total_value.value" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been viewed."/>
+			<JsonPath Expr="data[?(@@.name=='reach')].total_value.value" Id="Reach" Title="Reach" Converter="Int" Tag="reach" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been uniquely viewed."/>
+			<JsonPath Expr="data[?(@@.name=='total_interactions')].total_value.value" Id="TotalInteractions" Title="Total Interactions" Converter="Int" Tag="total_interactions" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='accounts_engaged')].total_value.value" Id="AccountsEngaged" Title="Accounts Engaged" Converter="Int" Tag="accounts_engaged" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='likes')].total_value.value" Id="Likes" Title="Likes" Converter="Int" Tag="likes" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='comments')].total_value.value" Id="Comments" Title="Comments" Converter="Int" Tag="comments" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='saves')].total_value.value" Id="Saves" Title="Saves" Converter="Int" Tag="saves" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='shares')].total_value.value" Id="Shares" Title="Shares" Converter="Int" Tag="shares" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='replies')].total_value.value" Id="Replies" Title="Replies" Converter="Int" Tag="replies" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='profile_links_taps')].total_value.value" Id="ProfileLinkTaps" Title="Profile Link Taps" Converter="Int" Tag="profile_links_taps" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='website_clicks')].total_value.value" Id="WebsiteClicks" Title="Website Clicks" Converter="Int" Tag="website_clicks" HelpText=""/>
+			<JsonPath Expr="data[?(@@.name=='profile_views')].total_value.value" Id="ProfileViews" Title="Profile Views" Converter="Int" Tag="profile_views" HelpText=""/>
+		</Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AccountInsightsProductType" Title="Account Stats by Product Type" Group="Account" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/ig-user/insights">
+    <Parameters>
+      <Text Id="BusinessId" Title="BusinessId Id" Required="true" Debug.DefaultValue="17841401021639281" Select.Connector="ListBusinessesHidden"/>
+      <Select Id="Metric" Title="Metric" Required="false" DefaultValue="reach">
+        <DataSource>
+          <Item Id="reach" Title="Reach"/>
+          <Item Id="total_interactions" Title="Total Interactions"/>
+          <Item Id="likes" Title="Likes"/>
+          <Item Id="comments" Title="Comments"/>
+          <Item Id="shares" Title="Shares"/>
+        </DataSource>
+      </Select>
+			<DateInterval Id="DateInterval" Title="Interval"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				&metric=@(Model.Metric)
+				&metric_type=total_value
+				&period=day
+				&breakdown=media_product_type
+				&startDate=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&stopDate=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='POST')].value" Id="Post" Title="Post" Converter="Int" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='STORY')].value" Id="Story" Title="Story" Converter="Int" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='IGTV')].value" Id="IGTV" Title="IGTV" Converter="Int" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='REEL')].value" Id="Reel" Title="Reel" Converter="Int" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='AD')].value" Id="Ad" Title="Ad" Converter="Int" DefaultValue="" HelpText=""/>
+			<JsonPath Expr="data[0].total_value.breakdowns[0].results[?(@@.dimension_values[0]=='CAROUSEL_CONTAINER')].value" Id="Carousel" Title="Carousel" Converter="Int" DefaultValue="" HelpText=""/>
+		</Parse>
     <Resource Id="Fail"/>
   </RestConnector>
 
