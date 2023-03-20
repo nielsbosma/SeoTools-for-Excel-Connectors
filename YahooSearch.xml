@@ -51,7 +51,7 @@
 			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
+        https://search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
         @(!string.IsNullOrEmpty(Model.Domain) ? "&vs=" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
         @(Model.File != "all" ? Model.File : "")
         &b=@(Model.PageCursor.FetchedRows+1)
@@ -60,25 +60,10 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//h3[contains(@@class, 'title ov-h')]/a">
-				<Compute Id="Url" Title="URL">
-					<Compute.Expr>
-						<![CDATA[
-							@{
-								Regex regex = new Regex(@"RU=(.*?)\/RK");
-								Match match = regex.Match(Model.Inp);
-								string output = Utils.UrlDecode(Utils.UrlDecode(match.Groups[1].Value));
-							}
-							@output
-						]]>
-					</Compute.Expr>
-					<XPath Expr="." Id="Inp" Attribute="href" DefaultValue=""/>
-				</Compute>
-        <XPath Id="Title" Title="Title" Expr="."/>
+			<XPath Expr="//h3[@@class='title']/a[@@referrerpolicy='origin']">
+        <XPath Id="Title2" Title="Title2" Expr="text()"/>
+				<XPath Expr="." Id="Inp" Attribute="href" DefaultValue=""/>
 			</XPath>
-			<XPath Expr="//div[@@class='compTitle options-toggle']">
-        <XPath Id="Description" Title="Description" Expr="."/>
-      </XPath>
     </Parse>
   </RestConnector>
 
@@ -93,7 +78,7 @@
       <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
+        https://search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
         @(!string.IsNullOrEmpty(Model.Domain) ? "&vs=" + Utils.UrlEncode(Utils.UrlProperty(Model.Domain).Domain) : "")
         @(Model.File != "all" ? Model.File : "")
         @(Model.Period != "all" ? "&age=" + Model.Period + "&b=_UNSET_&pz=_UNSET_" : "")
@@ -101,7 +86,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//div[@@class='compPagination']/span" Id="Results" Converter="Int"/>
+      <XPath Expr="//h2[@@class='title mb-0']" Id="Results" Converter="Int"/>
     </Parse>
   </RestConnector>
 
@@ -123,10 +108,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <Try>
-        <Regex Expr="&lt;span&gt;([0-9,\\. ]+) result(s)?&lt;/span&gt;" IgnoreCase="true" Converter="Int"/>
-        <XPath Expr="count(//div[@@id = 'web']/ol/li)" Converter="Int"/>
-      </Try>
+      <XPath Expr="//h2[@@class='title mb-0']" Id="Results" Converter="Int"/>
     </Parse>
   </RestConnector>
 
@@ -138,13 +120,13 @@
       <Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        https://se.search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
+        https://search.yahoo.com/search?p=@Utils.UrlEncode(Model.Query)
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <XPath Expr="//ul[@@class='compDlink']/li">
-        <XPath Id="Suggestions" Title="Suggestions" Expr="span" Converter="String"/>
+      <XPath Expr="//div[@@class='dd AlsoTry']/table/tbody/tr/td">
+        <XPath Id="Suggestions" Title="Suggestions" Expr="." Converter="String"/>
       </XPath>
     </Parse>
   </RestConnector>
