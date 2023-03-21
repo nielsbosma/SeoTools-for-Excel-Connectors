@@ -31,6 +31,9 @@
     <Resource Id="HttpSettings">
       <HttpSettings>
         <IntervalBetweenRequests RandomFrom="200" RandomTo="500" IfSame="Host"/>
+				<RequestHeaders>
+					<Header Name='user-agent'>Mozilla\/5.0 (Macintosh; Intel Mac OS X 10.15; rv:71.0) Gecko/20100101 Firefox/71.0</Header>
+				</RequestHeaders>
       </HttpSettings>
     </Resource>
   </Resources>
@@ -62,7 +65,19 @@
     <Parse>
 			<XPath Expr="//h3[@@class='title']/a[@@referrerpolicy='origin']">
         <XPath Expr="text()" Id="Title2" Title="Title"/>
-				<XPath Expr="." Id="Url" Attribute="href" DefaultValue=""/>
+				<Compute Id="Url" Title="URL">
+					<Compute.Expr>
+						<![CDATA[
+							@{
+								Regex regex = new Regex(@"RU=(.*?)\/RK");
+								Match match = regex.Match(Model.Inp);
+								string output = Utils.UrlDecode(Utils.UrlDecode(match.Groups[1].Value));
+							}
+							@output
+						]]>
+					</Compute.Expr>
+					<XPath Expr="." Id="Inp" Attribute="href" DefaultValue=""/>
+				</Compute>
 			</XPath>
     </Parse>
   </RestConnector>
