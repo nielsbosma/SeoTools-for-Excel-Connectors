@@ -83,6 +83,7 @@
   <RestConnector Id="Chat" Title="Chat" HelpUrl="https://platform.openai.com/docs/api-reference/chat/create">
     <Parameters>
       <Text Id="Message" Debug.DefaultValue="mimetype of filetype bmp" Required="true" Multiline="true"/>
+      <Text Id="Functions" Multiline="true"/>			
       <Text Id="PrependMessage" Title="Prepend Message" Multiline="true" HelpText="Added before the prompt. Useful with formulas."/>
       <Text Id="AppendMessage" Title="Append Message" Multiline="true" HelpText="Added after the prompt. Useful with formulas."/>
       <Select Id="Model" DefaultValue="gpt-3.5-turbo-0301" Required="true">
@@ -111,6 +112,7 @@
         {
           "model": "@(Model.Model)",
           "messages": [{"role": "user", "content": "@((Model.PrependMessage + Model.Message + Model.AppendMessage).Trim().Replace("\n","\\n").Replace("\r","").Replace("\"", "\\\""))"}],
+          "functions": @Model.Functions.Trim(),
           "temperature":@(Model.Temperature),
           "max_tokens": @(Model.MaxTokens),
           "top_p": @(Model.TopP),
@@ -128,7 +130,8 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.choices[0].message.content" Id="Text"/>
+      <JsonPath Expr="$.choices[0].message.content" Id="Content"/>
+      <JsonPath Expr="$.choices[0].message.function_call.arguments" Id="FunctionCall" Title="Function Call" Checked="false"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
