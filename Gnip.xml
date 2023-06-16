@@ -108,6 +108,7 @@
 					<Item Id="12" Title="+12 Hours"/>
         </DataSource>
       </Select>
+			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
     </Parameters>
     <Paging PageSize="500" EvenPages="false">
       <Parse>
@@ -145,8 +146,25 @@
 					<JsonPath Expr="created_at" Id="Inp" Converter="DateTime" Converter.SourceFormat="ddd MMM dd HH:mm:ss +ffff yyyy" DefaultValue=""/>
 				</Compute>
 				<JsonPath Expr="text" Id="Text" Title="Text" Converter="String" DefaultValue=""/>
-				<JsonPath Expr="retweet_count" Id="Retweets" Title="Retweets" Converter="Int"/>
-				<JsonPath Expr="favorite_count" Id="Likes" Title="Likes" Converter="Int"/>
+			<Compute Expr="@(GetTweetType(Model.txt))" Id="Type" Title="Type">
+				<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+			</Compute>
+				<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Retweets" Title="Retweets" Converter="Int">
+					<JsonPath Expr="retweet_count" Id="Inp" Converter="Int"/>
+					<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Likes" Title="Likes" Converter="Int">
+					<JsonPath Expr="favorite_count" Id="Inp" Converter="Int"/>
+					<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Replies" Title="Replies" Converter="Int">
+					<JsonPath Expr="reply_count" Id="Inp" Converter="Int"/>
+					<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+				</Compute>
+				<Compute Expr="@(AdjustEngagement(Model.txt))" Id="Quotes" Title="Quotes" Converter="Int">
+					<JsonPath Expr="quote_count" Id="Inp" Converter="Int"/>
+					<JsonPath Expr="text" Id="txt" Converter="String" DefaultValue=""/>
+				</Compute>
 				<JsonPath Expr="csv(entities.hashtags[*].text)" Id="HashtagEntities" Title="Hashtag Entities" Converter="Auto" DefaultValue=""/>
 				<JsonPath Expr="csv(entities.urls[*].url)" Id="UrlEntities" Title="URL Entities" Converter="String" DefaultValue=""/>
 				<JsonPath Expr="csv(entities.user_mentions[*].screen_name)" Id="MentionsEntities" Title="User Mentions Entities" Converter="Auto" DefaultValue=""/>
@@ -264,6 +282,24 @@
 
 			return "&fromDate=" + fromDate + "&toDate=" + endDate;
 		}
+
+		long AdjustEngagement(string txt) {
+			return (!Model.IncludeRtEng && GetTweetType(txt) == "Retweet") ? 0 : Model.Inp;
+		}
+
+		string GetTweetType(string txt) {
+			if(txt.StartsWith("RT @"))
+			{
+				return "Retweet";
+			}
+			if(txt.StartsWith("@"))
+			{
+				return "Reply";
+			}
+			return "Tweet";
+		}
+
+
     ]]>
   </RazorFunctions>
 
