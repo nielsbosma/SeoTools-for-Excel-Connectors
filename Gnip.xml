@@ -32,7 +32,7 @@
       </Fail>
     </Resource>
 		<Resource Id="DefaultParams">
-			<Text Id="Query" Title="Query" Debug.DefaultValue="trump" Required="false"/>
+			<Text Id="Queries" Title="Queries (one per row)" Debug.DefaultValue="trump" Required="false" Multiline="true"/>
       <Text Id="Url" Title="Url"/>
       <Text Id="RetweetsOf" Title="Reweets of"/>
       <Select Id="Language" Title="Language">
@@ -110,6 +110,7 @@
       </Select>
 			<Checkbox Id="IncludeRtEng" Title="Include Engagement from Retweets" DefaultValue="true" HelpText="If false, sets retweets and likes count to 0 for all retweets"/>
     </Parameters>
+    <Batch Parameter="Queries" Separator="\n"/>
     <Paging PageSize="500" EvenPages="false">
       <Parse>
         <JsonPath Id="NextPageToken" Expr="$.next"/>
@@ -121,7 +122,7 @@
         <![CDATA[
         https://gnip-api.twitter.com/search/@(Model.Endpoint)/accounts/@(Model.Account)/@(Model.Label).json
 				?query=
-				@(!string.IsNullOrEmpty(Model.Query) ? "(" + Utils.UrlEncode(Model.Query) + ")" : "")
+				@(!string.IsNullOrEmpty(Model.Queries) ? "(" + Utils.UrlEncode(Model.Queries) + ")" : "")
         @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "retweets_of:" + Model.RetweetsOf  + "%20": "")
         @(!string.IsNullOrEmpty(Model.Url) ? "url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") + "%20" : "")
 				@(Model.Language != "all" ? "lang:" + Model.Language + "%20" : "")
@@ -200,6 +201,7 @@
 				<JsonPath Expr="place.full_name" Id="PlaceFullName" Title="Place Name" DefaultValue="" Checked="false"/>
 				<JsonPath Expr="place.country" Id="PlaceCountry" Title="Place Country" DefaultValue="" Checked="false"/>
 				<JsonPath Expr="place.bounding_box.coordinates" Id="PlaceCoordinates" Title="Place Coordinates" DefaultValue="" Checked="false"/>
+        <Compute Expr="@Model.Queries" Id="Query"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -216,6 +218,7 @@
         </DataSource>
       </Select>
     </Parameters>
+    <Batch Parameter="Queries" Separator="\n"/>
     <Paging PageSize="10000" EvenPages="false">
       <Parse>
         <JsonPath Id="NextPageToken" Expr="$.next"/>
@@ -227,7 +230,7 @@
         <![CDATA[
 				https://gnip-api.twitter.com/search/@(Model.Endpoint)/accounts/@(Model.Account)/@(Model.Label)/counts.json
 				?query=
-				@(!string.IsNullOrEmpty(Model.Query) ? "(" + Utils.UrlEncode(Model.Query) + ")" : "")
+				@(!string.IsNullOrEmpty(Model.Queries) ? "(" + Utils.UrlEncode(Model.Queries) + ")" : "")
         @(!string.IsNullOrEmpty(Model.RetweetsOf) ? "retweets_of:" + Model.RetweetsOf  + "%20": "")
         @(!string.IsNullOrEmpty(Model.Url) ? "url:" + Regex.Replace(Model.Url, @"(^\w+:|^)\/\/", "") + "%20" : "")
 				@(Model.Language != "all" ? "lang:" + Model.Language + "%20" : "")
@@ -245,6 +248,7 @@
       <JsonPath Expr="results[*]">
         <JsonPath Expr="timePeriod" Id="Period" Title="Period" Converter="DateTime" Converter.SourceFormat="yyyyMMddHHmm"/>
         <JsonPath Expr="count" Id="Count" Title="Count" Converter="Long"/>
+        <Compute Expr="@Model.Queries" Id="Query"/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
