@@ -54,17 +54,23 @@
 				<IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
         <RequestBody>
         <![CDATA[
-        {
-          "model": "@(Model.Model)",
-          "prompt":"@((Model.PrependPrompt + Model.Prompt + Model.AppendPrompt).Trim().Replace("\n","\\n").Replace("\r","").Replace("\"", "\\\""))",
-          "temperature":@(Model.Temperature),
-          "max_tokens": @(Model.MaxTokens),
-          "top_p": @(Model.TopP),
-          "best_of": @(Model.BestOf),
-          "frequency_penalty": @(Model.Frequency),
-          "presence_penalty": @(Model.PresencePenalty)
-          @(!string.IsNullOrEmpty(Model.StopSequence) ? ", \"stop\": [\"" + Model.StopSequence + "\"]" : "")
-        }
+				@{
+					var dict = new Dictionary<string, object>();
+					dict.Add("model", Model.Model);
+					dict.Add("prompt", (Model.PrependPrompt + Model.Prompt + Model.AppendPrompt).Trim());
+					dict.Add("temperature", Model.Temperature);
+					dict.Add("max_tokens", (int)Model.MaxTokens);
+					dict.Add("top_p", Model.TopP);
+					dict.Add("frequency_penalty", Model.Frequency);
+					dict.Add("presence_penalty", Model.PresencePenalty);
+					dict.Add("best_of", (int)Model.BestOf);
+
+					if(!string.IsNullOrEmpty(Model.StopSequence))
+					{
+						dict.Add("stop", new[] { Model.StopSequence });
+					}
+				}
+				@JsonConvert.SerializeObject(dict)
         ]]>
         </RequestBody>
       </HttpSettings>
@@ -109,19 +115,32 @@
 				<IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
         <RequestBody>
         <![CDATA[
-        {
-          "model": "@(Model.Model)",
-          "messages": [
-						{"role": "user", "content": "@((Model.PrependMessage + Model.Message + Model.AppendMessage).Trim().Replace("\n","\\n").Replace("\r","").Replace("\"", "\\\""))"}
-					],
-          "functions": @Model.Functions,
-          "temperature":@(Model.Temperature),
-          "max_tokens": @(Model.MaxTokens),
-          "top_p": @(Model.TopP),
-          "frequency_penalty": @(Model.Frequency),
-          "presence_penalty": @(Model.PresencePenalty)
-          @(!string.IsNullOrEmpty(Model.StopSequence) ? ", \"stop\": [\"" + Model.StopSequence + "\"]" : "")
-        }
+				@{
+					var dict = new Dictionary<string, object>();
+					dict.Add("model", Model.Model);
+					dict.Add("temperature", Model.Temperature);
+					dict.Add("max_tokens", (int)Model.MaxTokens);
+					dict.Add("top_p", Model.TopP);
+					dict.Add("frequency_penalty", Model.Frequency);
+					dict.Add("presence_penalty", Model.PresencePenalty);
+
+					var messages = new[]
+					{
+						new { role = "user", content = (Model.PrependMessage + Model.Message + Model.AppendMessage).Trim() }
+					};
+					dict.Add("messages", messages);
+
+					if(!string.IsNullOrEmpty(Model.Functions))
+					{
+						dict.Add("functions", Model.Functions.Trim());
+					}
+
+					if(!string.IsNullOrEmpty(Model.StopSequence))
+					{
+						dict.Add("stop", new[] { Model.StopSequence });
+					}
+				}
+				@JsonConvert.SerializeObject(dict)
         ]]>
         </RequestBody>
       </HttpSettings>
