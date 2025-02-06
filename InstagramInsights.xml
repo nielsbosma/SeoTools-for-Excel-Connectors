@@ -30,7 +30,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/me/accounts?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/me/accounts?access_token=@(Model.Authenticator.Token)
 				&fields=instagram_business_account,name,website
 				&limit=@(Model.PageCursor.NextTake)
         @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
@@ -55,7 +55,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.BusinessId)/media?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/@(Model.BusinessId)/media?access_token=@(Model.Authenticator.Token)
 				&fields=id@(SelectedDefaultFields())@(SelectedInsightsFields())
         &limit=@(Model.PageCursor.NextTake)
 				@(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
@@ -75,7 +75,7 @@
         <JsonPath Expr="comments_count" Id="Comments" Title="Comments" Tag="comments_count" Converter="Int"/>
         <JsonPath Expr="media_url" Id="Image" Title="Image" Tag="media_url" Converter="String" DefaultValue=""/>
         <JsonPath Expr="username" Id="Username" Title="Username" Tag="username" Converter="String"/>
-				<JsonPath Expr="insights.data[?(@@.name=='impressions' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Impressions" Title="Impressions" Tag="impressions" Converter="Int" DefaultValue="0" HelpText="Total number of times the media object has been seen"/>
+				<JsonPath Expr="insights.data[?(@@.name=='views' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Views" Title="Views" Tag="views" Converter="Int" DefaultValue="0" HelpText="Total number of times the media object has been seen"/>
 				<JsonPath Expr="insights.data[?(@@.name=='reach' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Reach" Title="Reach" Tag="reach" Converter="Int" DefaultValue="0" HelpText="Total number of unique accounts that have seen the media object"/>
 				<JsonPath Expr="insights.data[?(@@.name=='video_views' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="VideoViews" Title="Video Views" Tag="video_views" Converter="Int" DefaultValue="0" HelpText="Total number of times the video has been seen"/>
 				<JsonPath Expr="insights.data[?(@@.name=='saved' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="Saved" Title="Saved" Tag="saved" Converter="Int" DefaultValue="0" HelpText="Total number of unique accounts that have saved the media object"/>
@@ -83,38 +83,6 @@
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="AccountMediaInsightsLookup" Title="Media Lookup" Group="Media" HelpText="Get a specific media object" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/media/insights">
-    <Parameters>
-      <Text Id="MediaId" Title="Media Id" Required="true" Debug.DefaultValue="17902595527197367"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.MediaId)/insights?access_token=@(Model.Authenticator.Token)
-				&metric=engagement,reach,impressions,saved,video_views
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="data[?(@@.name=='impressions')].values[*]">
-        <JsonPath Expr="value" Id="Impressions" Title="Impressions" Converter="Int" DefaultValue="" HelpText="Total number of times the media object has been seen"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='reach')].values[*]">
-        <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" DefaultValue="" HelpText="Total number of unique accounts that have seen the media object"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='saved')].values[*]">
-        <JsonPath Expr="value" Id="Saved" Title="Saved" Converter="Int" DefaultValue="" HelpText="Total number of unique accounts that have saved the media object"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='engagement')].values[*]">
-        <JsonPath Expr="value" Id="Engagement" Title="Engagement" Converter="Int" DefaultValue="" HelpText="Total number of likes and comments on the media object"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='video_views')].values[*]">
-        <JsonPath Expr="value" Id="VideoViews" Title="Video Views" Converter="Int" DefaultValue="" Checked="false" HelpText="(Videos only) Total number of times the video has been seen. Returns 0 for videos in carousel albums."/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
   </RestConnector>
 
   <RestConnector Id="AccountInsights" Title="Account Daily Stats" Group="Account" HelpUrl="https://developers.facebook.com/docs/instagram-api/reference/user/insights">
@@ -126,7 +94,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
 				&metric=@SelectedFields()
 				@DatePagination()
 				&period=day
@@ -137,32 +105,11 @@
       <JsonPath Expr="data[0].values[*]">
 				<JsonPath Expr="end_time" Id="Date" Converter="DateTime"/>
 			</JsonPath>
-      <JsonPath Expr="data[?(@@.name=='impressions')].values[*]">
-        <JsonPath Expr="value" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been viewed."/>
-      </JsonPath>
       <JsonPath Expr="data[?(@@.name=='reach')].values[*]">
         <JsonPath Expr="value" Id="Reach" Title="Reach" Converter="Int" Tag="reach" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been uniquely viewed."/>
       </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='profile_views')].values[*]">
-        <JsonPath Expr="value" Id="ProfileViews" Title="Profile Views" Converter="Int" Tag="profile_views" HelpText="Total number of users who have viewed the Business User's profile within the specified period."/>
-      </JsonPath>
       <JsonPath Expr="data[?(@@.name=='follower_count')].values[*]">
         <JsonPath Expr="value" Id="Followers" Title="Followers" Converter="Int" Tag="follower_count" HelpText="Total number of new followers each day within the specified range."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='email_contacts')].values[*]">
-        <JsonPath Expr="value" Id="EmailContacts" Title="Email Contacts" Converter="Int" Tag="email_contacts" HelpText="Total number of taps on the email link in the Business User's profile."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='get_directions_clicks')].values[*]">
-        <JsonPath Expr="value" Id="GetDirectionClicks" Title="Get Direction Clicks" Converter="Int" Tag="get_directions_clicks" HelpText="Total number of taps on the directions link in the Business User's profile."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='phone_call_clicks')].values[*]">
-        <JsonPath Expr="value" Id="PhoneCallClicks" Title="Phone Call Clicks" Converter="Int" Tag="phone_call_clicks" HelpText="Total number of taps on the call link in the Business User's profile."/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='text_message_clicks')].values[*]">
-        <JsonPath Expr="value" Id="TextMessageClicks" Title="Text Message Clicks" Converter="Int" Tag="text_message_clicks" HelpText="Total number of taps on the text message link in the Business User's profile"/>
-      </JsonPath>
-      <JsonPath Expr="data[?(@@.name=='website_clicks')].values[*]">
-        <JsonPath Expr="value" Id="WebsiteClicks" Title="Website Clicks" Converter="Int" Tag="website_clicks" HelpText="Total number of taps on the website link in the Business User's profile."/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -176,7 +123,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
 				&metric=@SelectedFields()
 				&metric_type=total_value
 				&period=day
@@ -186,7 +133,7 @@
       </Fetch.Url>
     </Fetch>
     <Parse>
-			<JsonPath Expr="data[?(@@.name=='impressions')].total_value.value" Id="Impressions" Title="Impressions" Converter="Int" Tag="impressions" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been viewed."/>
+			<JsonPath Expr="data[?(@@.name=='views')].total_value.value" Id="Views" Title="Views" Converter="Int" Tag="views" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been viewed."/>
 			<JsonPath Expr="data[?(@@.name=='reach')].total_value.value" Id="Reach" Title="Reach" Converter="Int" Tag="reach" HelpText="Total number of times the Business User's media objects (i.e. posts, stories and promotions) have been uniquely viewed."/>
 			<JsonPath Expr="data[?(@@.name=='total_interactions')].total_value.value" Id="TotalInteractions" Title="Total Interactions" Converter="Int" Tag="total_interactions" HelpText=""/>
 			<JsonPath Expr="data[?(@@.name=='accounts_engaged')].total_value.value" Id="AccountsEngaged" Title="Accounts Engaged" Converter="Int" Tag="accounts_engaged" HelpText=""/>
@@ -219,7 +166,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
 				&metric=@(Model.Metric)
 				&metric_type=total_value
 				&period=day
@@ -249,7 +196,7 @@
     <Fetch>
       <Fetch.Url>
         <![CDATA[
-				https://graph.facebook.com/v3.3/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
+				https://graph.facebook.com/v22.0/@(Model.BusinessId)/insights?access_token=@(Model.Authenticator.Token)
 				&metric=online_followers
 				&period=lifetime
         &since=@(Model.DateInterval.StartDate.ToString("yyyy-MM-dd"))
