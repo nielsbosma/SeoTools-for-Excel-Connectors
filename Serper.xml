@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Suite Title="Serper.dev" Identifier="Serper" RequireVersion="9.5.4" Category="SEO" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Serper.xml" HelpUrl="http://seotoolsforexcel.com/serper/" HelpText="Documentation">
+
+  <Author Name="Victor" Url="http://community.seotoolsforexcel.com/users/diskborste/activity"/>
+
+  <Settings HelpText="What's this?" HelpUrl="http://seotoolsforexcel.com/serper/">
+    <Text Id="ApiKey" Title="API Key" Required="true"/>
+  </Settings>
+
+	<RestConnector Id="OrganicResults" Title="Organic Results">
+    <Parameters>
+      <Text Id="Query" Debug.DefaultValue="apple" Required="true"/>
+      <Select Id="Country" Title="Country" DefaultValue="us">
+        <DataSource>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="Language" Title="Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="DateRange" Title="Date Range" DefaultValue="anytime">
+        <DataSource>
+          <Item Id="anytime" Title="Anytime" />
+          <Item Id="qdr:h" Title="Past hour" />
+          <Item Id="qdr:d" Title="Past 24 hours" />
+          <Item Id="qdr:w" Title="Past week" />
+          <Item Id="qdr:m" Title="Past month" />
+          <Item Id="qdr:y" Title="Past year" />
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Paging PageSize="10" EvenPages="false"/>
+    <Fetch>
+			<HttpSettings>
+			  <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='X-API-KEY'>@Model.ApiKey</Header>
+        </RequestHeaders>
+				<RequestMethod>POST</RequestMethod>
+				<RequestBody>
+          <![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("q", Model.Query);
+							dict.Add("gl", Model.Country);
+							dict.Add("hl", Model.Language);
+							if(Model.DateRange != "anytime")
+							{
+								dict.Add("tbs", Model.DateRange);
+							}
+
+							if(Model.PageCursor.Page != 0)
+							{
+								dict.Add("page", Model.PageCursor.Page+1);
+							}
+
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://google.serper.dev/search
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="organic[*]">
+			<JsonPath Expr="link" Id="Link" Converter="String"/>
+			<JsonPath Expr="title" Id="Title" Converter="String"/>
+			<JsonPath Expr="snippet" Id="Snippet" Converter="String"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+	<RestConnector Id="RelatedSearches" Title="Related Searches">
+    <Parameters>
+      <Text Id="Query" Debug.DefaultValue="apple" Required="true"/>
+      <Select Id="Country" Title="Country" DefaultValue="us">
+        <DataSource>
+          <ISOCountryCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="Language" Title="Language" DefaultValue="en">
+        <DataSource>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+      <Select Id="DateRange" Title="Date Range" DefaultValue="anytime">
+        <DataSource>
+          <Item Id="anytime" Title="Anytime" />
+          <Item Id="qdr:h" Title="Past hour" />
+          <Item Id="qdr:d" Title="Past 24 hours" />
+          <Item Id="qdr:w" Title="Past week" />
+          <Item Id="qdr:m" Title="Past month" />
+          <Item Id="qdr:y" Title="Past year" />
+        </DataSource>
+      </Select>
+    </Parameters>
+    <Fetch>
+			<HttpSettings>
+			  <RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name='X-API-KEY'>@Model.ApiKey</Header>
+        </RequestHeaders>
+				<RequestMethod>POST</RequestMethod>
+				<RequestBody>
+          <![CDATA[
+						@{
+							var dict = new Dictionary<string, object>();
+							dict.Add("q", Model.Query);
+							dict.Add("gl", Model.Country);
+							dict.Add("hl", Model.Language);
+							if(Model.DateRange != "anytime")
+							{
+								dict.Add("tbs", Model.DateRange);
+							}
+
+							var output = Newtonsoft.Json.JsonConvert.SerializeObject(dict);
+						}
+						@output
+          ]]>
+        </RequestBody>
+      </HttpSettings>
+      <Fetch.Url>
+        <![CDATA[
+        https://google.serper.dev/search
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<JsonPath Expr="relatedSearches[*]">
+			<JsonPath Expr="query" Id="Query" Converter="String"/>
+			</JsonPath>
+    </Parse>
+  </RestConnector>
+
+</Suite>
