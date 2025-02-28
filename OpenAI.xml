@@ -23,87 +23,34 @@
     </Resource>
   </Resources>
 
-  <RestConnector Id="Completions" Title="Completions" HelpUrl="https://beta.openai.com/docs/api-reference/completions/create">
-    <Parameters>
-      <Text Id="Prompt" Debug.DefaultValue="mimetype of filetype bmp" Required="true" Multiline="true"/>
-      <Text Id="PrependPrompt" Title="Prepend Prompt" Multiline="true" HelpText="Added before the prompt. Useful with formulas."/>
-      <Text Id="AppendPrompt" Title="Append Prompt" Multiline="true" HelpText="Added after the prompt. Useful with formulas."/>
-      <Select Id="Model" DefaultValue="text-davinci-003" Required="true">
-        <DataSource>
-					<Item Id="text-davinci-003"/>
-          <Item Id="text-curie-001"/>
-          <Item Id="text-babbage-001"/>
-          <Item Id="text-ada-001"/>
-          <Item Id="code-davinci-002"/>
-          <Item Id="code-cushman-001"/>
-        </DataSource>
-      </Select>
-      <Number Id="Temperature" Minimum="0" DefaultValue="0" Maximum="1" Format="N1" HelpText="Controls randomness: Lowering results in fewer random completions. As the temperature approaches zero, the model will become deterministic and repetitive."/>
-      <Number Id="MaxTokens" Title="Maximum Length" Minimum="1" DefaultValue="64" Maximum="4000" HelpText="The maximum number of tokens to generate. Requests can use up to 2,048 or 4,000 tokens shared between prompt and completion. The exact limit varies by model. (One token is roughly 4 characters for normal English text.)"/>
-      <Text Id="StopSequence" Title="Stop Sequence" HelpText="Up to four sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence."/>
-      <Number Id="TopP" Title="Top P" Minimum="0" DefaultValue="1" Maximum="1" Format="N1" HelpText="Controls diversity via nucleus sampling: 0.5 means half of all likelihood-weighted options are considered."/>
-      <Number Id="Frequency" Minimum="0" DefaultValue="0" Maximum="2" Format="N1" HelpText="How much to penalize new tokens based on their existing frequency in the text so far. Decreases the model's likelihood to repeat the same line verbatim."/>
-      <Number Id="PresencePenalty" Title="Presence Penalty" Minimum="0" DefaultValue="0" Maximum="2" Format="N1" HelpText="How much to penalize new tokens based on whether they appear in the text so far. Increases the model's likelihood to talk about new topics."/>
-      <Number Id="BestOf" Title="Best Of" Minimum="1" DefaultValue="1" Maximum="20" HelpText="Generates multiple completions server-side, and displays only the best. Streaming only works when set to 1. Since it acts as a multiplier on the number of completions, this parameter can eat into your token quota very quickly — use caution!"/>
-      <Number Id="Delay" Title="Delay Between Requests (ms)" DefaultValue="1000" Minimum="0" Maximum="1000000" Format="N0" HelpText="The delay between requests in milliseconds. This is useful when you want to avoid hitting the API rate limit." HelpUrl="https://help.openai.com/en/articles/5955598-is-api-usage-subject-to-any-rate-limits"/>
-    </Parameters>
+	<RestConnector Id="Models" Hidden="true">
     <Fetch>
-      <HttpSettings>
-        <Resource Id="HttpProps"/>
-        <RequestMethod>POST</RequestMethod>
-				<IntervalBetweenRequests RandomFrom="@(Model.Delay)" RandomTo="@(Model.Delay)" IfSame="Host"/>
-        <RequestBody>
-        <![CDATA[
-				@{
-					var dict = new Dictionary<string, object>();
-					dict.Add("model", Model.Model);
-					dict.Add("prompt", (Model.PrependPrompt + Model.Prompt + Model.AppendPrompt).Trim());
-					dict.Add("temperature", Model.Temperature);
-					dict.Add("max_tokens", (int)Model.MaxTokens);
-					dict.Add("top_p", Model.TopP);
-					dict.Add("frequency_penalty", Model.Frequency);
-					dict.Add("presence_penalty", Model.PresencePenalty);
-					dict.Add("best_of", (int)Model.BestOf);
-
-					if(!string.IsNullOrEmpty(Model.StopSequence))
-					{
-						dict.Add("stop", new[] { Model.StopSequence });
-					}
-				}
-				@JsonConvert.SerializeObject(dict)
-        ]]>
-        </RequestBody>
-      </HttpSettings>
       <Fetch.Url>
-      <![CDATA[
-        https://api.openai.com/v1/completions
-      ]]>
+        <![CDATA[
+        https://api.openai.com/v1/models
+        ]]>
       </Fetch.Url>
+      <HttpSettings>
+      <RequestHeaders>
+        <Header Name='Authorization'>Bearer @(Model.ApiKey)</Header>
+      </RequestHeaders>
+      </HttpSettings>
     </Fetch>
     <Parse>
-      <JsonPath Expr="$.choices[0].text" Id="Text"/>
+			<JsonPath Expr="$.data[*]">
+				<JsonPath Expr="id" Id="ModelId" Title="Model Id"/>
+				<JsonPath Expr="created" Id="Created" Title="Created" Converter="DateTime" Converter.SourceFormat="Unix"/>
+			</JsonPath>
     </Parse>
-    <Resource Id="Fail"/>
+		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Chat" Title="Chat" HelpUrl="https://platform.openai.com/docs/api-reference/chat/create">
+  <RestConnector Id="OpenAI" Title="OpenAI" HelpUrl="https://platform.openai.com/docs/api-reference/chat/create">
     <Parameters>
       <Text Id="Message" Debug.DefaultValue="mimetype of filetype bmp" Required="true" Multiline="true"/>
-      <Text Id="Functions" Multiline="true"/>
       <Text Id="PrependMessage" Title="Prepend Message" Multiline="true" HelpText="Added before the prompt. Useful with formulas."/>
       <Text Id="AppendMessage" Title="Append Message" Multiline="true" HelpText="Added after the prompt. Useful with formulas."/>
-      <Select Id="Model" DefaultValue="gpt-3.5-turbo" Required="true">
-        <DataSource>
-          <Item Id="gpt-3.5-turbo"/>
-					<Item Id="gpt-3.5-turbo-16k"/>
-					<Item Id="gpt-3.5-turbo"/>
-					<Item Id="gpt-4o"/>
-					<Item Id="gpt-4"/>
-          <Item Id="gpt-4-turbo-preview"/>
-          <Item Id="gpt-4-vision-preview"/>
-          <Item Id="gpt-4-32k"/>
-        </DataSource>
-      </Select>
+			<Text Id="Model" Title="Model" Select.Connector="Models"/>
       <Number Id="Temperature" Minimum="0" DefaultValue="0" Maximum="1" Format="N1" HelpText="Controls randomness: Lowering results in fewer random completions. As the temperature approaches zero, the model will become deterministic and repetitive."/>
       <Number Id="MaxTokens" Title="Maximum Length" Minimum="1" DefaultValue="64" Maximum="4000" HelpText="The maximum number of tokens to generate. The exact limit varies by model. (One token is roughly 4 characters for normal English text.)"/>
       <Text Id="StopSequence" Title="Stop Sequence" HelpText="Sequence where the API will stop generating further tokens. The returned text will not contain the stop sequence."/>
@@ -134,11 +81,6 @@
 					};
 					dict.Add("messages", messages);
 
-					if(!string.IsNullOrEmpty(Model.Functions))
-					{
-						dict.Add("functions", Model.Functions.Trim());
-					}
-
 					if(!string.IsNullOrEmpty(Model.StopSequence))
 					{
 						dict.Add("stop", new[] { Model.StopSequence });
@@ -156,7 +98,6 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="$.choices[0].message.content" Id="Content"/>
-      <JsonPath Expr="$.choices[0].message.function_call.arguments" Id="FunctionCall" Title="Function Call" Checked="false"/>
     </Parse>
     <Resource Id="Fail"/>
   </RestConnector>
