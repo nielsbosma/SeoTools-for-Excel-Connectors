@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Social" Title="Bluesky" Id="Bluesky" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Bluesky.xml" HelpUrl="http://seotoolsforexcel.com/bluesky/" HelpText="Documentation">
+
+  <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
+
+  <Resources>
+    <Resource Id="Fail">
+			<Fail>
+				<JsonPath Expr="message"/>
+			</Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="SearchPosts" Title="Search Posts">
+    <Parameters>
+      <Text Id="Query" Title="Query" Debug.DefaultValue="musk" Required="true"/>
+      <Select Id="LanguageCode" Title="Filter by Language" DefaultValue="All">
+        <DataSource>
+					<Item Id="All"/>
+          <ISOLanguageCodes/>
+        </DataSource>
+      </Select>
+			<Select Id="Sort" Title="Sort by" Required="false" DefaultValue="latest">
+				<DataSource>
+					<Item Id="latest" Title="Latest"/>
+					<Item Id="top" Title="Top"/>
+				</DataSource>
+			</Select>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.bsky.app/xrpc/app.bsky.feed.searchPosts
+				?q=@(Utils.UrlEncode(Model.Query))
+				@(Model.LanguageCode != "All" ? "&lang=" + Model.LanguageCode : "")
+				&sort=@(Model.Sort)
+				&limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="posts[*]">
+				<Compute Id="Url" Title="URL" Converter="String">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+						string postId = Model.Uri.Substring(Model.Uri.LastIndexOf('/') + 1);
+						string postUrl = "https://bsky.app/profile/" + Model.Handle + "/post/" + postId;
+						}
+						@postUrl
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="uri" Id="Uri"/>
+					<JsonPath Expr="author.handle" Id="Handle"/>
+				</Compute>
+        <JsonPath Expr="record.createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="record.text" Id="Text" Title="Text" Converter="String"/>
+        <JsonPath Expr="record.langs[0]" Id="Lang" Title="Lang" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="likeCount" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="replyCount" Id="Replies" Title="Replies" Converter="Int"/>
+        <JsonPath Expr="repostCount" Id="Reposts" Title="Reposts" Converter="Int"/>
+        <JsonPath Expr="quoteCount" Id="Quotes" Title="Quotes" Converter="Int"/>
+        <JsonPath Expr="author.handle" Id="AuthorHandle" Title="Author Handle" Converter="String"/>
+        <JsonPath Expr="author.displayName" Id="AuthorDisplayName" Title="Author Display Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="AuthorFeed" Title="Author Feed">
+    <Parameters>
+      <Text Id="AuthorHandle" Title="Author Handle" Debug.DefaultValue="bnewbold.net" Required="true"/>
+    </Parameters>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.bsky.app/xrpc/app.bsky.feed.searchPosts
+				?q=*
+				&author=@Model.AuthorHandle
+				&limit=100
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="posts[*]">
+				<Compute Id="Url" Title="URL" Converter="String">
+					<Compute.Expr>
+						<![CDATA[
+						@{
+						string postId = Model.Uri.Substring(Model.Uri.LastIndexOf('/') + 1);
+						string postUrl = "https://bsky.app/profile/" + Model.Handle + "/post/" + postId;
+						}
+						@postUrl
+						]]>
+					</Compute.Expr>
+					<JsonPath Expr="uri" Id="Uri"/>
+					<JsonPath Expr="author.handle" Id="Handle"/>
+				</Compute>
+        <JsonPath Expr="record.createdAt" Id="Created" Title="Created" Converter="DateTime"/>
+        <JsonPath Expr="record.text" Id="Text" Title="Text" Converter="String"/>
+        <JsonPath Expr="record.langs[0]" Id="Lang" Title="Lang" Converter="String" DefaultValue=""/>
+        <JsonPath Expr="likeCount" Id="Likes" Title="Likes" Converter="Int"/>
+        <JsonPath Expr="replyCount" Id="Replies" Title="Replies" Converter="Int"/>
+        <JsonPath Expr="repostCount" Id="Reposts" Title="Reposts" Converter="Int"/>
+        <JsonPath Expr="quoteCount" Id="Quotes" Title="Quotes" Converter="Int"/>
+        <JsonPath Expr="author.handle" Id="AuthorHandle" Title="Author Handle" Converter="String"/>
+        <JsonPath Expr="author.displayName" Id="AuthorDisplayName" Title="Author Display Name" Converter="String"/>
+      </JsonPath>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>

@@ -274,7 +274,7 @@
         <JsonPath Expr="id" Id="PostId" Title="PostId" Converter="String"/>
         <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
         <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
-        <JsonPath Expr="attachments.data[0].type" Id="Type" Title="Type" Converter="String" Tag="attachments" DefaultValue=""/>				
+        <JsonPath Expr="attachments.data[0].type" Id="Type" Title="Type" Converter="String" Tag="attachments" DefaultValue=""/>
         <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count,insights.metric(page_follows)}" DefaultValue=""/>
         <JsonPath Expr="$.from.name_with_location_descriptor" Id="AuthorFullName" Title="Author Full Name" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count,insights.metric(page_follows)}" DefaultValue=""/>
         <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count,insights.metric(page_follows)}" DefaultValue=""/>
@@ -310,53 +310,6 @@
         <JsonPath Expr="insights.data[?(@@.name=='post_video_length' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="vl" Tag="post_video_length" Title="Video Length (ms)" Converter="Int" DefaultValue="0" HelpText="Length of a video post (in milliseconds)"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_video_avg_time_watched' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="awt" Tag="post_video_avg_time_watched" Title="Video Average WatchTime (ms)" DefaultValue="0" Converter="Int" HelpText="The average length of time (in milliseconds) people spent viewing your video"/>
         <JsonPath Expr="insights.data[?(@@.name=='post_video_view_time' &amp;&amp; @@.period=='lifetime')].values[0].value" Id="twt" Tag="post_video_view_time" Title="Video Total Watch Time (ms)" Converter="Int" DefaultValue="0" HelpText="The total number of milliseconds your video was watched, including replays and views less than 3 seconds."/>
-			</JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-	<RestConnector Id="PostComments" Title="Comments to Post" Group="Post Data">
-    <Parameters>
-      <Text Id="Id" Title="Post Id" HelpText="(Use 'PageId_PostId' Format)" Debug.DefaultValue="324952857522514_2209241562426958" Required="true" Multiline="true"/>
-      <DateInterval Id="DateInterval" Title="Date Interval" Required="false" Nullable="true"/>
-    </Parameters>
-    <Paging PageSize="100" EvenPages="false">
-      <Parse>
-        <JsonPath Id="Cursor" Expr="paging.next"/>
-      </Parse>
-    </Paging>
-    <Batch Parameter="Id" Separator="\n" ItemsPerBatch="50"/>
-    <Resource Id="Prepare"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v16.0/@(Model.Id)/comments?access_token=@(Model.PageToken)&period=lifetime
-        &fields=@(SelectedFields())
-        @PeriodParameters()
-        &limit=@(Model.PageCursor.NextTake)
-        @(Model.PageCursor.Page != 0 ? "&after=" + Model.Cursor : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-			<JsonPath Expr="$.data[*]">
-        <JsonPath Expr="permalink_url" Id="CommentLink" Title="CommentLink" Tag="permalink_url" Converter="String"/>
-        <JsonPath Expr="id" Id="CommentId" Title="Comment Id" Converter="String"/>
-        <JsonPath Expr="created_time" Id="Created" Title="Created" Tag="created_time" Converter="DateTime"/>
-        <JsonPath Expr="message" Id="Message" Title="Message" Converter="String" Tag="message" DefaultValue=""/>
-        <JsonPath Expr="like_count" Id="Likes" Title="Likes" Tag="like_count" Converter="Int"/>
-        <JsonPath Expr="comment_count" Id="Comments" Title="Comments" Tag="comment_count" Converter="Int"/>
-        <JsonPath Expr="reactions_love.summary.total_count" Id="Love" Title="Love" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
-        <JsonPath Expr="reactions_wow.summary.total_count" Id="Wow" Title="Wow" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
-        <JsonPath Expr="reactions_haha.summary.total_count" Id="Haha" Title="Haha" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
-        <JsonPath Expr="reactions_sad.summary.total_count" Id="Sad" Title="Sad" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
-        <JsonPath Expr="reactions_angry.summary.total_count" Id="Angry" Title="Angry" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
-        <JsonPath Expr="reactions.summary.total_count" Id="Reactions" Title="Reactions" Tag="reactions.limit(0).summary(true)" Converter="Int" DefaultValue="0"/>
-				<JsonPath Expr="user_likes" Id="UserLikes" Title="UserLikes" Tag="user_likes" Converter="Bool" HelpText="Whether the viewer has liked this comment."/>
-        <JsonPath Expr="$.from.name" Id="Author" Title="Author" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count}" DefaultValue=""/>
-        <JsonPath Expr="$.from.name_with_location_descriptor" Id="AuthorFullName" Title="Author Full Name" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count}" DefaultValue=""/>
-        <JsonPath Expr="$.from.id" Id="AuthorId" Title="AuthorId" Converter="String" Tag="from{name,name_with_location_descriptor,fan_count}" DefaultValue=""/>
-				<Compute Title="Post Id" Id="PostId" Expr="@Model.Id"/>
 			</JsonPath>
     </Parse>
     <Resource Id="Fail"/>

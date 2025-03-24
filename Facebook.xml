@@ -240,10 +240,6 @@
     </Fetch>
     <Parse>
       <JsonPath Expr="data[*]">
-        <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-				<Compute Expr="@GetCommentId()" Id="CommentId" Title="Comment Id" Converter="Auto">
-					<JsonPath Id="Link" Expr="permalink_url" DefaultValue=""/>
-        </Compute>
         <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
         <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
         <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count"/>
@@ -257,42 +253,6 @@
         <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" DefaultValue=""/>
         <JsonPath Title="User Name" Id="Username" Expr="from.name" Converter="String" Tag="from" DefaultValue=""/>
         <Compute Title="Post Id" Id="PostId" Expr="@Model.Id"/>
-      </JsonPath>
-    </Parse>
-    <Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="CommentLookup" Title="Comments Lookup" Group="Post Data" HelpUrl="https://developers.facebook.com/docs/graph-api/reference/comment/">
-    <Parameters>
-      <Text Id="Ids" Title="Comment Ids (One per row)" HelpText="(Use 'PostId_CommentId' Format)" Debug.DefaultValue="10155853039491304_10155868458001304" Required="true" Multiline="true"/>
-    </Parameters>
-    <Batch Parameter="Ids" Separator="\n" ItemsPerBatch="50"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        https://graph.facebook.com/v17.0/
-				@(Model.Ids.Split('\n').Length == 1 ? "?id=" + Model.Ids : "?ids=" + FetchIdsBatch())
-        &fields=@SelectedFields()
-        &access_token=@(Model.Authenticator.Token)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="@bool2dim()">
-        <JsonPath Title="Comment Link" Id="CommentLink" Expr="permalink_url" Converter="String" Tag="permalink_url" DefaultValue=""/>
-				<Compute Expr="@Model.Ids" Id="CommentId" Title="Comment Id" Converter="Auto"/>
-        <JsonPath Title="Created" Id="Created" Expr="created_time" Converter="DateTime" Tag="created_time"/>
-        <JsonPath Title="Comment" Id="Comment" Expr="message" Converter="String" Tag="message"/>
-        <JsonPath Title="Likes" Id="Likes" Expr="like_count" Converter="Int" Tag="like_count"/>
-        <JsonPath Title="Comments" Id="Comments" Expr="comment_count" Converter="Int" Tag="comment_count"/>
-        <JsonPath Title="Love" Id="Love" Expr="reactions_love.summary.total_count" Converter="Int" Tag="reactions.type(LOVE).limit(0).summary(total_count).as(reactions_love)" DefaultValue=""/>
-        <JsonPath Title="Wow" Id="Wow" Expr="reactions_wow.summary.total_count" Converter="Int" Tag="reactions.type(WOW).limit(0).summary(total_count).as(reactions_wow)" DefaultValue=""/>
-        <JsonPath Title="Haha" Id="Haha" Expr="reactions_haha.summary.total_count" Converter="Int" Tag="reactions.type(HAHA).limit(0).summary(total_count).as(reactions_haha)" DefaultValue=""/>
-        <JsonPath Title="Sad" Id="Sad" Expr="reactions_sad.summary.total_count" Converter="Int" Tag="reactions.type(SAD).limit(0).summary(total_count).as(reactions_sad)" DefaultValue=""/>
-        <JsonPath Title="Angry" Id="Angry" Expr="reactions_angry.summary.total_count" Converter="Int" Tag="reactions.type(ANGRY).limit(0).summary(total_count).as(reactions_angry)" DefaultValue=""/>
-        <JsonPath Title="Reactions" Id="Reactions" Expr="reactions.summary.total_count" Converter="Int" Tag="reactions.limit(0).summary(total_count).as(reactions)" DefaultValue=""/>
-        <JsonPath Title="User Id" Id="UserId" Expr="from.id" Converter="String" Tag="from" DefaultValue=""/>
-        <JsonPath Title="User Name" Id="UserName" Expr="from.name" Converter="String" Tag="from" DefaultValue=""/>
       </JsonPath>
     </Parse>
     <Resource Id="Fail"/>
@@ -312,45 +272,6 @@
 			string FetchIdsBatch() {
 				string[] lines = ((string)Model.Ids).Trim().Split('\n').Select(e => e.Trim()).Where(e => !string.IsNullOrEmpty(e)).ToArray();
 				return string.Join(",",lines.Select(e => Utils.UrlEncode(e)).ToArray());
-			}
-
-			string GetCommentId() {
-				Regex regexCommentId = new Regex(@"\?comment_id=(\d+)");
-				Regex regexPostId = new Regex(@"/posts/(\d+)");
-				Regex regexReplyId = new Regex(@"\?reply_comment_id=(\d+)");
-				string commentId = "";
-				string postId = "";
-				string replyId = "";
-				string fullId = "";
-
-				if(regexCommentId.IsMatch(Model.Link))
-				{
-					Match match = regexCommentId.Match(Model.Link);
-					commentId = match.Groups[1].Value;
-				}
-
-				if(regexPostId.IsMatch(Model.Link))
-				{
-					Match match = regexPostId.Match(Model.Link);
-					postId = match.Groups[1].Value;
-				}
-
-				if(regexReplyId.IsMatch(Model.Link))
-				{
-					Match match = regexReplyId.Match(Model.Link);
-					replyId = match.Groups[1].Value;
-				}
-
-				if(!string.IsNullOrEmpty(replyId))
-				{
-					fullId = commentId + "_" + replyId;
-				}
-				else
-				{
-					fullId = postId + "_" + commentId;
-				}
-
-				return fullId;
 			}
     ]]>
   </RazorFunctions>
