@@ -2,17 +2,27 @@
 <Suite Category="SEO" Title="Ahrefs" Id="Ahrefs" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/Ahrefs.xml" HelpUrl="http://seotoolsforexcel.com/ahrefs/" HelpText="Documentation">
 
   <Author Name="Victor Sandberg" Url="http://community.seotoolsforexcel.com/users/diskborste/activity" />
-
-  <DefaultOAuthAuthenticator StayAuthenticated="true" TokenName="access_token" AuthUrl="https://ahrefs.com/oauth2/authorize.php?response_type=token&amp;client_id=SeoTools+for+Excel&amp;scope=api&amp;state=df4b3ab75b466f72c511ea394286e512&amp;redirect_uri={0}"/>
+	
+	<SeoToolsAuthenticator StayAuthenticated="true" Key="ahrefs"/>
 
   <Resources>
+    <Resource Id="HttpSettings">
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name="Authorization">Bearer @(Model.Authenticator.Token)</Header>
+        </RequestHeaders>
+      </HttpSettings>
+    </Resource>
     <Resource Id="Fail">
 			<Fail>
 				<JsonPath Expr="error"/>
+				<JsonPath Expr="[1]" Id="AuthFail" Fail.If="IsEqual" Fail.ComparedTo="Forbidden" Fail.Action="Message" Fail.Message="Forbidden" />
+				<JsonPath Expr="[0]" Id="OtherFail" Fail.If="IsEqual" Fail.ComparedTo="Error" Fail.Action="Message" Fail.Message="Error" />
 			</Fail>
     </Resource>
     <Resource Id="Mode">
-      <Select Id="Mode" Title="Mode" DefaultValue="Exact">
+      <Select Id="Mode" Title="Mode" DefaultValue="subdomains">
         <DataSource>
           <Item Id="exact" Title="URL (exact url)"/>
           <Item Id="domain" Title="Domain without subdomains (domain/*)"/>
@@ -21,1227 +31,435 @@
         </DataSource>
       </Select>
     </Resource>
-    <Resource Id="Direction">
-      <Radio Id="Direction" Title="Direction" DefaultValue="asc">
+    <Resource Id="Country">
+      <Select Id="Country" Title="Country Store" DefaultValue="us">
         <DataSource>
-          <Item Id="asc" Title="Ascending"/>
-          <Item Id="desc" Title="Descending"/>
+					<Item Id="Global"/>
+          <ISOCountryCodes/>
         </DataSource>
-      </Radio>
+      </Select>
     </Resource>
-    <Resource Id="OrderBacklinks">
-      <Item Id="url_from" Title="URL From"/>
-      <Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
-      <Item Id="ip_from" Title="IP From"/>
-      <Item Id="links_external" Title="Links External"/>
-      <Item Id="encoding" Title="Encoding"/>
-      <Item Id="first_seen" Title="First Seen"/>
-      <Item Id="prev_visited" Title="Prev Visited"/>
-      <Item Id="original" Title="Original"/>
-      <Item Id="redirect" Title="Redirect"/>
-      <Item Id="alt" Title="Alt"/>
-      <Item Id="text_pre" Title="Text Pre"/>
-      <Item Id="url_to" Title="URL to"/>
-      <Item Id="domain_rating" Title="Domain Rating"/>
-      <Item Id="links_internal" Title="Links Internal"/>
-      <Item Id="page_size" Title="Page Size"/>
-      <Item Id="title" Title="Title"/>
-      <Item Id="last_visited" Title="Last Visited"/>
-      <Item Id="link_type" Title="Link Type"/>
-      <Item Id="nofollow" Title="Nofollow"/>
-      <Item Id="anchor" Title="Anchor"/>
-      <Item Id="text_post" Title="Text Post"/>
-    </Resource>
-    <Resource Id="Conditions">
-      <Text Id="Where" Title="Where" HelpUrl="https://seotoolsforexcel.com/ahrefs/" HelpText="Returning only data that satisfies thecomma-separated set of Where conditions."/>
-      <Text Id="Having" Title="Having" HelpUrl="https://seotoolsforexcel.com/ahrefs/" HelpText="Returning only data that satisfies thecomma-separated set of Having conditions."/>
-    </Resource>
-  </Resources>
-
-  <RestConnector Id="UrlRating" Title="URL Rating" Group="Key Metrics" HelpText="Contains the URLs and their ratings.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-			<Resource Id="Conditions"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-    <Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=ahrefs_rank
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="pages[*]">
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="ahrefs_rank" Id="UrlRating" Title="URL Rating" Converter="Int" HelpText="URL Rating of the target."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Anchors" Title="Anchors" Group="Anchors" HelpText="Contains the anchor text and the number of backlinks, referring pages and referring domains that has it.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="anchor">
+		<Resource Id="HistoryGrouping">
+      <Select Id="HistoryGrouping" Title="History Grouping" DefaultValue="monthly">
         <DataSource>
-					<Item Id="anchor" Title="Anchor"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-					<Item Id="refpages" Title="Refpages"/>
-					<Item Id="refdomains" Title="Refdomains"/>
-					<Item Id="first_seen" Title="First Seen"/>
-					<Item Id="last_visited" Title="Last Visited"/>
+          <Item Id="daily" Title="Daily"/>
+          <Item Id="weekly" Title="Weekly"/>
+          <Item Id="monthly" Title="Monthly"/>
         </DataSource>
       </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=anchors
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="anchors[*]">
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" HelpText="Anchor text used in at least one backlink from the referring domain."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of external backlinks found that are using the anchor text."/>
-        <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" Checked="false" HelpText="Number of pages found containing backlinks that are using the anchor text."/>
-        <JsonPath Expr="refdomains" Id="Refdomains" Title="Refdomains" Converter="Int" Checked="false" HelpText="Number of referring domains that are using the anchor text when linking to the target. "/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlink that is using the anchor text."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink that is using the anchor text."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-			</JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="AnchorsRefDomains" Title="Anchors Ref Domains" Group="Anchors" HelpText="Contains connection between anchors and domains. Can be used to get all referring domains with specified anchor">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="anchors">
+		</Resource>
+		<Resource Id="VolumeMode">
+      <Select Id="VolumeMode" Title="Volume Mode" DefaultValue="monthly">
         <DataSource>
-					<Item Id="anchors" Title="Anchors"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-					<Item Id="refdomain" Title="Ref Domain"/>
+          <Item Id="monthly" Title="Monthly"/>
+          <Item Id="average" Title="Average"/>
         </DataSource>
       </Select>
-			<Resource Id="Direction"/>
+		</Resource>
+	</Resources>
+
+  <RestConnector Id="DomainRating" Title="Domain Rating" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-domain-rating">
+    <Parameters>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<Date Id="Date" Title="Date"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=anchors_refdomains
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/domain-rating
+				?target=@Model.Target
+				&date=@Model.Date.ToString("yyyy-MM-dd")
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="refdomains[*]">
-        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="Referring domain that contains at least one backlink using the anchor text."/>
-        <JsonPath Expr="anchors" Id="Anchors" Title="Anchors" Converter="Int" HelpText="Number of different anchor texts that are used in backlinks to the target on the referring domain."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of external backlinks found that are using the anchor text."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+      <JsonPath Expr="domain_rating.domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Double"/>
+      <JsonPath Expr="domain_rating.ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="BacklinksStats" Title="Backlinks Stats" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/list-backlinks-stats">
+    <Parameters>
+			<Resource Id="Mode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<Date Id="Date" Title="Date"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/backlinks-stats
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date=@Model.Date.ToString("yyyy-MM-dd")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics.live" Id="Live" Title="Live" Converter="Int"/>
+      <JsonPath Expr="metrics.all_time" Id="AllTime" Title="All Time" Converter="Int"/>
+      <JsonPath Expr="metrics.live_refdomains" Id="LiveRefdomains" Title="Live Refdomains" Converter="Int"/>
+      <JsonPath Expr="metrics.all_time_refdomains" Id="AllTimeRefdomains" Title="All Time Ref domains" Converter="Int"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="OutlinksStats" Title="Outlinks Stats" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/list-outlinks-stats">
+    <Parameters>
+			<Resource Id="Mode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<Date Id="Date" Title="Date"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/outlinks-stats
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date=@Model.Date.ToString("yyyy-MM-dd")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics.outgoing_links" Id="OutgoingLinks" Title="Outgoing Links" Converter="Int"/>
+      <JsonPath Expr="metrics.outgoing_links_dofollow" Id="OutgoingLinksDofollow" Title="Outgoing Links Dofollow" Converter="Int"/>
+      <JsonPath Expr="metrics.linked_domains" Id="LinkedDomains" Title="Linked Domains" Converter="Int"/>
+      <JsonPath Expr="metrics.linked_domains_dofollow" Id="LinkedDomainsDofollow" Title="Linked Domains Dofollow" Converter="Int"/>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="Metrics" Title="Metrics" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/list-metrics">
+    <Parameters>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+      <Resource Id="VolumeMode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<Date Id="Date" Title="Date"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/metrics
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&country=@Model.Country
+				&date=@Model.Date.ToString("yyyy-MM-dd")
+				&volume_mode=@Model.VolumeMode
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics.org_keywords" Id="OrganicKeywords" Title="Organic Keywords" Converter="Int"/>
+      <JsonPath Expr="metrics.paid_keywords" Id="PaidKeywords" Title="Paid Keywords" Converter="Int"/>
+      <JsonPath Expr="metrics.org_keywords_1_3" Id="OrganicKeywords13" Title="Organic Keywords Top3 Results" Converter="Int"/>
+      <JsonPath Expr="metrics.org_traffic" Id="OrganicTraffic" Title="Organic Traffic" Converter="Int"/>
+      <JsonPath Expr="metrics.org_cost" Id="OrganicCost" Title="Organic Cost" Converter="Int"/>
+      <JsonPath Expr="metrics.paid_traffic" Id="PaidTraffic" Title="Paid Traffic" Converter="Int"/>
+      <JsonPath Expr="metrics.paid_cost" Id="PaidCost" Title="Paid Cost" Converter="Int"/>
+      <JsonPath Expr="metrics.paid_pages" Id="PaidPages" Title="Paid Pages" Converter="Int"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="Backlinks" Title="Backlinks" Group="Backlinks" HelpText="Contains the backlinks and details of the referring pages, such as anchor and page title.">
+  <RestConnector Id="RefdomainsHistory" Title="Refdomains History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-refdomains-history">
     <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="url_from">
-        <DataSource>
-          <Resource Id="OrderBacklinks"/>
-        </DataSource>
-      </Select>
-			<Resource Id="Direction"/>
+      <Resource Id="HistoryGrouping"/>
+			<Resource Id="Mode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-    <Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=backlinks
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/refdomains-history
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="refpages[*]">
-        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText="URL of the page where the backlink is found."/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the referring page."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <JsonPath Expr="ip_from" Id="IpFrom" Title="IP From" Converter="String" Checked="false" HelpText="IP address of the referring page."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the referring page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the referring page."/>
-        <JsonPath Expr="page_size" Id="PageSize" Title="PageSize" Converter="Int" Checked="false" HelpText="Size of the referring page, in bytes."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the referring page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the referring page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText="Second to the most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink was present on the referring page when the Ahrefs crawler first visited it."/>
-        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText="Either href, redirect, frame, form, canonical, rss, alternate."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="For redirected links, the Redirect Code (3XX), zero otherwise."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink is NoFollow."/>
-        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText="Alternative text of the image backlink, if exists."/>
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText="Anchor text of the backlink."/>
-        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText="Snippet before the anchor text."/>
-        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText="Snippet after the anchor text."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false"/>
-        <JsonPath Expr="url_from_first_seen" Id="UrlFromFirstSeen" Title="URL From First Seen" Converter="DateTime" Checked="false"/>
-        <JsonPath Expr="first_origin" Id="FirstOrigin" Title="First Origin" Converter="String" Checked="false"/>
-        <JsonPath Expr="last_origin" Id="LastOrigin" Title="Last Origin" Converter="String" Checked="false"/>
-				<JsonPath Expr="language" Id="Language" Title="Language" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false"/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.refdomains[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(refdomains[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="DomainRatingHistory" Title="Domain Rating History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-domain-rating-history">
+    <Parameters>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/domain-rating-history
+				?target=@Model.Target
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.domain_ratings[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(domain_ratings[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BacklinksNewAndLost" Title="Backlinks New/Lost" Group="Backlinks" HelpText="Contains the new or lost backlinks and details of the referring pages.">
+  <RestConnector Id="UrlRatingHistory" Title="URL Rating History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-url-rating-history">
     <Parameters>
-			<Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" DefaultValue="date">
-        <DataSource>
-					<Item Id="url_from" Title="URL From"/>
-					<Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
-					<Item Id="date" Title="Date"/>
-					<Item Id="links_external" Title="Links External"/>
-					<Item Id="encoding" Title="Encoding"/>
-					<Item Id="first_seen" Title="First Seen"/>
-					<Item Id="prev_visited" Title="Prev Visited"/>
-					<Item Id="original" Title="Original"/>
-					<Item Id="redirect" Title="Redirect"/>
-					<Item Id="alt" Title="Alt"/>
-					<Item Id="text_pre" Title="Text Pre"/>
-					<Item Id="url_to" Title="URL to"/>
-					<Item Id="domain_rating" Title="Domain Rating"/>
-					<Item Id="links_internal" Title="Links Internal"/>
-					<Item Id="http_code" Title="HTTP Code"/>
-					<Item Id="title" Title="Title"/>
-					<Item Id="last_visited" Title="Last Visited"/>
-					<Item Id="link_type" Title="Link Type"/>
-					<Item Id="nofollow" Title="Nofollow"/>
-					<Item Id="anchor" Title="Anchor"/>
-					<Item Id="text_post" Title="Text Post"/>
-					<Item Id="origin" Title="Origin"/>
-					<Item Id="type" Title="Type"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=backlinks_new_lost
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/url-rating-history
+				?target=@Model.Target
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="refpages[*]">
-        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="Date the backlink was tagged as New or Lost."/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="Indicates whether the backlink is New or Lost."/>
-        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText="URL of the page where the backlink is found."/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the referring page."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain"/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the referring page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the referring page."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the referring page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the referring page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Date when the Ahrefs crawler was able to visit the backlink for the first time."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText="Second to the most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="origin" Id="Origin" Title="Origin" Converter="Bool" Checked="false" HelpText="Either fresh, drop, or recrawl."/>
-        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText="Either href, redirect, frame, form, canonical, rss, alternate."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="For redirected links, the Redirect Code (3XX), zero otherwise."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink is NoFollow."/>
-        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText="Alternative text of the image backlink, if exists."/>
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText="Anchor text of the backlink."/>
-        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText="Snippet before the anchor text."/>
-        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText="Snippet after the anchor text."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false" HelpText="HTTP code that was last returned for the referring page."/>
-        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText="Indicates whether the backlinks was present on the referring page when the Ahrefs crawler first visited it."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.url_ratings[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(url_ratings[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BacklinksNewAndLostCounters" Title="Backlinks New/Lost Counters" Group="Backlinks" HelpText="Contains new and lost backlink totals.">
+  <RestConnector Id="PagesHistory" Title="Pages History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-pages-history">
     <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="date">
-        <DataSource>
-					<Item Id="date" Title="Date"/>
-					<Item Id="url_to" Title="URL To"/>
-					<Item Id="new" Title="New"/>
-					<Item Id="Lost" Title="Lost"/>
-					<Item Id="new_total" Title="New Total"/>
-					<Item Id="lost_total" Title="Lost Total"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=backlinks_new_lost_counters
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/pages-history
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
+				&country=@Model.Country
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="counts[*]">
-        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="Date the backlink was tagged as New or Lost"/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="new" Id="New" Title="New" Converter="Int" HelpText="Total number of new backlinks found on the referring pages."/>
-        <JsonPath Expr="lost" Id="Lost" Title="Lost" Converter="Int" HelpText="Total number of backlinks removed from the referring pages."/>
-        <JsonPath Expr="new_total" Id="NewTotal" Title="New Total" Converter="Int" HelpText="Total number of new backlinks found on the referring pages."/>
-        <JsonPath Expr="lost_total" Id="LostTotal" Title="Lost Total" Converter="Int" HelpText="Total number of backlinks removed from the referring pages."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.pages[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(pages[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="MetricsHistory" Title="Metrics History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-metrics-history">
+    <Parameters>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+			<Resource Id="VolumeMode"/>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/metrics-history
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
+				&country=@Model.Country
+				&volume_mode=@Model.VolumeMode
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.metrics[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(metrics[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BacklinksOPD" Title="Backlinks One Per Domain" Group="Backlinks" HelpText="Contains the backlinks and details of the referring pages, such as anchor and page title. Includes only one backlink with the highest ahrefs_rank per referring domain">
+  <RestConnector Id="KeywordsHistory" Title="Keywords History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-keywords-history">
     <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="url_from">
-        <DataSource>
-          <Resource Id="OrderBacklinks"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+			<Resource Id="VolumeMode"/>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=backlinks_one_per_domain
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/keywords-history
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&history_grouping=@Model.HistoryGrouping
+				&country=@Model.Country
+				&volume_mode=@Model.VolumeMode
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="refpages[*]">
-        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText="URL of the page where the backlink is found."/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the referring page."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <JsonPath Expr="ip_from" Id="IpFrom" Title="IP From" Converter="String" Checked="false" HelpText="IP address of the referring page."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the referring page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the referring page."/>
-        <JsonPath Expr="page_size" Id="PageSize" Title="PageSize" Converter="Int" Checked="false" HelpText="Size of the referring page, in bytes."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the referring page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the referring page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText="Second to the most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink was present on the referring page when the Ahrefs crawler first visited it."/>
-        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText="Either href, redirect, frame, form, canonical, rss, alternate."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="For redirected links, the Redirect Code (3XX), zero otherwise."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink is NoFollow."/>
-        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText="Alternative text of the image backlink, if exists."/>
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText="Anchor text of the backlink."/>
-        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText="Snippet before the anchor text."/>
-        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText="Snippet after the anchor text."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false"/>
-        <JsonPath Expr="url_from_first_seen" Id="UrlFromFirstSeen" Title="URL From First Seen" Converter="DateTime" Checked="false"/>
-        <JsonPath Expr="first_origin" Id="FirstOrigin" Title="First Origin" Converter="String" Checked="false"/>
-        <JsonPath Expr="last_origin" Id="LastOrigin" Title="Last Origin" Converter="String" Checked="false"/>
-				<JsonPath Expr="language" Id="Language" Title="Language" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false"/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.keywords[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(keywords[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BrokenBacklinks" Title="Backlinks Broken" Group="Backlinks" HelpText="Contains the broken backlinks and details of the referring pages, such as anchor and page title.">
+  <RestConnector Id="MetricsByCountry" Title="Metrics by Country" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-metrics-by-country">
     <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="url_from">
-        <DataSource>
-          <Resource Id="OrderBacklinks"/>
-					<Item Id="broken_at" Title="Broken At"/>
-					<Item Id="error" Title="Error"/>
-					<Item Id="http_code" Title="HTTP Code"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
+			<Resource Id="Mode"/>
+			<Resource Id="VolumeMode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<Date Id="Date" Title="Date"/>
     </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=broken_backlinks
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/metrics-by-country
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date=@Model.Date.ToString("yyyy-MM-dd")
+				&volume_mode=@Model.VolumeMode
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="refpages[*]">
-        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText="URL of the page where the backlink is found."/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="broken_at" Id="Broken" Title="Broken" Converter="DateTime" HelpText="The date when the Ahrefs crawler thinks the link became broken."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the referring page."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <JsonPath Expr="ip_from" Id="IpFrom" Title="IP From" Converter="String" Checked="false" HelpText="IP address of the referring page."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the referring page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the referring page."/>
-        <JsonPath Expr="page_size" Id="PageSize" Title="PageSize" Converter="Int" Checked="false" HelpText="Size of the referring page, in bytes."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the referring page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the referring page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText="Second to the most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink was present on the referring page when the Ahrefs crawler first visited it."/>
-        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText="Either href, redirect, frame, form, canonical, rss, alternate."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="For redirected links, the Redirect Code (3XX), zero otherwise."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink is NoFollow."/>
-        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText="Alternative text of the image backlink, if exists."/>
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText="Anchor text of the backlink."/>
-        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText="Snippet before the anchor text."/>
-        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText="Snippet after the anchor text."/>
-        <JsonPath Expr="error" Id="Error" Title="Error" Converter="String" Checked="false" HelpText="The string indicating the nature of error."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false" HelpText="The HTTP code for the Link URL."/>
-        <JsonPath Expr="url_from_first_seen" Id="UrlFromFirstSeen" Title="URL From First Seen" Converter="DateTime" Checked="false"/>
-        <JsonPath Expr="first_origin" Id="FirstOrigin" Title="First Origin" Converter="String" Checked="false"/>
-        <JsonPath Expr="last_origin" Id="LastOrigin" Title="Last Origin" Converter="String" Checked="false"/>
-				<JsonPath Expr="language" Id="Language" Title="Language" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false"/>
-				<Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.metrics[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(metrics[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
+    </Parse>
+		<Resource Id="Fail"/>
+  </RestConnector>
+	
+  <RestConnector Id="PagesByTraffic" Title="Pages by Traffic" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-pages-by-traffic">
+    <Parameters>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+			<Resource Id="VolumeMode"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+    </Parameters>
+    <Fetch>
+			<Resource Id="HttpSettings"/>
+      <Fetch.Url>
+        <![CDATA[
+        https://api.ahrefs.com/v3/site-explorer/pages-by-traffic
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&volume_mode=@Model.VolumeMode
+				&country=@Model.Country
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="metrics.outgoing_links" Id="OutgoingLinks" Title="Outgoing Links" Converter="Int"/>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
 
-  <RestConnector Id="BrokenLinks" Title="Broken Links" Group="Pages" HelpText="Contains the broken links and details of the referring pages, such as anchor and page title. ">
+  <RestConnector Id="TotalSearchVolumeHistory" Title="Total Search Volume History" Group="Site Explorer" HelpUrl="https://docs.ahrefs.com/docs/api/site-explorer/operations/get-a-total-search-volume-history">
     <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="url_from">
-        <DataSource>
-          <Resource Id="OrderBacklinks"/>
-					<Item Id="broken_at" Title="Broken At"/>
-					<Item Id="error" Title="Error"/>
-					<Item Id="http_code" Title="HTTP Code"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=broken_links
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="links[*]">
-        <JsonPath Expr="url_from" Id="UrlFrom" Title="URL From" Converter="String" HelpText="URL of the page where the backlink is found."/>
-        <JsonPath Expr="url_to" Id="UrlTo" Title="URL To" Converter="String" HelpText="URL of the page the backlink is pointing to."/>
-        <JsonPath Expr="broken_at" Id="Broken" Title="Broken" Converter="DateTime" HelpText="The date when the Ahrefs crawler thinks the link became broken."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the referring page."/>
-        <JsonPath Expr="domain_to_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <JsonPath Expr="ip_from" Id="IpFrom" Title="IP From" Converter="String" Checked="false" HelpText="IP address of the referring page."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the referring page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the referring page."/>
-        <JsonPath Expr="page_size" Id="PageSize" Title="PageSize" Converter="Int" Checked="false" HelpText="Size of the referring page, in bytes."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the referring page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the referring page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="prev_visited" Id="PrevVisited" Title="Prev Visited" Converter="DateTime" Checked="false" HelpText="Second to the most recent date when the Ahrefs crawler was able to visit the backlink."/>
-        <JsonPath Expr="original" Id="Original" Title="Original" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink was present on the referring page when the Ahrefs crawler first visited it."/>
-        <JsonPath Expr="link_type" Id="LinkType" Title="Link Type" Converter="String" Checked="false" HelpText="Either href, redirect, frame, form, canonical, rss, alternate."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="For redirected links, the Redirect Code (3XX), zero otherwise."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Bool" Checked="false" HelpText="Indicates whether the backlink is NoFollow."/>
-        <JsonPath Expr="alt" Id="Alt" Title="Alt" Converter="String" Checked="false" HelpText="Alternative text of the image backlink, if exists."/>
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" Checked="false" HelpText="Anchor text of the backlink."/>
-        <JsonPath Expr="text_pre" Id="TextPre" Title="Text Pre" Converter="String" Checked="false" HelpText="Snippet before the anchor text."/>
-        <JsonPath Expr="text_post" Id="TextPost" Title="Text Post" Converter="String" Checked="false" HelpText="Snippet after the anchor text."/>
-        <JsonPath Expr="error" Id="Error" Title="Error" Converter="String" Checked="false" HelpText="The string indicating the nature of error."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="HTTP Code" Converter="String" Checked="false" HelpText="The HTTP code for the Link URL."/>
-        <JsonPath Expr="url_from_first_seen" Id="UrlFromFirstSeen" Title="URL From First Seen" Converter="DateTime" Checked="false"/>
-        <JsonPath Expr="first_origin" Id="FirstOrigin" Title="First Origin" Converter="String" Checked="false"/>
-        <JsonPath Expr="last_origin" Id="LastOrigin" Title="Last Origin" Converter="String" Checked="false"/>
-				<JsonPath Expr="language" Id="Language" Title="Language" DefaultValue="" Checked="false"/>
-        <JsonPath Expr="domain_to_ahrefs_top" Id="AhrefsTop" Title="Ahrefs Top" Converter="Int" Checked="false"/>
-				<Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="DomainRating" Title="Domain Rating" Group="Key Metrics" HelpText="Contains the Domain Rating">
-    <Parameters>
-			<Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target to query for metrics"/>
-      <Text Id="Having" Title="Having" HelpUrl="https://seotoolsforexcel.com/ahrefs/" HelpText="Returning only data that satisfies thecomma-separated set of Having conditions."/>
+			<Resource Id="Mode"/>
+			<Resource Id="Country"/>
+			<Resource Id="VolumeMode"/>
+			<Resource Id="HistoryGrouping"/>
+      <Text Id="Target" Title="Target" Debug.DefaultValue="ahrefs.com" Required="true"/>
+			<DateInterval Id="DateInterval" Title="Interval" DefaultValue="LastYear"/>
     </Parameters>
     <Fetch>
+			<Resource Id="HttpSettings"/>
       <Fetch.Url>
         <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=domain_rating
-        &target=@Utils.UrlEncode(Model.Url)
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
+        https://api.ahrefs.com/v3/site-explorer/total-search-volume-history
+				?target=@Model.Target
+				&mode=@Model.Mode
+				&date_from=@(((DateTimeOffset)Model.DateInterval.StartDate).ToString("yyyy-MM-dd"))
+				&date_to=@(((DateTimeOffset)Model.DateInterval.EndDate).ToString("yyyy-MM-dd"))
+				&volume_mode=@Model.VolumeMode
+				&history_grouping=@Model.HistoryGrouping
+				&country=@Model.Country
         ]]>
       </Fetch.Url>
     </Fetch>
     <Parse>
-      <JsonPath Expr="domain">
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the target domain."/>
-        <JsonPath Expr="ahrefs_top" Id="AhrefsRank" Title="Rank" Converter="Int" HelpText="Ahrefs Rank of the target domain."/>
-      </JsonPath>
-    </Parse>
-    <Fail>
-      <JsonPath Expr="error"/>
-    </Fail>
-  </RestConnector>
-
-  <RestConnector Id="LinkedAnchors" Title="Linked Anchors" Group="Anchors" HelpText="Contains the anchor text and the number of outgoing links that have it.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="anchor">
-        <DataSource>
-					<Item Id="anchor" Title="Anchor"/>
-					<Item Id="links_internal" Title="Links Internal"/>
-					<Item Id="links_external" Title="Links External"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=linked_anchors
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="anchors[*]">
-        <JsonPath Expr="anchor" Id="Anchor" Title="Anchor" Converter="String" HelpText="Anchor text used in at least one outgoing link from the target domain."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" HelpText="Number of internal outgoing links found that are using the anchor text."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" HelpText="Number of external outgoing links found that are using the anchor text."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="LinkedDomains" Title="Linked Domains" Group="Domains" HelpText="Contains the external domains that the target has links to.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="domain_from">
-        <DataSource>
-					<Item Id="domain_to" Title="Domain To"/>
-					<Item Id="domain_from" Title="Domain From"/>
-					<Item Id="links" Title="Links"/>
-					<Item Id="unique_pages" Title="Unique Pages"/>
-					<Item Id="domain_to_rating" Title="Domain To Rating"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=linked_domains
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="domains[*]">
-        <JsonPath Expr="domain_from" Id="DomainFrom" Title="Domain From" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="domain_to" Id="DomainTo" Title="Domain To" Converter="String" HelpText="External domain that has links from the target."/>
-        <JsonPath Expr="links" Id="Links" Title="Links" Converter="Int" HelpText="Number of external links from the target that link to the external domain."/>
-        <JsonPath Expr="unique_pages" Id="UniquePages" Title="Unique Pages" Converter="Int" HelpText="Number of unique pages from the target that link to the external domain."/>
-        <JsonPath Expr="domain_to_rating" Id="DomainToRating" Title="Domain To Rating" Converter="Int" HelpText="Domain Rating of the external domain."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="LinkedDomainsByType" Title="Linked Domains by Type" Group="Domains" HelpText="Contains the external domains that the target has links to.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="www.google.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="links">
-        <DataSource>
-					<Item Id="links" Title="Links"/>
-					<Item Id="domain_from" Title="Domain From"/>
-					<Item Id="domain_to_rating" Title="Domain To Rating"/>
-					<Item Id="first_seen" Title="First Seen"/>
-					<Item Id="last_visited" Title="Last Visited"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=linked_domains_by_type
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="domains[*]">
-        <JsonPath Expr="domain_from" Id="DomainFrom" Title="Domain From" Converter="String" HelpText="Target of the request."/>
-        <JsonPath Expr="domain_to" Id="DomainTo" Title="Domain To" Converter="String" HelpText="Root of external domain that has links from the target."/>
-        <JsonPath Expr="links" Id="Links" Title="Links" Converter="Int" HelpText="Number of external links from the target that link to the external domain."/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="Int" HelpText="Number of text external links from the target."/>
-        <JsonPath Expr="image" Id="Image" Title="Image" Converter="Int" HelpText="Number of image external links from the target."/>
-        <JsonPath Expr="nofollow" Id="NoFollow" Title="NoFollow" Converter="Int" HelpText="Number of NoFollow external links from the target"/>
-        <JsonPath Expr="dofollow" Id="DoFollow" Title="DoFollow" Converter="Int" HelpText="Number of DoFollow external links from the target."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" HelpText="Number of redirection external links from the target."/>
-        <JsonPath Expr="canonical" Id="Canonical" Title="Canonical" Converter="Int" HelpText="Number of canonical external links from the target."/>
-        <JsonPath Expr="gov" Id="Gov" Title="Gov" Converter="Int" HelpText="Number of external links from the target to governmental domain."/>
-        <JsonPath Expr="edu" Id="Edu" Title="Edu" Converter="Int" HelpText="Number of external links from the target to educational domain."/>
-        <JsonPath Expr="rss" Id="RSS" Title="RSS" Converter="Int" HelpText="Number of RSS external links from the target."/>
-        <JsonPath Expr="alternate" Id="Alternate" Title="Alternate" Converter="Int" HelpText="Number of alternate external links from the target."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="FirstSeen" Converter="DateTime" HelpText="Least recent date when the Ahrefs crawler was able to see the link on the target."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="LastVisited" Converter="DateTime" HelpText="Most recent date when the Ahrefs crawler was able to see the link on the target."/>
-        <JsonPath Expr="domain_to_rating" Id="DomainToRating" Title="Domain To Rating" Converter="Int" HelpText="Domain Rating of the external domain."/>
-        <JsonPath Expr="domain_to_ahrefs_top" Id="DomainToAhrefsTop" Title="Domain To Ahrefs Top" Converter="Int" HelpText="Ahrefs rank of the external domain."/>
-        <JsonPath Expr="domain_to_linked_domains" Id="DomainToLinkedDomains" Title="Domain To Linked Domains" Converter="Int"/>
-        <JsonPath Expr="domain_to_traffic" Id="DomainToTraffic" Title="Domain To Traffic" Converter="Int"/>
-        <JsonPath Expr="domain_to_refdomains" Id="DomainToRefdomains" Title="Domain To Refdomains" Converter="Int"/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="LinkedDomainsByTypeSums" Title="Linked Domains by Type Sums" Group="Domains" HelpText="Aggregated statistics of each Type.">
-    <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target to query for metrics"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=linked_domains_by_type
-        &target=@Utils.UrlEncode(Model.Url)
-        &mode=@(Model.Mode)
-				&limit=0
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="stats">
-        <JsonPath Expr="linked_domains" Id="LinkedDomains" Title="Linked Domains" Converter="Int" HelpText="Number of external links from the target that link to the external domain."/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="Int" HelpText="Number of text external links from the target."/>
-        <JsonPath Expr="image" Id="Image" Title="Image" Converter="Int" HelpText="Number of image external links from the target."/>
-        <JsonPath Expr="nofollow" Id="NoFollow" Title="NoFollow" Converter="Int" HelpText="Number of NoFollow external links from the target"/>
-        <JsonPath Expr="dofollow" Id="DoFollow" Title="DoFollow" Converter="Int" HelpText="Number of DoFollow external links from the target."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" HelpText="Number of redirection external links from the target."/>
-        <JsonPath Expr="canonical" Id="Canonical" Title="Canonical" Converter="Int" HelpText="Number of canonical external links from the target."/>
-        <JsonPath Expr="gov" Id="Gov" Title="Gov" Converter="Int" HelpText="Number of external links from the target to governmental domain."/>
-        <JsonPath Expr="edu" Id="Edu" Title="Edu" Converter="Int" HelpText="Number of external links from the target to educational domain."/>
-        <JsonPath Expr="rss" Id="RSS" Title="RSS" Converter="Int" HelpText="Number of RSS external links from the target."/>
-        <JsonPath Expr="alternate" Id="Alternate" Title="Alternate" Converter="Int" HelpText="Number of alternate external links from the target."/>
-        <JsonPath Expr="max_links" Id="MaxLinks" Title="Max Links" Converter="Int"/>
-        <JsonPath Expr="max_links_dofollow" Id="MaxLinksDoFollow" Title="Max Links DoFollow" Converter="Int"/>
-        <JsonPath Expr="total_links" Id="TotalLinks" Title="Total Links" Converter="Int"/>
-        <JsonPath Expr="total_links_dofollow" Id="TotalLinksDoFollow" Title="Total Links DoFollow" Converter="Int"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Metrics" Title="Metrics" Group="Key Metrics" HelpText="Contains metrics about the target, such as total number of backlinks, referring pages, etc" AvailableInSpider="true">
-    <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target to query for metrics"/>
-      <Resource Id="Mode"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=metrics_extended
-        &target=@Utils.UrlEncode(Model.Url)
-        &mode=@(Model.Mode)
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="metrics">
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of external backlinks found on the referring pages that link to the target."/>
-        <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" HelpText="Number of external web pages containing at least one backlink that links to the target."/>
-        <JsonPath Expr="pages" Id="Pages" Title="Pages" Converter="Int" Checked="false" HelpText="Number of unique pages visited by the Ahrefs crawler on the target."/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="Int" Checked="false" HelpText="Number of backlinks that use anchor texts."/>
-        <JsonPath Expr="image" Id="Image" Title="Image" Converter="Int" Checked="false" HelpText="Number of backlinks that use image as an anchor."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Int" Checked="false" HelpText="Number of NoFollow backlinks that link to the target."/>
-        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Int" Checked="false" HelpText="Number of DoFollow backlinks that link to the target."/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" Checked="false" HelpText="Number of redirects found that forward to the target."/>
-        <JsonPath Expr="canonical" Id="Canonical" Title="Canonical" Converter="Int" Checked="false" HelpText="Number of canonical backlinks that link to the target."/>
-        <JsonPath Expr="gov" Id="Gov" Title="Gov" Converter="Int" Checked="false" HelpText="Number of backlinks of all types (including images and NoFollow) found on web pages on governmental domains that link to the target."/>
-        <JsonPath Expr="edu" Id="Edu" Title="Edu" Converter="Int" Checked="false" HelpText="Number of backlinks of all types (including images and NoFollow) found on web pages on educational domains that link to the target."/>
-        <JsonPath Expr="rss" Id="RSS" Title="RSS" Converter="Int" Checked="false"/>
-        <JsonPath Expr="alternate" Id="Alternate" Title="Alternate" Converter="Int" Checked="false"/>
-        <JsonPath Expr="html_pages" Id="HtmlPages" Title="Html Pages" Converter="Int" Checked="false" HelpText="Number of HTML pages the target link has."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Long" Checked="false" HelpText="Number of internal links found in the target."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Long" Checked="false" HelpText="Number of external links found in the target."/>
-        <JsonPath Expr="refdomains" Id="RefDomains" Title="Ref Domains" Converter="Int" Checked="false" HelpText="Number of domains containing at least one backlink that links to the target."/>
-        <JsonPath Expr="refclass_c" Id="RefClassC" Title="Ref Class C" Converter="Int" Checked="false" HelpText="Number of referring class C networks that link to the target."/>
-        <JsonPath Expr="refips" Id="Refips" Title="Refips" Converter="Int" Checked="false" HelpText="Number of distinct IP addresses under a single network that link to the target."/>
-        <JsonPath Expr="linked_root_domains" Id="LinkedRootDomains" Title="Linked Root Domains" Converter="Int" Checked="false" HelpText="Number of internal or external domains that are linked from the target."/>
-        <JsonPath Expr="valid_pages" Id="ValidPages" Title="Valid Pages" Converter="Int" Checked="false" HelpText="Number of unique pages with non 5xx HTTP code, visited by the Ahrefs crawler on the target."/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Pages" Title="Pages Crawled" Group="Pages" HelpText="Contains the crawled pages. The result is similar to the crawled pages report found in the raw data export in Site Explorer.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="url">
-        <DataSource>
-					<Item Id="url" Title="URL"/>
-					<Item Id="ahrefs_rank" Title="Ahrefs Rank"/>
-					<Item Id="size" Title="Size"/>
-					<Item Id="redirect_url" Title="Redirect URL"/>
-					<Item Id="content_encoding" Title="Content Encoding"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-					<Item Id="dofollow" Title="Dofollow"/>
-					<Item Id="refdomains" Title="Refdomains"/>
-					<Item Id="refclass_c" Title="Refclass C"/>
-					<Item Id="refips" Title="Refips"/>
-					<Item Id="links_external" Title="Links External"/>
-					<Item Id="encoding" Title="Encoding"/>
-					<Item Id="redirects" Title="Redirects"/>
-					<Item Id="links_internal" Title="Links Internal"/>
-					<Item Id="http_code" Title="HTTP Code"/>
-					<Item Id="title" Title="Title"/>
-					<Item Id="last_visited" Title="Last Visited"/>
-					<Item Id="nofollow" Title="Nofollow"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=pages_extended
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="pages[*]">
-        <JsonPath Expr="url" Id="Url" Title="URL" Converter="String" HelpText="URL of the crawled page."/>
-        <JsonPath Expr="ahrefs_rank" Id="AhrefsRank" Title="Ahrefs Rank" Converter="Int" HelpText="URL Rating of the page."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" Checked="false" HelpText=" Least recent date when the Ahrefs crawler was able to crawl the page."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" Checked="false" HelpText="Most recent date when the Ahrefs crawler was able to crawl the page."/>
-        <JsonPath Expr="http_code" Id="HttpCode" Title="Http Code" Converter="Int" Checked="false" HelpText="HTTP code that was last returned for the page."/>
-        <JsonPath Expr="size" Id="Size" Title="Size" Converter="Int" Checked="false" HelpText="Size of the crawled page, in bytes."/>
-        <JsonPath Expr="links_internal" Id="LinksInternal" Title="Links Internal" Converter="Int" Checked="false" HelpText="Number of internal links found in the crawled page."/>
-        <JsonPath Expr="links_external" Id="LinksExternal" Title="Links External" Converter="Int" Checked="false" HelpText="Number of external links found in the crawled page."/>
-        <JsonPath Expr="title" Id="Title" Title="Title" Converter="String" Checked="false" HelpText="Title of the crawled page."/>
-        <JsonPath Expr="redirect_url" Id="RedirectUrl" Title="Redirect URL" Converter="String" Checked="false" HelpText="URL where the page redirects to."/>
-        <JsonPath Expr="encoding" Id="Encoding" Title="Encoding" Converter="String" Checked="false" HelpText="Character encoding of the page."/>
-        <JsonPath Expr="content_encoding" Id="ContenctEncoding" Title="Contenct Encoding" Converter="String" Checked="false" HelpText="Type of encoding used to compress the page data."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" Checked="false" HelpText="Number of external backlinks found on the referring pages that link to the crawled page."/>
-        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Int" Checked="false" HelpText="Number of DoFollow backlinks that link to the crawled page."/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Int" Checked="false" HelpText="Number of NoFollow backlinks that link to the crawled page."/>
-        <JsonPath Expr="redirects" Id="Redirects" Title="Redirects" Converter="Int" Checked="false" HelpText="Number of pages found that redirect to the crawled page."/>
-        <JsonPath Expr="refdomains" Id="RefDomains" Title="Ref Domains" Converter="Int" Checked="false" HelpText="Number of domains containing at least one backlink that links to the crawled page."/>
-        <JsonPath Expr="refclass_c" Id="RefClassC" Title="Ref Class C" Converter="Int" Checked="false" HelpText="Number of referring class C networks that link to the crawled page."/>
-        <JsonPath Expr="refips" Id="Refips" Title="Refips" Converter="Int" Checked="false" HelpText="Number of distinct IP addresses under a single network that link to the crawled page."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="RefDomains" Title="Ref Domains" Group="Domains" HelpText="Contains the referring domains that contain backlinks to the target.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="refdomain">
-        <DataSource>
-					<Item Id="refdomain" Title="Ref Domain"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-					<Item Id="refpages" Title="Ref Pages"/>
-					<Item Id="first_seen" Title="First Seen"/>
-					<Item Id="last_visited" Title="Last Visited"/>
-					<Item Id="domain_rating" Title="Domain Rating"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.refdomains[*]">
-        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="The referring domain that contains at least one link to the target."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of backlinks found in the referring domain that link to the target."/>
-        <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" HelpText="Number of referring pages found in the referring domain that link to the target."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-      <JsonPath Expr="$.stats">
-        <JsonPath Expr="refdomains" Id="RefdomainsTotal" Title="Ref Domains Total" Converter="Int" HelpText="Total number of referring domains that contain at least one link to the target." Checked="false"/>
-        <JsonPath Expr="ips" Id="IPsTotal" Title="IPs Total" Converter="Int" HelpText="Total number of IP addresses that link to the target." Checked="false"/>
-        <JsonPath Expr="class_c" Id="ClassCTotal" Title="Class C Total" Converter="Int" HelpText="Total number of referring class C networks that link to the target." Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="RefDomainsExtended" Title="Ref Domains Extended" Group="Domains" HelpText="Contains the referring domains that contain backlinks to the target with additional fields and filters">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="refdomain">
-        <DataSource>
-					<Item Id="refdomain" Title="Ref Domain"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-					<Item Id="backlinks_dofollow" Title="Backlinks Dofollow"/>
-					<Item Id="refpages" Title="Ref Pages"/>
-					<Item Id="first_seen" Title="First Seen"/>
-					<Item Id="last_visited" Title="Last Visited"/>
-					<Item Id="domain_rating" Title="Domain Rating"/>
-					<Item Id="traffic" Title="Traffic"/>
-					<Item Id="linked_domains" Title="Linked Domains"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_by_type
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="$.refdomains[*]">
-        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="The referring domain that contains at least one link to the target."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="Number of backlinks found in the referring domain that link to the target."/>
-        <JsonPath Expr="backlinks_dofollow" Id="BacklinksDofollow" Title="Backlinks Dofollow" Converter="Int" HelpText=" Number of dofollow backlinks found in the referring domain that link to the target."/>
-        <JsonPath Expr="refpages" Id="Refpages" Title="Ref Pages" Converter="Int" HelpText="Number of referring pages found in the referring domain that link to the target."/>
-        <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="DateTime" HelpText="Least recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
-        <JsonPath Expr="last_visited" Id="LastVisited" Title="Last Visited" Converter="DateTime" HelpText="Most recent date when the Ahrefs crawler was able to visit the backlinks in the referring domain."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <JsonPath Expr="traffic" Id="Traffic" Title="Traffic" Converter="Double" HelpText=""/>
-        <JsonPath Expr="linked_domains" Id="LinkedDomains" Title="Linked Domains" Converter="Int" HelpText=""/>
-        <JsonPath Expr="refdomains" Id="Refdomains" Title="Ref Domains" Converter="Int" HelpText=""/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="RefDomainsbyTLDType" Title="Ref Domains by TLD Type" Group="Domains" HelpText="Contains the distribution of all TLD types for ref domains">
-    <Parameters>
-			<Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target to query for metrics"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_by_type
-        &target=@Utils.UrlEncode(Model.Url)
-        &mode=@(Model.Mode)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="tlds[*]">
-        <JsonPath Expr="tld" Id="TLD" Title="TLD" Converter="String" HelpText="Top-level domain name for which TLD statistics are provided."/>
-        <JsonPath Expr="count" Id="TLDRefDomainCount" Title="TLD Ref Domain Count" Converter="Int" HelpText="Total amount of referring domains under the given TLD."/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="RefDomainsOverview" Title="Ref Domains Overview" Group="Domains" HelpText="Contains general metrics for ref domains">
-    <Parameters>
-      <Text Id="Url" Title="URL" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target to query for metrics"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-		</Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_by_type
-        &target=@Utils.UrlEncode(Model.Url)
-        &mode=@(Model.Mode)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="stats">
-        <JsonPath Expr="refdomains" Id="RefdomainsTotal" Title="Ref Domains Total" Converter="Int" HelpText="Total number of referring domains that contain at least one link to the target."/>
-        <JsonPath Expr="ips" Id="IPsTotal" Title="IPs Total" Converter="Int" HelpText="Total number of IP addresses that link to the target."/>
-        <JsonPath Expr="class_c" Id="ClassCTotal" Title="Class C Total" Converter="Int" HelpText="Total number of referring class C networks that link to the target."/>
-        <JsonPath Expr="max_backlinks" Id="MaxBacklinks" Title="Max Backlinks" Converter="Int" HelpText="Maximum number of backlinks that link to the target, among all of the targets."/>
-        <JsonPath Expr="max_backlinks_dofollow" Id="MaxBacklinksDofollow" Title="Max Backlinks Dofollow" Converter="Int" Checked="false"/>
-        <JsonPath Expr="max_refpages" Id="MaxRefpages" Title="Max Ref Pages" Converter="Int" HelpText="Maximum number of refpages that link to the target, among all of the targets." Checked="false"/>
-        <JsonPath Expr="total_backlinks" Id="TotalBacklinks" Title="Total Backlinks" Converter="Int" Checked="false"/>
-        <JsonPath Expr="total_backlinks_dofollow" Id="TotalBacklinksDofollow" Title="Total Backlinks Dofollow" Converter="Int" Checked="false"/>
-        <JsonPath Expr="all" Id="All" Title="All" Converter="Int" HelpText="Total amount of referring domains that contain at least one backlink to the target." Checked="false"/>
-        <JsonPath Expr="text" Id="Text" Title="Text" Converter="Int" HelpText="Total amount of referring domains that contain at least one text backlink to the target." Checked="false"/>
-        <JsonPath Expr="image" Id="Image" Title="Image" Converter="Int" HelpText="Total amount of referring domains that contain at least one image backlink to the target." Checked="false"/>
-        <JsonPath Expr="nofollow" Id="Nofollow" Title="Nofollow" Converter="Int" HelpText="Total amount of referring domains that contain at least one nofollow backlink to the target." Checked="false"/>
-        <JsonPath Expr="dofollow" Id="Dofollow" Title="Dofollow" Converter="Int" HelpText="Total amount of referring domains that contain at least one dofollow backlink to the target." Checked="false"/>
-        <JsonPath Expr="redirect" Id="Redirect" Title="Redirect" Converter="Int" HelpText="Total amount of referring domains that contain at least one redirect backlink to the target." Checked="false"/>
-        <JsonPath Expr="canonical" Id="Canonical" Title="Canonical" Converter="Int" HelpText="Total amount of referring domains that contain at least one canonical backlink to the target." Checked="false"/>
-        <JsonPath Expr="gov" Id="Gov" Title="Gov" Converter="Int" HelpText="Total amount of referring domains that contain at least one backlink to the target from a governmental refdomain." Checked="false"/>
-        <JsonPath Expr="edu" Id="Edu" Title="Edu" Converter="Int" HelpText="Total amount of referring domains that contain at least one backlink to the target from an educational refdomain." Checked="false"/>
-        <JsonPath Expr="rss" Id="RSS" Title="RSS" Converter="Int" Checked="false"/>
-        <JsonPath Expr="alternate" Id="Alternate" Title="Alternate" Converter="Int" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-	<RestConnector Id="RefDomainsNewandLost" Title="Ref Domains New/Lost" Group="Domains" HelpText="Contains the new or lost referring domains and their details.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="date">
-        <DataSource>
-					<Item Id="date" Title="Date"/>
-					<Item Id="type" Title="Type"/>
-					<Item Id="refdomain" Title="Ref Domain"/>
-					<Item Id="domain_rating" Title="Domain Rating"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_new_lost
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="refdomains[*]">
-        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="Date when the Ahrefs crawler was able to visit new or lost backlinks from the referring domain."/>
-        <JsonPath Expr="type" Id="Type" Title="Type" Converter="String" HelpText="Indicates whether the backlinks from the referring domain are new or lost."/>
-        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="Referring domain that contains at least one link to the target."/>
-        <JsonPath Expr="domain_rating" Id="DomainRating" Title="Domain Rating" Converter="Int" HelpText="Domain Rating of the referring domain."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="RefDomainsNewandLostCounters" Title="Ref Domains New/Lost Counters" Group="Domains" HelpText="Contains new and lost domains totals">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="date">
-        <DataSource>
-					<Item Id="date" Title="Date"/>
-					<Item Id="new" Title="New"/>
-					<Item Id="Lost" Title="Lost"/>
-					<Item Id="new_total" Title="New Total"/>
-					<Item Id="lost_total" Title="Lost Total"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refdomains_new_lost_counters
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="counts[*]">
-        <JsonPath Expr="date" Id="Date" Title="Date" Converter="DateTime" HelpText="Date when the Ahrefs crawler was able to visit new or lost backlinks from the referring domain."/>
-        <JsonPath Expr="new" Id="New" Title="New" Converter="Int" HelpText="Total number of new backlinks found from the referring domain."/>
-        <JsonPath Expr="lost" Id="Lost" Title="Lost" Converter="Int" HelpText="Total number of lost backlinks found from the referring domain."/>
-        <JsonPath Expr="new_total" Id="NewTotal" Title="New Total" Converter="Int" HelpText="Total number of new backlinks found from the referring domain."/>
-        <JsonPath Expr="lost_total" Id="LostTotal" Title="Lost Total" Converter="Int" HelpText="Total number of lost backlinks found from the referring domain."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="Refips" Title="Refips" HelpText="Returns the referring IP addresses that have at least one link to the target.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics" Multiline="true"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-      <Select Id="OrderBy" Title="Order by" Required="false" DefaultValue="refip">
-        <DataSource>
-					<Item Id="refip" Title="Refip"/>
-					<Item Id="refdomain" Title="Ref Domain"/>
-					<Item Id="backlinks" Title="Backlinks"/>
-        </DataSource>
-      </Select>
-      <Resource Id="Direction"/>
-    </Parameters>
-    <Paging PageSize="1000" EvenPages="true"/>
-		<Batch Parameter="Url" Separator="\n"/>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=refips
-        &target=@Utils.UrlEncode(Model.Url)
-				&limit=@(Model.PageCursor.NextTake)
-				&offset=@(Model.PageCursor.NextSkip)
-        &mode=@(Model.Mode)
-        &order_by=@(Model.OrderBy):@(Model.Direction)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="refips[*]">
-        <JsonPath Expr="refip" Id="Refip" Title="Refip" Converter="String" HelpText="The referring IP address that links to the target."/>
-        <JsonPath Expr="refdomain" Id="RefDomain" Title="Ref Domain" Converter="String" HelpText="The domain name for the referring IP address."/>
-        <JsonPath Expr="backlinks" Id="Backlinks" Title="Backlinks" Converter="Int" HelpText="The number of backlinks from the referring IP address with particular domain name."/>
-        <Compute Expr="@Model.Url" Id="Input" Title="Input URL" Checked="false"/>
-      </JsonPath>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="TrafficPositions" Title="Traffic &amp; Positions" Group="Key Metrics" HelpText="Contains the estimation of number of keywords, traffic and cost of the target URL.">
-    <Parameters>
-      <Text Id="Url" Title="URLs" Debug.DefaultValue="https://seotoolsforexcel.com" Required="true" HelpText="Target(s) to query for metrics"/>
-      <Resource Id="Mode"/>
-      <Resource Id="Conditions"/>
-    </Parameters>
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=positions_metrics
-        &target=@Utils.UrlEncode(Model.Url)
-        &mode=@(Model.Mode)
-        @(!string.IsNullOrEmpty(Model.Where) ? "&where=" + Utils.UrlEncode(Model.Where) : "")
-        @(!string.IsNullOrEmpty(Model.Having) ? "&having=" + Utils.UrlEncode(Model.Having) : "")
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="metrics.positions" Id="Positions" Title="Positions" Converter="Long" HelpText="Total number of keywords that the target URL ranks for in the top 100 organic search results across all countries in our database."/>
-      <JsonPath Expr="metrics.positions_top3" Id="PositionsTop3" Title="Positions Top3" Converter="Long" HelpText="Total number of keywords that the target URL ranks for in the top 3 organic search results across all countries in our database."/>
-      <JsonPath Expr="metrics.positions_top10" Id="PositionsTop10" Title="Positions Top10" Converter="Long" HelpText="Total number of keywords that the target URL ranks for in the top 10 organic search results across all countries in our database."/>
-      <JsonPath Expr="metrics.traffic" Id="Traffic" Title="Traffic" Converter="Double" HelpText="Estimation of the total monthly search traffic to the target URL from the top 100 organic search results."/>
-      <JsonPath Expr="metrics.traffic_top3" Id="TrafficTop3" Title="Traffic Top3" Converter="Double" HelpText="Estimation of the total monthly search traffic to the target URL from the top 3 organic search results."/>
-      <JsonPath Expr="metrics.traffic_top10" Id="TrafficTop10" Title="Traffic Top10" Converter="Double" HelpText="Estimation of the total monthly search traffic to the target URL from the top 10 organic search results."/>
-      <JsonPath Expr="metrics.cost" Id="Cost" Title="Cost" Converter="Double" HelpText="The equivalent value of the organic search traffic, should that traffic have been acquired via PPC."/>
-      <JsonPath Expr="metrics.cost_top3" Id="CostTop3" Title="Cost Top3" Converter="Double" HelpText="The equivalent value of the top 3 organic search traffic, should that traffic have been acquired via PPC."/>
-      <JsonPath Expr="metrics.cost_top10" Id="CostTop10" Title="Cost Top10" Converter="Double" HelpText="The equivalent value of the top 10 organic search traffic, should that traffic have been acquired via PPC."/>
-    </Parse>
-		<Resource Id="Fail"/>
-  </RestConnector>
-
-  <RestConnector Id="SubscriptionInfo" Title="Subscription Info" HelpText="Contains user subscription information.">
-    <Fetch>
-      <Fetch.Url>
-        <![CDATA[
-        http://apiv2.ahrefs.com/?token=@(Model.Authenticator.Token)&output=json&from=subscription_info
-        ]]>
-      </Fetch.Url>
-    </Fetch>
-    <Parse>
-      <JsonPath Expr="info">
-        <JsonPath Expr="rows_left" Id="RowsLeft" Title="Rows Left" Converter="Int" HelpText="Number of rows available for making API requests."/>
-        <JsonPath Expr="rows_limit" Id="RowsLimit" Title="Rows Limit" Converter="Int" HelpText="Total number of rows available for the subscription plan."/>
-        <JsonPath Expr="subscription" Id="Subscription" Title="Subscription" Converter="String" HelpText="Name of the API subscription plan."/>
-      </JsonPath>
+			<Table DefaultConverter="auto">
+				<JsonPath Id="Headers" Expr="keys($.metrics[0])">
+					<JsonPath Expr="key"/>
+				</JsonPath>
+				<JsonPath Id="Cells" Expr="keys(metrics[*])" DefaultValue="">
+					<JsonPath Expr="value"/>
+				</JsonPath>
+			</Table>
     </Parse>
 		<Resource Id="Fail"/>
   </RestConnector>
