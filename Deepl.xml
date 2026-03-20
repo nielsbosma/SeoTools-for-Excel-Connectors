@@ -60,22 +60,35 @@
       <Select Id="Target" Title="Target Language" DefaultValue="EN">
         <DataSource>
           <Resource Id="Languages"/>
-					<Item Id="EN-GB" Title="English (British)"/>
-					<Item Id="EN-US" Title="English (American)"/>
-					<Item Id="PT-PT" Title="Portugese (Excl. Brazilian)"/>
-					<Item Id="PT-BR" Title="Portugese (Brazilian)"/>
         </DataSource>
       </Select>
-			<Checkbox Id="HandleXml" Title="Handle XML" HelpText="DeepL will process XML input by extracting text out of the structure, splitting it into individual sentences, translating them, and placing them back into the XML structure." HelpUrl="https://www.deepl.com/docs-api/handling-xml/"/>
     </Parameters>
     <Fetch>
+      <HttpSettings>
+        <RequestMethod>POST</RequestMethod>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name="Authorization">DeepL-Auth-Key @(Model.AuthKey)</Header>
+        </RequestHeaders>
+        <RequestBody>
+        <![CDATA[
+				@{
+					var dict = new Dictionary<string, object>();
+					dict.Add("text", new List<string> { Model.Text });
+					dict.Add("target_lang", Model.Target);
+
+					if(Model.Source != "auto")
+					{
+						dict.Add("source_lang", Model.Source);
+					}
+				}
+				@JsonConvert.SerializeObject(dict)
+        ]]>
+        </RequestBody>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
-				@(GetSubDomain())/v2/translate?auth_key=@(Model.AuthKey)
-				&text=@(Utils.UrlEncode(Model.Text))
-				&target_lang=@(Model.Target)
-				@(Model.HandleXml ? "&tag_handling=xml" : string.Empty)
-				@(Model.Source != "auto" ? "&source_lang=" + Model.Source : "")
+				@(GetSubDomain())/v2/translate
         ]]>
       </Fetch.Url>
     </Fetch>
@@ -88,6 +101,12 @@
 
   <RestConnector Id="AccountLimit" Title="Account Limit" HelpUrl="https://www.deepl.com/api.html">
     <Fetch>
+      <HttpSettings>
+				<RequestContentType>application/json</RequestContentType>
+        <RequestHeaders>
+          <Header Name="Authorization">DeepL-Auth-Key @(Model.AuthKey)</Header>
+        </RequestHeaders>
+      </HttpSettings>
       <Fetch.Url>
         <![CDATA[
 				@(GetSubDomain())/v2/usage?auth_key=@(Model.AuthKey)
