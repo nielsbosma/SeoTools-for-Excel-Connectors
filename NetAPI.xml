@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Suite Category="Domains" Title="NetAPI" Id="NetAPI" RequireVersion="8.2" SourceUrl="https://github.com/nielsbosma/SeoTools-for-Excel-Connectors/blob/master/NetAPI.xml" HelpUrl="https://netapi.com/help/api/#json-api" HelpText="Documentation">
+
+  <Author Name="Slava Olesik" Url="https://netapi.com/"/>
+
+  <Settings HelpText="Optional. The API token of a NetAPI account raises the request limits; the connectors work without it." HelpUrl="https://netapi.com/help/api/#rate-limits">
+    <Text Id="Token" Title="API Token (optional)" Required="false"/>
+  </Settings>
+
+  <Resources>
+    <Resource Id="Fail">
+      <Fail>
+        <JsonPath Expr="error.message"/>
+      </Fail>
+    </Resource>
+  </Resources>
+
+  <RestConnector Id="DomainRank" Title="Domain Rank" HelpUrl="https://netapi.com/top-1-mln-websites/" HelpText="Rank of a domain in the NetAPI Top 1M, a daily list of the most popular websites.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true" Multiline="true" HelpText="One domain per line"/>
+    </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://netapi.com/api-json/?method=domain-rank
+        &domain=@(Utils.UrlEncode(Model.Domain.Trim()))
+        @(!string.IsNullOrEmpty(Model.Token) ? "&token=" + Model.Token : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String"/>
+      <JsonPath Expr="in_top_1m" Id="InTop1M" Title="In Top 1M" Converter="Bool"/>
+      <JsonPath Expr="rank" Id="Rank" Title="Rank" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="tld" Id="Tld" Title="TLD" Converter="String" Checked="false"/>
+      <JsonPath Expr="rank_in_tld" Id="RankInTld" Title="Rank in TLD" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="tld_sites_in_top_1m" Id="TldSitesInTop1M" Title="TLD Sites in Top 1M" Converter="Auto" DefaultValue="" Checked="false"/>
+      <JsonPath Expr="snapshot_date" Id="SnapshotDate" Title="Snapshot Date" Converter="String" Checked="false"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="CompromisedCheck" Title="Compromised Check" HelpUrl="https://netapi.com/compromised-urls/" HelpText="Whether a domain is in the NetAPI compromised domain feed (phishing, malware and other malicious activity), now or in the past.">
+    <Parameters>
+      <Text Id="Domain" Title="Domain" Debug.DefaultValue="google.com" Required="true" Multiline="true" HelpText="One domain per line"/>
+    </Parameters>
+    <Batch Parameter="Domain" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://netapi.com/api-json/?method=compromised-check
+        &value=@(Utils.UrlEncode(Model.Domain.Trim()))
+        @(!string.IsNullOrEmpty(Model.Token) ? "&token=" + Model.Token : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="value" Id="Domain" Title="Domain" Converter="String"/>
+      <JsonPath Expr="listed_now" Id="ListedNow" Title="Listed Now" Converter="Bool"/>
+      <JsonPath Expr="listed_ever" Id="ListedEver" Title="Listed Ever" Converter="Bool"/>
+      <JsonPath Expr="matched_value" Id="MatchedValue" Title="Matched Value" Converter="String" DefaultValue="" Checked="false"/>
+      <JsonPath Expr="first_seen" Id="FirstSeen" Title="First Seen" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="last_seen" Id="LastSeen" Title="Last Seen" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="block_reason" Id="Reason" Title="Reason" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="registrar.brand_name" Id="Registrar" Title="Registrar" Converter="String" DefaultValue="" Checked="false"/>
+      <JsonPath Expr="note" Id="Note" Title="Note" Converter="String" DefaultValue="" Checked="false"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="NewDomains" Title="New Domains" HelpUrl="https://netapi.com/help/api/#json-api" HelpText="Domains registered in the last 1 to 7 days whose name contains a text. Useful for brand and typosquatting watch.">
+    <Parameters>
+      <Text Id="Query" Title="Text" Debug.DefaultValue="shop" Required="true" Multiline="true" HelpText="At least 4 characters, one search per line"/>
+      <Number Id="Days" Title="Days Back" DefaultValue="7" Minimum="1" Maximum="7"/>
+      <Select Id="Match" Title="Match" DefaultValue="contains">
+        <DataSource>
+          <Item Id="contains" Title="Contains"/>
+          <Item Id="starts" Title="Starts With"/>
+        </DataSource>
+      </Select>
+      <Text Id="Tld" Title="TLD" Required="false" HelpText="Optional, for example com"/>
+      <Number Id="Limit" Title="Max Results" DefaultValue="100" Minimum="1" Maximum="5000" HelpText="Up to 100 without a token, more with an account token"/>
+    </Parameters>
+    <Batch Parameter="Query" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://netapi.com/api-json/?method=search-new
+        &q=@(Utils.UrlEncode(Model.Query.Trim()))
+        &days=@(Model.Days)
+        &match=@(Model.Match)
+        &limit=@(Model.Limit)
+        @(!string.IsNullOrEmpty(Model.Tld) ? "&tld=" + Utils.UrlEncode(Model.Tld.Trim().TrimStart('.')) : "")
+        @(!string.IsNullOrEmpty(Model.Token) ? "&token=" + Model.Token : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="results[*]">
+        <JsonPath Expr="domain" Id="Domain" Title="Domain" Converter="String"/>
+        <JsonPath Expr="tld" Id="Tld" Title="TLD" Converter="String"/>
+        <JsonPath Expr="added_on" Id="AddedOn" Title="Added On" Converter="DateTime"/>
+        <Compute Title="Text" Id="Query" Expr="@Model.Query"/>
+      </JsonPath>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+  <RestConnector Id="TldStats" Title="TLD Stats" HelpUrl="https://netapi.com/datasets-all-domains/" HelpText="Figures of a domain zone: registered domains, daily changes, share in the compromised feed, sites in the Top 1M.">
+    <Parameters>
+      <Text Id="Tld" Title="TLD" Debug.DefaultValue="com" Required="true" Multiline="true" HelpText="One TLD per line, for example com or co.uk"/>
+    </Parameters>
+    <Batch Parameter="Tld" Separator="\n"/>
+    <Fetch>
+      <Fetch.Url>
+        <![CDATA[
+        https://netapi.com/api-json/?method=tld-stats
+        &tld=@(Utils.UrlEncode(Model.Tld.Trim().TrimStart('.')))
+        @(!string.IsNullOrEmpty(Model.Token) ? "&token=" + Model.Token : "")
+        ]]>
+      </Fetch.Url>
+    </Fetch>
+    <Parse>
+      <JsonPath Expr="tld" Id="Tld" Title="TLD" Converter="String"/>
+      <JsonPath Expr="registry" Id="Registry" Title="Registry" Converter="String" DefaultValue=""/>
+      <JsonPath Expr="is_cctld" Id="IsCcTld" Title="Country Code TLD" Converter="Bool" Checked="false"/>
+      <JsonPath Expr="domains" Id="Domains" Title="Registered Domains" Converter="Long"/>
+      <JsonPath Expr="snapshot_date" Id="SnapshotDate" Title="Snapshot Date" Converter="String" Checked="false"/>
+      <JsonPath Expr="rank_by_size" Id="RankBySize" Title="Rank by Size" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="new_24h" Id="New24h" Title="New (24h)" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="deleted_24h" Id="Deleted24h" Title="Deleted (24h)" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="change.30d.pct" Id="Change30d" Title="Change 30d (%)" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="change.365d.pct" Id="Change365d" Title="Change 1y (%)" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="compromised.domains" Id="CompromisedDomains" Title="Compromised Domains" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="compromised.share_pct" Id="CompromisedShare" Title="Compromised Share (%)" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="top_1m.sites" Id="Top1MSites" Title="Sites in Top 1M" Converter="Auto" DefaultValue=""/>
+      <JsonPath Expr="top_1m.rank_among_tlds" Id="Top1MRank" Title="Rank Among TLDs" Converter="Auto" DefaultValue="" Checked="false"/>
+      <JsonPath Expr="page" Id="Page" Title="Page" Converter="String" Checked="false"/>
+    </Parse>
+    <Resource Id="Fail"/>
+  </RestConnector>
+
+</Suite>
